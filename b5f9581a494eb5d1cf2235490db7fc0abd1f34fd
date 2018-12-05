@@ -1,0 +1,582 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d8b2fcc0_c17f924e",
+        "filename": "test/error_handling/arm64/Makefile",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Irm -f $(TARGET) *.o $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d4ccacfb_c644ecf3",
+        "filename": "test/error_handling/arm64/patch/issue1011.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "007a3f32_5d8be7f7",
+        "filename": "test/error_handling/arm64/patch/issue727.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b8c239d7_4412c41f",
+        "filename": "test/error_handling/arm64/patch/issue727.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+-^I^I^I^I^I$",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59ba3bd6_96bbaeb9",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o exec exec.c $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e767b3e_577b076e",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: -p 6 $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e6750fd_380df831",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: -p 6 $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "77dd8ac4_7d18e7cc",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+fork09      0  TINFO  :  first file descriptor is 8 $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ffff9c3d_1a4c20c8",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11      1  TPASS  :  signal SIGHUP          $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ec93951_dd36b8db",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11      2  TPASS  :  signal SIGINT          $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b47c92b_af505530",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 215,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     10  TPASS  :  signal SIGKILL         $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ef5c57a_984e10c3",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 216,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     11  TPASS  :  signal SIGUSR1         $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1dd1e2ec_b949ffef",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     13  TPASS  :  signal SIGUSR2         $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "41ac3d47_a081eb66",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 219,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     14  TPASS  :  signal SIGPIPE         $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "033f1269_de9e047c",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 220,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     15  TPASS  :  signal SIGALRM         $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5efb1222_98962d52",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     16  TPASS  :  signal SIGTERM         $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f20c8027_20b8d9c3",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 224,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     19  TPASS  :  signal SIGVTALRM       $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c9d2b1ca_8514f8c1",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 225,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     20  TPASS  :  signal SIGPROF         $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8da2fb17_4c497f55",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 226,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     21  TPASS  :  signal SIGIO/SIGPOLL   $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c62f43e8_3748f3dd",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 227,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+kill11     22  TPASS  :  signal SIGPWR          $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "964b04a3_eeb6b864",
+        "filename": "test/error_handling/arm64/result_issue727.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+gcc -o exec exec.c $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6be0cefd_d6b61e86",
+        "filename": "test/error_handling/arm64/run_issue1011.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"${output}\" | grep -q \"kernel: mcexec_prepare_image: ERROR: # of sections: -1\"",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1eb7ae91_c729979c",
+        "filename": "test/error_handling/arm64/run_issue1011.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\techo \"\\\"kernel: mcexec_prepare_image: ERROR: # of sections: -1\\\" not found.\"",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05099c28_cdb174bb",
+        "filename": "test/error_handling/x86_64/Issue1011/1011.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ea2ca308_00fc24a3",
+        "filename": "test/error_handling/x86_64/Issue727/727.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a4a189b_1f941d0c",
+        "filename": "test/error_handling/x86_64/Issue727/727.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+-^I^I^I^I^I$",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b0cc521d_05e7af32",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos  dump_level\u003d24 $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c48124d6_bfdb58fd",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e7afd58_e94cd6c4",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e32fe50a_901b3c88",
+        "filename": "test/error_handling/x86_64/Issue727/patch-off.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x90000 $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7af2180f_d5a3cdbb",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos  dump_level\u003d24 $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a41acc7f_e173f848",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "431e4a8c_04a24a04",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d53dd2d_69a8a7ce",
+        "filename": "test/error_handling/x86_64/Issue727/patch-on.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:49:03Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x90000 $",
+      "revId": "b5f9581a494eb5d1cf2235490db7fc0abd1f34fd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
