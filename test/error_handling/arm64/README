@@ -1,0 +1,110 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+エラーハンドリング改善テストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+		   $HOMEにコピーし、適宜編集する
+		2. make testを実行する
+		3. patch/issue727.patchを適用したMcKernelを用意する
+		4. run_issue727.shを実行する
+		5. patch/issue1011.patchを適用したMcKernelを用意する
+		6. run_issue1011.shを実行する
+
+(2) テスト項目詳細
+	Issue727
+		0001 テストプログラムexecを実行し、lsコマンドの結果が得られること
+		0002 patch/issue727.patchを適用した場合、0001テストでmcexecが強制終了し、McKernelがpanicしないこと
+
+	Issue873
+		0001 McKernelの起動/終了を100回繰り返しても失敗しないこと
+
+	Issue1011
+		0001 hostnameコマンドを実行し、ホスト名が表示されること
+		0002 patch/issue1011.patchを適用した場合、0001テストでホスト名が表示されす、
+		     コンソールには「prepare: Invalid argument」が、
+		     /var/log/messagesには「kernel: mcexec_prepare_image: ERROR: # of sections: -1」が、
+		     それぞれ表示されること
+
+	ulimit -u
+		0001 ulimit -uの設定値がデフォルトの状態で、test_mck -s kill -n 1 -- -p 6が成功すること
+		0002 ulimit -uに9を設定し、0001テストを実行するとforkに失敗すること
+
+	LTPによるリグレッションテスト
+		perf_event_open01
+		perf_event_open02
+		get_mempolicy01
+		execve01
+		execve02
+		execve03
+		execve04
+		execve05
+		fork01
+		fork02
+		fork03
+		fork04
+		fork05
+		fork06
+		fork07
+		fork08
+		fork09
+		fork10
+		fork11
+		fork13
+		fork14
+		clone01
+		clone02
+		clone03
+		clone04
+		clone05
+		clone06
+		clone07
+		clone08
+		kill01
+		kill02
+		kill03
+		kill04
+		kill05
+		kill06
+		kill07
+		kill08
+		kill09
+		kill10
+		  LTPのkill10の実行時、本件とは無関係な不具合を回避するため、プロセス数を4(デフォルトは10)、
+		  グループ数を2に設定している。
+
+		kill11
+		kill12
+		madvise01
+		madvise02
+		madvise03
+		madvise04
+		madvise05
+		signal01
+		signal02
+		signal03
+		signal04
+		signal05
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+
+以上。
