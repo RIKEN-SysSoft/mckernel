@@ -1,0 +1,93 @@
+/opt/ppos/sbin/mcreboot.sh -m 32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1
+/opt/ppos/bin/mcexec mcexec_test_proc/exec_setmempolicy_mbind 0x8000 0x0 2 0x80ff 0x3 2 0 3
+-----
+OK:set_mempolicy - mode:(MPOL_DEFAULT) nodemask:0x0 maxnode:2
+OK:get_mempolicy - mode:(MPOL_DEFAULT) nodemask:0x0 maxnode:2
+-----
+[00] OK:mmap - addr:(0x00001000002e0000) len:4096 prot:0x3 flags:0x22
+[00] OK:mbind - addr:(0x00001000002e0000) len:4096 mode:(MPOL_DEFAULT) nodemask:0x0 maxnode:2 flags:1
+[00] OK:get_mempolicy - addr:(0x00001000002e0000) mode:(MPOL_DEFAULT)
+[00] OK:munmap - addr:(0x00001000002e0000) len:4096
+[00] OK:mmap - addr:(0x00001000002e0000) len:4096 prot:0x3 flags:0x32
+[00] OK:mmap - addr:(0x00001000002f0000) len:4096 prot:0x3 flags:0x22
+-----
+[01] OK:mmap - addr:(0x0000100000300000) len:4096 prot:0x3 flags:0x22
+[01] OK:mbind - addr:(0x0000100000300000) len:4096 mode:(MPOL_PREFERRED) nodemask:0x3 maxnode:2 flags:0
+[01] OK:get_mempolicy - addr:(0x0000100000300000) mode:(MPOL_PREFERRED)
+[01] OK:munmap - addr:(0x0000100000300000) len:4096
+[01] OK:mmap - addr:(0x0000100000300000) len:4096 prot:0x3 flags:0x32
+[01] OK:mmap - addr:(0x0000100000310000) len:4096 prot:0x3 flags:0x22
+-----
+[02] OK:mmap - addr:(0x0000100000320000) len:4096 prot:0x3 flags:0x22
+[02] OK:mbind - addr:(0x0000100000320000) len:4096 mode:(MPOL_BIND) nodemask:0x3 maxnode:2 flags:0
+[02] OK:get_mempolicy - addr:(0x0000100000320000) mode:(MPOL_BIND)
+[02] OK:munmap - addr:(0x0000100000320000) len:4096
+[02] OK:mmap - addr:(0x0000100000320000) len:4096 prot:0x3 flags:0x32
+[02] OK:mmap - addr:(0x0000100000330000) len:4096 prot:0x3 flags:0x22
+-----
+/opt/ppos/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[  0]: ns_per_tsc: 16000
+[  0]: KCommand Line: hidos    dump_level=24  
+[  0]: Physical memory: 0x1002c0000 - 0x102000000, 30670848 bytes, 468 pages available @ NUMA: 0
+[  0]: Physical memory: 0x102000000 - 0x104000000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x104000000 - 0x106000000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x205400000 - 0x207400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x207400000 - 0x209400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x209400000 - 0x20b400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x20b400000 - 0x20d400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x20d400000 - 0x20f400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x20f400000 - 0x211400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x211400000 - 0x213400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x213400000 - 0x215400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x215400000 - 0x217400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x217400000 - 0x219400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x219400000 - 0x21b400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x21b400000 - 0x21d400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x21d400000 - 0x21f400000, 33554432 bytes, 512 pages available @ NUMA: 0
+[  0]: Physical memory: 0x240000000 - 0x242000000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x242000000 - 0x244000000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x244000000 - 0x246000000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x404c00000 - 0x406c00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x406c00000 - 0x408c00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x408c00000 - 0x40ac00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x40ac00000 - 0x40cc00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x40cc00000 - 0x40ec00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x40ec00000 - 0x410c00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x410c00000 - 0x412c00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x412c00000 - 0x414c00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x414c00000 - 0x416c00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x416c00000 - 0x418c00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x418c00000 - 0x41ac00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x41ac00000 - 0x41cc00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: Physical memory: 0x41cc00000 - 0x41ec00000, 33554432 bytes, 512 pages available @ NUMA: 1
+[  0]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 533987328, pages: 8148
+[  0]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 536870912, pages: 8192
+[  0]: NUMA 0 distances: 0 (10), 1 (20), 
+[  0]: NUMA 1 distances: 1 (10), 0 (20), 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe50000 (1 pages)
+[  0]: Trampoline area: 0x0 
+[  0]: map_fixed: phys: 0x0 => 0xffff7ffffbe60000 (1 pages)
+[  0]: # of cpus : 2
+[  0]: locals = ffff8001002f0000
+[  0]: BSP: 0 (HW ID: 8 @ NUMA 0)
+[  0]: BSP: booted 1 AP CPUs
+[  0]: Master channel init acked.
+[  0]: Enable Host mapping vDSO.
+IHK/McKernel booted.
+[  0]: numa_mem_policy=0
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x0000000000000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x00001000000f0bd4) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x0000000000000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[803]: applying addr-policy (and it's default-policy), addr(0x00001000002e0000) policy(MPOL_DEFAULT) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x0000000000000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x0000000000000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[740]: applying addr-policy (and it's not default-policy), addr(0x0000100000300000) policy(MPOL_PREFERRED) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x0000000000000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x0000000000000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[740]: applying addr-policy (and it's not default-policy), addr(0x0000100000320000) policy(MPOL_BIND) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[811]: applying default-policy, addr(0x0000000000000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: fileobj_free(ffff8001009e1040 ffff8007c4ba7e80): free failed. -32
+[  0]: fileobj_free(ffff800100a50020 ffff8007c4baa400): free failed. -32
+[  0]: fileobj_free(ffff800100ac0020 ffff8007c4ba7c00): free failed. -32
+
