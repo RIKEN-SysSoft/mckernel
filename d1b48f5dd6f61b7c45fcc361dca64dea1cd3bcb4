@@ -1,0 +1,939 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d9b48f4b_c08f73b0",
+        "filename": "test/mng_mod/issues/882/arm64/run.sh",
+        "patchSetId": 8
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t${STRESSBIN}/mck-mcexec.sh ${STRESSBIN}/killit -np 16 -t 4000 - ${STRESSBIN}/signalonfork -nosignal",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8b0088f9_28adb784",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "66c9b4d5_6d54755d",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a77e900e_169176fd",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ab426de_c0584113",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80c92648_ca283f0e",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3561b663_bf9056ed",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos   dump_level\u003d24 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34c9be7b_21db466b",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 209,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ae9e36b_5211e4cf",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "566b3142_99c2d262",
+        "filename": "test/mng_mod/issues/882/x86_64/fork01.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x8a000 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc41a8bf_18de5c0d",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "02b949ac_2c4d4eb3",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e8d56df_3e735e6b",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c949d6cb_df7e03c5",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8c5cca26_145bbbf0",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "344797da_65f3940b",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos   dump_level\u003d24 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a95ba63_ba7491de",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 211,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b49631eb_7c370f09",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "847d1bad_a91c778a",
+        "filename": "test/mng_mod/issues/882/x86_64/fork02.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x8a000 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "288da4f2_dae03c74",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9400034_5741f372",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "de218448_839c022c",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "42297f6d_17a6c3a8",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f8fccf6c_70516ee4",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd65a637_cfb8e4ef",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos   dump_level\u003d24 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c4d065c4_966e35c1",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 209,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65055488_83da275e",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "345b837c_4d57b6a2",
+        "filename": "test/mng_mod/issues/882/x86_64/fork03.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x8a000 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "343d35e4_aa851465",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8978cfc9_17fd4856",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a9e891a7_3142584a",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d3a3837b_9693fe58",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54309660_e538babd",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab148918_d1f0a16e",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 205,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos   dump_level\u003d24 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e9098dd_e3efaa73",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e72acb08_c3b42635",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 211,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c2591d3_335870a2",
+        "filename": "test/mng_mod/issues/882/x86_64/fork04.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 213,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x8a000 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f89c4f5_130e5209",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48a5956b_eeec89eb",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b59c13a4_56e95c83",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d68f7d74_45f52de2",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "47967d3e_fd521710",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e379840_885978b2",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos   dump_level\u003d24 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf582af7_66c49717",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 211,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e640308_4636d93e",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "380b2554_a1b099a4",
+        "filename": "test/mng_mod/issues/882/x86_64/fork07.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x8a000 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ad731cf_590163ed",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "460ad4be_d1044444",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2d5a41b_f056405f",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7fd8b205_0cf5e8db",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CentOS Linux release 7.3.1611 (Core) $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f4c557c0_267e000e",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f8a3c58_717d91b0",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 213,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: KCommand Line: hidos   dump_level\u003d24 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5dd7cb2c_9133c8f5",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 0 distances: 0 (10), 1 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13d85be7_189e719a",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 219,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: NUMA 1 distances: 1 (10), 0 (21), $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f397baa9_af3c190c",
+        "filename": "test/mng_mod/issues/882/x86_64/fork08.txt",
+        "patchSetId": 8
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:31:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[ -1]: Trampoline area: 0x8a000 $",
+      "revId": "d1b48f5dd6f61b7c45fcc361dca64dea1cd3bcb4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
