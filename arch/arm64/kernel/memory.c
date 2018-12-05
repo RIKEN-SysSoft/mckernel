@@ -2278,6 +2278,8 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	int error;
 	struct clear_range_args args;
 	translation_table_t* tt;
+	pte_t *ptep;
+	size_t pgsize;
 
 	dkprintf("%s: %p,%lx,%lx,%d,%p\n",
 			 __FUNCTION__, pt, start, end, free_physical, memobj);
@@ -2300,6 +2302,30 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	}
 	args.memobj = memobj;
 	args.vm = vm;
+
+	ptep = ihk_mc_pt_lookup_pte(pt, (void *)start,
+				    0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_contiguous(ptep)) {
+		if (!page_is_contiguous_head(ptep, pgsize)) {
+			// start pte is not contiguous head
+			error = split_contiguous_pages(ptep, pgsize);
+			if (error) {
+				return error;
+			}
+		}
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(pt, (void *)end - 1,
+				    0, NULL, &pgsize, NULL);
+	if (ptep && pte_is_contiguous(ptep)) {
+		if (!page_is_contiguous_tail(ptep, pgsize)) {
+			// end pte is not contiguous tail
+			error = split_contiguous_pages(ptep, pgsize);
+			if (error) {
+				return error;
+			}
+		}
+	}
 
 	tt = get_translation_table(pt);
 	error = initial_lookup.walk(tt, 0, start, end, initial_lookup.callback, &args);
