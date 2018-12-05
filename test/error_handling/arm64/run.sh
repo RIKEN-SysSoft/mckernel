@@ -66,7 +66,9 @@ fi
 # ulimit -u test #
 ##################
 
-${MCEXEC} ${TESTMCK} -s kill -n 1 -- -p 6
+nprocs=`ps -ho pid,comm -U `whoami` | wc -l`
+
+${MCEXEC} -t $((8 - nprocs)) ${TESTMCK} -s kill -n 1 -- -p 6
 if [ $? == 0 ]; then
 	echo "ulimit -u 0001: OK"
 else
@@ -75,7 +77,7 @@ else
 fi
 
 ulimit -u 9
-${MCEXEC} ${TESTMCK} -s kill -n 1 -- -p 6
+${MCEXEC} -t $((8 - nprocs)) ${TESTMCK} -s kill -n 1 -- -p 6
 if [ $? != 0 ]; then
 	echo "ulimit -u 0002: OK"
 else
