@@ -1,0 +1,96 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d60eafd9_0ff47914",
+        "filename": "test/user_space/arm64/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-05T07:42:38Z",
+      "side": 1,
+      "message": "以下のように何をテストしているか追記してください。\n\u003d\u003d\u003d\nfutexの絶対時間によるタイムアウトのテストで、x86_64ではTFAIL、arm64でTPASSとなるもの。期待動作はx86_64に合わせてTFAILとしているため、NGと出力される。",
+      "range": {
+        "startLine": 11,
+        "startChar": 11,
+        "endLine": 11,
+        "endChar": 16
+      },
+      "revId": "f2419362ab39dcad4fde630e7ee87a857a90ba81",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "91b7e7e5_11e7b8b5",
+        "filename": "test/user_space/arm64/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-05T07:42:38Z",
+      "side": 1,
+      "message": "以下のように追記してください。\n\u003d\u003d\u003d\n(3) 実施しない項目\nmove_pagesは一部しか実装されていないため、Arm移植の対象ではない。そのため、テストを実施しない。",
+      "range": {
+        "startLine": 15,
+        "startChar": 2,
+        "endLine": 15,
+        "endChar": 12
+      },
+      "revId": "f2419362ab39dcad4fde630e7ee87a857a90ba81",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fef435f0_03ea7ff9",
+        "filename": "test/user_space/arm64/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-05T07:42:38Z",
+      "side": 1,
+      "message": "当該機能は「McKernel基本機構の開発V」の第１の開発項目なので本役務での移植の対象なので、テストを流してください。",
+      "range": {
+        "startLine": 22,
+        "startChar": 0,
+        "endLine": 22,
+        "endChar": 16
+      },
+      "revId": "f2419362ab39dcad4fde630e7ee87a857a90ba81",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7c10da07_8254c601",
+        "filename": "test/user_space/arm64/result.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-05T07:42:38Z",
+      "side": 1,
+      "message": "move_pagesのテスト全体をスキップしてください。",
+      "range": {
+        "startLine": 92,
+        "startChar": 0,
+        "endLine": 92,
+        "endChar": 39
+      },
+      "revId": "f2419362ab39dcad4fde630e7ee87a857a90ba81",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
