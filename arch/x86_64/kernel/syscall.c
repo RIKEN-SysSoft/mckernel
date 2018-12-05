@@ -1272,7 +1272,7 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 		int	pgid = -pid;
 		int	rc = -ESRCH;
 		int	*pids;
-		int	n = 0;
+		int	n = 0, nr_pids = 0;
 		int	sendme = 0;
 
 		if(pid == 0){
@@ -1280,22 +1280,50 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 				return -ESRCH;
 			pgid = thread->proc->pgid;
 		}
-		pids = kmalloc(sizeof(int) * num_processors, IHK_MC_AP_NOWAIT);
-		if(!pids)
-			return -ENOMEM;
-		for(i = 0; i < HASH_SIZE; i++){
+
+		// Count nr of pids
+		for (i = 0; i < HASH_SIZE; i++) {
 			mcs_rwlock_reader_lock(&phash->lock[i], &slock);
-			list_for_each_entry(p, &phash->list[i], hash_list){
-				if(pgid != 1 && p->pgid != pgid)
+			list_for_each_entry(p, &phash->list[i], hash_list) {
+				if (pgid != 1 && p->pgid != pgid)
 					continue;
 
-				if(thread && p->pid == thread->proc->pid){
+				if (thread && p->pid == thread->proc->pid) {
+					sendme = 1;
+					continue;
+				}
+
+				n++;
+			}
+			mcs_rwlock_reader_unlock(&phash->lock[i], &slock);
+		}
+
+		nr_pids = n;
+		pids = kmalloc(sizeof(int) * nr_pids, IHK_MC_AP_NOWAIT);
+		if (!pids)
+			return -ENOMEM;
+
+		// Collect pids and do the kill
+		n = 0;
+		for (i = 0; i < HASH_SIZE; i++) {
+			if (n == nr_pids) {
+				break;
+			}
+			mcs_rwlock_reader_lock(&phash->lock[i], &slock);
+			list_for_each_entry(p, &phash->list[i], hash_list) {
+				if (pgid != 1 && p->pgid != pgid)
+					continue;
+
+				if (thread && p->pid == thread->proc->pid) {
 					sendme = 1;
 					continue;
 				}
 
 				pids[n] = p->pid;
 				n++;
+				if (n == nr_pids) {
+					break;
+				}
 			}
 			mcs_rwlock_reader_unlock(&phash->lock[i], &slock);
 		}
