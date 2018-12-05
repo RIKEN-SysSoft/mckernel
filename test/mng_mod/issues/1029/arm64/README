@@ -1,0 +1,85 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+McKernel プロセスへ直接送信されたシグナルによるfutex の中断機能
+テストセットREADME
+
+(1) テストの実行方法
+ 以下の手順でテストを実行する
+	1. $HOME/.mck_test_configを用意する
+	   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+	   $HOMEにコピーし、適宜編集する
+	   mcreboot.shのオプションには-Oを付与すること
+	2. run.sh内のSTRESSBINにストレステストセットのパスを設定する
+	3. patch/1029.patchを適用し、ビルドしたMcKernelを用意する
+	4. make test を実行する
+
+(2) テスト項目詳細
+1. ストレステストを用いた確認
+	ISSUE01: futex_wait()で待っているプロセスをKILLシグナルで終了させても問題がないこと。
+	→ 全てSUCCESS で、McKernel上にプロセスとスレッドの残留が無ければOK
+
+2. 基本動作確認
+	schedule()実行時のコンテキストスイッチ前thread(prev)と、
+	runqに積まれている実行待ちthreadの状態の以下の組み合わせで、
+	schedule()が想定どおりの動作をすることを確認する。
+
+	◆prevがidleのケース
+		CT_001: runqが空
+		⇒ コンテキストスイッチを行わない
+
+		CT_002: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
+		⇒ 非idleのthreadにスイッチする
+
+		CT_003: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
+		⇒ 非idleのthreadにスイッチする
+
+	◆schedule時点で当該CPUのCPU_FLAGS_NEED_MIGRATEが活性化しているケース
+		CT_004: runqが空
+		⇒ idleにスイッチする
+
+		CT_005: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
+		⇒ idleにスイッチする
+
+		CT_006: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
+		⇒ idleにスイッチする
+
+	◆prevがidle以外で、statusがPS_EXITED以外：
+		CT_007: runqが空
+		⇒ idleにスイッチする
+
+		CT_008: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
+		⇒ 非idleのthreadにスイッチする
+
+		CT_009: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
+		⇒ 非idleのthreadにスイッチする
+
+	◆prevがidle以外で、statusがPS_EXITED：
+		CT_010: runqが空
+		⇒ idleにスイッチする
+
+		CT_011: runqに実行待ちのthreadが存在し、且つ、そのthreadが1度も実行状態になっていない
+		⇒ idleにスイッチする
+
+		CT_012: runqに実行待ちのthreadが存在し、且つ、そのthreadが実行状態になったことがある
+		⇒ idleにスイッチする
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+以上。

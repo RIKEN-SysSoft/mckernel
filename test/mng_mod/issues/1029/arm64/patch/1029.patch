@@ -1,8 +1,8 @@
-diff --git kernel/include/process.h kernel/include/process.h
-index 1bf8f27..e55e40e 100644
---- kernel/include/process.h
-+++ kernel/include/process.h
-@@ -697,6 +697,9 @@ struct thread {
+diff --git a/kernel/include/process.h b/kernel/include/process.h
+index 2007abf..45232f0 100644
+--- a/kernel/include/process.h
++++ b/kernel/include/process.h
+@@ -723,6 +723,9 @@ struct thread {
  	// for performance counter
  	unsigned long pmc_alloc_map;
  	unsigned long extra_reg_alloc_map;
@@ -12,19 +12,11 @@ index 1bf8f27..e55e40e 100644
  };
  
  #define VM_RANGE_CACHE_SIZE	4
-diff --git kernel/process.c kernel/process.c
-index 3dda3ea..eb65aa9 100644
---- kernel/process.c
-+++ kernel/process.c
-@@ -126,6 +126,7 @@ init_process(struct process *proc, struct process *parent)
- 		proc->mpol_threshold = parent->mpol_threshold;
- 		memcpy(proc->rlimit, parent->rlimit,
- 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
-+#define POSTK_DEBUG_TEMP_FIX_69 1 // TestCode for #1029
- #ifdef POSTK_DEBUG_TEMP_FIX_69 /* Fix problem not to inherit parent cpu_set. */
- 		memcpy(&proc->cpu_set, &parent->cpu_set,
- 		       sizeof(proc->cpu_set));
-@@ -3135,12 +3136,16 @@ out_schedule:
+diff --git a/kernel/process.c b/kernel/process.c
+index 83a94fa..79fa37b 100644
+--- a/kernel/process.c
++++ b/kernel/process.c
+@@ -3255,12 +3255,16 @@ out_schedule:
  	schedule();
  }
  
@@ -41,7 +33,7 @@ index 3dda3ea..eb65aa9 100644
  
  	if (cpu_local_var(no_preempt)) {
  		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
-@@ -3173,6 +3178,62 @@ redo:
+@@ -3289,6 +3293,70 @@ void schedule(void)
  		}
  	}
  
@@ -58,6 +50,14 @@ index 3dda3ea..eb65aa9 100644
 +	if (thread->tid == prev->tid) {
 +		continue;
 +	}
++
++	/* Skip not-schedulable */
++	if (thread->status == PS_RUNNING ||
++		(thread->status == PS_INTERRUPTIBLE && hassigpending(thread))) {
++	} else {
++		continue;
++	}
++
 +	runq_cnt++;
 +	if (!thread->started) {
 +		not_started = 1;
@@ -104,9 +104,9 @@ index 3dda3ea..eb65aa9 100644
  	/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() 
  	   because it always resumes from just after ihk_mc_switch_context() call. See #1029 */
  	if (v->flags & CPU_FLAG_NEED_MIGRATE ||
-@@ -3208,6 +3269,58 @@ redo:
+@@ -3324,6 +3392,58 @@ void schedule(void)
  
- 	set_timer();
+ 	set_timer(1);
  
 +// TestCode for #1029
 +switch (case_num) {
