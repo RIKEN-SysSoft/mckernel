@@ -19,6 +19,29 @@
     },
     {
       "key": {
+        "uuid": "12176ffb_8e29ab1d",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1856,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-05T05:56:04Z",
+      "side": 1,
+      "message": "I don\u0027t understand this line. Could you make sure to add a test which checks if pgaddr is re-aligned properly when this situation happens?",
+      "range": {
+        "startLine": 1856,
+        "startChar": 0,
+        "endLine": 1856,
+        "endChar": 43
+      },
+      "revId": "617df3c941423b907c6e3ef962c6dc1706b0909c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "71907545_ad8a7fdd",
         "filename": "kernel/process.c",
         "patchSetId": 2
@@ -101,6 +124,52 @@
       "revId": "617df3c941423b907c6e3ef962c6dc1706b0909c",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8da2078d_197af732",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1885,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-05T05:56:04Z",
+      "side": 1,
+      "message": "I don\u0027t understand these lines (1885-1886) either. Could you make sure to add a test which checks if pgsize is re-set properly and pgaddr is re-aligned properly when this situation happens?",
+      "range": {
+        "startLine": 1885,
+        "startChar": 0,
+        "endLine": 1885,
+        "endChar": 22
+      },
+      "revId": "617df3c941423b907c6e3ef962c6dc1706b0909c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e41a005d_afe64f2a",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2024,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-05T05:56:04Z",
+      "side": 1,
+      "message": "Why not calling rusage_memory_stat_add() for contiguous?",
+      "range": {
+        "startLine": 2024,
+        "startChar": 0,
+        "endLine": 2024,
+        "endChar": 45
+      },
+      "revId": "617df3c941423b907c6e3ef962c6dc1706b0909c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
