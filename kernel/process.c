@@ -1867,6 +1867,9 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		}
 		pgaddr = (void *)(fault_addr & ~(pgsize - 1));
 	}
+
+	arch_adjust_allocate_page_size(fault_addr, ptep, &pgaddr, &pgsize);
+
 	/*****/
 	dkprintf("%s: ptep=%lx,pte_is_null=%d,pte_is_fileoff=%d\n", __FUNCTION__, ptep, ptep ? pte_is_null(ptep) : -1, ptep ? pte_is_fileoff(ptep, pgsize) : -1);
 	if (!ptep || pte_is_null(ptep) || pte_is_fileoff(ptep, pgsize)) {
@@ -1999,7 +2002,7 @@ retry:
 #endif /*POSTK_DEBUG_ARCH_DEP_21*/
 
 	/*****/
-	if (ptep) {
+	if (ptep && !pgsize_is_contiguous(pgsize)) {
 #ifdef POSTK_DEBUG_TEMP_FIX_86 /* from patch_process_vm() rusage count fix. */
 		if (!(reason & PF_PATCH)) {
 			//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
@@ -2036,7 +2039,7 @@ retry:
 	else {
 		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
 		                            pgaddr, pgaddr + pgsize, phys,
-		                            attr, range->pgshift, range, 0);
+		                            attr, range->pgshift, range, 1);
 		if (error) {
 			kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):set_range failed. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 			goto out;
