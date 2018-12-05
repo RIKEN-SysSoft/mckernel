@@ -197,6 +197,30 @@
     },
     {
       "key": {
+        "uuid": "96d0c9a9_237dd818",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2024,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-05T06:07:12Z",
+      "side": 1,
+      "message": "I think it\u0027s the set_pte he wants to not call. Need to use set_range to fill the page table properly in the contiguous case probably?",
+      "parentUuid": "e41a005d_afe64f2a",
+      "range": {
+        "startLine": 2024,
+        "startChar": 0,
+        "endLine": 2024,
+        "endChar": 45
+      },
+      "revId": "617df3c941423b907c6e3ef962c6dc1706b0909c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "3e5d57fb_61d75641",
         "filename": "kernel/process.c",
         "patchSetId": 2
