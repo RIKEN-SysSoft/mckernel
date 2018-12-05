@@ -1974,7 +1974,7 @@ static int xpmem_remap_pte(
 	else {
 		ret = ihk_mc_pt_set_range(vm->address_space->page_table, vm, 
 			att_pgaddr, att_pgaddr + att_pgsize, seg_phys, att_attr,
-								  vmr->pgshift, vmr);
+								  vmr->pgshift, vmr, 0);
 		if (ret) {
 			ret = -EFAULT;
 			ekprintf("%s: ERROR: ihk_mc_pt_set_range() failed %d\n",
