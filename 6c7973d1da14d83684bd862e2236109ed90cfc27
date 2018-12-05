@@ -1,0 +1,888 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "06822ba2_b7165754",
+        "filename": "test/mng_mod/issues/1029/arm64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "93d18fd9_8b12e49f",
+        "filename": "test/mng_mod/issues/1029/arm64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "032a54d1_680871e0",
+        "filename": "test/mng_mod/issues/1029/arm64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tfor (i \u003d 0; i \u003c loops \u0026\u0026 (pid[i] \u003d fork()) \u003e 0; i++);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75358d0f_eed34a53",
+        "filename": "test/mng_mod/issues/1029/arm64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "73666eeb_b7f08137",
+        "filename": "test/mng_mod/issues/1029/arm64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(1);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4d1ce30e_4fb83caa",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62a88cc5_4dd55a7f",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "131cf078_7bec3442",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c80d4f69_66b263ff",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2660f661_09ed86e1",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f82f7a19_fdc78faf",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 108,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "554d1ccd_c8195620",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e23f2b2_107db840",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I^I^Ikprintf(\"[OK] CT_%03d %d \u003d\u003e %d\\n\", case_num, $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "975c950c_4f572800",
+        "filename": "test/mng_mod/issues/1029/arm64/patch/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I^I^Ikprintf(\"[OK] CT_%03d %d \u003d\u003e %d\\n\", case_num, $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f797ff7_5af8fc5c",
+        "filename": "test/mng_mod/issues/1029/arm64/run.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${STRESSBIN}/mck-mcexec.sh ${STRESSBIN}/killit -np 16 -nosignal ${STRESSBIN}/signalonfutex",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ec2c729_e800f87c",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cdf98a69_eedd7658",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a3659aa4_56261e74",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50bb2e7c_f8ed1d89",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(1);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43c83a92_a072396f",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tfor (i \u003d 0; i \u003c loops \u0026\u0026 (pid[i] \u003d fork()) \u003e 0; i++);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95ea3625_99f94355",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "79089408_c324002f",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(0);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69d665d0_10b8fcbc",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(1);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "83b71d73_25f69bd4",
+        "filename": "test/mng_mod/issues/1029/arm64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\treturn(0);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "caaf263d_34f207cd",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd51634a_9a21b979",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8fe5342b_05164b38",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "884d8a48_f4f3b54a",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "35db3955_71853d9a",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I/* Switch to idle() when prev is PS_EXITED since it always reaches release_thread() $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba0a59c4_bb101240",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 108,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31dcad3b_0b1c83c5",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dae52285_73af98bf",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I^I^Ikprintf(\"[OK] CT_%03d %d \u003d\u003e %d\\n\", case_num, $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef114cf8_1a204a30",
+        "filename": "test/mng_mod/issues/1029/x86_64/1029.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I^I^Ikprintf(\"[OK] CT_%03d %d \u003d\u003e %d\\n\", case_num, $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "310c74d9_2cd6b558",
+        "filename": "test/mng_mod/issues/1029/x86_64/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00aaff24_79814bbd",
+        "filename": "test/mng_mod/issues/1029/x86_64/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CT_001: runqが空 $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ccdbe0b1_795be838",
+        "filename": "test/mng_mod/issues/1029/x86_64/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CT_004: runqが空 $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d775650_f6a339fe",
+        "filename": "test/mng_mod/issues/1029/x86_64/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CT_007: runqが空 $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24cb4895_c859bed9",
+        "filename": "test/mng_mod/issues/1029/x86_64/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+CT_010: runqが空 $",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9503ec36_70dfe916",
+        "filename": "test/mng_mod/issues/1029/x86_64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5854e156_f92f4895",
+        "filename": "test/mng_mod/issues/1029/x86_64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f7bd019_22d0201b",
+        "filename": "test/mng_mod/issues/1029/x86_64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tfor (i \u003d 0; i \u003c loops \u0026\u0026 (pid[i] \u003d fork()) \u003e 0; i++);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "839f0c4d_25be5770",
+        "filename": "test/mng_mod/issues/1029/x86_64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1df1cf5c_42e97793",
+        "filename": "test/mng_mod/issues/1029/x86_64/go_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(1);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6fe9cca2_9d073add",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: \"foo** bar\" should be \"foo **bar\"\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d0017dc2_b9ba9045",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int main(int argc, char** argv) {",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c7718ff_ad5e5b82",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30248081_44930708",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(1);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c457064b_f514701c",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\tfor (i \u003d 0; i \u003c loops \u0026\u0026 (pid[i] \u003d fork()) \u003e 0; i++);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cea79a11_c4fdcba1",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8b1f033_38e40175",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(0);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50959285_59d55a8c",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\t\treturn(1);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d938d62e_93b6092e",
+        "filename": "test/mng_mod/issues/1029/x86_64/sched_test.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T01:17:15Z",
+      "side": 1,
+      "message": "ERROR: return is not a function, parentheses are not required\n+\treturn(0);",
+      "revId": "6c7973d1da14d83684bd862e2236109ed90cfc27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
