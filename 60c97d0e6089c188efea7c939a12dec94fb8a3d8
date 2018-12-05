@@ -1,0 +1,3234 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d5f2b2ff_319cc81e",
+        "filename": "test/mbind/arm64/result/0001_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "145a5a02_e4aaa5ff",
+        "filename": "test/mbind/arm64/result/0001_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ded08ea_9de85a0e",
+        "filename": "test/mbind/arm64/result/0001_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "12855af6_c8d9b1a3",
+        "filename": "test/mbind/arm64/result/0002_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4b5a7106_14aba26d",
+        "filename": "test/mbind/arm64/result/0002_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d56cf89_9f9411c5",
+        "filename": "test/mbind/arm64/result/0002_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6852604b_a1569e0f",
+        "filename": "test/mbind/arm64/result/0003_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "461dd0af_85117fa8",
+        "filename": "test/mbind/arm64/result/0003_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a52e082d_58d8de57",
+        "filename": "test/mbind/arm64/result/0003_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c94f7812_393d9bc7",
+        "filename": "test/mbind/arm64/result/0005_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "68827deb_302116bd",
+        "filename": "test/mbind/arm64/result/0005_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "29fa3827_3e5f374f",
+        "filename": "test/mbind/arm64/result/0005_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86bf2bf7_09aa5cc9",
+        "filename": "test/mbind/arm64/result/0006_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fbdf37fa_84e2291f",
+        "filename": "test/mbind/arm64/result/0006_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d1da2ce_bc14267a",
+        "filename": "test/mbind/arm64/result/0006_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c77f02f7_a524f1eb",
+        "filename": "test/mbind/arm64/result/0007_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80000622_c0a0b5ce",
+        "filename": "test/mbind/arm64/result/0007_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7141e946_6b1c1ac5",
+        "filename": "test/mbind/arm64/result/0007_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be5c4188_b531441c",
+        "filename": "test/mbind/arm64/result/0008_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2df77bc3_aa03ea0b",
+        "filename": "test/mbind/arm64/result/0008_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c488c8a_3b82f1ee",
+        "filename": "test/mbind/arm64/result/0008_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7188c07a_404e9d6b",
+        "filename": "test/mbind/arm64/result/0009_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65a3a6bf_48ee46c6",
+        "filename": "test/mbind/arm64/result/0009_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "846a2bbc_f57e0bb2",
+        "filename": "test/mbind/arm64/result/0009_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f35d7f72_226cdbe9",
+        "filename": "test/mbind/arm64/result/0012_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15c198e2_30bba120",
+        "filename": "test/mbind/arm64/result/0012_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6260c522_277b95cc",
+        "filename": "test/mbind/arm64/result/0012_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca69e6ef_0b6e7e81",
+        "filename": "test/mbind/arm64/result/0013_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7426c7a9_7e81500c",
+        "filename": "test/mbind/arm64/result/0013_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f62d98fd_98298c08",
+        "filename": "test/mbind/arm64/result/0013_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54f2a194_7b69870b",
+        "filename": "test/mbind/arm64/result/0015_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4ccfd12_5e7e502d",
+        "filename": "test/mbind/arm64/result/0015_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2429d3ee_9e2d371b",
+        "filename": "test/mbind/arm64/result/0015_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f28d0f5_91c21e19",
+        "filename": "test/mbind/arm64/result/0015_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c9e1a915_6d4541fe",
+        "filename": "test/mbind/arm64/result/0016_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89881b1e_a6e3a55d",
+        "filename": "test/mbind/arm64/result/0016_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3752c818_01fd6790",
+        "filename": "test/mbind/arm64/result/0016_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "28fc7442_0aacc61e",
+        "filename": "test/mbind/arm64/result/0016_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5d672a8_78fa42a5",
+        "filename": "test/mbind/arm64/result/0017_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0665102c_70c18f10",
+        "filename": "test/mbind/arm64/result/0017_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2f40a655_ffa954ea",
+        "filename": "test/mbind/arm64/result/0017_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fefb6f12_288e1cee",
+        "filename": "test/mbind/arm64/result/0017_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b62f6f8f_afb13961",
+        "filename": "test/mbind/arm64/result/0019_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e12c927_7707cca3",
+        "filename": "test/mbind/arm64/result/0019_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5cfea21a_c8e51805",
+        "filename": "test/mbind/arm64/result/0019_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fab35921_807364c3",
+        "filename": "test/mbind/arm64/result/0019_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d5d47e6_b971e14a",
+        "filename": "test/mbind/arm64/result/0020_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef283bd4_81993027",
+        "filename": "test/mbind/arm64/result/0020_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a2130fec_8bf7fd29",
+        "filename": "test/mbind/arm64/result/0020_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf39b2d5_5b93db52",
+        "filename": "test/mbind/arm64/result/0020_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ead33d5_0cebda5d",
+        "filename": "test/mbind/arm64/result/0021_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fbb581c2_18292595",
+        "filename": "test/mbind/arm64/result/0021_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46782693_6be315e3",
+        "filename": "test/mbind/arm64/result/0021_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c0d512af_184b92cc",
+        "filename": "test/mbind/arm64/result/0021_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c53ce2af_ed1a43a9",
+        "filename": "test/mbind/arm64/result/0022_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "01af32d7_aadc1d62",
+        "filename": "test/mbind/arm64/result/0022_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5590c630_1d682cda",
+        "filename": "test/mbind/arm64/result/0022_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "545eb2ab_d9c4bc28",
+        "filename": "test/mbind/arm64/result/0022_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef72b32a_f439fb86",
+        "filename": "test/mbind/arm64/result/0023_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c7670bd0_817d17af",
+        "filename": "test/mbind/arm64/result/0023_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "19ffee95_d30c0488",
+        "filename": "test/mbind/arm64/result/0023_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e792a695_be2d66a7",
+        "filename": "test/mbind/arm64/result/0023_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0105754b_472a5bd7",
+        "filename": "test/mbind/arm64/result/0026_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ece0640_3d020cef",
+        "filename": "test/mbind/arm64/result/0026_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a0cb6b4_285e2b5d",
+        "filename": "test/mbind/arm64/result/0026_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8dfc44a7_c36a68de",
+        "filename": "test/mbind/arm64/result/0026_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07c7f222_d815208f",
+        "filename": "test/mbind/arm64/result/0027_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "def90a60_5f2b08a1",
+        "filename": "test/mbind/arm64/result/0027_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db7b7163_226fa13f",
+        "filename": "test/mbind/arm64/result/0027_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f902718d_8fe299fb",
+        "filename": "test/mbind/arm64/result/0027_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ddfb8e72_d94304a2",
+        "filename": "test/mbind/arm64/result/0029_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "91235d29_d4b1fc8c",
+        "filename": "test/mbind/arm64/result/0029_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ab2e1ba_9b13f516",
+        "filename": "test/mbind/arm64/result/0029_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "57e73cea_99c82213",
+        "filename": "test/mbind/arm64/result/0030_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "477a1d40_c8fcb1ca",
+        "filename": "test/mbind/arm64/result/0030_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "26762847_cdd641c5",
+        "filename": "test/mbind/arm64/result/0030_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb6ed126_9ab4478b",
+        "filename": "test/mbind/arm64/result/0031_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "53223dd7_7c27acbf",
+        "filename": "test/mbind/arm64/result/0031_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "599829a6_dee704a9",
+        "filename": "test/mbind/arm64/result/0031_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f640754f_16095c32",
+        "filename": "test/mbind/arm64/result/0033_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ea90dab7_22b9a551",
+        "filename": "test/mbind/arm64/result/0033_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9fef565_61786cf5",
+        "filename": "test/mbind/arm64/result/0033_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d90b3a7f_6db4bbe1",
+        "filename": "test/mbind/arm64/result/0034_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ae987fe_d0f1cbc5",
+        "filename": "test/mbind/arm64/result/0034_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab4564cc_8dc6d97b",
+        "filename": "test/mbind/arm64/result/0034_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f75fcb2_e7f9de10",
+        "filename": "test/mbind/arm64/result/0035_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05196aa8_921d092d",
+        "filename": "test/mbind/arm64/result/0035_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "613d0f4b_3207dfc7",
+        "filename": "test/mbind/arm64/result/0035_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ec73f98_fa70a23c",
+        "filename": "test/mbind/arm64/result/0036_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ae1ec08_062f2a18",
+        "filename": "test/mbind/arm64/result/0036_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc218bc3_c3675f4f",
+        "filename": "test/mbind/arm64/result/0036_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f29e3e35_3a036b28",
+        "filename": "test/mbind/arm64/result/0037_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8b09baac_c816b857",
+        "filename": "test/mbind/arm64/result/0037_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c14cbc8_4e3f039e",
+        "filename": "test/mbind/arm64/result/0037_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "666ec5ad_9d908e7d",
+        "filename": "test/mbind/arm64/result/0040_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5287b087_b5c84c17",
+        "filename": "test/mbind/arm64/result/0040_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "416e9587_ca654dde",
+        "filename": "test/mbind/arm64/result/0040_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d00a2a2_e4f0877a",
+        "filename": "test/mbind/arm64/result/0041_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4a04ba31_c7ce9cdf",
+        "filename": "test/mbind/arm64/result/0041_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a8b4c0aa_02f15698",
+        "filename": "test/mbind/arm64/result/0041_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b93e90cb_bc703c85",
+        "filename": "test/mbind/arm64/result/0043_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2430ab5a_a1a5a122",
+        "filename": "test/mbind/arm64/result/0043_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a66182a1_685dc2b9",
+        "filename": "test/mbind/arm64/result/0043_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6bcbe68b_6f817ae6",
+        "filename": "test/mbind/arm64/result/0043_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e605c5c1_4e50e34f",
+        "filename": "test/mbind/arm64/result/0044_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f6f93abb_cf3c3a0e",
+        "filename": "test/mbind/arm64/result/0044_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec4742fc_ac5e7733",
+        "filename": "test/mbind/arm64/result/0044_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9df065b_74076837",
+        "filename": "test/mbind/arm64/result/0044_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "82a12704_84e56b0d",
+        "filename": "test/mbind/arm64/result/0045_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6558b0dc_061f09e2",
+        "filename": "test/mbind/arm64/result/0045_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e14ce7ff_8d24d203",
+        "filename": "test/mbind/arm64/result/0045_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "33a0c975_6ff62b1b",
+        "filename": "test/mbind/arm64/result/0045_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "21614cc9_ab032542",
+        "filename": "test/mbind/arm64/result/0047_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5b334e2_7d2de795",
+        "filename": "test/mbind/arm64/result/0047_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f648130f_14e05f2a",
+        "filename": "test/mbind/arm64/result/0047_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "538a6b09_53b3270a",
+        "filename": "test/mbind/arm64/result/0047_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f7cfc00d_5620d0db",
+        "filename": "test/mbind/arm64/result/0048_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd5e9505_8daad4ae",
+        "filename": "test/mbind/arm64/result/0048_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e4fa7a48_2e049a82",
+        "filename": "test/mbind/arm64/result/0048_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96eb6506_cbc9d89a",
+        "filename": "test/mbind/arm64/result/0048_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fbd05b51_648eac6e",
+        "filename": "test/mbind/arm64/result/0049_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0b611c22_5f4f11ee",
+        "filename": "test/mbind/arm64/result/0049_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9023a11f_d50902ef",
+        "filename": "test/mbind/arm64/result/0049_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f038770a_4ad132ce",
+        "filename": "test/mbind/arm64/result/0049_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eb709ebf_37586170",
+        "filename": "test/mbind/arm64/result/0050_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd46a1f3_764683c2",
+        "filename": "test/mbind/arm64/result/0050_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f7950f44_f60ceac3",
+        "filename": "test/mbind/arm64/result/0050_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ca1ef63_8326d561",
+        "filename": "test/mbind/arm64/result/0050_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cf4d506d_d5567f34",
+        "filename": "test/mbind/arm64/result/0051_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "490d1cc7_658b2cc8",
+        "filename": "test/mbind/arm64/result/0051_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a1f391e9_4179d2d5",
+        "filename": "test/mbind/arm64/result/0051_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "18605f2d_233b3851",
+        "filename": "test/mbind/arm64/result/0051_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c1fda8bc_5858ff8a",
+        "filename": "test/mbind/arm64/result/0054_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "32cb2c56_0750ebdc",
+        "filename": "test/mbind/arm64/result/0054_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4e059aa3_08723631",
+        "filename": "test/mbind/arm64/result/0054_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e1a8cac_c09b4244",
+        "filename": "test/mbind/arm64/result/0054_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3941c68b_4bdbee43",
+        "filename": "test/mbind/arm64/result/0055_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: KCommand Line: hidos    dump_level\u003d24  $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ee6a538_ce1fc8a0",
+        "filename": "test/mbind/arm64/result/0055_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c4471a8_be25ae94",
+        "filename": "test/mbind/arm64/result/0055_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "47bcecb4_2d88ffd6",
+        "filename": "test/mbind/arm64/result/0055_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "234a26fd_e70b0fad",
+        "filename": "test/mbind/arm64/result/0057_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fdcc4637_cbbd82ed",
+        "filename": "test/mbind/arm64/result/0057_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a01c09b7_69bc7c8a",
+        "filename": "test/mbind/arm64/result/0058_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c6016684_d7f8c056",
+        "filename": "test/mbind/arm64/result/0058_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "399d4802_2243f825",
+        "filename": "test/mbind/arm64/result/0059_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b39477cb_2ea9574a",
+        "filename": "test/mbind/arm64/result/0059_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9cfce29_a803a262",
+        "filename": "test/mbind/arm64/result/0061_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7954a60a_ea717382",
+        "filename": "test/mbind/arm64/result/0061_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "defcd297_d3a4bdb6",
+        "filename": "test/mbind/arm64/result/0062_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c778f278_b6da89ad",
+        "filename": "test/mbind/arm64/result/0062_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 108,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "18e1b3a8_23bb9a32",
+        "filename": "test/mbind/arm64/result/0063_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1f1f180c_9174ed3e",
+        "filename": "test/mbind/arm64/result/0063_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "579a48c4_b3755520",
+        "filename": "test/mbind/arm64/result/0064_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6682695f_c1da0705",
+        "filename": "test/mbind/arm64/result/0064_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5dc9cf6c_17243d84",
+        "filename": "test/mbind/arm64/result/0065_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "52c21a2b_42859dc8",
+        "filename": "test/mbind/arm64/result/0065_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f3c09e6_f92bd83a",
+        "filename": "test/mbind/arm64/result/0068_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4e89be91_a4c6c68a",
+        "filename": "test/mbind/arm64/result/0068_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "83358b1b_fbf98958",
+        "filename": "test/mbind/arm64/result/0069_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f4de5ae_34452594",
+        "filename": "test/mbind/arm64/result/0069_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b09cabfb_ddfacf05",
+        "filename": "test/mbind/arm64/result/0071_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c00ca37_e3397cfb",
+        "filename": "test/mbind/arm64/result/0071_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a09db035_a1510998",
+        "filename": "test/mbind/arm64/result/0071_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97da0990_aa12b6d1",
+        "filename": "test/mbind/arm64/result/0072_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be95e849_c8594555",
+        "filename": "test/mbind/arm64/result/0072_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ed7ff399_11f7e571",
+        "filename": "test/mbind/arm64/result/0072_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f22cc3a4_44f78049",
+        "filename": "test/mbind/arm64/result/0073_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4996f40f_7ce87be7",
+        "filename": "test/mbind/arm64/result/0073_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2350bcf6_81f7bee0",
+        "filename": "test/mbind/arm64/result/0073_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "503ea14b_1f5288ce",
+        "filename": "test/mbind/arm64/result/0075_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "def5e4a3_56522abd",
+        "filename": "test/mbind/arm64/result/0075_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "02607d24_3e5738d6",
+        "filename": "test/mbind/arm64/result/0075_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e71de382_c246341b",
+        "filename": "test/mbind/arm64/result/0076_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e42baabd_b5ee9fba",
+        "filename": "test/mbind/arm64/result/0076_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92f9295c_52662193",
+        "filename": "test/mbind/arm64/result/0076_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "16ab5c2c_6390c8ee",
+        "filename": "test/mbind/arm64/result/0077_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0b61720_c98bcecb",
+        "filename": "test/mbind/arm64/result/0077_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f1d2d13_36a3a135",
+        "filename": "test/mbind/arm64/result/0077_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45a5f355_0d416954",
+        "filename": "test/mbind/arm64/result/0078_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a64612ed_4f9754a6",
+        "filename": "test/mbind/arm64/result/0078_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "37a12ca4_7d49cf18",
+        "filename": "test/mbind/arm64/result/0078_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0bd11f0b_41ec8057",
+        "filename": "test/mbind/arm64/result/0079_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4a68bd6_2fccbd60",
+        "filename": "test/mbind/arm64/result/0079_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c633d559_aa087bc2",
+        "filename": "test/mbind/arm64/result/0079_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "16e198b5_75b5f660",
+        "filename": "test/mbind/arm64/result/0082_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fae48e26_4f708ab5",
+        "filename": "test/mbind/arm64/result/0082_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c6c3d228_6ce8c09f",
+        "filename": "test/mbind/arm64/result/0082_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cc683727_1662f094",
+        "filename": "test/mbind/arm64/result/0083_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 0 distances: 0 (10), 1 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "924441fc_3288dd0f",
+        "filename": "test/mbind/arm64/result/0083_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: NUMA 1 distances: 1 (10), 0 (20), $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba46e3d9_156f1a90",
+        "filename": "test/mbind/arm64/result/0083_mbind.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-05T02:29:20Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[  0]: Trampoline area: 0x0 $",
+      "revId": "60c97d0e6089c188efea7c939a12dec94fb8a3d8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
