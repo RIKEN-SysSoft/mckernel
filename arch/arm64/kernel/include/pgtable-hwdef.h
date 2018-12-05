@@ -72,6 +72,7 @@
 #define PMD_SECT_S		(UL(3) << 8)
 #define PMD_SECT_AF		(UL(1) << 10)
 #define PMD_SECT_NG		(UL(1) << 11)
+#define PMD_SECT_CONT		(UL(1) << 52)
 #define PMD_SECT_PXN		(UL(1) << 53)
 #define PMD_SECT_UXN		(UL(1) << 54)
 
@@ -93,6 +94,7 @@
 #define PTE_SHARED		(UL(3) << 8)	/* SH[1:0], inner shareable */
 #define PTE_AF			(UL(1) << 10)	/* Access Flag */
 #define PTE_NG			(UL(1) << 11)	/* nG */
+#define PTE_CONT		(UL(1) << 52)	/* Contiguous range */
 #define PTE_PXN			(UL(1) << 53)	/* Privileged XN */
 #define PTE_UXN			(UL(1) << 54)	/* User XN */
 /* Software defined PTE bits definition.*/
