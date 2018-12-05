@@ -4,11 +4,11 @@
 #include <string.h>
 #include <ihklib.h>
 #include <sys/types.h>
+#include "util.h"
 
-#define MCK_DIR "/home/satoken/ppos"
-static char prefix[256] = MCK_DIR;
+static char prefix[256] = QUOTE(MCK_DIR);
 
-static char test_name[64] = "CT_001";
+static char test_name[64] = "CT_005";
 
 #define OKNG(cond, ...)													\
     do {                                                                \
@@ -30,7 +30,7 @@ static char test_name[64] = "CT_001";
     } while(0)
 
 int main(int argc, char** argv) {
-    int ret = 0, status, ret_ihklib;
+    int ret = 0, status, ret_ihklib, pid;
 	FILE *fp;
 	char buf[65536];
 	size_t nread;
@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
 	char fn[256];
 	char kargs[256];
 
-	int cpus[4] = {6, 7, 8, 9};
-	int num_cpus = 4;
+	int cpus[3] = {1, 2, 3};
+	int num_cpus = 3;
 
 	struct ihk_mem_chunk mem_chunks[4];
 	int num_mem_chunks;
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 	status = system(cmd);
 
 	// ihk_os_destroy_pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -81,21 +81,17 @@ int main(int argc, char** argv) {
     ret_ihklib = ihk_os_assign_cpu(0, cpus, num_cpus);
     //OKNG(ret_ihklib == 0, "ihk_os_assign_cpu\n");
 
-	// reserve mem 128m@0,128m@1
-	num_mem_chunks = 2;
+	// reserve mem 128m@0,128m@0
+	num_mem_chunks = 1;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
-	mem_chunks[1].size = 128*1024*1024ULL;
-	mem_chunks[1].numa_node_number = 1;
     ret_ihklib = ihk_reserve_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_reserve_mem (2)\n");
 
-	// assign mem 128m@0,128m@1
-	num_mem_chunks = 2;
+	// assign mem 128m@0,128m@0
+	num_mem_chunks = 1;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
-	mem_chunks[1].size = 128*1024*1024ULL;
-	mem_chunks[1].numa_node_number = 1;
     ret_ihklib = ihk_os_assign_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_os_assign_mem (2)\n");
 
@@ -111,7 +107,6 @@ int main(int argc, char** argv) {
 
 	// boot
     ret_ihklib = ihk_os_boot(0);
-goto shutdown;
 	OKNG(ret_ihklib == 0, "ihk_os_boot\n");
 
 	/* Make sure that all initialization related transactions between McKernel and IHK finish
@@ -123,7 +118,7 @@ goto shutdown;
 	usleep(100*1000);
 
 	// create pseudofs
-	ret_ihklib = ihk_os_create_pseudofs(0);
+	ret_ihklib = ihk_os_create_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -131,16 +126,22 @@ goto shutdown;
 	//	 strstr(buf, "/tmp/mcos/mcos0_sys") != NULL, "ihk_os_create_pseudofs()\n");
 
 	// mcexec
-	sprintf(cmd, "%s/bin/mcexec ls -l | grep Makefile", prefix);
-    fp = popen(cmd, "r");
-	nread = fread(buf, 1, sizeof(buf), fp);
-	buf[nread] = 0;
-	OKNG(strstr(buf, "Makefile") != NULL, "mcexec\n");
+	pid = fork();
+	if (pid == 0) {
+		printf("  start long mcexec...\n");
+		sprintf(cmd, "%s/bin/mcexec sleep 5", prefix);
+    	fp = popen(cmd, "r");
+		nread = fread(buf, 1, sizeof(buf), fp);
+		return 0;
+	}
+	usleep(100*1000);
 
 	// shutdown
 shutdown:
     ret_ihklib = ihk_os_shutdown(0);
-	OKNG(ret_ihklib == 0, "shutdown immediately after boot returned 0\n");
+	OKNG(ret_ihklib == 0, "shutdown during mcexec returned 0\n");
+	printf(" (But, mcexec process remain due to #846)\n");
+goto done_test;
 
 	// get status. Note that the smp_ihk_os_shutdown() transitions 
 	// smp-x86 status to BUILTIN_OS_STATUS_SHUTDOWN
@@ -157,7 +158,7 @@ destroy:
 	status = system(cmd);
 
 	// destroy pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -168,6 +169,7 @@ destroy:
 	sprintf(cmd, "rmmod %s/kmod/ihk.ko", prefix);
 	status = system(cmd);
 
+ done_test:
 	printf("*** All tests finished\n\n");
 
  fn_exit:

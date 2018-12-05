@@ -1,33 +1,16 @@
+/* CT_005.c COPYRIGHT FUJITSU LIMITED 2018 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <ihklib.h>
 #include <sys/types.h>
+#include "mck_bps_conflict.h"
+#include "ct_okng.h"
 
-#define MCK_DIR "/home/satoken/ppos"
 static char prefix[256] = MCK_DIR;
 
 static char test_name[64] = "CT_005";
-
-#define OKNG(cond, ...)													\
-    do {                                                                \
-		if(cond) {                                                      \
-			printf("[OK] ");											\
-			printf(__VA_ARGS__);										\
-		} else {														\
-            printf("[NG] ");											\
-			printf(__VA_ARGS__);										\
-			char buf[65536];\
-			char cmd[256];\
-			sprintf(cmd, "%s/sbin/ihkosctl 0 kmsg", prefix);\
-			FILE* fp = popen(cmd, "r");		\
-			size_t nread = fread(buf, 1, sizeof(buf), fp);				\
-			buf[nread] = 0;												\
-			printf("%s", buf);											\
-			goto fn_fail;												\
-		}																\
-    } while(0)
 
 int main(int argc, char** argv) {
     int ret = 0, status, ret_ihklib, pid;
@@ -39,13 +22,14 @@ int main(int argc, char** argv) {
 	char fn[256];
 	char kargs[256];
 
-	int cpus[3] = {1, 2, 3};
-	int num_cpus = 3;
+	int cpus[4] = {6, 7, 8, 9};
+	int num_cpus = 4;
 
 	struct ihk_mem_chunk mem_chunks[4];
 	int num_mem_chunks;
 
 	printf("*** %s start *************************\n", test_name);
+	fflush(stdout);
 	/*--------------------------------------------
 	 * Preparing                                  
 	 *--------------------------------------------*/
@@ -61,7 +45,7 @@ int main(int argc, char** argv) {
 	sprintf(cmd, "insmod %s/kmod/ihk.ko", prefix);
 	status = system(cmd);
 
-	sprintf(cmd, "insmod %s/kmod/ihk-smp-x86_64.ko ihk_start_irq=240 ihk_ikc_irq_core=0", prefix);
+	sprintf(cmd, "insmod %s/kmod/%s %s", prefix, PART_MOD_NAME, PART_MOD_NAME);
 	status = system(cmd);
 
 	sprintf(cmd, "insmod %s/kmod/mcctrl.ko", prefix);
@@ -82,21 +66,25 @@ int main(int argc, char** argv) {
     //OKNG(ret_ihklib == 0, "ihk_os_assign_cpu\n");
 
 	// reserve mem 128m@0,128m@1
-	num_mem_chunks = 1;
+	num_mem_chunks = 2;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
+	mem_chunks[1].size = 128*1024*1024ULL;
+	mem_chunks[1].numa_node_number = 1;
     ret_ihklib = ihk_reserve_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_reserve_mem (2)\n");
 
 	// assign mem 128m@0,128m@1
-	num_mem_chunks = 1;
+	num_mem_chunks = 2;
 	mem_chunks[0].size = 128*1024*1024ULL;
 	mem_chunks[0].numa_node_number = 0;
+	mem_chunks[1].size = 128*1024*1024ULL;
+	mem_chunks[1].numa_node_number = 1;
     ret_ihklib = ihk_os_assign_mem(0, mem_chunks, num_mem_chunks);
     //OKNG(ret_ihklib == 0, "ihk_os_assign_mem (2)\n");
 
 	// load
-	sprintf(fn, "%s/smp-x86/kernel/mckernel.img", prefix);
+	sprintf(fn, "%s/%s/kernel/mckernel.img", prefix, TARGET);
     ret_ihklib = ihk_os_load(0, fn);
 	//OKNG(ret_ihklib == 0, "ihk_os_load\n");
 
@@ -129,18 +117,20 @@ int main(int argc, char** argv) {
 	pid = fork();
 	if (pid == 0) {
 		printf("  start long mcexec...\n");
+		fflush(stdout);
 		sprintf(cmd, "%s/bin/mcexec sleep 5", prefix);
     	fp = popen(cmd, "r");
 		nread = fread(buf, 1, sizeof(buf), fp);
 		return 0;
 	}
-	usleep(100*1000);
+	sleep(2);
 
 	// shutdown
 shutdown:
     ret_ihklib = ihk_os_shutdown(0);
 	OKNG(ret_ihklib == 0, "shutdown during mcexec returned 0\n");
 	printf(" (But, mcexec process remain due to #846)\n");
+	fflush(stdout);
 goto done_test;
 
 	// get status. Note that the smp_ihk_os_shutdown() transitions 
@@ -163,7 +153,7 @@ destroy:
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
 
-	sprintf(cmd, "rmmod %s/kmod/ihk-smp-x86_64.ko", prefix);
+	sprintf(cmd, "rmmod %s/kmod/%s", prefix, PART_MOD_NAME);
 	status = system(cmd);
 
 	sprintf(cmd, "rmmod %s/kmod/ihk.ko", prefix);
@@ -171,6 +161,7 @@ destroy:
 
  done_test:
 	printf("*** All tests finished\n\n");
+	fflush(stdout);
 
  fn_exit:
     return ret;

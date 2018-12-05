@@ -1,33 +1,16 @@
+/* CT_002.c COPYRIGHT FUJITSU LIMITED 2018 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <ihklib.h>
 #include <sys/types.h>
+#include "mck_bps_conflict.h"
+#include "ct_okng.h"
 
-#define MCK_DIR "/home/satoken/ppos"
 static char prefix[256] = MCK_DIR;
 
 static char test_name[64] = "CT_002";
-
-#define OKNG(cond, ...)													\
-    do {                                                                \
-		if(cond) {                                                      \
-			printf("[OK] ");											\
-			printf(__VA_ARGS__);										\
-		} else {														\
-            printf("[NG] ");											\
-			printf(__VA_ARGS__);										\
-			char buf[65536];\
-			char cmd[256];\
-			sprintf(cmd, "%s/sbin/ihkosctl 0 kmsg", prefix);\
-			FILE* fp = popen(cmd, "r");		\
-			size_t nread = fread(buf, 1, sizeof(buf), fp);				\
-			buf[nread] = 0;												\
-			printf("%s", buf);											\
-			goto fn_fail;												\
-		}																\
-    } while(0)
 
 int main(int argc, char** argv) {
     int ret = 0, status, ret_ihklib;
@@ -46,6 +29,7 @@ int main(int argc, char** argv) {
 	int num_mem_chunks;
 
 	printf("*** %s start *************************\n", test_name);
+	fflush(stdout);
 	/*--------------------------------------------
 	 * Preparing                                  
 	 *--------------------------------------------*/
@@ -53,7 +37,7 @@ int main(int argc, char** argv) {
 	status = system(cmd);
 
 	// ihk_os_destroy_pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -61,7 +45,7 @@ int main(int argc, char** argv) {
 	sprintf(cmd, "insmod %s/kmod/ihk.ko", prefix);
 	status = system(cmd);
 
-	sprintf(cmd, "insmod %s/kmod/ihk-smp-x86_64.ko ihk_start_irq=240 ihk_ikc_irq_core=0", prefix);
+	sprintf(cmd, "insmod %s/kmod/%s %s", prefix, PART_MOD_NAME, PART_MOD_NAME);
 	status = system(cmd);
 
 	sprintf(cmd, "insmod %s/kmod/mcctrl.ko", prefix);
@@ -100,7 +84,7 @@ int main(int argc, char** argv) {
     //OKNG(ret_ihklib == 0, "ihk_os_assign_mem (2)\n");
 
 	// load
-	sprintf(fn, "%s/smp-x86/kernel/mckernel.img", prefix);
+	sprintf(fn, "%s/%s/kernel/mckernel.img", prefix, TARGET);
     ret_ihklib = ihk_os_load(0, fn);
 	//OKNG(ret_ihklib == 0, "ihk_os_load\n");
 
@@ -123,7 +107,7 @@ goto destroy;
 	usleep(100*1000);
 
 	// create pseudofs
-	ret_ihklib = ihk_os_create_pseudofs(0);
+	ret_ihklib = ihk_os_create_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
@@ -157,18 +141,19 @@ destroy:
 	status = system(cmd);
 
 	// destroy pseudofs
-	ret_ihklib = ihk_os_destroy_pseudofs(0);
+	ret_ihklib = ihk_os_destroy_pseudofs(0, 0, 0);
 	fp = popen("cat /proc/mounts | grep /tmp/mcos/mcos0_sys", "r");
 	nread = fread(buf, 1, sizeof(buf), fp);
 	buf[nread] = 0;
 
-	sprintf(cmd, "rmmod %s/kmod/ihk-smp-x86_64.ko", prefix);
+	sprintf(cmd, "rmmod %s/kmod/%s", prefix, PART_MOD_NAME);
 	status = system(cmd);
 
 	sprintf(cmd, "rmmod %s/kmod/ihk.ko", prefix);
 	status = system(cmd);
 
 	printf("*** All tests finished\n\n");
+	fflush(stdout);
 
  fn_exit:
     return ret;

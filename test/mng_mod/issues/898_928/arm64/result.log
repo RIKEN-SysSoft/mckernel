@@ -1,0 +1,62 @@
+gcc -o ihklib001_lin -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd ihklib001_lin.c
+gcc -o CT_001 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_001.c
+gcc -o CT_002 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_002.c
+gcc -o CT_003 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_003.c
+gcc -o CT_004 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_004.c
+gcc -o CT_005 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_005.c
+gcc -o CT_006 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_006.c
+gcc -o CT_007 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_007.c
+gcc -o CT_008 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_008.c
+gcc -o CT_009 -I/opt/ppos/include -L/opt/ppos/lib -lihk -Wl,-rpath -Wl,/opt/ppos/lib -lbfd CT_009.c
+./run.sh
+mcstop+release.sh ... done
+ISSUE01 n=1000/1000 ok.
+ISSUE01: OK
+ISSUE02 n=1000/1000 ok.
+ISSUE02: OK
+*** CT_001 start *************************
+[OK] shutdown immediately after boot returned 0
+*** All tests finished
+
+*** CT_002 start *************************
+[OK] destroy immediately after boot returned NOT 0
+*** All tests finished
+
+*** CT_003 start *************************
+[OK] ihk_os_boot
+[OK] done mcexec
+[OK] shutdown after mcexec returned 0
+*** All tests finished
+
+*** CT_004 start *************************
+[OK] ihk_os_boot
+[OK] do mcexec
+[OK] destroy after mcexec returned 0
+*** All tests finished
+
+*** CT_005 start *************************
+[OK] ihk_os_boot
+  start long mcexec...
+[OK] shutdown during mcexec returned 0
+ (But, mcexec process remain due to #846)
+*** All tests finished
+
+*** CT_006 start *************************
+[OK] ihk_os_boot
+  start long mcexec...
+ioctl failed
+[OK] destroy during mcexec returned NOT 0
+*** All tests finished
+
+*** CT_007 start *************************
+[OK] shutdown before boot returned 0
+*** All tests finished
+
+*** CT_008 start *************************
+[OK] ihk_os_boot
+[OK] do mcexec
+[OK] shutdown after mcexec returned 0
+[OK] ihk_os_get_status returned SHUTDOWN or INACTIVE
+[OK] shutdown after shutdown returned 0
+*** All tests finished
+
