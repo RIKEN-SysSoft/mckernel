@@ -1,0 +1,39 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+ユーザ空間アクセスコードのアーキテクチャ依存非依存分離
+arm64版テスト結果README
+
+(1) NG項目の補足情報
+	perf_003
+		TCONFとなるのが期待動作であるが、本件とは無関係の障害のために
+		TFAILとなっている。
+
+	futex_011
+		futexの絶対時間によるタイムアウトのテストで、x86_64ではTFAIL、
+		arm64でTPASSとなるもの。期待動作はx86_64に合わせてTFAILとしているため、NGと出力される。
+
+(2) 実施しない項目
+	1. move_pagesは一部しか実装されていないため、Arm移植の対象ではない。
+	   そのため、テストを実施しない。
+
+	2. ./go_swapout_test.shを利用したテストケースについては、
+	  プロセススワップ機能のテストセットであると考えているため、
+	  arm64版では移植を行っていない機能となる。
+	  そのため、テストを実施しない。
+
+(3) IA版における対応版数
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
+	arm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+
+以上。
