@@ -1,0 +1,20 @@
+gcc -o get_rusage get_rusage.c -Wall -I/opt/ppos/bin/../include -Wl,-rpath=/opt/ppos/bin/../lib -L/opt/ppos/bin/../lib -lihk
+./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 4-7 -m 512M@0 ... done
+TEST001: OK
+TEST002: OK
+TEST003: OK
+TEST004: OK
+TEST005: OK
+TEST006: OK
+TEST007: OK
+TEST008: OK
+TEST009: OK
+TEST010: OK
+TEST011: OK
+TEST012: OK
+TEST013: OK
+./run.sh: 172 行:  6701 Terminated              stdbuf -i0 -o0 -e0 ${MCSTAT} 1 > ./tmp.log 2>&1
+TEST014: OK
+TEST015: OK
