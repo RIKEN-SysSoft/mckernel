@@ -71,6 +71,30 @@
     },
     {
       "key": {
+        "uuid": "222f9565_010e5a35",
+        "filename": "test/user_space/arm64/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-06T04:54:48Z",
+      "side": 1,
+      "message": "すみません。こちらは移植がまだでしたので、このままでOKです。",
+      "parentUuid": "fef435f0_03ea7ff9",
+      "range": {
+        "startLine": 22,
+        "startChar": 0,
+        "endLine": 22,
+        "endChar": 16
+      },
+      "revId": "f2419362ab39dcad4fde630e7ee87a857a90ba81",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "7c10da07_8254c601",
         "filename": "test/user_space/arm64/result.log",
         "patchSetId": 1
