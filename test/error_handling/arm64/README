@@ -90,8 +90,11 @@
 
 (3) 実行結果ログ
 	result.logファイル内に実行時のログを記載する。
-	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
-	arm64版移植IHK/McKernelである。
+	実行に利用したIHK/McKernelは、IA版における下記の版数に
+	下記issueの修正を加えたarm64版移植IHK/McKernelである。
+
+	https://postpeta.pccluster.org/redmine/issues/1233
+	https://postpeta.pccluster.org/redmine/issues/1232
 
 	IHK
 		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
