@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <errno.h>
 
 #include <ihk/ihk_host_user.h>
 #include <ihk/ihklib_private.h>		// mcctrl_ioctl_getrusage_desc is defined here
@@ -30,7 +31,7 @@
 struct mckernel_rusage			rbuf;
 
 static void	mcstatistics(int idx, int once, int delay, int count);
-static void	mcstatus(int idx, int delay, int count);
+static int	mcstatus(int idx, int delay, int count);
 static void	mcosusage(int idx, int once, int delay, int count);
 
 static void
@@ -42,6 +43,7 @@ usage()
 int
 main(int argc, char **argv)
 {
+	int rc;
     int		opt;
     int		idx = 0;	/* index of OS instance */
     int		sflag = 0;	/* statistic option */
@@ -73,14 +75,19 @@ main(int argc, char **argv)
 	}
     }
 
-    if (sflag) {
-	mcstatus(idx, delay, count);
-    } else if (cflag) {
-	mcosusage(idx, once, delay, count);
-    } else {
-	mcstatistics(idx, once, delay, count);
-    }
-    return 0;
+	if (sflag) {
+		if ((rc = mcstatus(idx, delay, count)) < 0) {
+			goto out;
+		}
+	} else if (cflag) {
+		mcosusage(idx, once, delay, count);
+	} else {
+		mcstatistics(idx, once, delay, count);
+	}
+
+	rc = 0;
+out:
+	return rc;
 }
 
 static int
@@ -175,40 +182,68 @@ mcstatistics(int idx, int once, int delay, int count)
 
 /* ihk_os_status enum is defined in ihk/linux/include/ihk/status.h */
 static char *charstat[] = {
-    "None",	/*IHK_OS_STATUS_NOT_BOOTED*/
-    "Booting",	/*IHK_OS_STATUS_BOOTING*/
-    "Booted",	/*IHK_OS_STATUS_BOOTED, OS booted and acked */
-    "Ready",	/*IHK_OS_STATUS_READY, OS is ready and fully functional */
-    "Running",	/*IHK_OS_STATUS_RUNNING, OS is running */
-    "Freezing",	/*IHK_OS_STATUS_FREEZING, OS is freezing */
-    "Frozen",	/*IHK_OS_STATUS_FROZEN,   OS is frozen */
-    "Shutdown",	/* IHK_OS_STATUS_SHUTDOWN, OS is shutting down */
-    "Stopped",	/* IHK_OS_STATUS_STOPPED, OS stopped successfully */
-    "Panic",	/* IHK_OS_STATUS_FAILED, OS panics or failed to boot */
-    "Hangup",	/* IHK_OS_STATUS_HUNGUP,  OS is hungup */
+	[IHK_OS_STATUS_NOT_BOOTED] = "None",
+	[IHK_OS_STATUS_BOOTING] = "Booting",
+	[IHK_OS_STATUS_BOOTED] = "Booted",	/* OS booted and acked */
+	[IHK_OS_STATUS_READY] = "Ready",	/* OS is ready and fully functional */
+	[IHK_OS_STATUS_RUNNING] = "Running",	/* OS is running */
+	[IHK_OS_STATUS_FREEZING] = "Freezing",	/* OS is freezing */
+	[IHK_OS_STATUS_FROZEN] = "Frozen",	/* OS is frozen */
+	[IHK_OS_STATUS_SHUTDOWN] = "Shutdown",	/* OS is shutting down */
+	[IHK_OS_STATUS_STOPPED] = "Stopped",	/* OS stopped successfully */
+	[IHK_OS_STATUS_FAILED] = "Panic",	/* OS panics or failed to boot */
+	[IHK_OS_STATUS_HUNGUP] = "Hangup",	/* OS is hungup */
+	[IHK_OS_STATUS_COUNT] = NULL,		/* End mark */
 };
 
-static void
+/* Return value:
+ *	Zero or positive:	IHK_OS_STATUS value
+ *	Negative:		Error
+ */
+static int
 mcstatus(int idx, int delay, int count)
 {
-    int		fd, rc;
+	int fd = -1, rc = 0;
 
-    for(;;) {
-	if ((fd = devopen(idx)) < 0) {
-	    printf("Devide is not created\n");
-	} else {
-	    rc = ioctl(fd, IHK_OS_STATUS, 0);
-	    close(fd);
-	    printf("McKernel status: ");
-	    if (rc >= IHK_OS_STATUS_NOT_BOOTED && rc <= IHK_OS_STATUS_HUNGUP) {
-		printf("%s\n", charstat[rc]);
-	    } else {
-		printf("ioctl error(IHK_OS_STATUS)\n");
-	    }
+	for (;;) {
+		if ((fd = devopen(idx)) == -1) {
+			rc = -errno;
+			printf("Device not found\n");
+			goto next;
+		}
+
+		rc = ioctl(fd, IHK_OS_STATUS, 0);
+		if (rc == -1) {
+			rc = -errno;
+			printf("%s: error: IHK_OS_STATUS: %s\n",
+			       __func__, strerror(-rc));
+			break;
+		}
+
+		close(fd);
+		fd = -1;
+
+		if (rc < 0 && rc >= IHK_OS_STATUS_COUNT) {
+			printf("%s: error: status (%d) out of range\n",
+			       __func__, rc);
+			rc = -EINVAL;
+			break;
+		}
+
+		printf("McKernel status: %s\n",
+		       charstat[rc] ? : "Unknown");
+
+next:
+		if (count > 0 && --count == 0) {
+			break;
+		}
+		sleep(delay);
 	}
-	if (count > 0 && --count == 0) break;
-	sleep(delay);
-    }
+
+	if (fd != -1) {
+		close(fd);
+	}
+	return rc;
 }
 
 /* status is not contiguous numbers */
