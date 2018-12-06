@@ -1,0 +1,50 @@
+/* README COPYRIGHT FUJITSU LIMITED 2018 */
+
+mcstatテストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+		   $HOMEにコピーし、適宜編集する
+		2. make testを実行する
+
+(2) テスト項目詳細
+	TEST001 搭載メモリ量の表示が期待通りであるか確認する
+	TEST002 現在の使用量の表示が期待通りであるか確認する
+	TEST003 メモリ最大使用量の表示が期待通りであるか確認する
+	TEST004 システム時間の表示が期待通りであるか確認する
+	TEST005 ユーザ時間の表示が期待通りであるか確認する
+	TEST006 現在動作中のスレッド数が期待通りであるか確認する
+	TEST007 表示されている最大スレッド数が期待通りであるか確認する
+	TEST008 -nオプションを付与した場合、ヘッダが1つだけ表示されることを確認する
+	TEST009 -nオプションを付与しなかった場合、ヘッダが10行ごとに出力されることを確認する
+	TEST010 -sオプションでMcKernelのステータスのみ表示することを確認する
+	TEST011 -hオプションでusageが表示されることを確認する
+	TEST012 -hオプションを他オプションと同時に指定してもusage表示が優先されることを確認する
+	TEST013 delayを指定した秒間単位で行を出力することを確認する
+	TEST014 delayのみを指定した場合、間隔単位で継続出力を行うことを確認する
+	TEST015 不正なオプションを指定した場合に期待通りの動作になることを確認する
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当に加えて、
+	https://postpeta.pccluster.org/redmine/issues/1237
+	https://postpeta.pccluster.org/redmine/issues/1223
+	の関連修正を加えたarm64版移植IHK/McKernelである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+(4) 備考
+	特になし。
+
+
+以上。
