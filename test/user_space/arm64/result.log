@@ -1,0 +1,87 @@
+perf_event_open test start
+mckernel reboot ....done.
+[OK] perf_001 perf_event_open: the value is over the function mc_perf_event_alloc: attr->disabled:1
+[OK] perf_002 perf_event_open: the value is over the function mc_perf_event_alloc: attr->exclude_kernel:1
+[NG] perf_003 parf_event_open: result of perf_event_open01 1 are different.
+futex test start
+mckernel reboot ....done.
+[OK] futex_001 futex: The argument address of futex is taken over by get_futex_value_locked.
+[OK] futex_002 futex: The first argument of get_futex_value_locked matched the value of the second argument.
+[OK] futex_003 futex: futex_wait01    1  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+[OK] futex_004 futex: futex_wait01    2  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+[OK] futex_005 futex: futex_wait01    3  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+[OK] futex_006 futex: futex_wait01    4  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+[OK] futex_007 futex: futex_wait02    1  TPASS  :  futex_wait() woken up
+[OK] futex_008 futex: futex_wait03    1  TPASS  :  futex_wait() woken up
+[OK] futex_009 futex: futex_wait04    1  TPASS  :  futex_wait() returned -1: errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+[OK] futex_010 futex: futex_wait_bitset01    1  TPASS  :  futex_wait_bitset() waited 107825us, expected 100010us
+[NG] futex_011 futex: result of futex_wait_bitset02 1 are different.
+process_vm_readv test start
+mckernel reboot ....done.
+[OK] pvr_001 process_vm_readv: The argument address of process_vm_readv is taken over by do_process_vm_read_writev arg2:20000010
+[OK] pvr_002 process_vm_readv: The argument address of process_vm_readv is taken over by do_process_vm_read_writev arg4:200200a0
+[OK] pvr_003 process_vm_readv: process_vm_readv    1  TPASS  :  expected ret success - returned value = 65536
+[OK] pvr_004 process_vm_readv: process_vm_readv    2  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_005 process_vm_readv: process_vm_readv    3  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvr_006 process_vm_readv: process_vm_readv    4  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_007 process_vm_readv: process_vm_readv    5  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvr_008 process_vm_readv: process_vm_readv    6  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_009 process_vm_readv: process_vm_readv    7  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvr_010 process_vm_readv: process_vm_readv    8  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_011 process_vm_readv: process_vm_readv    9  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvr_012 process_vm_readv: process_vm_readv   10  TPASS  :  expected ret success - returned value = 65536
+[OK] pvr_013 process_vm_readv: process_vm_readv   11  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_014 process_vm_readv: process_vm_readv   12  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvr_015 process_vm_readv: process_vm_readv   13  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_016 process_vm_readv: process_vm_readv   14  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvr_017 process_vm_readv: process_vm_readv   15  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_018 process_vm_readv: process_vm_readv   16  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvr_019 process_vm_readv: process_vm_readv   17  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_020 process_vm_readv: process_vm_readv   18  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvr_021 process_vm_readv: process_vm_readv   19  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_022 process_vm_readv: process_vm_readv   20  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvr_023 process_vm_readv: process_vm_readv   21  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_024 process_vm_readv: process_vm_readv   22  TPASS  :  expected failure: TEST_ERRNO=ESRCH(3): No such process
+[OK] pvr_025 process_vm_readv: process_vm_readv   23  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_026 process_vm_readv: process_vm_readv   24  TPASS  :  expected failure: TEST_ERRNO=ESRCH(3): No such process
+[OK] pvr_027 process_vm_readv: process_vm_readv   25  TPASS  :  expected ret success - returned value = -1
+process_vm_readv   25  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_028 process_vm_readv: process_vm_readv   26  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvr_029 process_vm_readv: process_vm_readv   27  TPASS  :  expected ret success - returned value = -1
+[OK] pvr_030 process_vm_readv: process_vm_readv   28  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvr_031 process_vm_readv: process_vm_readv02    1  TPASS  :  expected string received.
+[OK] pvr_032 process_vm_readv: process_vm_readv03    1  TPASS  :  child 1: all bytes are correctly received.
+process_vm_writev test start
+mckernel reboot ....done.
+[OK] pvw_001 process_vm_writev: The argument address of process_vm_writev is taken over by do_process_vm_read_writev arg2:20000010
+[OK] pvw_002 process_vm_writev: The argument address of process_vm_writev is taken over by do_process_vm_read_writev arg4:200200a0
+[OK] pvw_003 process_vm_writev: process_vm_writev    1  TPASS  :  expected ret success - returned value = 65536
+[OK] pvw_004 process_vm_writev: process_vm_writev    2  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_005 process_vm_writev: process_vm_writev    3  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvw_006 process_vm_writev: process_vm_writev    4  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_007 process_vm_writev: process_vm_writev    5  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvw_008 process_vm_writev: process_vm_writev    6  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_009 process_vm_writev: process_vm_writev    7  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvw_010 process_vm_writev: process_vm_writev    8  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_011 process_vm_writev: process_vm_writev    9  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvw_012 process_vm_writev: process_vm_writev   10  TPASS  :  expected ret success - returned value = 65536
+[OK] pvw_013 process_vm_writev: process_vm_writev   11  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_014 process_vm_writev: process_vm_writev   12  TPASS  :  expected failure: TEST_ERRNO=EINVAL(22): Invalid argument
+[OK] pvw_015 process_vm_writev: process_vm_writev   13  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_016 process_vm_writev: process_vm_writev   14  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvw_017 process_vm_writev: process_vm_writev   15  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_018 process_vm_writev: process_vm_writev   16  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvw_019 process_vm_writev: process_vm_writev   17  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_020 process_vm_writev: process_vm_writev   18  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvw_021 process_vm_writev: process_vm_writev   19  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_022 process_vm_writev: process_vm_writev   20  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvw_023 process_vm_writev: process_vm_writev   21  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_024 process_vm_writev: process_vm_writev   22  TPASS  :  expected failure: TEST_ERRNO=ESRCH(3): No such process
+[OK] pvw_025 process_vm_writev: process_vm_writev   23  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_026 process_vm_writev: process_vm_writev   24  TPASS  :  expected failure: TEST_ERRNO=ESRCH(3): No such process
+[OK] pvw_027 process_vm_writev: process_vm_writev   25  TPASS  :  expected ret success - returned value = -1
+process_vm_writev   25  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_028 process_vm_writev: process_vm_writev   26  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvw_029 process_vm_writev: process_vm_writev   27  TPASS  :  expected ret success - returned value = -1
+[OK] pvw_030 process_vm_writev: process_vm_writev   28  TPASS  :  expected failure: TEST_ERRNO=EFAULT(14): Bad address
+[OK] pvw_031 process_vm_writev: process_vm_writev02    1  TPASS  :  child 0: all bytes are expected.
