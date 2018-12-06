@@ -2626,6 +2626,7 @@ SYSCALL_DECLARE(execve)
 		sizeof(struct program_image_section) * desc->num_sections;
 
 	if ((ret = do_syscall(&request, ihk_mc_get_processor_id())) != 0) {
+		preempt_enable();
 		goto end;
 	}
 
