@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f81e2ee2_f072e939",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1751,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T05:53:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tflags |\u003d MAP_HUGE_SECOND_BLOCK;\t/* default hugepage size */",
+      "revId": "6a12f39adc9d921715ceb29ce0d89dedde5e884b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3f293a0_9586d598",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1825,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T05:53:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tshmflg |\u003d SHM_HUGE_SECOND_BLOCK;\t/* default hugepage size */",
+      "revId": "6a12f39adc9d921715ceb29ce0d89dedde5e884b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
