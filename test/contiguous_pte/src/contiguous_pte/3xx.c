@@ -10,7 +10,7 @@ static char *remap_addr = MAP_FAILED;
 static size_t remap_length;
 
 char *do_3xx(size_t shift, size_t contshift, int nr_contpage,
-	     ssize_t adjust_lower, ssize_t adjust_upper)
+	     ssize_t adjust_lower, ssize_t adjust_upper, int keep_align)
 {
 	size_t pgsize = 1UL << shift;
 	size_t contpgsize = 1UL << contshift;
@@ -58,6 +58,11 @@ char *do_3xx(size_t shift, size_t contshift, int nr_contpage,
 
 	to_addr = (void *)align_up((unsigned long)remap_addr, contpgsize);
 	to_addr += contpgsize + (from_addr - cmpaddr);
+	if (!keep_align) {
+		if (!((unsigned long)to_addr & (contpgsize - 1))) {
+			to_addr -= pgsize;
+		}
+	}
 	to_length = from_length;
 	to_end = to_addr + to_length;
 	{
@@ -79,6 +84,9 @@ char *do_3xx(size_t shift, size_t contshift, int nr_contpage,
 				to_exp[i].pgsize = contpgsize;
 			}
 			if (to_end < (to_exp[i].addr + to_exp[i].pgsize)) {
+				to_exp[i].pgsize = pgsize;
+			}
+			if (!keep_align) {
 				to_exp[i].pgsize = pgsize;
 			}
 

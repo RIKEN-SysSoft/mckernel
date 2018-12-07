@@ -33,7 +33,7 @@ void teardown_2xx(void);
 
 
 char *do_3xx(size_t shift, size_t contshift, int nr_contpage,
-	     ssize_t adjust_lower, ssize_t adjust_upper);
+	     ssize_t adjust_lower, ssize_t adjust_upper, int keep_align);
 void teardown_3xx(void);
 
 #endif /*__TEST_SUITE_H__*/

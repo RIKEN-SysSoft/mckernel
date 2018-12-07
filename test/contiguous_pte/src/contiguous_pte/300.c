@@ -11,7 +11,7 @@ RUN_FUNC(TEST_SUITE, TEST_NUMBER)
 {
 	ssize_t pgsize = 1UL << shift;
 
-	return do_3xx(shift, contshift, 2, -pgsize, pgsize);
+	return do_3xx(shift, contshift, 2, -pgsize, pgsize, 1);
 }
 
 TEARDOWN_FUNC(TEST_SUITE, TEST_NUMBER)

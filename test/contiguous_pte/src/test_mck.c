@@ -107,6 +107,9 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "n:h")) != -1) {
 		switch (opt) {
 		case 'n':
+			if (!strcmp("null", optarg)) {
+				return EXIT_SUCCESS;
+			}
 			num = atoi(optarg);
 			break;
 		case 'h':
