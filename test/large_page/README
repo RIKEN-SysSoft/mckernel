@@ -1,0 +1,85 @@
+==========
+How to run
+==========
+
+(1) cd <mckernel> && patch -p0 < <mckernel>/test/large_page/large_page.patch
+(2) Build McKernel
+(3) cd <mckernel>/test/large_page/<arch> && make test
+
+============
+What to test
+============
+
+Check the large page allocation with the following settings.
+
+------
+x86_64
+------
+
+ID	Program sections	Size
+---------------------------------------
+001	mmap + THP		2M, 1G
+101	mmap + flag		2M, 1G
+201	shmget + THP		2M, 1G
+301	shmget + flag		2M, 1G
+401	heap			2M
+402	heap			1G
+501	.data, .bss, stack	2M
+601	mmap + hugetlbfs	2M, 1G
+--------------------------------------
+
+* 1 GiB for .data, .bss, stack is not tested because it's impossible to
+  align symbol to 1 GiB due to relocation restrictions.
+
+-----
+arm64
+-----
+
+(1) Granule size: 64 KiB
+
+ID	Program sections	Size
+---------------------------------------
+001	mmap + THP		2M, 512M
+101	mmap + flag		2M, 512M
+201	shmget + THP		2M, 512M
+301	shmget + flag		2M, 512M
+401	heap			2M
+402	heap			512M
+501	.data, .bss, stack	2M
+502	.data, .bss		512M
+601	mmap + hugetlbfs	2M, 512M
+
+* 512 MiB for stack is not tested because it's impossible to
+  align symbol to 512 MiB due to relocation restrictions.
+
+(2) Granule size: 4 KiB
+
+ID	Program sections	Size
+---------------------------------------
+001	mmap + THP		64K, 2M, 32M, 1G
+101	mmap + flag		64K, 2M, 32M, 1G
+201	shmget + THP		64K, 2M, 32M, 1G
+301	shmget + flag		64K, 2M, 32M, 1G
+401	heap			64K
+402	heap			2M
+403	heap			32M
+404	heap			1G
+501	.data, .bss, stack	64K
+502	.data, .bss, stack	2M
+503	.data, .bss, stack	32M
+504	.data, .bss		1G
+601	mmap + hugetlbfs	64K, 2M, 32M, 1G
+
+* 1 GiB for stack is not tested because it's impossible to
+  align symbol to 1 GiB due to relocation restrictions.
+
+======
+Detail
+======
+
+The patch makes the alignment value for heap and stack start addrss
+configurable.  That is, vm->region.brk_start alignment is set to the
+value passed via mcexec -h option in
+prepare_process_ranges_args_envs().  And initial allocation and
+vm->region.stack_start alignment follows the value passed via mcexec
+-s option in init_process_stack().

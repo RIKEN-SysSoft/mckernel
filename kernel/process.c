@@ -2008,6 +2008,12 @@ retry:
 		}
 
 		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
+
+		if (pgsize > PAGE_SIZE) {
+			kprintf("large page allocation, addr: %016lx, size: %d\n",
+				pgaddr, pgsize);
+		}
+
 		error = ihk_mc_pt_set_pte(vm->address_space->page_table, ptep,
 		                          pgsize, phys, attr);
 		if (error) {
