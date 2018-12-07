@@ -1,0 +1,35 @@
+sudo /home/m-takagi/project/os/install/sbin/mcstop+release.sh
+/home/m-takagi/project/os/install/sbin/mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 28G@0,28G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24
+/home/m-takagi/project/os/install/bin/mcexec -h 1G ./002_4K
+large page request, trial#: 000, addr: 0000000000800000, size: 1073741824
+/home/m-takagi/project/os/install/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[ -1]: no_execute_available: 1
+[ -1]: NUM_PERF_COUNTERS: 4, NUM_FIXED_PERF_COUNTERS: 3
+[ -1]: Invariant TSC supported.
+[ -1]: setup_x86 done.
+[ -1]: ns_per_tsc: 384
+[ -1]: KCommand Line: hidos    dump_level=24   time_sharing
+[ -1]: Physical memory: 0x2400000 - 0x12c00000, 276824064 bytes, 67584 pages available @ NUMA: 0
+[ -1]: Physical memory: 0x36000000 - 0x75c00000, 1069547520 bytes, 261120 pages available @ NUMA: 0
+[ -1]: Physical memory: 0x100400000 - 0x13a400000, 973078528 bytes, 237568 pages available @ NUMA: 0
+[ -1]: Physical memory: 0x18fb12000 - 0x804c00000, 27733712896 bytes, 6770926 pages available @ NUMA: 0
+[ -1]: Physical memory: 0x880400000 - 0xf80400000, 30064771072 bytes, 7340032 pages available @ NUMA: 1
+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 30053163008, pages: 7337198
+[ -1]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 30064771072, pages: 7340032
+[ -1]: NUMA 0 distances: 0 (10), 1 (21), 
+[ -1]: NUMA 1 distances: 1 (10), 0 (21), 
+[ -1]: map_fixed: phys: 0x90000 => 0xffff8600001c5000 (2 pages)
+[ -1]: Trampoline area: 0x90000 
+[ -1]: map_fixed: phys: 0x0 => 0xffff8600001c7000 (1 pages)
+[ -1]: # of cpus : 28
+[ -1]: locals = ffff880880424000
+[  0]: BSP: 0 (HW ID: 2 @ NUMA 0)
+[  0]: BSP: booted 27 AP CPUs
+[  0]: Master channel init acked.
+[  0]: vdso is enabled
+IHK/McKernel booted.
+[  0]: large page allocation, addr: 0000547fffe00000, size: 2097152
+[  0]: large page allocation, addr: 0000000000800000, size: 2097152
+[  0]: fileobj_free(ffff8800024f3020 ffff881050158f00): free failed. -32
+

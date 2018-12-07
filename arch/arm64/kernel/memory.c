@@ -2513,6 +2513,15 @@ int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start,
 	struct set_range_args args;
 	translation_table_t* tt;
 
+	{
+		size_t pgsize = 1ULL << pgshift;
+
+		if (pgsize > PAGE_SIZE) {
+			kprintf("large page allocation, addr: %016lx, size: %d\n",
+				(unsigned long)start, pgsize);
+		}
+	}
+
 	dkprintf("ihk_mc_pt_set_range(%p,%p,%p,%lx,%x,%d,%lx-%lx)\n",
 			 pt, start, end, phys, attr, pgshift, range->start, range->end);
 

@@ -1,0 +1,5 @@
+sudo mkdir -p /mnt/hugetlbfs-2M
+sudo mount -t hugetlbfs -o mode=777,pagesize=2m none /mnt/hugetlbfs-2M
+
+sudo mkdir -p /mnt/hugetlbfs-512M
+sudo mount -t hugetlbfs -o mode=777,pagesize=512m none /mnt/hugetlbfs-512M

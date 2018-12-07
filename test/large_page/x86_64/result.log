@@ -1,0 +1,38 @@
+Script started on Sun Dec  9 14:59:15 2018
+]0;m-takagi@wallaby14:~/project/os/mckernel/test/large_page/x86_64[?1034h[m-takagi@wallaby14 x86_64]$ makt e test
+../driver.sh 
+[INFO] 001 started
+	[ OK ] trial #: 000, addr: 00002aaaab200000, requested size: 2097152, allocated size: 2097152
+	[ OK ] trial #: 001, addr: 00002aaac0000000, requested size: 1073741824, allocated size: 1073741824
+[ OK ] 001 passed
+[INFO] 101 started
+	[ OK ] trial #: 000, addr: 00002aaaab200000, requested size: 2097152, allocated size: 2097152
+	[ OK ] trial #: 001, addr: 00002aaac0000000, requested size: 1073741824, allocated size: 1073741824
+[ OK ] 101 passed
+[INFO] 201 started
+	[ OK ] trial #: 000, addr: 00002aaaab200000, requested size: 2097152, allocated size: 2097152
+	[ OK ] trial #: 001, addr: 00002aaac0000000, requested size: 1073741824, allocated size: 1073741824
+[ OK ] 201 passed
+[INFO] 301 started
+	[ OK ] trial #: 000, addr: 00002aaaab200000, requested size: 2097152, allocated size: 2097152
+	[ OK ] trial #: 001, addr: 00002aaac0000000, requested size: 1073741824, allocated size: 1073741824
+[ OK ] 301 passed
+[INFO] 401 started
+	[ OK ] trial #: 000, addr: 0000000000800000, requested size: 2097152, allocated size: 2097152
+[ OK ] 401 passed
+[INFO] 402 started
+	[ OK ] trial #: 000, addr: 0000000040000000, requested size: 1073741824, allocated size: 1073741824
+[ OK ] 402 passed
+[INFO] 501 started
+	[ OK ] trial #: 000, addr: 0000000000a00000, requested size: 2097152, allocated size: 2097152
+	[ OK ] trial #: 001, addr: 0000000000e00000, requested size: 2097152, allocated size: 2097152
+	[ OK ] trial #: 002, addr: 0000547fffa00000, requested size: 2097152, allocated size: 2097152
+[ OK ] 501 passed
+[INFO] 601 started
+	[ OK ] trial #: 000, addr: 00002aaaab200000, requested size: 2097152, allocated size: 2097152
+	[ OK ] trial #: 001, addr: 00002aaac0000000, requested size: 1073741824, allocated size: 1073741824
+[ OK ] 601 passed
+]0;m-takagi@wallaby14:~/project/os/mckernel/test/large_page/x86_64[m-takagi@wallaby14 x86_64]$ exu it
+exit
+
+Script done on Sun Dec  9 15:00:22 2018
