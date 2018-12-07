@@ -66,8 +66,7 @@ ContiguousPTEの基本的な動作を確認する。
 
 #8: shmgetのTHPでContiguous PTEのメモリ確保が出来ること。
 
-    * arm64がベースとしているMcKernelでは、
-      shmgetは拡張THPが使えないのでNGになることが期待動作。
+    * shmgetは拡張THPが使えないのでNGとなる(Issue #1241)
 
 #9: mmaptのTHPでContiguous PTEのメモリ確保が出来ること。
 
