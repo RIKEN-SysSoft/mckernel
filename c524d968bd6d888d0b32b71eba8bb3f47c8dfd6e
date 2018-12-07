@@ -1,0 +1,480 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "28d9d950_05a372ab",
+        "filename": "test/contiguous_pte/go_contiguous_pte_test.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for test_case in `grep -E \u0027^TEST_CASE_DEF\u0027 ${contiguous_pte_test_dir}/src/test_case.list`",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f8450b79_fb636141",
+        "filename": "test/contiguous_pte/go_contiguous_pte_test.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttp_num\u003d`echo $test_case | sed \u0027s|TEST_CASE_DEF(contiguous_pte,||g\u0027 | sed \u0027s|)$||g\u0027`",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "212af45b_d2d2cddc",
+        "filename": "test/contiguous_pte/src/arch/arm64/include/arch_test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define MMAP_START_ADDR 0x0000000800000000UL /* in McKernel TASK_UNMAPPED_BASE value */",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5aaf3f00_733b2f60",
+        "filename": "test/contiguous_pte/src/arch/arm64/include/arch_test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define MMAP_START_ADDR 0x0000004000000000UL /* in McKernel TASK_UNMAPPED_BASE value */",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25b62447_c1d2db73",
+        "filename": "test/contiguous_pte/src/arch/arm64/include/arch_test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define MMAP_START_ADDR 0x0000100000000000UL /* in McKernel TASK_UNMAPPED_BASE value */",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59940d26_2bc34c32",
+        "filename": "test/contiguous_pte/src/arch/arm64/include/arch_test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define MMAP_START_ADDR 0x0000100000000000UL /* in McKernel TASK_UNMAPPED_BASE value */",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "698a6127_994383a3",
+        "filename": "test/contiguous_pte/src/contiguous_pte/001.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tshmid \u003d shmget(IPC_PRIVATE, length, pgsize_log | SHM_HUGETLB | IPC_CREAT | SHM_R | SHM_W);",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97d373e1_3010038c",
+        "filename": "test/contiguous_pte/src/contiguous_pte/001.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\ttp_assert(0 \u003c\u003d shmid, \"shmget error.\");",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25e2d458_9fccd281",
+        "filename": "test/contiguous_pte/src/contiguous_pte/001.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\tif (0 \u003c\u003d shmid) {",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf17fd86_36b6349e",
+        "filename": "test/contiguous_pte/src/contiguous_pte/002.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tshmid \u003d shmget(IPC_PRIVATE, length, pgsize_log | SHM_HUGETLB | IPC_CREAT | SHM_R | SHM_W);",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "33e43b82_01062e6b",
+        "filename": "test/contiguous_pte/src/contiguous_pte/002.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\ttp_assert(0 \u003c\u003d shmid, \"shmget error.\");",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "df255214_8de41cc9",
+        "filename": "test/contiguous_pte/src/contiguous_pte/002.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\tif (0 \u003c\u003d shmid) {",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4297817b_63bf485a",
+        "filename": "test/contiguous_pte/src/contiguous_pte/004.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tconst int flag \u003d MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | (shift \u003c\u003c MAP_HUGE_SHIFT);",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2676fd8f_c9a80e89",
+        "filename": "test/contiguous_pte/src/contiguous_pte/005.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tconst int flag \u003d MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | (shift \u003c\u003c MAP_HUGE_SHIFT);",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e7f9448_1a956e92",
+        "filename": "test/contiguous_pte/src/contiguous_pte/006.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t  MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_HUGETLB | (contshift \u003c\u003c MAP_HUGE_SHIFT),",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b13fae58_8c87602f",
+        "filename": "test/contiguous_pte/src/contiguous_pte/006.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\ttp_assert(0 \u003c\u003d pid, \"fork error.\");",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f727ec13_c63ddae1",
+        "filename": "test/contiguous_pte/src/contiguous_pte/007.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tstruct memory_info info \u003d {0};\n+\t\tget_memory_info_self((unsigned long)alloc, \u0026info);",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54b0a53c_ec56728b",
+        "filename": "test/contiguous_pte/src/contiguous_pte/100.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t  MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_HUGETLB | (contshift \u003c\u003c MAP_HUGE_SHIFT),",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f690e24_d7d13b99",
+        "filename": "test/contiguous_pte/src/contiguous_pte/104.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | (contshift \u003c\u003c MAP_HUGE_SHIFT),",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "efcdb487_be6e851c",
+        "filename": "test/contiguous_pte/src/test_mck.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: macros should not use a trailing semicolon\n+#define TEST_CASE_DEF(ts, number)\t\t\t\t\\\n+\tvoid *ts ## number ## _setup(int tp_num,\t\t\\\n+\t\t\t\t\tint argc,\t\t\\\n+\t\t\t\t\tchar **argv);\t\t\\\n+\tconst char *ts ## number(int tp_num, void *arg);\t\\\n+\tvoid ts ## number ## _teardown(int tp_num, void *arg);",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05065910_3f79d0c9",
+        "filename": "test/contiguous_pte/src/test_mck.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\tvoid ts ## number ## _teardown(int tp_num, void *arg);",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c7cb7c4c_4e73be16",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define SETUP_EMPTY(ts, num)    SETUP_FUNC(ts, num) {return NULL; }",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "311fcafd_b0e6918b",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define SETUP_EMPTY(ts, num)    SETUP_FUNC(ts, num) {return NULL; }",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "70739d34_94c213fb",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define RUN_EMPTY(ts, num)      RUN_FUNC(ts, num) { return NULL; }",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "38b1a506_7ee05eb5",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define RUN_EMPTY(ts, num)      RUN_FUNC(ts, num) { return NULL; }",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80b0c907_57b3cda9",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define TEARDOWN_EMPTY(ts, num) TEARDOWN_FUNC(ts, num) { }",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e33338f3_e5ed4ce9",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define __tp_assert(ts, num, line, test, msg)\t\\\n+\tdo {\t\t\t\t\t\\\n+\t\tif (!(test))\t\t\t\\\n+\t\t\treturn (msg);\t\t\\\n+\t} while (0)",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0ccb159_57c06e65",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:14:31Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(a)\n+# define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))",
+      "revId": "c524d968bd6d888d0b32b71eba8bb3f47c8dfd6e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
