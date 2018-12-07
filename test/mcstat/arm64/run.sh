@@ -3,12 +3,14 @@
 
 USELTP=0
 USEOSTEST=1
+MCREBOOT=0
 
 . ../../common.sh
 
 MCSTAT="${BIN}/mcstat"
+BOOTPARAM="-c 4-7 -m 512M@0"
 
-result=0
+mcreboot
 
 sleep 1
 
@@ -16,12 +18,14 @@ ${MCEXEC} ${TESTMCK} -s mem_limits -n 0 -- -s $((64*1024*1024)) -c 1 -f mmap > /
 
 sleep 1
 
+result=0
+
 #################
 ## mcstat test ##
 #################
 
 output=`${MCSTAT} | sed -n -e 3p`
-mem_total=$(awk '{print $1}' <<< ${output})
+mck_mem_total=$(awk '{print $1}' <<< ${output})
 mem_current=$(awk '{print $2}' <<< ${output})
 mem_max=$(awk '{print $3}' <<< ${output})
 tsc_system=$(awk '{print $4}' <<< ${output})
@@ -29,19 +33,26 @@ tsc_user=$(awk '{print $5}' <<< ${output})
 thread_current=$(awk '{print $6}' <<< ${output})
 thread_max=$(awk '{print $7}' <<< ${output})
 
-exp_mem_current=`./get_rusage 0 | grep "memory_kmem_usage" | cut -c 21-`
-exp_mem_max=`./get_rusage 0 | grep "memory_kmem_max_usage" | cut -c 25-`
-exp_tsc_system=`./get_rusage 0 | grep "cpuacct_stat_system" | cut -c 23-`
-exp_tsc_user=`./get_rusage 0 | grep "cpuacct_stat_user" | cut -c 21-`
-exp_thread_current=`./get_rusage 0 | grep "num_threads" | head -1 | cut -c 15-`
-exp_thread_max=`./get_rusage 0 | grep "max_num_threads" | cut -c 19-`
+output=`./get_rusage 0`
+exp_kmem_current=`echo "${output}" | grep "memory_kmem_usage" | cut -c 21-`
+exp_umem_current=`echo "${output}" | grep "memory_numa_stat\[0\]" | cut -c 23-`
+exp_mem_current=$((${exp_kmem_current}+${exp_umem_current}))
 
-mem_total=`echo "scale=3; ${mem_total} - ${mem_current}" | bc`
-mem_total=${mem_total%.*}
-if [ 64 -le ${mem_total} -a ${mem_total} -lt 68 ]; then
+exp_kmem_max=`echo "${output}" | grep "memory_kmem_max_usage" | cut -c 25-`
+exp_umem_max=`echo "${output}" | grep "memory_max_usage" | cut -c 20-`
+exp_mem_max=$((${exp_kmem_max}+${exp_umem_max}))
+
+exp_tsc_system=`echo "${output}" | grep "cpuacct_stat_system" | cut -c 23-`
+exp_tsc_user=`echo "${output}" | grep "cpuacct_stat_user" | cut -c 21-`
+exp_thread_current=`echo "${output}" | grep "num_threads" | head -1 | cut -c 15-`
+exp_thread_max=`echo "${output}" | grep "max_num_threads" | cut -c 19-`
+
+mck_mem_total=`echo "scale=3; ${mck_mem_total} - ${mem_current}" | bc`
+mck_mem_total=${mck_mem_total%.*}
+if [ 502 -le ${mck_mem_total} -a ${mck_mem_total} -lt 512 ]; then
 	echo "TEST001: OK"
 else
-	echo "TEST001: NG, memory total value (exp:64MiB val:${mem_total}MiB)."
+	echo "TEST001: NG, memory total value (exp:near512MiB val:${mck_mem_total}MiB)."
 	result=-1
 fi
 

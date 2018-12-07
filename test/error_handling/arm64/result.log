@@ -21,34 +21,6 @@ Issue873_0001 n=100/100 ok.
 Issue873_0001: OK
 exa-kernel
 Issue1011_0001: OK
-TEST_SUITE: kill
-TEST_NUMBER: 1
-ARGS: -p 6 
-Generate child process pid:22054, pgid:2084
-Generate child process pid:22068, pgid:2084
-Generate child process pid:22082, pgid:2084
-Generate child process pid:22097, pgid:2084
-Generate child process pid:22111, pgid:2084
-Generate child process pid:22125, pgid:2084
-wait for a few sec...
-Send to all processes that have permission to send a signal.
-[pid:22039, pgid:2084] Get signal.
-RESULT: ok
-ulimit -u 0001: OK
-TEST_SUITE: kill
-TEST_NUMBER: 1
-ARGS: -p 6 
-Generate child process pid:22155, pgid:2084
-Generate child process pid:22169, pgid:2084
-Generate child process pid:22183, pgid:2084
-Generate child process pid:22198, pgid:2084
-Generate child process pid:22212, pgid:2084
-Generate child process pid:22226, pgid:2084
-wait for a few sec...
-Send to all processes that have permission to send a signal.
-[pid:22139, pgid:2084] Get signal.
-RESULT: ok
-ulimit -u 0002: NG
 perf_event_open01    1  TFAIL  :  perf_event_open01.c:158: perf_event_open failed unexpectedly: TEST_ERRNO=EPERM(1): Operation not permitted
 ##### perf_event_open01 returned not 0 #####
 perf_event_open02    1  TCONF  :  perf_event_open02.c:165: PERF_COUNT_HW_INSTRUCTIONS not supported
@@ -350,4 +322,25 @@ signal05   28  TPASS  :  signal05 call succeeded
 signal05   29  TPASS  :  signal05 call succeeded
 signal05   30  TPASS  :  signal05 call succeeded
 signal05   31  TPASS  :  signal05 call succeeded
+TEST_SUITE: kill
+TEST_NUMBER: 1
+ARGS: -p 6
+Generate child process pid:15427, pgid:15208
+Generate child process pid:15441, pgid:15208
+Generate child process pid:15456, pgid:15208
+Generate child process pid:15470, pgid:15208
+Generate child process pid:15484, pgid:15208
+Generate child process pid:15498, pgid:15208
+wait for a few sec...
+Send to all processes that have permission to send a signal.
+[pid:15412, pgid:15208] Get signal.
+[pid:15484, pgid:15208] Get signal.
+[pid:15456, pgid:15208] Get signal.
+[pid:15427, pgid:15208] Get signal.
+[pid:15441, pgid:15208] Get signal.
+[pid:15498, pgid:15208] Get signal.
+[pid:15470, pgid:15208] Get signal.
+RESULT: ok
+ulimit -u 0001: OK
+ulimit -u 0002: OK
 make: *** [test] エラー 255
