@@ -1,0 +1,4 @@
+sudo umount /mnt/hugetlbfs-64K
+sudo umount /mnt/hugetlbfs-2M
+sudo umount /mnt/hugetlbfs-32M
+sudo umount /mnt/hugetlbfs-1G
