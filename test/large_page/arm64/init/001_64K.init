@@ -1,0 +1,1 @@
+BOOTPARAM="-c 1-7 -m 16G -r 1-7:0"
