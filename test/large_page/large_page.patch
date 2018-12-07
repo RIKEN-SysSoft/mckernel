@@ -1,0 +1,248 @@
+diff --git a/arch/arm64/kernel/memory.c b/arch/arm64/kernel/memory.c
+index 4cefc9f..cd8988d 100644
+--- a/arch/arm64/kernel/memory.c
++++ b/arch/arm64/kernel/memory.c
+@@ -2356,6 +2356,12 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
+ 	ptl1_set(ptep, pte);
+ 
+ 	error = 0;
++
++	if (args->attr[0] & PTE_CONT) {
++		kprintf("%s: large page allocation, addr: %016lx, size: %d\n",
++		__func__, base, PTL1_CONT_SIZE);
++	}
++
+ out:
+ 	dkprintf("set_range_l1(%lx,%lx,%lx): %d %lx\n",
+ 			base, start, end, error, *ptep);
+@@ -2436,6 +2442,12 @@ retry:
+ 				ptl_set(ptep, phys | args->attr[level-1],
+ 					level);
+ 				error = 0;
++
++				kprintf("%s: large page allocation, addr: %016lx, size: %d\n",
++					__func__, base,
++					(args->attr[level-1] & PTE_CONT) ?
++					tbl.cont_pgsize: tbl.pgsize);
++				
+ 				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
+ 					 "large page. %d %lx\n",
+ 					 base, start, end, level, error, *ptep);
+diff --git a/arch/x86_64/kernel/memory.c b/arch/x86_64/kernel/memory.c
+index cf7cac4..7efb997 100644
+--- a/arch/x86_64/kernel/memory.c
++++ b/arch/x86_64/kernel/memory.c
+@@ -2027,6 +2027,10 @@ retry:
+ 			dkprintf("set_range_l2(%lx,%lx,%lx):"
+ 					"2MiB page. %d %lx\n",
+ 					base, start, end, error, *ptep);
++
++			kprintf("%s: large page allocation, addr: %016lx, size: %d\n",
++				__func__, base, PTL2_SIZE);
++
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL2_SIZE, PTL2_SIZE)) {
+ 				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
+@@ -2116,6 +2120,9 @@ retry:
+ 					"1GiB page. %d %lx\n",
+ 					base, start, end, error, *ptep);
+ 
++			kprintf("%s: large page allocation, addr: %016lx, size: %d\n",
++				__func__, base, PTL3_SIZE);
++
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL3_SIZE, PTL3_SIZE)) {
+ 				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
+diff --git a/kernel/host.c b/kernel/host.c
+index c5ce9d2..7a77361 100644
+--- a/kernel/host.c
++++ b/kernel/host.c
+@@ -138,15 +138,37 @@ int prepare_process_ranges_args_envs(struct thread *thread,
+ 			flags |= VR_AP_USER;
+ 		}
+ 
++
++		unsigned long stack_page_size = pn->stack_premap;
++		unsigned long stack_page_mask = ~(stack_page_size - 1);
++		unsigned long stack_page_shift = 63 - __builtin_clzl(stack_page_size);
++		unsigned long stack_page_p2align = stack_page_shift - PAGE_SHIFT;
++
++		unsigned long section_page_shift;
++		int section_page_p2align;
++
++		if (!(pn->sections[i].len & ~stack_page_mask)) {
++			section_page_shift = stack_page_shift;
++			section_page_p2align = stack_page_p2align;
++		} else {
++			if (pn->sections[i].len > LARGE_PAGE_SIZE) {
++				section_page_shift = LARGE_PAGE_SHIFT;
++				section_page_p2align = LARGE_PAGE_P2ALIGN;
++			} else {
++				section_page_shift = PAGE_SHIFT;
++				section_page_p2align = PAGE_P2ALIGN;
++			}
++		}
++
+ 		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
+-					pn->sections[i].len > LARGE_PAGE_SIZE ?
+-					LARGE_PAGE_SHIFT : PAGE_SHIFT,
++					     section_page_shift,
+ 					&range) != 0) {
+ 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
+ 			goto err;
+ 		}
+ 
+-		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
++		if ((up_v = ihk_mc_alloc_aligned_pages_user(range_npages,
++							    section_page_p2align,
+ 						IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
+ 			kprintf("ERROR: alloc pages for ELF section %i\n", i);
+ 			goto err;
+@@ -212,8 +234,11 @@ int prepare_process_ranges_args_envs(struct thread *thread,
+ 		pn->at_entry += aout_base;
+ 	}
+ 
++	unsigned long heap_page_size = proc->heap_extension;
++	unsigned long heap_page_mask = (~((heap_page_size) - 1));
++
+ 	vm->region.brk_start = vm->region.brk_end =
+-		(vm->region.data_end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
++		(vm->region.data_end + heap_page_size - 1) & heap_page_mask;
+ 
+ #if 0
+ 	{
+diff --git a/kernel/process.c b/kernel/process.c
+index e326dff..18f4443 100644
+--- a/kernel/process.c
++++ b/kernel/process.c
+@@ -2008,6 +2008,12 @@ retry:
+ 		}
+ 
+ 		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
++
++		if (pgsize > PAGE_SIZE) {
++			kprintf("large page allocation, addr: %016lx, size: %d\n",
++				pgaddr, pgsize);
++		}
++
+ 		error = ihk_mc_pt_set_pte(vm->address_space->page_table, ptep,
+ 		                          pgsize, phys, attr);
+ 		if (error) {
+@@ -2234,13 +2240,19 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 	int stack_populated_size = 0;
+ 	int stack_align_padding = 0;
+ 
++
++	unsigned long stack_page_size = pn->stack_premap;
++	unsigned long stack_page_mask = ~(stack_page_size - 1);
++	unsigned long stack_page_shift = 63 - __builtin_clzl(stack_page_size);
++	unsigned long stack_page_p2align = stack_page_shift - PAGE_SHIFT;
++
+ 	/* Create stack range */
+-	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
++	end = STACK_TOP(&thread->vm->region) & stack_page_mask;
+ #ifdef POSTK_DEBUG_ARCH_DEP_80 /* user stack prepage size fix */
+-	minsz = LARGE_PAGE_SIZE;
++	minsz = stack_page_size;
+ #else /* POSTK_DEBUG_ARCH_DEP_80 */
+ 	minsz = (pn->stack_premap
+-			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
++			+ stack_page_size - 1) & stack_page_mask;
+ #endif /* POSTK_DEBUG_ARCH_DEP_80 */
+ 	maxsz = (end - thread->vm->region.map_start) / 2;
+ 	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
+@@ -2250,13 +2262,13 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 	else if (size < minsz) {
+ 		size = minsz;
+ 	}
+-	size = (size + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
++	size = (size + stack_page_size - 1) & stack_page_mask;
+ 	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
+ 			__FUNCTION__,
+ 			pn->stack_premap,
+ 			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
+ 			minsz, size);
+-	start = (end - size) & LARGE_PAGE_MASK;
++	start = (end - size) & stack_page_mask;
+ 
+ 	/* Apply user allocation policy to stacks */
+ 	/* TODO: make threshold kernel or mcexec argument */
+@@ -2267,7 +2279,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 			ap_flag ? "(IHK_MC_AP_USER)" : "");
+ 
+ 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
+-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag, start);
++				stack_page_p2align, IHK_MC_AP_NOWAIT | ap_flag, start);
+ 
+ 	if (!stack) {
+ 		kprintf("%s: error: couldn't allocate initial stack\n",
+@@ -2283,7 +2295,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
+ #define	NOPHYS	((uintptr_t)-1)
+ 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
+-					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
++					vrflag, NULL, 0, stack_page_shift, &range)) != 0) {
+ 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
+ 		kprintf("%s: error addding process memory range: %d\n", rc);
+ 		return rc;
+@@ -2294,7 +2306,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 								thread->vm, (void *)(end - minsz),
+ 								(void *)end, virt_to_phys(stack),
+ 								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
+-								LARGE_PAGE_SHIFT, range, 0
++								stack_page_shift, range, 0
+ 								);
+ 
+ 	if (error) {
+@@ -2410,14 +2422,15 @@ unsigned long extend_process_region(struct process_vm *vm,
+ 	void *p;
+ 	int rc;
+ 
+-	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
+-		LARGE_PAGE_SIZE : PAGE_SIZE;
+-	unsigned long align_mask = vm->proc->heap_extension > PAGE_SIZE ?
+-		LARGE_PAGE_MASK : PAGE_MASK;
+-	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SIZE ?
+-		LARGE_PAGE_P2ALIGN : PAGE_P2ALIGN;
+-	int align_shift = vm->proc->heap_extension > PAGE_SIZE ?
+-		LARGE_PAGE_SHIFT : PAGE_SHIFT;
++	unsigned long heap_page_size = vm->proc->heap_extension;
++	unsigned long heap_page_mask = ~(heap_page_size - 1);
++	unsigned long heap_page_shift = 63 - __builtin_clzl(heap_page_size);
++	unsigned long heap_page_p2align = heap_page_shift - PAGE_SHIFT;
++
++	size_t align_size = heap_page_size;
++	unsigned long align_mask = heap_page_mask;
++	unsigned long align_p2align = heap_page_p2align;
++	int align_shift = heap_page_shift;
+ 
+ 	new_end_allocated = (address + (PAGE_SIZE - 1)) & PAGE_MASK;
+ 	if ((new_end_allocated - end_allocated) < vm->proc->heap_extension) {
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 5f4c2e9..d46f42e 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -5196,9 +5196,22 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
+ 		return -ENOSPC;
+ 	}
+ 
+-	pgshift = PAGE_SHIFT;
+ 	if (shmflg & SHM_HUGETLB) {
+ 		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
++	} else {
++		size_t pgsize;
++
++		if (size > PAGE_SIZE) {
++			error = arch_get_smaller_page_size(NULL, size + 1, &pgsize, NULL);
++			if (error) {
++				ekprintf("%s: arch_get_smaller_page_size failed. %d\n", error);
++				return error;
++			}
++			
++			pgshift = 63 - __builtin_clzl(pgsize);;
++		} else {
++			pgshift = PAGE_SHIFT;
++		}
+ 	}
+ 
+ 	memset(&ads, 0, sizeof(ads));
