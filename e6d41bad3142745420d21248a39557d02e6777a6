@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3a50769a_68ca7baa",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 604,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-07T04:20:02Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027ptl_is_contiguous\u0027, this function\u0027s name, in a string\n+\t\tpanic(\"ptl_is_contiguous failed.\\n\");",
+      "revId": "e6d41bad3142745420d21248a39557d02e6777a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
