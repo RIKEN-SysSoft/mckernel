@@ -5196,9 +5196,22 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 		return -ENOSPC;
 	}
 
-	pgshift = PAGE_SHIFT;
 	if (shmflg & SHM_HUGETLB) {
 		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
+	} else {
+		size_t pgsize;
+
+		if (size > PAGE_SIZE) {
+			error = arch_get_smaller_page_size(NULL, size + 1,
+							   &pgsize, NULL);
+			if (error) {
+				ekprintf("%s: arch_get_smaller_page_size failed. %d\n", error);
+				return error;
+			}
+			pgshift = 63 - __builtin_clzl(pgsize);
+		} else {
+			pgshift = PAGE_SHIFT;
+		}
 	}
 
 	memset(&ads, 0, sizeof(ads));
