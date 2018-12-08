@@ -16,6 +16,40 @@
       "revId": "cbf48d6305d958e7d54630fa71b8f710042c5706",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ccaa7e42_c0149978",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 5209,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-08T11:10:09Z",
+      "side": 1,
+      "message": "can always fallback to PAGE_SHIFT here, this should never happen with size \u003e PAGE_SIZE anyway",
+      "revId": "cbf48d6305d958e7d54630fa71b8f710042c5706",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2624ba86_ed41ea71",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 5211,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-08T11:10:09Z",
+      "side": 1,
+      "message": "this certainly work but isn\u0027t very obvious -- let\u0027s use the p2align argument of arch_get_smaller_page_size instead and p2align + PTL1/PAGE_SHIFT ?",
+      "revId": "cbf48d6305d958e7d54630fa71b8f710042c5706",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
