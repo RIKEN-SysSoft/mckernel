@@ -5196,9 +5196,25 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 		return -ENOSPC;
 	}
 
-	pgshift = PAGE_SHIFT;
 	if (shmflg & SHM_HUGETLB) {
 		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
+	} else {
+		size_t pgsize;
+		int p2align;
+
+		if (size > PAGE_SIZE) {
+			error = arch_get_smaller_page_size(NULL, size + 1,
+							   &pgsize, &p2align);
+			if (error) {
+				ekprintf("%s: WARNING: arch_get_smaller_page_size failed. size: %ld, error: %d\n",
+					 __func__, size, error);
+				pgshift = PAGE_SHIFT;
+			} else {
+				pgshift = p2align + PAGE_SHIFT;
+			}
+		} else {
+			pgshift = PAGE_SHIFT;
+		}
 	}
 
 	memset(&ads, 0, sizeof(ads));
