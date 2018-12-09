@@ -1,0 +1,565 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "81e75fd4_0216372a",
+        "filename": "test/large_page/README",
+        "patchSetId": 6
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027followings\u0027 may be misspelled - perhaps \u0027following\u0027?\n+With the patch, McKernel does the followings for the test:",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1fa02e0f_2f818958",
+        "filename": "test/large_page/arm64/501_4K.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\t\t__attribute__((aligned(TARGET_PAGE_SIZE)));",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d3d529b4_c27e11c5",
+        "filename": "test/large_page/arm64/501_64K.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\t\t__attribute__((aligned(TARGET_PAGE_SIZE)));",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f1d859d_b05cd3ce",
+        "filename": "test/large_page/arm64/502_4K.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\t\t__attribute__((aligned(TARGET_PAGE_SIZE)));",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f96cf9f5_99912380",
+        "filename": "test/large_page/arm64/503_4K.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\t\t__attribute__((aligned(TARGET_PAGE_SIZE)));",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b08a37e2_fec47fc5",
+        "filename": "test/large_page/check.sh",
+        "patchSetId": 6
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+    addr\u003d`grep \"large page request\" $log_file | grep -e \"trial#: $(printf \"%03d\" $i)\" | grep -oE \u0027addr: \\w{16}\u0027 | sed \u0027s/addr: //\u0027`",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "de16728d_b0d20548",
+        "filename": "test/large_page/check.sh",
+        "patchSetId": 6
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+    pgsize_requested\u003d`grep \"large page request\" $log_file | grep -e \"trial#: $(printf \"%03d\" $i)\" | grep -oE \u0027size: \\w*\u0027 | sed \u0027s/size: //\u0027`",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09114754_80ded11c",
+        "filename": "test/large_page/check.sh",
+        "patchSetId": 6
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+    pgsize_allocated\u003d`grep \"large page allocation\" $log_file | grep -e $addr | grep -oE \u0027size: \\w*\u0027 | sed \u0027s/size: //\u0027`",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b537ff04_f0975e36",
+        "filename": "test/large_page/check.sh",
+        "patchSetId": 6
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+    printf \"trial #: $(printf \"%03d\" $i), addr: $addr, requested size: $pgsize_requested, allocated size: $pgsize_allocated\\n\"",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e0aedb3_620bccbd",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f62f7134_6d224608",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I^I^I^I$",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "105b29e5_9c2a7e77",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a3a98d7_e711bb09",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f79f1f2_ff655bde",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "90560b6d_010be9e0",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a9d0c3c2_b3b2a280",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 111,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49da7f3d_c5b14144",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "01528e8d_61654a33",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bb640536_b0326c08",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1ab97fd6_991a60c7",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 172,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96fd4a2e_1ec69db2",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 176,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e1fa9e2_23c1259e",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 195,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "656b082d_532fd71b",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 200,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49c02146_ec0e9519",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d84238c_a66aa7e0",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 228,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eb5ba1af_7eed5ad6",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 241,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n++^I^I^I$",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7afc4aed_284d2c01",
+        "filename": "test/large_page/large_page.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 247,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10f09ddc_472f734c",
+        "filename": "test/large_page/util.h",
+        "patchSetId": 6
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, err, ...) do { \\\n+\tif (cond) {\t\t\t\\\n+\t\teprintf(__VA_ARGS__);   \\\n+\t\tret \u003d err;\t\t\\\n+\t\tgoto fn_fail;\t\t\\\n+\t}\t\t\t\t\\\n+} while (0)",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "32891e55_f849865e",
+        "filename": "test/large_page/util.h",
+        "patchSetId": 6
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\\\n+\tif (cond) {\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\\\n+\t\t\tprintf(\"\\t[ OK ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\\\n+\t\tprintf(\"\\t[ NG ] \" fmt, ##args);\t\t\\\n+\t\tif (jump)\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\\\n+\t}\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5d3076ac_0e1da04a",
+        "filename": "test/large_page/x86_64/501_4K.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\t\t__attribute__((aligned(TARGET_PAGE_SIZE)));",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f2fa10cf_71733caf",
+        "filename": "test/large_page/x86_64/501_4K.lds",
+        "patchSetId": 6
+      },
+      "lineNbr": 145,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+  .data           : $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "814aa515_eec6fd49",
+        "filename": "test/large_page/x86_64/502_4K.lds",
+        "patchSetId": 6
+      },
+      "lineNbr": 144,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+  .data           : $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "03769275_81898252",
+        "filename": "test/large_page/x86_64/result.log",
+        "patchSetId": 6
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-09T10:28:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+../driver.sh $",
+      "revId": "8f31a8547184622e55bedf5407f0ad6b526798f8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
