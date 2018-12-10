@@ -49,6 +49,20 @@ User spaceテストについて
 		保存する。
 		システムコールごと個別のテストを行う場合は、各システムコール名の
 		ディレクトリにあるテスト用のシェルを実行する。
+
+		テストの内容は以下の通り。
+		perf_001-003	LTPを用いてperf_event_openが動作することを確認
+		futex_001-002	get_futex_value_lockedでユーザ空間データのアクセス
+				ができることを確認
+		futex_003-011	LTPを用いてfutexが動作することを確認
+		pvr_001-002	process_vm_readvでユーザ空間データのアクセスができ
+				ることを確認
+		pvr_003-032	LTPを用いてprocess_vm_readvが動作することを確認
+		pvw_001-002	process_vm_writevでユーザ空間データのアクセスができ
+				ることを確認
+		pvw_003-031	LTPを用いてprocess_vm_writevが動作することを確認
+
+
 2.2 swapoutテスト用シェル
 	go_swapout_test.sh [auto]
 	説明
