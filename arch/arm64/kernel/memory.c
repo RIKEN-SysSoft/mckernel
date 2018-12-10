@@ -3709,16 +3709,39 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_8 */
 
-void arch_adjust_allocate_page_size(uintptr_t fault_addr,
+void arch_adjust_allocate_page_size(struct page_table *pt,
+				    uintptr_t fault_addr,
 				    pte_t *ptep,
 				    void **pgaddrp,
 				    size_t *pgsizep)
 {
+	int level;
+
+	if (!pgsize_is_contiguous(*pgsizep)) {
+		return;
+	}
+
 	if (ptep == NULL) {
-		int level = pgsize_to_tbllv(*pgsizep);
-		*pgsizep = tbllv_to_pgsize(level);
-		*pgaddrp = (void *)__page_align(fault_addr, *pgsizep);
-	} else if (pte_is_null(ptep) && pgsize_is_contiguous(*pgsizep)) {
+		void *ptr = get_translation_table(pt);
+		int i;
+
+		// Check the entries of the upper page table.
+		// When PTE_NULL, do not change from the size of ContiguousPTE.
+		level = pgsize_to_tbllv(*pgsizep);
+		for (i = 4; 0 < i; i--) {
+			ptr = ptl_offset(ptr, fault_addr, i);
+			if (ptl_null(ptr, i)) {
+				if (level < i) {
+					return;
+				} else {
+					ptep = ptr;
+					break;
+				}
+			}
+		}
+	}
+
+	if (pte_is_null(ptep)) {
 		struct memobj *obj;
 		uintptr_t zeropage = NOPHYS;
 		pte_t *head;
@@ -3733,7 +3756,6 @@ void arch_adjust_allocate_page_size(uintptr_t fault_addr,
 		tail = get_contiguous_tail(ptep, *pgsizep);
 		for (/*nop*/; head <= tail; head++) {
 			uintptr_t phys;
-			int level;
 
 			if (pte_is_null(head)) {
 				continue;
