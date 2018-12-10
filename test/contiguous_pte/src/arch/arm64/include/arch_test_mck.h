@@ -16,9 +16,9 @@ extern char *auxv_name[];
 /* memory */
 #if !defined(CONFIG_ARM64_64K_PAGES)
 # define PAGE_SHIFT        12 //4KB
-# define CONT_PAGE_SHIFT         (PAGE_SHIFT + 7)
-# define CONT_LARGE_PAGE_SHIFT   (LARGE_PAGE_SHIFT + 5)
-# define CONT_LARGEST_PAGE_SHIFT (LARGEST_PAGE_SHIFT + 0)
+# define CONT_PAGE_SHIFT         (PAGE_SHIFT + 4)
+# define CONT_LARGE_PAGE_SHIFT   (LARGE_PAGE_SHIFT + 4)
+# define CONT_LARGEST_PAGE_SHIFT (LARGEST_PAGE_SHIFT + 4)
 #else
 # define PAGE_SHIFT        16 //64KB
 # define CONT_PAGE_SHIFT         (PAGE_SHIFT + 5)

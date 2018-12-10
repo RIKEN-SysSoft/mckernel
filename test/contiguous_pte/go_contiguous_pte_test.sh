@@ -23,14 +23,6 @@ do
 	tp_num=`echo $test_case | sed 's|TEST_CASE_DEF(contiguous_pte,||g' | sed 's|)$||g'`
 	logfile="${logdir}/${tp_num}.log"
 
-	# check if it can be executed
-	timeout 10 ${MCEXEC} ${os_num} ${user_proc} -n null >/dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		# restart if it can not be executed
-		mcstop
-		mcreboot
-	fi
-
 	# run
 	echo "${MCEXEC} ${os_num} ${user_proc} -n $tp_num" >${logfile} 2>&1
 	timeout 20 ${MCEXEC} ${os_num} ${user_proc} -n $tp_num >>${logfile}
@@ -45,6 +37,12 @@ do
 		echo "==" >>${logfile}
 		echo "${IHKOSCTL} ${os_num} kmsg" >>${logfile}
 		sudo ${IHKOSCTL} ${os_num} kmsg >>${logfile}
+	fi
+
+	# restart after madvise system call test
+	if [ 400 -le $tp_num -a $tp_num -lt 500 ]; then
+		mcstop
+		mcreboot
 	fi
 done
 mcstop

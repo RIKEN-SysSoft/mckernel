@@ -17,6 +17,7 @@ Advance preparation
 
 3) compile test program
     $ cd <mckernel>/test/contiguous_pte
+    $ patch -p1 < arm64_4KB_setting.patch (4KB granule only)
     $ make
 
 ==========
@@ -61,8 +62,9 @@ ContiguousPTEの基本的な動作を確認する。
 
 #6: ContiguousPTEが割当てられたプロセスがfork可能なこと。
 
-#7: ページテーブルの登録状況が確認できない状況では、
-　  ContiguousPTEのサイズでメモリ割り当てを行わないこと。
+#7: ページテーブルの登録状況が確認できない状況でも、
+    上位のページテーブルの状態をチェックして、
+    ContiguousPTEのサイズでメモリを割り当てること。
 
 #8: shmgetのTHPでContiguous PTEのメモリ確保が出来ること。
 

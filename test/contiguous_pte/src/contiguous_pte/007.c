@@ -49,7 +49,7 @@ RUN_FUNC(TEST_SUITE, TEST_NUMBER)
 		struct memory_info info = {0};
 		get_memory_info_self((unsigned long)alloc, &info);
 		tp_assert(info.present == 1, "alloc error.");
-		tp_assert(info.pgsize == (1UL << PAGE_SHIFT),
+		tp_assert(info.pgsize == (1UL << CONT_PAGE_SHIFT),
 			  "pgsize error.");
 	}
 	return NULL;
