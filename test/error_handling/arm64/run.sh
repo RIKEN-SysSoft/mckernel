@@ -62,11 +62,31 @@ else
 	result=-1
 fi
 
+#######################
+# LTP regression test #
+#######################
+
+while read line
+do
+	tp=`echo ${line} | cut -d ' ' -f 1`
+
+	if [ ! -e ${LTPBIN}/${tp} ]; then
+		echo "${LTPBIN}/${tp} not found."
+		continue
+	fi
+
+	sudo timeout -sKILL 5m sudo PATH=${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/${line}
+	if [ $? != 0 ]; then
+		echo "##### ${tp} returned not 0 #####"
+		result=-1
+	fi
+done < ./ltplist.txt
+
 ##################
 # ulimit -u test #
 ##################
 
-nprocs=`ps -ho pid,comm -U `whoami` | wc -l`
+nprocs=`ps -ho pid,comm -U \`whoami\` | wc -l`
 
 ${MCEXEC} -t $((8 - nprocs)) ${TESTMCK} -s kill -n 1 -- -p 6
 if [ $? == 0 ]; then
@@ -84,26 +104,5 @@ else
 	echo "ulimit -u 0002: NG"
 	result=-1
 fi
-
-#######################
-# LTP regression test #
-#######################
-
-export PATH=${LTPBIN}:${PATH}
-while read line
-do
-	tp=`echo ${line} | cut -d ' ' -f 1`
-
-	if [ ! -e ${LTPBIN}/${tp} ]; then
-		echo "${LTPBIN}/${tp} not found."
-		continue
-	fi
-
-	timeout -sKILL 5m ${MCEXEC} ${LTPBIN}/${line}
-	if [ $? != 0 ]; then
-		echo "##### ${tp} returned not 0 #####"
-		result=-1
-	fi
-done < ./ltplist.txt
 
 exit ${result}
