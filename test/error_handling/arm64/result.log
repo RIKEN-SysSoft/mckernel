@@ -82,28 +82,30 @@ execve03    1  TPASS  :  execve failed as expected: TEST_ERRNO=ENAMETOOLONG(36):
 execve03    2  TPASS  :  execve failed as expected: TEST_ERRNO=ENOENT(2): No such file or directory
 execve03    3  TPASS  :  execve failed as expected: TEST_ERRNO=ENOTDIR(20): Not a directory
 execve03    4  TPASS  :  execve failed as expected: TEST_ERRNO=EFAULT(14): Bad address
-Error: /tmp/exetEhv7P/fake.22387 is not an executable?, errno: 13
-load_elf_desc_shebang: error: loading file: /tmp/exetEhv7P/fake.22387
+Error: /tmp/exeOBQRES/fake.6384 is not an executable?, errno: 13
+load_elf_desc_shebang: error: loading file: /tmp/exeOBQRES/fake.6384
 execve03    5  TPASS  :  execve failed as expected: TEST_ERRNO=EACCES(13): Permission denied
-Error: file /tmp/exetEhv7P/execve03.22387 is zero length
-load_elf_desc_shebang: error: loading file: /tmp/exetEhv7P/execve03.22387
+Error: file /tmp/exeOBQRES/execve03.6384 is zero length
+load_elf_desc_shebang: error: loading file: /tmp/exeOBQRES/execve03.6384
 execve03    6  TPASS  :  execve failed as expected: TEST_ERRNO=ENOEXEC(8): Exec format error
 Hello World
-execve05    1  TPASS  :  Test DONE, pid 22478, -- execve05 0 execve05 execve05
-execve05    1  TPASS  :  Test DONE, pid 22495, -- execve05 0 execve05 execve05
-execve05    1  TPASS  :  Test DONE, pid 22512, -- execve05 0 execve05 execve05
-execve05    1  TPASS  :  Test DONE, pid 22529, -- execve05 0 execve05 execve05
-execve05    1  TPASS  :  Test DONE, pid 22546, -- execve05 0 execve05 execve05
-execve05    1  TPASS  :  Test DONE, pid 22564, -- execve05 0 execve05 execve05
-execve05    1  TPASS  :  Test DONE, pid 22581, -- execve05 0 execve05 execve05
-execve05    1  TPASS  :  Test DONE, pid 22598, -- execve05 0 execve05 execve05
-fork01      1  TPASS  :  fork() returned 22634
-fork01      2  TPASS  :  child pid and fork() return agree: 22634
+execve05    1  TPASS  :  Test DONE, pid 6498, -- execve05 0 execve05 execve05
+execve05    1  TPASS  :  Test DONE, pid 6516, -- execve05 0 execve05 execve05
+execve04    1  TBROK  :  tst_checkpoint.c:129: execve04.c:128: tst_checkpoint_wait(0, 10000): errno=ETIMEDOUT(110): Connection timed ou
+execve04    2  TBROK  :  tst_checkpoint.c:129: Remaining cases broken
+execve05    1  TPASS  :  Test DONE, pid 6533, -- execve05 0 execve05 execve05
+execve05    1  TPASS  :  Test DONE, pid 6551, -- execve05 0 execve05 execve05
+execve05    1  TPASS  :  Test DONE, pid 6568, -- execve05 0 execve05 execve05
+execve05    1  TPASS  :  Test DONE, pid 6585, -- execve05 0 execve05 execve05
+execve05    1  TPASS  :  Test DONE, pid 6602, -- execve05 0 execve05 execve05
+execve05    1  TPASS  :  Test DONE, pid 6619, -- execve05 0 execve05 execve05
+fork01      1  TPASS  :  fork() returned 6672
+fork01      2  TPASS  :  child pid and fork() return agree: 6672
 fork02      0  TINFO  :  Inside parent
 fork02      0  TINFO  :  Inside child
 fork02      0  TINFO  :  exit status of wait 0
 fork02      1  TPASS  :  test 1 PASSED
-fork03      0  TINFO  :  process id in parent of child from fork : 22701
+fork03      0  TINFO  :  process id in parent of child from fork : 6769
 fork03      1  TPASS  :  test 1 PASSED
 fork04      1  TPASS  :  Env var TERM unchanged after fork(): screen
 fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
@@ -137,9 +139,9 @@ fork10      0  TINFO  :  fork child A
 fork10      1  TPASS  :  test 1 PASSED
 fork11      1  TPASS  :  fork test passed, 100 processes
 fork13      1  TPASS  :  1 pids forked, all passed
-./run.sh: 105 行:  7799 強制終了            timeout -sKILL 5m ${MCEXEC} ${LTPBIN}/${line}
+./run.sh: 82 行: 24157 強制終了            sudo timeout -sKILL 5m sudo PATH=${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/${line}
 ##### fork14 returned not 0 #####
-clone01     1  TPASS  :  clone returned 8155
+clone01     1  TPASS  :  clone returned 24559
 clone02     1  TFAIL  :  clone02.c:144: clone() failed: TEST_ERRNO=EINVAL(22): Invalid argument
 clone02     2  TPASS  :  Test Passed
 ##### clone02 returned not 0 #####
@@ -162,18 +164,15 @@ kill02      1  TPASS  :  The signal was sent to all processes in the process gro
 kill02      2  TPASS  :  The signal was not sent to selective processes that were not in the process group.
 kill03      1  TPASS  :  errno set to 22 : Invalid argument, as expected
 kill04      1  TPASS  :  errno set to 3 : No such process, as expected
-execve04    1  TBROK  :  tst_checkpoint.c:129: execve04.c:128: tst_checkpoint_wait(0, 10000): errno=ETIMEDOUT(110): Connection timed out
-execve04    2  TBROK  :  tst_checkpoint.c:129: Remaining cases broken
 kill failed with EPERM
 kill05      1  TPASS  :  received expected errno(EPERM)
 kill06      1  TPASS  :  received expected signal 9
 kill07      0  TINFO  :  received expected signal 9
 kill07      1  TPASS  :  Did not catch signal as expected
 kill08      1  TPASS  :  received expected signal 9
-kill09      1  TPASS  :  kill(8913, SIGKILL) returned 0
-kill10      1  TPASS  :  All 2 pgrps received their signals
-8946: All 4 children reported in
-8960: All 4 children reported in
+kill09      1  TPASS  :  kill(25550, SIGKILL) returned 0
+25598: All 4 children reported in
+25612: All 4 children reported in
 kill11      0  TINFO  :  Adjusting RLIMIT_CORE to 1048576
 kill11      1  TPASS  :  signal SIGHUP          
 kill11      2  TPASS  :  signal SIGINT          
@@ -324,23 +323,31 @@ signal05   30  TPASS  :  signal05 call succeeded
 signal05   31  TPASS  :  signal05 call succeeded
 TEST_SUITE: kill
 TEST_NUMBER: 1
-ARGS: -p 6
-Generate child process pid:15427, pgid:15208
-Generate child process pid:15441, pgid:15208
-Generate child process pid:15456, pgid:15208
-Generate child process pid:15470, pgid:15208
-Generate child process pid:15484, pgid:15208
-Generate child process pid:15498, pgid:15208
+ARGS: -p 6 
+Generate child process pid:26893, pgid:6009
+Generate child process pid:26896, pgid:6009
+Generate child process pid:26899, pgid:6009
+Generate child process pid:26902, pgid:6009
+Generate child process pid:26905, pgid:6009
+Generate child process pid:26908, pgid:6009
 wait for a few sec...
 Send to all processes that have permission to send a signal.
-[pid:15412, pgid:15208] Get signal.
-[pid:15484, pgid:15208] Get signal.
-[pid:15456, pgid:15208] Get signal.
-[pid:15427, pgid:15208] Get signal.
-[pid:15441, pgid:15208] Get signal.
-[pid:15498, pgid:15208] Get signal.
-[pid:15470, pgid:15208] Get signal.
+[pid:26896, pgid:6009] Get signal.
+[pid:26889, pgid:6009] Get signal.
+[pid:26899, pgid:6009] Get signal.
+[pid:26908, pgid:6009] Get signal.
+[pid:26902, pgid:6009] Get signal.
+[pid:26905, pgid:6009] Get signal.
+[pid:26893, pgid:6009] Get signal.
 RESULT: ok
 ulimit -u 0001: OK
+TEST_SUITE: kill
+TEST_NUMBER: 1
+ARGS: -p 6 
+ERROR: creating worker threads (11), check ulimit?
+main_loop: Error: creating worker threads: Resource temporarily unavailable
+fork(): error with child process after fork
+[warning] fork() failed.
+RESULT: child process nothing.
 ulimit -u 0002: OK
 make: *** [test] エラー 255

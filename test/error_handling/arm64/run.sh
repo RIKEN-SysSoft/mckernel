@@ -66,7 +66,6 @@ fi
 # LTP regression test #
 #######################
 
-export PATH=${LTPBIN}:${PATH}
 while read line
 do
 	tp=`echo ${line} | cut -d ' ' -f 1`
@@ -76,7 +75,7 @@ do
 		continue
 	fi
 
-	timeout -sKILL 5m ${MCEXEC} ${LTPBIN}/${line}
+	sudo timeout -sKILL 5m sudo PATH=${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/${line}
 	if [ $? != 0 ]; then
 		echo "##### ${tp} returned not 0 #####"
 		result=-1
@@ -87,7 +86,9 @@ done < ./ltplist.txt
 # ulimit -u test #
 ##################
 
-${MCEXEC} ${TESTMCK} -s kill -n 1 -- -p 6
+nprocs=`ps -ho pid,comm -U \`whoami\` | wc -l`
+
+${MCEXEC} -t $((8 - nprocs)) ${TESTMCK} -s kill -n 1 -- -p 6
 if [ $? == 0 ]; then
 	echo "ulimit -u 0001: OK"
 else
@@ -95,23 +96,12 @@ else
 	result=-1
 fi
 
-proc=`ps -ho pid,comm -U \`whoami\` | wc -l`
-proc=$((${proc} - 2))
-default_ulimit_u=`ulimit -u`
 ulimit -u 9
-output=`${MCEXEC} -t $((6 - ${proc})) ${TESTMCK} -s kill -n 1 -- -p 2 2>&1`
+${MCEXEC} -t $((8 - nprocs)) ${TESTMCK} -s kill -n 1 -- -p 6
 if [ $? != 0 ]; then
-	echo "${output}" | grep -q "fork() failed."
-	if [ $? == 0 ]; then
-		echo "ulimit -u 0002: OK"
-	else
-		echo "${output}"
-		echo "ulimit -u 0002: NG, test_mck \"fork() failed\" not found."
-		result=-1
-	fi
+	echo "ulimit -u 0002: OK"
 else
-	echo "${output}"
-	echo "ulimit -u 0002: NG, test_mck succeeded."
+	echo "ulimit -u 0002: NG"
 	result=-1
 fi
 
