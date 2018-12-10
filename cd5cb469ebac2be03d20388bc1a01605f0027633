@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "010d60b0_dcfb0863",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 326,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-10T10:58:50Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: -p 6 $",
+      "revId": "cd5cb469ebac2be03d20388bc1a01605f0027633",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd9c109d_0cba67b3",
+        "filename": "test/error_handling/arm64/result.log",
+        "patchSetId": 2
+      },
+      "lineNbr": 346,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-10T10:58:50Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ARGS: -p 6 $",
+      "revId": "cd5cb469ebac2be03d20388bc1a01605f0027633",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72938d62_6fc67a8a",
+        "filename": "test/error_handling/arm64/run.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-10T10:58:50Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsudo timeout -sKILL 5m sudo PATH\u003d${LTPBIN}:${PATH} ${MCEXEC} ${LTPBIN}/${line}",
+      "revId": "cd5cb469ebac2be03d20388bc1a01605f0027633",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
