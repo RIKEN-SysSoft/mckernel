@@ -49,7 +49,7 @@ clean:
 ifeq ($(ARCH), arm64)
 	@rm -f $(vdsodir)/*.o $(vdsodir)/vdso.lds $(vdsodir)/vdso.so* $(vdsodir)/Makefile.dep
 	@rm -f $(vdsodir)/../include/vdso-offsets.h $(vdsodir)/../include/vdso-so-path.h
-	@rmdir --ignore-fail-on-non-empty $(vdsodir)/../include
+	@if [ -d $(vdsodir)/../include ]; then rmdir --ignore-fail-on-non-empty $(vdsodir)/../include; fi
 endif
 
 install:
