@@ -1,0 +1,67 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+*** CT001 start *******************************
+** case: THP_DISABLED
+[ OK ] get thp_disable: 1
+** case: THP_ENABLED
+[ OK ] get thp_disable: 0
+*** CT001: PASSED (ok:2, ng:0)
+
+*** CT002 start *******************************
+** case: THP_DISABLED
+set thp_disable: 1
+exec: /home/satoken/ppos/bin/mcexec ./mmap_large
+mmap to 0x2aaaab00d000, size: 16M
+[ OK ] THP is NOT Working
+** case: THP_ENABLED
+set thp_disable: 0
+exec: /home/satoken/ppos/bin/mcexec ./mmap_large
+mmap to 0x2aaaab200000, size: 16M
+pgsize_allocated: 2097152
+[ OK ] THP is Working well
+*** CT002: PASSED (ok:2, ng:0)
+
+*** CT003 start *******************************
+** case: THP_DISABLED
+set thp_disable: 1
+exec: /home/satoken/ppos/bin/mcexec ./shm_large
+shmat to 0x2aaaab00d000, size: 16M
+[ OK ] THP is NOT Working
+** case: THP_ENABLED
+set thp_disable: 0
+exec: /home/satoken/ppos/bin/mcexec ./shm_large
+shmat to 0x2aaaab200000, size: 16M
+pgsize_allocated: 2097152
+[ OK ] THP is Working well
+*** CT003: PASSED (ok:2, ng:0)
+
+*** CT004 start *******************************
+** case: THP_DISABLED
+set thp_disable: 1
+exec: /home/satoken/ppos/bin/mcexec ./mmap_hugetlbfs
+large page request, addr: 00002aaaab200000, size: 2097152
+large page request, addr: 00002aaac0000000, size: 1073741824
+pgsize_allocated: 2097152
+[ OK ] hugetlbfs-2M is Working well
+pgsize_allocated: 1073741824
+[ OK ] hugetlbfs-1G is Working well
+** case: THP_ENABLED
+set thp_disable: 0
+exec: /home/satoken/ppos/bin/mcexec ./mmap_hugetlbfs
+large page request, addr: 00002aaaab200000, size: 2097152
+large page request, addr: 00002aaac0000000, size: 1073741824
+pgsize_allocated: 2097152
+[ OK ] hugetlbfs-2M is Working well
+pgsize_allocated: 1073741824
+[ OK ] hugetlbfs-1G is Working well
+*** CT004: PASSED (ok:4, ng:0)
+
+*** CT005 start *******************************
+prctl01     1  TPASS  :  Test Passed
+prctl01     2  TPASS  :  Test Passed
+*** CT005: PASSED (ok:2, ng:0)
+
+*** CT006 start *******************************
+prctl02     1  TPASS  :  Test Passed
+prctl02     2  TPASS  :  Test Passed
+*** CT006: PASSED (ok:2, ng:0)

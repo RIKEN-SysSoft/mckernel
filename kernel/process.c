@@ -114,6 +114,7 @@ init_process(struct process *proc, struct process *parent)
 		proc->fsgid = parent->fsgid;
 		proc->mpol_flags = parent->mpol_flags;
 		proc->mpol_threshold = parent->mpol_threshold;
+		proc->thp_disable = parent->thp_disable;
 		memcpy(proc->rlimit, parent->rlimit,
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
 		memcpy(&proc->cpu_set, &parent->cpu_set,

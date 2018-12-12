@@ -86,6 +86,10 @@
 
 #define SCD_MSG_FUTEX_WAKE              0x60
 
+/* For prctl() */
+#define PR_SET_THP_DISABLE 41
+#define PR_GET_THP_DISABLE 42
+
 /* Cloning flags.  */
 # define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
 # define CLONE_VM      0x00000100 /* Set if VM shared between processes.  */
@@ -201,6 +205,7 @@ struct program_load_desc {
 	unsigned long heap_extension;
 	long stack_premap;
 	unsigned long mpol_bind_mask;
+	int thp_disable;
 	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int nr_processes;

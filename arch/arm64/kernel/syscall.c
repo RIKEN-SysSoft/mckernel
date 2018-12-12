@@ -161,7 +161,12 @@ fault:
 
 SYSCALL_DECLARE(prctl)
 {
+	struct process *proc = cpu_local_var(current)->proc;
 	int option = (int)ihk_mc_syscall_arg0(ctx);
+	unsigned long arg2 = (unsigned long)ihk_mc_syscall_arg1(ctx);
+	unsigned long arg3 = (unsigned long)ihk_mc_syscall_arg2(ctx);
+	unsigned long arg4 = (unsigned long)ihk_mc_syscall_arg3(ctx);
+	unsigned long arg5 = (unsigned long)ihk_mc_syscall_arg4(ctx);
 	long error;
 
 	switch (option) {
@@ -171,6 +176,19 @@ SYSCALL_DECLARE(prctl)
 		break;
 	case PR_SVE_GET_VL:
 		error = SVE_GET_VL(cpu_local_var(current));
+		break;
+	case PR_SET_THP_DISABLE:
+		if (arg3 || arg4 || arg5) {
+			return -EINVAL;
+		}
+		proc->thp_disable = arg2;
+		error = 0;
+		break;
+	case PR_GET_THP_DISABLE:
+		if (arg2 || arg3 || arg4 || arg5) {
+			return -EINVAL;
+		}
+		error = proc->thp_disable;
 		break;
 	default:
 		error = syscall_generic_forwarding(__NR_prctl, ctx);
