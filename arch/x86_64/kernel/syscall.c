@@ -169,6 +169,29 @@ fault:
 	return -EFAULT;
 }
 
+SYSCALL_DECLARE(prctl)
+{
+	struct process *proc = cpu_local_var(current)->proc;
+	int option = (int)ihk_mc_syscall_arg0(ctx);
+	unsigned long arg2 = (unsigned long)ihk_mc_syscall_arg1(ctx);
+	int ret = 0;
+
+	switch (option) {
+	case PR_SET_THP_DISABLE:
+		proc->thp_disable = arg2;
+		ret = 0;
+		break;
+	case PR_GET_THP_DISABLE:
+		ret = proc->thp_disable;
+		break;
+	default:
+		ret = syscall_generic_forwarding(__NR_prctl, ctx);
+		break;
+	}
+
+	return ret;
+}
+
 struct sigsp {
 	unsigned long flags;
 	void *link;
