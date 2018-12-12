@@ -2060,6 +2060,21 @@ static void ld_preload_init()
 	}
 }
 
+static int get_thp_disable(void)
+{
+	int ret = 0;
+
+	ret = prctl(PR_GET_THP_DISABLE);
+
+	/* PR_GET_THP_DISABLE supported since Linux 3.15 */
+	if (ret < 0) {
+		/* if not supported, make THP disable*/
+		ret = 1;
+	}
+
+	return ret;
+}
+
 int main(int argc, char **argv)
 {
 	int ret = 0;
@@ -2699,6 +2714,7 @@ int main(int argc, char **argv)
 
 	desc->uti_thread_rank = uti_thread_rank;
 	desc->uti_use_last_cpu = uti_use_last_cpu;
+	desc->thp_disable = get_thp_disable();
 
 	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {

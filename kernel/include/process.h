@@ -556,6 +556,7 @@ struct process {
 	int uti_thread_rank; /* Spawn on Linux CPU when clone_count reaches this */
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int clone_count;
+	int thp_disable;
 
 	// perf_event
 	int perf_status;

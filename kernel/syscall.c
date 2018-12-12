@@ -1658,7 +1658,8 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
 		p2align = pgshift - PAGE_SHIFT;
 	}
-	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)) {
+	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)
+		    && !proc->thp_disable) {
 		pgshift = 0;		/* transparent huge page */
 		p2align = PAGE_P2ALIGN;
 
@@ -5197,7 +5198,7 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 	}
 
 	pgshift = PAGE_SHIFT;
-	if (shmflg & SHM_HUGETLB) {
+	if (shmflg & SHM_HUGETLB && !proc->thp_disable) {
 		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
 	}
 
@@ -9573,6 +9574,28 @@ SYSCALL_DECLARE(util_register_desc)
 	uti_desc = ihk_mc_syscall_arg0(ctx);
 	dkprintf("%s: tid=%d,uti_desc=%lx\n", __FUNCTION__, thread->tid, uti_desc);
 	return 0;
+}
+
+SYSCALL_DECLARE(prctl)
+{
+	struct process *proc = cpu_local_var(current)->proc;
+	int option = (int)ihk_mc_syscall_arg0(ctx);
+	unsigned long arg2 = (unsigned long)ihk_mc_syscall_arg1(ctx);
+	int ret = 0;
+
+	switch (option) {
+	case PR_SET_THP_DISABLE:
+		proc->thp_disable = arg2;
+		ret = 0;
+		break;
+	case PR_GET_THP_DISABLE:
+		ret = proc->thp_disable;
+		break;
+	default:
+		ret = -EINVAL;
+	}
+
+	return ret;
 }
 
 void
