@@ -1,0 +1,109 @@
+diff --git arch/arm64/kernel/memory.c arch/arm64/kernel/memory.c
+index 4cefc9f..d8fbb8c 100644
+--- arch/arm64/kernel/memory.c
++++ arch/arm64/kernel/memory.c
+@@ -2356,6 +2356,16 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
+ 	ptl1_set(ptep, pte);
+ 
+ 	error = 0;
++
++	if (args->attr[0] & PTE_CONT &&
++		__page_offset(base, PTL1_CONT_SIZE) == 0) {
++		if (base >= cpu_local_var(current)->vm->region.user_start &&
++			base < cpu_local_var(current)->vm->region.stack_start) {
++		kprintf("%s: large page allocation, addr: %016lx, size: %d, phys: %lx\n",
++			__func__, base, PTL1_CONT_SIZE, phys);
++		}
++	}
++
+ out:
+ 	dkprintf("set_range_l1(%lx,%lx,%lx): %d %lx\n",
+ 			base, start, end, error, *ptep);
+@@ -2436,6 +2446,23 @@ retry:
+ 				ptl_set(ptep, phys | args->attr[level-1],
+ 					level);
+ 				error = 0;
++
++				if (args->attr[level-1] & PTE_CONT) {
++					if (__page_offset(base, tbl.cont_pgsize) == 0) {
++						if (base >= cpu_local_var(current)->vm->region.user_start &&
++							base < cpu_local_var(current)->vm->region.stack_start) {
++						kprintf("%s: large page allocation, addr: %016lx, size: %d, phys: %lx\n",
++							__func__, base, tbl.cont_pgsize, phys);
++						}
++					}
++				} else {
++					if (base >= cpu_local_var(current)->vm->region.user_start &&
++						base < cpu_local_var(current)->vm->region.user_end) {
++					kprintf("%s: large page allocation, addr: %016lx, size: %d, phys: %lx\n",
++						__func__, base, tbl.pgsize, phys);
++					}
++				}
++
+ 				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
+ 					 "large page. %d %lx\n",
+ 					 base, start, end, level, error, *ptep);
+diff --git arch/x86_64/kernel/memory.c arch/x86_64/kernel/memory.c
+index cf7cac4..ff29cff 100644
+--- arch/x86_64/kernel/memory.c
++++ arch/x86_64/kernel/memory.c
+@@ -2027,6 +2027,13 @@ retry:
+ 			dkprintf("set_range_l2(%lx,%lx,%lx):"
+ 					"2MiB page. %d %lx\n",
+ 					base, start, end, error, *ptep);
++
++			if (base >= cpu_local_var(current)->vm->region.user_start &&
++				base < cpu_local_var(current)->vm->region.stack_start) {
++			kprintf("%s: large page allocation, addr: %016lx, size: %d\n",
++				__func__, base, PTL2_SIZE);
++			}
++
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL2_SIZE, PTL2_SIZE)) {
+ 				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
+@@ -2116,6 +2123,12 @@ retry:
+ 					"1GiB page. %d %lx\n",
+ 					base, start, end, error, *ptep);
+ 
++			if (base >= cpu_local_var(current)->vm->region.user_start &&
++				base < cpu_local_var(current)->vm->region.stack_start) {
++			kprintf("%s: large page allocation, addr: %016lx, size: %d\n",
++				__func__, base, PTL3_SIZE);
++			}
++
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL3_SIZE, PTL3_SIZE)) {
+ 				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
+diff --git kernel/include/rusage_private.h kernel/include/rusage_private.h
+index 7da7728..14253b2 100644
+--- kernel/include/rusage_private.h
++++ kernel/include/rusage_private.h
+@@ -12,7 +12,7 @@
+ #include <arch_rusage.h>
+ #include <debug.h>
+ 
+-#ifdef ENABLE_RUSAGE
++#if 0 /* def ENABLE_RUSAGE */
+ 
+ #define RUSAGE_OOM_MARGIN (2 * 1024 * 1024) // 2MB
+ 
+diff --git kernel/process.c kernel/process.c
+index bc0609b..cfa7d5e 100644
+--- kernel/process.c
++++ kernel/process.c
+@@ -2009,6 +2009,15 @@ retry:
+ 		}
+ 
+ 		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
++
++		if (pgsize > PAGE_SIZE) {
++			if ((unsigned long)pgaddr >= cpu_local_var(current)->vm->region.user_start &&
++				(unsigned long)pgaddr < cpu_local_var(current)->vm->region.stack_start) {
++			kprintf("large page allocation, addr: %016lx, size: %d, phys: %lx\n",
++				pgaddr, pgsize, phys);
++			}
++		}
++
+ 		error = ihk_mc_pt_set_pte(vm->address_space->page_table, ptep,
+ 		                          pgsize, phys, attr);
+ 		if (error) {

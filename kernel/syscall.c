@@ -1658,7 +1658,8 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
 		p2align = pgshift - PAGE_SHIFT;
 	}
-	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)) {
+	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)
+		    && !proc->thp_disable) {
 		pgshift = 0;		/* transparent huge page */
 		p2align = PAGE_P2ALIGN;
 
@@ -5198,7 +5199,10 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 
 	if (shmflg & SHM_HUGETLB) {
 		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
+	} else if (proc->thp_disable) {
+		pgshift = PAGE_SHIFT;
 	} else {
+		/* transparent huge page */
 		size_t pgsize;
 		int p2align;
 

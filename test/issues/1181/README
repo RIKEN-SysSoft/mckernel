@@ -1,0 +1,36 @@
+【Issue#1181 動作確認】
+□前提
+本テストはprctlのPR_SET_THP_DISABLE, PR_GET_THP_DISABLE オプションを
+使用するため、Linux 3.15.0 以降の環境で実行する必要がある
+
+□ テスト内容
+1. prctlによるTHP制御が実現されていることの確認
+CT001:
+	mcexecのTHP設定がmckernelプロセスに反映されていることを確認
+
+CT002:
+	mckernelプロセスのmmapがTHP設定どおりの動作をすることを確認
+
+CT003:
+	mckernelプロセスのshmgetがTHP設定どおりの動作をすることを確認
+
+CT004:
+	hugetlbfsが利用できることを確認
+
+2. 既存のprctl機能に影響がないことをLTPを用いて確認
+CT005: ltp-prctl01
+CT006: ltp-prctl02
+
+□ 実行手順
+(1) cd <mckernel> && patch -p0 < <mckernel>/test/issues/1181/large_page.patch
+(2) McKernelをビルドする
+(3) cd <mckernel>/test/issues/1181/<arch> && make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。
