@@ -36,5 +36,10 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 
 int is_mckernel_memory(unsigned long start, unsigned long end);
 
+static inline int pgsize_to_pgshift(size_t pgsize)
+{
+	return 63 - __builtin_clzl(pgsize);
+}
+
 #endif
 

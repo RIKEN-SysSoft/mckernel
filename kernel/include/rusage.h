@@ -5,9 +5,12 @@
 
 //#define RUSAGE_DEBUG
 
-#define IHK_MAX_NUM_PGSIZES 4
+#ifndef IHKLIB_RUSAGE_H_INCLUDED
+#include <arch_rusage.h>
+
 #define IHK_MAX_NUM_NUMA_NODES 1024
 #define IHK_MAX_NUM_CPUS 1024
+#endif // IHKLIB_RUSAGE_H_INCLUDED
 
 struct rusage_percpu {
 	unsigned long user_tsc;
