@@ -1871,11 +1871,52 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
 	}
 
-	if (!ptl1_fileoff(&old) && args->free_physical) {
-		if (!page || (page && page_unmap(page))) {
-			int npages = PTL1_SIZE / PAGE_SIZE;
-			ihk_mc_free_pages_user(phys_to_virt(phys), npages);
-			dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
+	if (!ptl1_fileoff(&old)) {
+		if (args->free_physical) {
+			size_t free_size = pte_is_contiguous(&old) ?
+				PTL1_CONT_SIZE : PTL1_SIZE;
+
+			if (!page) {
+				if ((!args->memobj ||
+				     !(args->memobj->flags & MF_XPMEM)) &&
+				    (!pte_is_contiguous(&old) ||
+				     page_is_contiguous_head(ptep,
+							     PTL1_CONT_SIZE))) {
+					ihk_mc_free_pages_user(phys_to_virt(phys),
+							       free_size >> PAGE_SHIFT);
+					dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+						 pte_get_phys(&old), __func__,
+						 pte_get_phys(&old),
+						 free_size, free_size);
+					memory_stat_rss_sub(free_size,
+							    free_size);
+				}
+			} else {
+				/* Unmap fileobj "page" once per one contiguous
+				 * group. Note that page_is_contiguous_head
+				 * refers to the PTE address, not its contents.
+				 */
+				if (!pte_is_contiguous(&old) ||
+				    page_is_contiguous_head(ptep,
+							    PTL1_CONT_SIZE)) {
+					if (page_unmap(page)) {
+						ihk_mc_free_pages_user(phys_to_virt(phys),
+								       free_size >> PAGE_SHIFT);
+						/* Track page->count for !MF_PREMAP pages */
+						dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+							 pte_get_phys(&old),
+							 __func__,
+							 pte_get_phys(&old),
+							 PTL1_SIZE, PTL1_SIZE);
+						rusage_memory_stat_sub(args->memobj,
+								       free_size,
+								       free_size);
+					}
+				}
+			}
+		} else {
+			dkprintf("%s: !calling memory_stat_rss_sub(),virt=%lx,phys=%lx\n",
+				 __func__, base, pte_get_phys(&old));
 		}
 	}
 	
@@ -1907,10 +1948,11 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 		walk_pte_t* walk;
 		walk_pte_fn_t* callback;
 		unsigned long pgsize;
+		unsigned long cont_pgsize;
 	} table[] = {
-		{walk_pte_l1, clear_range_l1, PTL2_SIZE}, /*PTL2*/
-		{walk_pte_l2, clear_range_l2, PTL3_SIZE}, /*PTL3*/
-		{walk_pte_l3, clear_range_l3, PTL4_SIZE}, /*PTL4*/
+		{walk_pte_l1, clear_range_l1, PTL2_SIZE, PTL2_CONT_SIZE}, /*PTL2*/
+		{walk_pte_l2, clear_range_l2, PTL3_SIZE, PTL3_CONT_SIZE}, /*PTL3*/
+		{walk_pte_l3, clear_range_l3, PTL4_SIZE, PTL4_CONT_SIZE}, /*PTL4*/
 	};
 	const struct table tbl = table[level-2];
 
@@ -1949,12 +1991,50 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 			memobj_flush_page(args->memobj, phys, tbl.pgsize);
 		}
 
+		if (!ptl_fileoff(&old, level)) {
+			if (args->free_physical) {
+				size_t free_size = pte_is_contiguous(&old) ?
+					tbl.cont_pgsize : tbl.pgsize;
 
-		if (!ptl_fileoff(&old, level) && args->free_physical) {
-			if (!page || (page && page_unmap(page))) {
-				int npages = tbl.pgsize / PAGE_SIZE;
-				ihk_mc_free_pages_user(phys_to_virt(phys), npages);
-				dkprintf("%s(level=%d): freeing large page at 0x%lx\n", __FUNCTION__, level, base);
+				if (!page) {
+					if ((!args->memobj ||
+					     !(args->memobj->flags & MF_XPMEM)) &&
+					    (!pte_is_contiguous(&old) ||
+					     page_is_contiguous_head(ptep,
+								     tbl.cont_pgsize))) {
+						ihk_mc_free_pages_user(phys_to_virt(phys),
+								       free_size >> PAGE_SHIFT);
+						dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+							 pte_get_phys(&old),
+							 __func__,
+							 pte_get_phys(&old),
+							 free_size, free_size);
+						memory_stat_rss_sub(free_size,
+								    free_size);
+					}
+				} else {
+					/* Unmap fileobj "page" once per one
+					 * contiguous group. Note that
+					 * page_is_contiguous_head wants
+					 * the PTE address, not its contents.
+					 */
+					if (!pte_is_contiguous(&old) ||
+					    page_is_contiguous_head(ptep, tbl.cont_pgsize)) {
+						if (page_unmap(page)) {
+							ihk_mc_free_pages_user(phys_to_virt(phys),
+									       free_size >> PAGE_SHIFT);
+							dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+								 pte_get_phys(&old),
+								 __func__,
+								 pte_get_phys(&old),
+								 tbl.pgsize,
+								 tbl.pgsize);
+							rusage_memory_stat_sub(args->memobj,
+									       free_size,
+									       free_size);
+						}
+					}
+				}
 			}
 		}
 
