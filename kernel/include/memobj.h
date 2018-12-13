@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <list.h>
 #include <pager.h>
+#include <page.h>
 
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #else /* POSTK_DEBUG_ARCH_DEP_18 */
@@ -161,5 +162,32 @@ int hugefileobj_pre_create(struct pager_create_result *result,
 int hugefileobj_create(struct memobj *obj, size_t len, off_t off,
 		       int *pgshiftp, uintptr_t virt_addr);
 void hugefileobj_cleanup(void);
+
+static inline int is_flushable(struct page *page, struct memobj *memobj)
+{
+	/* Only memory with backing store needs flush */
+	if (!page || !page_is_in_memobj(page))
+		return 0;
+
+	/* memobj could be NULL when calling ihk_mc_pt_clear_range()
+	 * for range with memobj with pages.
+	 * We don't call .flush_page for /dev/shm/ map.
+	 */
+	if (!memobj || (memobj->flags & MF_ZEROFILL))
+		return 0;
+
+	return 1;
+}
+
+static inline int is_freeable(struct memobj *memobj)
+{
+	/* XPMEM attachment isn't freeable because it's an additional
+	 * map to the first map of the exposed area.
+	 */
+	if (memobj && (memobj->flags & MF_XPMEM))
+		return 0;
+
+	return 1;
+}
 
 #endif /* HEADER_MEMOBJ_H */
