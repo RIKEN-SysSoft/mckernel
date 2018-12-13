@@ -269,9 +269,14 @@ static void shmobj_destroy(struct shmobj *obj)
 		if (page_unmap(page)) {
 			ihk_mc_free_pages_user(page_va, npages);
 			/* Track change in page->count for shmobj.
-			   It is decremented in here or shmobj_invalidate() or clear_range(). */
-			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, npages * PAGE_SIZE, PAGE_SIZE);
-			memory_stat_rss_sub(npages * PAGE_SIZE, npages * PAGE_SIZE);
+			 * It is decremented in here or shmobj_invalidate()
+			 * or clear_range().
+			 */
+			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+				 phys, __func__, phys, 1UL << obj->pgshift,
+				 1UL << obj->pgshift);
+			memory_stat_rss_sub(1UL << obj->pgshift,
+					    1UL << obj->pgshift);
 		}
 #if 0
 		dkprintf("shmobj_destroy(%p):"
@@ -396,8 +401,6 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 		}
 		phys = virt_to_phys(virt);
 		page = phys_to_page_insert_hash(phys);
-		/* Track change in page->count for shmobj.
-		   Add when setting the PTE for a page with count of one in ihk_mc_pt_set_range(). */
 
 		if (page->mode != PM_NONE) {
 			ekprintf("shmobj_get_page(%p,%#lx,%d,%p):"
@@ -457,8 +460,11 @@ static int shmobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
 			ihk_mc_free_pages_user(phys_to_virt(phys),
 			                       pgsize/PAGE_SIZE);
 			/* Track change in page->count for shmobj. 
-			 It is decremented in here or shmobj_destroy() or clear_range(). */
-			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, pgsize, PAGE_SIZE);
+			 * It is decremented in here or shmobj_destroy() or
+			 * clear_range().
+			 */
+			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+				 phys, __func__, phys, pgsize, pgsize);
 			memory_stat_rss_sub(pgsize, pgsize);
 		}
 	}
