@@ -3,29 +3,35 @@
 
 #define DEBUG_RUSAGE
 
-#define IHK_OS_PGSIZE_4KB 0
-#define IHK_OS_PGSIZE_2MB 1
-#define IHK_OS_PGSIZE_1GB 2
+enum ihk_os_pgsize {
+	IHK_OS_PGSIZE_4KB,
+	IHK_OS_PGSIZE_2MB,
+	IHK_OS_PGSIZE_1GB,
+	IHK_OS_PGSIZE_COUNT
+};
 
 extern struct rusage_global *rusage;
 
 static inline int rusage_pgsize_to_pgtype(size_t pgsize)
 {
 	int ret = IHK_OS_PGSIZE_4KB;
-	switch (pgsize) {
-	case PTL1_SIZE:
+	int pgshift = 63 - __builtin_clzl(pgsize);
+
+	switch (pgshift) {
+	case 12:
 		ret = IHK_OS_PGSIZE_4KB;
 		break;
-	case PTL2_SIZE:
+	case 21:
 		ret = IHK_OS_PGSIZE_2MB;
 		break;
-	case PTL3_SIZE:
+	case 30:
 		ret = IHK_OS_PGSIZE_1GB;
 		break;
 	default:
 		kprintf("%s: Error: Unknown pgsize=%ld\n", __FUNCTION__, pgsize);
 		break;
 	}
+
 	return ret;
 }
 
