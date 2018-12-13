@@ -272,9 +272,9 @@ static void shmobj_destroy(struct shmobj *obj)
 			   It is decremented in here or shmobj_invalidate() or clear_range(). */
 			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, npages * PAGE_SIZE, PAGE_SIZE);
 #ifdef POSTK_DEBUG_TEMP_FIX_88 /* from large-shmmap rusage count fix. */
-			memory_stat_rss_sub(npages * PAGE_SIZE, npages * PAGE_SIZE);
+			memory_stat_rss_sub(1UL << obj->pgshift, 1UL << obj->pgshift);
 #else /* POSTK_DEBUG_TEMP_FIX_88 */
-			memory_stat_rss_sub(npages * PAGE_SIZE, PAGE_SIZE); 
+			memory_stat_rss_sub(1UL << obj->pgshift, 1UL << obj->pgshift); 
 #endif /* POSTK_DEBUG_TEMP_FIX_88 */
 		}
 #if 0
@@ -465,9 +465,9 @@ static int shmobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
 			 It is decremented in here or shmobj_destroy() or clear_range(). */
 			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, pgsize, PAGE_SIZE);
 #ifdef POSTK_DEBUG_TEMP_FIX_88 /* from large-shmmap rusage count fix. */
-			memory_stat_rss_sub(pgsize, pgsize);
+			memory_stat_rss_sub(1UL << obj->pgshift, 1UL << obj->pgshift);
 #else /* POSTK_DEBUG_TEMP_FIX_88 */
-			memory_stat_rss_sub(pgsize, PAGE_SIZE); 
+			memory_stat_rss_sub(1UL << obj->pgshift, 1UL << obj->pgshift); 
 #endif /* POSTK_DEBUG_TEMP_FIX_88 */
 		}
 	}
