@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <getopt.h>
 #include <ihklib.h>
-#include <mckernel/ihklib_rusage.h>
 #include "util.h"
 #include "mck_bps_conflict.h"
 
@@ -37,7 +36,7 @@ int main(int argc, char **argv)
 	unsigned long memfree[4];
 	int num_pgsizes;
 	long pgsizes[3];
-	struct mckernel_rusage rusage;
+	struct ihk_os_rusage rusage;
 	char *retstr;
 	int boot_shutdown = 0;
 	int mcexec_shutdown = 0;
@@ -445,7 +444,7 @@ int main(int argc, char **argv)
 	OKNG(ret != 0, "ihk_os_get_pagesizes\n");
 
 	// get rusage
-	ret = ihk_os_getrusage(0, &rusage, sizeof(rusage));
+	ret = ihk_os_getrusage(0, &rusage);
 	OKNG(ret != 0, "ihk_os_getrusage\n");
 
 	// shutdown

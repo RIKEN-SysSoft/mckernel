@@ -44,7 +44,6 @@
 #include <config.h>
 #include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
-#include <ihklib_rusage.h>
 #include <rusage.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <uapi/linux/sched/types.h>
@@ -2376,7 +2375,7 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 {
 	struct mcctrl_ioctl_getrusage_desc desc;
 	struct rusage_global *rusage_global = ihk_os_get_rusage(ihk_os);
-	struct mckernel_rusage *rusage = NULL;
+	struct ihk_os_rusage *rusage = NULL;
 	int ret = 0;
 	int i;
 	unsigned long ut;
@@ -2388,13 +2387,13 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 		goto out;
 	}
 
-	rusage = kmalloc(sizeof(struct mckernel_rusage), GFP_KERNEL);
+	rusage = kmalloc(sizeof(struct ihk_os_rusage), GFP_KERNEL);
 	if (!rusage) {
 		printk("%s: kmalloc failed\n", __FUNCTION__);
 		ret = -ENOMEM;
 		goto out;
 	}
-	memset(rusage, 0, sizeof(struct mckernel_rusage));
+	memset(rusage, 0, sizeof(struct ihk_os_rusage));
 
 	/* Compile statistics */
 	for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
@@ -2422,13 +2421,7 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 	rusage->num_threads = rusage_global->num_threads;
 	rusage->max_num_threads = rusage_global->max_num_threads;
 
-	if (desc.size_rusage > sizeof(struct mckernel_rusage)) {
-		printk("%s: desc.size_rusage=%ld > sizeof(struct mckernel_rusage)=%ld\n", __FUNCTION__, desc.size_rusage, sizeof(struct mckernel_rusage));
-		ret = -EINVAL;
-		goto out;
-	}
-
-	ret = copy_to_user(desc.rusage, rusage, desc.size_rusage);
+	ret = copy_to_user(desc.rusage, rusage, sizeof(struct ihk_os_rusage));
 	if (ret != 0) {
 		printk("%s: copy_to_user failed\n", __FUNCTION__);
 		goto out;

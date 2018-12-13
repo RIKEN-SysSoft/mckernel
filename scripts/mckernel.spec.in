@@ -84,7 +84,6 @@ Interface for Heterogeneous Kernels and McKernel.
 %{_libdir}/libldump2mcdump.so
 %{_includedir}/ihklib.h
 %{_includedir}/ihk/affinity.h
-%{_includedir}/mckernel/ihklib_rusage.h
 %{_sysconfdir}/irqbalance_mck.in
 %{_sysconfdir}/irqbalance_mck.service
 %{_mandir}/man1/mcreboot.1.gz
