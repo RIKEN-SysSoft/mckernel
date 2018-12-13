@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ihklib.h>
-#include <mckernel/ihklib_rusage.h>
 
 static void usage(char *cmd)
 {
@@ -16,7 +15,7 @@ int main(int argc, char *argv[])
 	int os_num = 0;
 	int ret = -1;
 	int i = 0;
-	struct mckernel_rusage mck_rusage;
+	struct ihk_os_rusage mck_rusage;
 
 	if (argc != 2) {
 		usage(argv[0]);
@@ -31,7 +30,7 @@ int main(int argc, char *argv[])
 	}
 
 	memset(&mck_rusage, 0, sizeof(mck_rusage));
-	ret = ihk_os_getrusage(os_num, &mck_rusage, sizeof(mck_rusage));
+	ret = ihk_os_getrusage(os_num, &mck_rusage);
 	if (ret) {
 		perror("ihk_os_getrusage()");
 		goto out;
