@@ -1866,6 +1866,9 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		page = phys_to_page(phys);
 	}
 
+	/* Note that arg->memobj is NULL while page is found
+	 * for shmobj when coming here via ihk_mc_pt_clear_range
+	 */
 	if (page && page_is_in_memobj(page) && ptl1_dirty(&old) && (args->memobj) &&
 			!(args->memobj->flags & MF_ZEROFILL)) {
 		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
@@ -1944,8 +1947,12 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && ptl_dirty(&old, level) &&
-				!(args->memobj->flags & MF_ZEROFILL)) {
+		/* Note that arg->memobj is NULL while page is found
+		 * for shmobj when coming here via ihk_mc_pt_clear_range
+		 */
+		if (page && page_is_in_memobj(page) &&
+		    ptl_dirty(&old, level) && args->memobj &&
+		    !(args->memobj->flags & MF_ZEROFILL)) {
 			memobj_flush_page(args->memobj, phys, tbl.pgsize);
 		}
 
