@@ -573,8 +573,7 @@ struct ihk_perf_event_attr{
 };
 
 struct mcctrl_ioctl_getrusage_desc {
-	void* rusage;
-	size_t size_rusage;
+	void *rusage;
 };
 
 #endif

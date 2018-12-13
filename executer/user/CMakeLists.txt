@@ -77,7 +77,5 @@ install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/vmcore2mckdump"
 	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 install(TARGETS sched_yield ldump2mcdump
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(FILES "../include/ihklib_rusage.h"
-	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/mckernel")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mcexec.1"
 	DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
