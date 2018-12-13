@@ -2758,10 +2758,11 @@ int set_range_middle(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		unsigned long pgsize;
 		unsigned long pgshift;
 		unsigned long cont_pgsize;
+		unsigned long cont_pgshift;
 	} table[] = {
-		{walk_pte_l1, set_range_l1, PTL2_SIZE, PTL2_SHIFT, PTL2_CONT_SIZE}, /*PTL2: second*/
-		{walk_pte_l2, set_range_l2, PTL3_SIZE, PTL3_SHIFT, PTL3_CONT_SIZE}, /*PTL3: first*/
-		{walk_pte_l3, set_range_l3, PTL4_SIZE, PTL4_SHIFT, PTL4_CONT_SIZE}, /*PTL4: zero*/
+		{walk_pte_l1, set_range_l1, PTL2_SIZE, PTL2_SHIFT, PTL2_CONT_SIZE, PTL2_CONT_SHIFT}, /*PTL2: second*/
+		{walk_pte_l2, set_range_l2, PTL3_SIZE, PTL3_SHIFT, PTL3_CONT_SIZE, PTL2_CONT_SHIFT}, /*PTL3: first*/
+		{walk_pte_l3, set_range_l3, PTL4_SIZE, PTL4_SHIFT, PTL4_CONT_SIZE, PTL2_CONT_SHIFT}, /*PTL4: zero*/
 	};
 	const struct table tbl = table[level-2];
 
@@ -2780,7 +2781,9 @@ retry:
 			if ((start <= base) && ((base + tbl.pgsize) <= end)
 			    && ((args->diff & (tbl.pgsize - 1)) == 0)
 			    && (!args->pgshift
-				|| (args->pgshift == tbl.pgshift))) {
+				|| (args->pgshift == tbl.pgshift ||
+				    args->pgshift == tbl.cont_pgshift))) {
+
 				phys = args->phys + (base - start);
 
 				//check head pte
