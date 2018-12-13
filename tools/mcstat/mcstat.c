@@ -18,8 +18,7 @@
 
 #include <ihklib.h>
 #include <ihk/ihk_host_user.h>
-#undef IHK_MAX_NUM_NUMA_NODES
-#include <ihklib_rusage.h>	// mckernel_rusage is defined here
+#include <ihk/ihk_rusage.h>	// ihk_os_rusage is defined here
 
 #define MAX_CPUS	256
 #define MiB100		(100*1024*1024) // 100 MiB
@@ -29,7 +28,7 @@
 #define UPDATE_COUNTER(c)	(c = (c + 1) % 10)
 
 struct my_rusage {
-	struct mckernel_rusage rusage;
+	struct ihk_os_rusage rusage;
 
 	/* Initial amount posted to allocator. Note that the amount
 	 * used before the initialization is not included.
@@ -137,7 +136,7 @@ mygetrusage(int idx, struct my_rusage *rbp)
 	unsigned long *memtotal = NULL;
 
 	rc = ihk_os_getrusage(idx, &rbp->rusage,
-			      sizeof(struct mckernel_rusage));
+			      sizeof(struct ihk_os_rusage));
 	if (rc) {
 		printf("%s: error: ihk_os_getrusage: %s\n",
 		       __func__, strerror(-rc));

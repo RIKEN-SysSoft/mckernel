@@ -7,7 +7,6 @@
 #include <fcntl.h>
 #include "util.h"
 #include "ihklib.h"
-#include "mckernel/ihklib_rusage.h"
 
 #define DEBUG
 
@@ -25,7 +24,7 @@ int main(int argc, char **argv)
 	int i, j, ret = 0;
 	void *mem;
 	int fd;
-	struct mckernel_rusage rusage;
+	struct ihk_os_rusage rusage;
 
 	fd = open("./file", O_RDWR);
 	CHKANDJUMP(fd == -1, 255, "open failed\n");

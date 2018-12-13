@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include "ihklib.h"
-#include "mckernel/ihklib_rusage.h"
 #include "util.h"
 
 #define DELAY0 (100UL * 1000 * 1000)
@@ -15,7 +14,7 @@
 int main(int argc, char **argv)
 {
 	int ret = 0;
-	struct mckernel_rusage rusage;
+	struct ihk_os_rusage rusage;
 
 	if ((ret = ihk_os_getrusage(0, &rusage, sizeof(rusage)))) {
 		fprintf(stderr, "%s: ihk_os_getrusage failed\n", __func__);
