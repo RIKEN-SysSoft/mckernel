@@ -1000,6 +1000,7 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
+
 		if (range->memobj && range->memobj->flags & MF_HUGETLBFS) {
 			error = ihk_mc_pt_clear_range(vm->address_space->page_table,
 					vm, (void *)start, (void *)end);
