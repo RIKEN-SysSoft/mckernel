@@ -9,7 +9,6 @@
 #include <memobj.h>
 #include <rusage.h>
 #include <ihk/ihk_monitor.h>
-#include <arch_rusage.h>
 #include <debug.h>
 
 #ifdef ENABLE_RUSAGE

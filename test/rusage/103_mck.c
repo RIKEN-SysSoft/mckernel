@@ -4,7 +4,6 @@
 #include <sys/syscall.h>   /* For SYS_xxx definitions */
 #include "util.h"
 #include "ihklib.h"
-#include "mckernel/ihklib_rusage.h"
 
 #define DEBUG
 
@@ -21,7 +20,7 @@ int main(int argc, char **argv)
 {
 	int i, j, ret = 0;
 	void *mem;
-	struct mckernel_rusage rusage;
+	struct ihk_os_rusage rusage;
 
 	for (j = 0; j < NLOOP; j++) {
 		mem = mmap(0, sz_anon[SZ_INDEX], PROT_READ | PROT_WRITE,
@@ -32,7 +31,7 @@ int main(int argc, char **argv)
 		ret = syscall(900);
 		CHKANDJUMP(ret != 0, 255, "syscall failed\n");
 
-		ret  = ihk_os_getrusage(0, &rusage, sizeof(rusage));
+		ret  = ihk_os_getrusage(0, &rusage);
 		CHKANDJUMP(ret != 0, 255, "ihk_os_getrusage failed\n");
 
 		for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
