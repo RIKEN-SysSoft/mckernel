@@ -414,7 +414,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 		memset(virt, 0, npages*PAGE_SIZE);
 		page->mode = PM_MAPPED;
 		page->offset = off;
-		ihk_atomic_set(&page->count, 1);
+		ihk_atomic_set(&page->count, 0);
 		ihk_atomic64_set(&page->mapped, 0);
 		page_list_insert(obj, page);
 		virt = NULL;
@@ -423,6 +423,7 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 	}
 	page_list_unlock(obj);
 
+	/* Decremented only by memobj_unref() in free_process_memory_range() */
 	ihk_atomic_inc(&page->count);
 
 	error = 0;
