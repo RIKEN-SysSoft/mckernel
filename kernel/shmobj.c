@@ -265,16 +265,18 @@ static void shmobj_destroy(struct shmobj *obj)
 					__FUNCTION__, page->phys);
 		}
 
+		/* Other call sites of page_unmap are:
+		 * (1) MADV_REMOVE --> shmobj_invalidate() 
+		 * (2) munmap --> free_process_memory_range() */
 		if (page_unmap(page)) {
+			size_t free_pgsize = 1UL << obj->pgshift;
+			size_t free_size = 1UL << obj->pgshift;
+
 			ihk_mc_free_pages_user(page_va, npages);
-			/* Track change in page->count for shmobj.
-			   It is decremented in here or shmobj_invalidate() or clear_range(). */
-			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, npages * PAGE_SIZE, PAGE_SIZE);
-#ifdef POSTK_DEBUG_TEMP_FIX_88 /* from large-shmmap rusage count fix. */
-			memory_stat_rss_sub(1UL << obj->pgshift, 1UL << obj->pgshift);
-#else /* POSTK_DEBUG_TEMP_FIX_88 */
-			memory_stat_rss_sub(1UL << obj->pgshift, 1UL << obj->pgshift); 
-#endif /* POSTK_DEBUG_TEMP_FIX_88 */
+			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+				 phys, __func__, phys, free_size,
+				 free_pgsize);
+			memory_stat_rss_sub(free_size, free_pgsize);
 		}
 #if 0
 		dkprintf("shmobj_destroy(%p):"
