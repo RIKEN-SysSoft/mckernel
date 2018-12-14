@@ -1700,6 +1700,7 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	struct page *page;
 	off_t linear_off;
 	pte_t apte;
+	size_t memobj_pgsize;
 
 	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d)\n",
 			arg0, pt, ptep, *ptep, pgaddr, pgshift);
@@ -1709,28 +1710,51 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	}
 
 	phys = pte_get_phys(ptep);
-	page = phys_to_page(phys);
-	linear_off = range->objoff + ((uintptr_t)pgaddr - range->start);
 
-	if (page) {
-		if (page->offset == linear_off) {
+	/* Only fileobj needs to modify PTE contents */
+	if (!(args->range->memobj->flags & MF_SHM)) {
+		page = phys_to_page(phys);
+
+		linear_off = range->objoff +
+			((uintptr_t)pgaddr - range->start);
+
+		if (page) {
+			if (page->offset == linear_off) {
+				pte_make_null(&apte, pgsize);
+			}
+			else {
+				pte_make_fileoff(page->offset, 0, pgsize,
+						 &apte);
+			}
+		} else {
 			pte_make_null(&apte, pgsize);
 		}
-		else {
-			pte_make_fileoff(page->offset, 0, pgsize, &apte);
+
+		pte_xchg(ptep, &apte);
+		flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
+
+		if (page && page_unmap(page)) {
+			panic("invalidate_one_page");
+		}
+	}
+
+	/* Contiguous PTE head invalidates memobj->pgshift-sized
+	 * memory for other members
+	 */
+	if (pte_is_contiguous(&apte)) {
+		if (page_is_contiguous_head(ptep, pgsize)) {
+			int level = pgsize_to_tbllv(pgsize);
+
+			memobj_pgsize = tbllv_to_contpgsize(level);
+		} else {
+			error = 0;
+			goto out;
 		}
 	} else {
-		pte_make_null(&apte, pgsize);
+		memobj_pgsize = pgsize;
 	}
 
-	pte_xchg(ptep, &apte);
-	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
-
-	if (page && page_unmap(page)) {
-		panic("invalidate_one_page");
-	}
-
-	error = memobj_invalidate_page(range->memobj, phys, pgsize);
+	error = memobj_invalidate_page(range->memobj, phys, memobj_pgsize);
 	if (error) {
 		ekprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d):"
 				"invalidate failed. %d\n",
