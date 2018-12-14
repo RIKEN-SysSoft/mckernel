@@ -392,6 +392,7 @@ static void fileobj_free(struct memobj *memobj)
 				 phys, __func__, phys, PAGE_SIZE, PAGE_SIZE);
 			rusage_memory_stat_mapped_file_sub(PAGE_SIZE,
 							   PAGE_SIZE);
+			kfree(page);
 		}
 	}
 
