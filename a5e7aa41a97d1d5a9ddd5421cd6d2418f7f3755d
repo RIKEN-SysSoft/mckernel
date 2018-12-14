@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "ebba269d_be261203",
+        "filename": "arch/arm64/kernel/include/arch_rusage.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-14T01:20:58Z",
+      "side": 1,
+      "message": "As said previously I don\u0027t like direct uses of such builtins. It\u0027s implemented in gcc/clang/icc ( https://godbolt.org/z/SULVrn ) so I don\u0027t really mind its use in itself, but please go through some helper e.g. pgsize_to_pgshift that could be a static inline in some other header.",
+      "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "e265432d_52fdabcb",
         "filename": "arch/arm64/kernel/include/arch_rusage.h",
         "patchSetId": 1
@@ -84,6 +101,23 @@
       "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a4ef1e1_34beb6e4",
+        "filename": "kernel/include/rusage.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-14T01:20:58Z",
+      "side": 1,
+      "message": "use IHK_OS_PGSIZE_COUNT ?",
+      "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
