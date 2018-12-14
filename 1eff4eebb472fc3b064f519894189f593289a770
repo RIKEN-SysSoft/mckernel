@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "fd70a631_25b7a56f",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1881,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-14T21:56:24Z",
+      "side": 1,
+      "message": "What brings the sudden need to check for XPMEM?",
+      "revId": "1eff4eebb472fc3b064f519894189f593289a770",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "302db21f_88238c53",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
@@ -50,6 +67,23 @@
       "revId": "1eff4eebb472fc3b064f519894189f593289a770",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e667a122_3964236c",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1892,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-14T21:56:24Z",
+      "side": 1,
+      "message": "Could this block be made into a subfunction? \"only\" need to pass phys, free_size and __func__\n\nafter reading the rest a bit more, I might be tempted to make all these conditions into a function instead, so you only have to call ihk_mc_free_pages_user / dkprintf / memory_stat_rss_sub once without grouping the checks (return true/false early) and share the code with clear_range_middle. Most difficult will be naming said function... :D",
+      "revId": "1eff4eebb472fc3b064f519894189f593289a770",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
@@ -121,6 +155,23 @@
     },
     {
       "key": {
+        "uuid": "26dd7e57_3dad2616",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1910,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-14T21:56:24Z",
+      "side": 1,
+      "message": "(these are wrong, you want free_size here. pte_get_phys(\u0026old) is also phys)",
+      "revId": "1eff4eebb472fc3b064f519894189f593289a770",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "939192e5_e987d060",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
@@ -183,6 +234,23 @@
       "writtenOn": "2018-12-14T01:04:59Z",
       "side": 1,
       "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: !calling memory_stat_rss_sub(),virt\u003d%lx,phys\u003d%lx\\n\",",
+      "revId": "1eff4eebb472fc3b064f519894189f593289a770",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "78c1cc5f_ffd0bd40",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1918,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-14T21:56:24Z",
+      "side": 1,
+      "message": "you\u0027re not calling it so could remove this and save back one level of indentation?",
       "revId": "1eff4eebb472fc3b064f519894189f593289a770",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
