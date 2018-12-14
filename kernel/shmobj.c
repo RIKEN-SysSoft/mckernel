@@ -37,7 +37,6 @@ static memobj_lookup_page_func_t shmobj_lookup_page;
 static struct memobj_ops shmobj_ops = {
 	.free =	&shmobj_free,
 	.get_page =	&shmobj_get_page,
-	.invalidate_page =	&shmobj_invalidate_page,
 	.lookup_page =	&shmobj_lookup_page,
 };
 
@@ -431,41 +430,6 @@ out:
 	}
 	dkprintf("shmobj_get_page(%p,%#lx,%d,%p):%d\n",
 			memobj, off, p2align, physp, error);
-	return error;
-}
-
-static int shmobj_invalidate_page(struct memobj *memobj, uintptr_t phys,
-		size_t pgsize)
-{
-	struct shmobj *obj = to_shmobj(memobj);
-	int error;
-	struct page *page;
-
-	dkprintf("shmobj_invalidate_page(%p,%#lx,%#lx)\n", memobj, phys, pgsize);
-
-	page_list_lock(obj);
-	if (!(page = phys_to_page(phys))
-			|| !(page = page_list_lookup(obj, page->offset))) {
-		page_list_unlock(obj);
-		error = 0;
-		goto out;
-	}
-	page_list_unlock(obj);
-
-	if (ihk_atomic_read(&page->count) == 1) {
-		if (page_unmap(page)) {
-			ihk_mc_free_pages_user(phys_to_virt(phys),
-			                       pgsize/PAGE_SIZE);
-			/* Track change in page->count for shmobj. 
-			 It is decremented in here or shmobj_destroy() or clear_range(). */
-			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, phys, pgsize, PAGE_SIZE);
-			memory_stat_rss_sub(pgsize, pgsize);
-		}
-	}
-
-	error = 0;
-out:
-	dkprintf("shmobj_invalidate_page(%p,%#lx,%#lx):%d\n", memobj, phys, pgsize, error);
 	return error;
 }
 
