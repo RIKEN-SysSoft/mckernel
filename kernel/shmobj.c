@@ -277,6 +277,7 @@ static void shmobj_destroy(struct shmobj *obj)
 				 1UL << obj->pgshift);
 			memory_stat_rss_sub(1UL << obj->pgshift,
 					    1UL << obj->pgshift);
+			kfree(page);
 		}
 #if 0
 		dkprintf("shmobj_destroy(%p):"

@@ -1608,8 +1608,8 @@ int page_unmap(struct page *page)
 	*/
 
 	dkprintf("page_unmap(%p %x %d): 1\n", page, page->mode, page->count);
+
 	list_del(&page->hash);
-	kfree(page);
 	ihk_mc_spinlock_unlock(&page_hash_locks[hash], irqflags);
 	return 1;
 }
