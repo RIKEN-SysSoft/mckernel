@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "149a03d8_9fb77427",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1870,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-14T00:57:01Z",
+      "side": 1,
+      "message": "and why would it be ok to not flush the memobj pages in this case? It\u0027s been all flushed on first page of the contiguous range? Buy why would that one\u0027s arg-\u003ememobj not be null but become null here?",
+      "revId": "26073ebcb5cc1e059c0b72aac6fc4d2e0bace057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
