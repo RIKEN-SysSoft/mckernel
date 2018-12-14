@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e265432d_52fdabcb",
+        "filename": "arch/arm64/kernel/include/arch_rusage.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-14T00:47:04Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0443eca4_246c3e69",
+        "filename": "arch/arm64/kernel/include/arch_rusage.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-14T00:47:04Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tswitch(pgshift) {",
+      "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3aa54b9b_2e2e31c2",
+        "filename": "arch/arm64/kernel/include/arch_rusage.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-14T00:47:04Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ab6dc8a_26d95c2e",
+        "filename": "arch/x86_64/kernel/include/arch_rusage.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-14T00:47:04Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a1ae214_24beee3d",
+        "filename": "arch/x86_64/kernel/include/arch_rusage.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-14T00:47:04Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tswitch(pgshift) {",
+      "revId": "a5e7aa41a97d1d5a9ddd5421cd6d2418f7f3755d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
