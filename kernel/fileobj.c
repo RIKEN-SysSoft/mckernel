@@ -370,13 +370,14 @@ static void fileobj_free(struct memobj *memobj)
 		if (!page) {
 			break;
 		}
-		__fileobj_page_hash_remove(page);
+
 		phys = page_to_phys(page);
 		page_va = phys_to_virt(phys);
 		/* Count must be one because set to one on the first
 		 * get_page() invoking fileobj_do_pageio and incremented by
 		 * the second get_page() reaping the pageio and decremented
 		 * by clear_range().
+		 * Note that __fileobj_page_hash_remove is done in page_unmap.
 		 */
 		if (ihk_atomic_read(&page->count) != 1) {
 			kprintf("%s: WARNING: page count is %d for phys 0x%lx is invalid, flags: 0x%lx\n",
