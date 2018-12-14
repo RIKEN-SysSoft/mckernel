@@ -1709,6 +1709,7 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	struct page *page;
 	off_t linear_off;
 	pte_t apte;
+	size_t memobj_pgsize;
 
 	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d)\n",
 			arg0, pt, ptep, *ptep, pgaddr, pgshift);
@@ -1726,7 +1727,8 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 			pte_make_null(&apte, pgsize);
 		}
 		else {
-			pte_make_fileoff(page->offset, 0, pgsize, &apte);
+			pte_make_fileoff(page->offset, 0, pgsize,
+					 &apte);
 		}
 	} else {
 		pte_make_null(&apte, pgsize);
@@ -1735,11 +1737,27 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	pte_xchg(ptep, &apte);
 	flush_tlb_single((uintptr_t)pgaddr);	/* XXX: TLB flush */
 
+	/* Contiguous PTE head invalidates memobj->pgshift-sized
+	 * memory for other members
+	 */
+	if (pte_is_contiguous(&apte)) {
+		if (page_is_contiguous_head(ptep, pgsize)) {
+			int level = pgsize_to_tbllv(pgsize);
+
+			memobj_pgsize = tbllv_to_contpgsize(level);
+		} else {
+			error = 0;
+			goto out;
+		}
+	} else {
+		memobj_pgsize = pgsize;
+	}
+
 	if (page && page_unmap(page)) {
 		panic("invalidate_one_page");
 	}
 
-	error = memobj_invalidate_page(range->memobj, phys, pgsize);
+	error = memobj_invalidate_page(range->memobj, phys, memobj_pgsize);
 	if (error) {
 		ekprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d):"
 				"invalidate failed. %d\n",
@@ -1806,9 +1824,16 @@ int invalidate_process_memory_range(struct process_vm *vm,
 		}
 	}
 
-	error = visit_pte_range(vm->address_space->page_table, (void *)start,
-	                        (void *)end, range->pgshift, VPTEF_SKIP_NULL,
-	                        &invalidate_one_page, &args);
+	if (range->memobj->flags & MF_SHM) {
+		error = ihk_mc_pt_free_range(vm->address_space->page_table,
+					     vm, (void *)start, (void *)end,
+					     range->memobj);
+	} else {
+		error = visit_pte_range(vm->address_space->page_table,
+					(void *)start, (void *)end,
+					range->pgshift, VPTEF_SKIP_NULL,
+					&invalidate_one_page, &args);
+	}
 	memobj_unref(range->memobj);
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error) {
