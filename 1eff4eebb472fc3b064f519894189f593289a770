@@ -87,6 +87,24 @@
     },
     {
       "key": {
+        "uuid": "6c265bf7_e9580072",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1892,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2018-12-18T09:03:40Z",
+      "side": 1,
+      "message": "I think the test is the most important to share as it is more complicated.\n\nHow about something like\n\n  if (pte_is_contiguous(\u0026old) \u0026\u0026\n      !page_is_contiguous_head(ptep, PTL1_CONT_SIZE))\n          return false;\n  \n  if (page) \n          return page_unmap(page)\n  else\n          return !args-\u003ememobj || !(args-\u003ememobj-\u003eflags \u0026 MF_XPMEM))",
+      "parentUuid": "e667a122_3964236c",
+      "revId": "1eff4eebb472fc3b064f519894189f593289a770",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "f42de4e1_0d577740",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
