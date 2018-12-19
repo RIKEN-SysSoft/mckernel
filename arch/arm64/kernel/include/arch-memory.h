@@ -766,6 +766,15 @@ static inline int page_is_contiguous_tail(pte_t *ptep, size_t pgsize)
 	return (ptr == ptep);
 }
 
+/* Return true if PTE doesn't belong to a contiguous PTE group or PTE
+ * is the head of a contiguous PTE group
+ */
+static inline int pte_is_head(pte_t *ptep, pte_t *old, size_t cont_size)
+{
+	if (pte_is_contiguous(old) && !page_is_contiguous_head(ptep, cont_size))
+		return 0;
+}
+
 void arch_adjust_allocate_page_size(uintptr_t fault_addr,
 				    pte_t *ptep,
 				    void **pgaddrp,

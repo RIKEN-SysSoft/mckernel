@@ -1836,6 +1836,37 @@ int visit_pte_range_safe(page_table_t pt, void *start0, void *end0, int pgshift,
 	return 0;
 }
 
+static void unmap_free_stat(struct page *page, unsigned long phys,
+			    size_t free_size, const char *func)
+{
+	if (!page || page_unmap()) {
+		ihk_mc_free_pages_user(phys_to_virt(phys),
+				       free_size >> PAGE_SHIFT);
+		dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+			 phys, func, phys, free_size, free_size);
+		memory_stat_rss_sub(free_size, free_size);
+	}
+}
+
+static int is_flushable(pte_t *ptep, pte_t *old, size_t cont_size, struct page *page, struct memobj *memobj) {
+
+	/* Only memory with backing store needs flush */
+	if (!page || !page_is_in_memobj(page))
+		return 0;
+
+	/* We don't flush /dev/shm/* because it's implemented
+	 * without backing store.
+	 */
+	if (memobj && (memobj->flags & MF_ZEROFILL))
+		return 0;
+
+	/* Only head in contiguous PTE group performs flush */
+	if (!pte_is_head(ptep, old, cont_size))
+		return 0;
+
+	return 1;
+}
+
 struct clear_range_args {
 	int free_physical;
 	struct memobj *memobj;
@@ -1852,6 +1883,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 	uint64_t phys = 0;
 	struct page *page;
 	pte_t old;
+	size_t clear_size;
 
 	if (ptl1_null(ptep)) {
 		return -ENOENT;
@@ -1866,58 +1898,18 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
 		page = phys_to_page(phys);
 	}
 
-	if (page && page_is_in_memobj(page) && ptl1_dirty(&old) && (args->memobj) &&
-			!(args->memobj->flags & MF_ZEROFILL)) {
-		memobj_flush_page(args->memobj, phys, PTL1_SIZE);
+	clear_size = pte_is_contiguous(&old) ?
+		PTL1_CONT_SIZE : PTL1_SIZE
+
+	if (ptl1_dirty(&old) &&
+	    is_flushable(ptep, &old, PTL1_CONT_SIZE, page, args->memobj)) {
+		memobj_flush_page(args->memobj, phys, clear_size);
 	}
 
-	if (!ptl1_fileoff(&old)) {
-		if (args->free_physical) {
-			size_t free_size = pte_is_contiguous(&old) ?
-				PTL1_CONT_SIZE : PTL1_SIZE;
-
-			if (!page) {
-				if ((!args->memobj ||
-				     !(args->memobj->flags & MF_XPMEM)) &&
-				    (!pte_is_contiguous(&old) ||
-				     page_is_contiguous_head(ptep,
-							     PTL1_CONT_SIZE))) {
-					ihk_mc_free_pages_user(phys_to_virt(phys),
-							       free_size >> PAGE_SHIFT);
-					dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
-						 pte_get_phys(&old), __func__,
-						 pte_get_phys(&old),
-						 free_size, free_size);
-					memory_stat_rss_sub(free_size,
-							    free_size);
-				}
-			} else {
-				/* Unmap fileobj "page" once per one contiguous
-				 * group. Note that page_is_contiguous_head
-				 * refers to the PTE address, not its contents.
-				 */
-				if (!pte_is_contiguous(&old) ||
-				    page_is_contiguous_head(ptep,
-							    PTL1_CONT_SIZE)) {
-					if (page_unmap(page)) {
-						ihk_mc_free_pages_user(phys_to_virt(phys),
-								       free_size >> PAGE_SHIFT);
-						/* Track page->count for !MF_PREMAP pages */
-						dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
-							 pte_get_phys(&old),
-							 __func__,
-							 pte_get_phys(&old),
-							 PTL1_SIZE, PTL1_SIZE);
-						rusage_memory_stat_sub(args->memobj,
-								       free_size,
-								       free_size);
-					}
-				}
-			}
-		} else {
-			dkprintf("%s: !calling memory_stat_rss_sub(),virt=%lx,phys=%lx\n",
-				 __func__, base, pte_get_phys(&old));
-		}
+	/* Only head in contiguous PTE group performs free */
+	if (!ptl1_fileoff(&old) && args->free_physical &&
+	    pte_is_head(ptep, &old, PTL1_CONT_SIZE)) {
+		unmap_free_stat(page, phys, clear_size, __func__);
 	}
 	
 	return 0;
@@ -1962,6 +1954,7 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 	int error;
 	struct page *page;
 	pte_t old;
+	size_t clear_size;
 
 	if (ptl_null(ptep, level)) {
 		return -ENOENT;
@@ -1986,56 +1979,17 @@ static int clear_range_middle(void *args0, pte_t *ptep, uint64_t base,
 			page = phys_to_page(phys);
 		}
 
-		if (page && page_is_in_memobj(page) && ptl_dirty(&old, level) &&
-				!(args->memobj->flags & MF_ZEROFILL)) {
-			memobj_flush_page(args->memobj, phys, tbl.pgsize);
+		clear_size = pte_is_contiguous(&old) ?
+			tbl.cont_pgsize : tbl.pgsize;
+			
+		if (ptl_dirty(&old, level) &&
+		    is_flushable(ptep, &old, tbl.cont_pgsize, page, args->memobj)) {
+			memobj_flush_page(args->memobj, phys, clear_size);
 		}
 
-		if (!ptl_fileoff(&old, level)) {
-			if (args->free_physical) {
-				size_t free_size = pte_is_contiguous(&old) ?
-					tbl.cont_pgsize : tbl.pgsize;
-
-				if (!page) {
-					if ((!args->memobj ||
-					     !(args->memobj->flags & MF_XPMEM)) &&
-					    (!pte_is_contiguous(&old) ||
-					     page_is_contiguous_head(ptep,
-								     tbl.cont_pgsize))) {
-						ihk_mc_free_pages_user(phys_to_virt(phys),
-								       free_size >> PAGE_SHIFT);
-						dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
-							 pte_get_phys(&old),
-							 __func__,
-							 pte_get_phys(&old),
-							 free_size, free_size);
-						memory_stat_rss_sub(free_size,
-								    free_size);
-					}
-				} else {
-					/* Unmap fileobj "page" once per one
-					 * contiguous group. Note that
-					 * page_is_contiguous_head wants
-					 * the PTE address, not its contents.
-					 */
-					if (!pte_is_contiguous(&old) ||
-					    page_is_contiguous_head(ptep, tbl.cont_pgsize)) {
-						if (page_unmap(page)) {
-							ihk_mc_free_pages_user(phys_to_virt(phys),
-									       free_size >> PAGE_SHIFT);
-							dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
-								 pte_get_phys(&old),
-								 __func__,
-								 pte_get_phys(&old),
-								 tbl.pgsize,
-								 tbl.pgsize);
-							rusage_memory_stat_sub(args->memobj,
-									       free_size,
-									       free_size);
-						}
-					}
-				}
-			}
+		if (!ptl_fileoff(&old, level) && args->free_physical &&
+		    is_freeable(ptep, &old, tbl.cont_pgsize)) {
+			unmap_free_stat(page, phys, clear_size, __func__);
 		}
 
 		return 0;
