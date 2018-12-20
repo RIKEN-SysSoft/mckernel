@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "42a093a3_1e6eb08d",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2063,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-20T11:10:41Z",
+      "side": 1,
+      "message": "ERROR: Bad function definition - int get_thp_disable() should probably be int get_thp_disable(void)\n+static int get_thp_disable()",
+      "revId": "28c5bcfba4130e0a88a9906c05b640ef4824c0b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "875f80c7_950f16cd",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1661,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-20T11:10:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\telse if ((flags \u0026 MAP_PRIVATE) \u0026\u0026 (flags \u0026 MAP_ANONYMOUS) \u0026\u0026 !proc-\u003ethp_disable) {",
+      "revId": "28c5bcfba4130e0a88a9906c05b640ef4824c0b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "285e08f8_7117f2cf",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 9585,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-20T11:10:41Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tswitch(option) {",
+      "revId": "28c5bcfba4130e0a88a9906c05b640ef4824c0b4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
