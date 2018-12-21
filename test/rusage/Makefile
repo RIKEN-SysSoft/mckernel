@@ -20,7 +20,7 @@ OBJSMCK = $(SRCSMCK:.c=.o)
 all: $(EXESLIN) $(EXESMCK)
 
 011_mck: 011_mck.o
-	$(CC) -o $@ $^ $(LDFLAGSMCK) -L$(XPMEM_DIR)/lib -lxpmem
+	$(CC) -o $@ $^ $(LDFLAGSMCK) -L$(XPMEM_DIR)/lib -Wl,-rpath -Wl,$(XPMEM_DIR)/lib -lxpmem
 
 011_mck.o: 011_mck.c
 	$(CC) $(CFLAGSMCK) $(CPPFLAGSMCK) -I$(XPMEM_DIR)/include -c $<
