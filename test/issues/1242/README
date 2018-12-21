@@ -1,0 +1,20 @@
+==========
+How to run
+==========
+
+make
+mcexec ./a.out
+
+==================
+How to judge OK/NG
+==================
+
+OK when:
+1. No error in stdout
+2. No error in kmsg (ihkosctl 0 kmsg)
+
+==============
+What is tested
+==============
+
+The behavior of madvise(..., MADV_REMOVE) on shmget memory
