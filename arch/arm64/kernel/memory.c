@@ -3287,7 +3287,6 @@ void init_page_table(void)
 	/* Normal memory area */
 	init_normal_area(init_pt);
 	init_fixed_area(init_pt);
-	init_low_area(init_pt);
 	init_text_area(init_pt);
 
 	/* virt to phys */
