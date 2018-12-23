@@ -2691,7 +2691,6 @@ void init_page_table(void)
 	init_normal_area(init_pt);
 	init_linux_kernel_mapping(init_pt);
 	init_fixed_area(init_pt);
-	init_low_area(init_pt);
 	init_text_area(init_pt);
 	init_vsyscall_area(init_pt);
 
