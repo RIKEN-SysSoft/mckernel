@@ -7,7 +7,7 @@
 #define IHK_OS_PGSIZE_2MB 1
 #define IHK_OS_PGSIZE_1GB 2
 
-extern struct rusage_global *rusage;
+extern struct rusage_global rusage;
 
 static inline int rusage_pgsize_to_pgtype(size_t pgsize)
 {

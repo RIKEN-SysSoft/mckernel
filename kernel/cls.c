@@ -40,7 +40,7 @@ void cpu_local_var_init(void)
 
 	for (i = 0; i < num_processors; i++) {
 		clv[i].monitor = monitor->cpu + i;
-		clv[i].rusage = rusage->cpu + i;
+		clv[i].rusage = rusage.cpu + i;
 		INIT_LIST_HEAD(&clv[i].smp_func_req_list);
 	}
 

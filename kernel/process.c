@@ -3380,20 +3380,20 @@ void schedule(void)
 			release_thread(last);
 			rusage_num_threads_dec();
 #ifdef RUSAGE_DEBUG
-			if (rusage->num_threads == 0) {
+			if (rusage.num_threads == 0) {
 				int i;
 
 				kprintf("total_memory_usage=%ld\n",
-					rusage->total_memory_usage);
+					rusage.total_memory_usage);
 				for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
 					kprintf("memory_stat_rss[%d]=%ld\n", i,
-						rusage->memory_stat_rss[i]);
+						rusage.memory_stat_rss[i]);
 				}
 				for (i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
 					kprintf(
 					   "memory_stat_mapped_file[%d]=%ld\n",
 					    i,
-					    rusage->memory_stat_mapped_file[i]);
+					    rusage.memory_stat_mapped_file[i]);
 				}
 			}
 #endif
@@ -3604,14 +3604,14 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 	dkprintf("%s: clone_count is %d\n", __FUNCTION__, thread->proc->clone_count);
 	rusage_num_threads_inc();
 #ifdef RUSAGE_DEBUG
-	if (rusage->num_threads == 1) {
+	if (rusage.num_threads == 1) {
 		int i;
-		kprintf("total_memory_usage=%ld\n", rusage->total_memory_usage);
+		kprintf("total_memory_usage=%ld\n", rusage.total_memory_usage);
 		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage->memory_stat_rss[i]);
+			kprintf("memory_stat_rss[%d]=%ld\n", i, rusage.memory_stat_rss[i]);
 		}
 		for(i = 0; i < IHK_MAX_NUM_PGSIZES; i++) {
-			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage->memory_stat_mapped_file[i]);
+			kprintf("memory_stat_mapped_file[%d]=%ld\n", i, rusage.memory_stat_mapped_file[i]);
 		}
 	}
 #endif
