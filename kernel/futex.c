@@ -86,7 +86,6 @@
 
 
 unsigned long ihk_mc_get_ns_per_tsc(void);
-int futex_cmpxchg_enabled;
 
 /**
  * struct futex_q - The hashed futex queue entry, one per waiting task
@@ -962,24 +961,7 @@ int futex(uint32_t *uaddr, int op, uint32_t val, uint64_t timeout,
 
 int futex_init(void)
 {
-	int curval;
 	int i;
-
-	/*
-	 * This will fail and we want it. Some arch implementations do
-	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
-	 * functionality. We want to know that before we call in any
-	 * of the complex code paths. Also we want to prevent
-	 * registration of robust lists in that case. NULL is
-	 * guaranteed to fault and we get -EFAULT on functional
-	 * implementation, the non functional ones will return
-	 * -ENOSYS.
-	 */
-	curval = cmpxchg_futex_value_locked(NULL, 0, 0);
-	if (curval == -EFAULT) {
-		dkprintf("futex_cmpxchg_enabled = 1 ??\n");
-		futex_cmpxchg_enabled = 1;
-	}
 
 	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
 		plist_head_init(&futex_queues[i].chain, &futex_queues[i].lock);
