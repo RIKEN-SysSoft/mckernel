@@ -2738,7 +2738,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		return -EINVAL;
 	}
 
-	if (!allow_oversubscribe && rusage->num_threads >= cpu_info->ncpus) {
+	if (!allow_oversubscribe && rusage.num_threads >= cpu_info->ncpus) {
 		kprintf("%s: ERROR: CPU oversubscription is not allowed. Specify -O option in mcreboot.sh to allow it.\n", __FUNCTION__);
         return -EINVAL;
 	}
