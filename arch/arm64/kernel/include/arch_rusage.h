@@ -17,7 +17,7 @@ enum ihk_os_pgsize {
 	IHK_OS_PGSIZE_COUNT
 };
 
-extern struct rusage_global *rusage;
+extern struct rusage_global rusage;
 
 static inline int rusage_pgsize_to_pgtype(size_t pgsize)
 {

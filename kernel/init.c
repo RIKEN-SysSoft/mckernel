@@ -33,6 +33,7 @@
 #include <sysfs.h>
 #include <ihk/monitor.h>
 #include <debug.h>
+#include <rusage.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -52,7 +53,7 @@ extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern long syscall(int, ihk_mc_user_context_t *);
 
 struct ihk_os_monitor *monitor;
-struct rusage_global *rusage;
+struct rusage_global rusage;
 
 static void handler_init(void)
 {
