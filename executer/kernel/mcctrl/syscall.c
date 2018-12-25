@@ -547,47 +547,20 @@ extern struct host_thread *host_threads;
 extern rwlock_t host_thread_lock;
 #endif
 
-int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
+int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason, struct mcctrl_per_proc_data *ppd, struct ikc_scd_packet *packet)
 {
-	struct ikc_scd_packet *packet;
 	struct ikc_scd_packet *free_packet = NULL;
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	int error;
 	struct wait_queue_head_list_node *wqhln;
 	unsigned long irqflags;
-	struct mcctrl_per_proc_data *ppd;
-	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
 	int retry;
 	
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
 	
-	/* Look up per-process structure */
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
-	if (!ppd) {
-		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
-				__FUNCTION__, task_tgid_vnr(current));
-		return -EINVAL;
-	}
-
-	ptd = mcctrl_get_per_thread_data(ppd, current);
-	if (!ptd) {
-		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);		
-		error = -ENOENT;
-		goto no_ptd;
-	}
-	pr_ptd("get", task_pid_vnr(current), ptd);
-	packet = (struct ikc_scd_packet *)ptd->data;
-	if (!packet) {
-		printk("%s: no packet registered for TID %d\n",
-				__FUNCTION__, task_pid_vnr(current));
-		error = -ENOENT;
-		goto out_put_ppd;
-	}
-
 	req = &packet->req;
 
 	/* Map response structure */
@@ -747,14 +720,9 @@ out:
 	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
 	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
 
-out_put_ppd:
-	mcctrl_put_per_thread_data(ptd);
-	pr_ptd("put", task_pid_vnr(current), ptd);
- no_ptd:
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu, error: %d\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason, error);
 
-	mcctrl_put_per_proc_data(ppd);
 	return error;
 }
 
@@ -794,7 +762,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
-	struct ikc_scd_packet *packet;
+	struct task_struct *task = current;
+	struct ikc_scd_packet packet = { };
 	int ret = 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
@@ -806,33 +775,28 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 
 	/* Look up per-process structure */
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(task));
 	if (!ppd) {
-		kprintf("%s: INFO: no per-process structure for pid %d (tid %d), try to use pid %d\n", 
-				__FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), vma->vm_mm->owner->pid);
-		ppd = mcctrl_get_per_proc_data(usrdata, vma->vm_mm->owner->pid);
+		dprintk("%s: INFO: no per-process structure for pid %d (tid %d), trying to use pid %d\n",
+			__func__, task_tgid_vnr(task), task_pid_vnr(task),
+			vma->vm_mm->owner->pid);
+		task = vma->vm_mm->owner;
+		ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(task));
 	}
 
 	if (!ppd) {
-		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
-				__FUNCTION__, task_tgid_vnr(current));
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+				__func__, task_tgid_vnr(task));
 		ret = VM_FAULT_SIGBUS;
 		goto no_ppd;
 	}
 
-	ptd = mcctrl_get_per_thread_data(ppd, current);
-	if (!ptd) {
-		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
-		ret = VM_FAULT_SIGBUS;
-		goto no_ptd;
-	}
-	pr_ptd("get", task_pid_vnr(current), ptd);
-	packet = (struct ikc_scd_packet *)ptd->data;
-	if (!packet) {
-		ret = VM_FAULT_SIGBUS;
-		printk("%s: no packet registered for TID %d\n",
-				__FUNCTION__, task_pid_vnr(current));
-		goto put_and_out;
+	ptd = mcctrl_get_per_thread_data(ppd, task);
+	if (ptd) {
+		pr_ptd("get", task_pid_vnr(task), ptd);
+		packet.ref = ((struct ikc_scd_packet *)ptd->data)->ref;
+		mcctrl_put_per_thread_data(ptd);
+		pr_ptd("put", task_pid_vnr(task), ptd);
 	}
 
 	for (try = 1; ; ++try) {
@@ -848,15 +812,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		if (!error || (try >= NTRIES)) {
 			if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error translating 0x%#lx "
-						"(req: TID: %u, syscall: %lu)\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number);
+				pr_err("%s: error translating 0x%#lx (req: TID: %u, syscall: %lu)\n",
+				       __func__, vmf->address,
+				       packet.req.rtid, packet.req.number);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error translating 0x%p "
-						"(req: TID: %u, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
+				pr_err("%s: error translating 0x%p (req: TID: %u, syscall: %lu)\n",
+				       __func__, vmf->virtual_address,
+				       packet.req.rtid, packet.req.number);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 			}
 
@@ -869,21 +831,21 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			reason |= PF_WRITE;
 		}
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-		error = remote_page_fault(usrdata, (void *)vmf->address, reason);
+		error = remote_page_fault(usrdata, (void *)vmf->address,
+					  reason, ppd, &packet);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
+		error = remote_page_fault(usrdata, vmf->virtual_address,
+					  reason, ppd, &packet);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error forwarding PF for 0x%#lx "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number);
+				pr_err("%s: error forwarding PF for 0x%#lx (req: TID: %d, syscall: %lu)\n",
+				       __func__, vmf->address,
+				       packet.req.rtid, packet.req.number);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error forwarding PF for 0x%p "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
+				pr_err("%s: error forwarding PF for 0x%p (req: TID: %d, syscall: %lu)\n",
+				       __func__, vmf->virtual_address,
+				       packet.req.rtid, packet.req.number);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 			break;
 		}
@@ -918,35 +880,27 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error inserting mapping for 0x%#lx "
-						"(req: TID: %d, syscall: %lu) error: %d, " 
-						"vm_start: 0x%lx, vm_end: 0x%lx\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number, error,
-						vma->vm_start, vma->vm_end);
+				pr_err("%s: error inserting mapping for 0x%#lx (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+				       __func__, vmf->address,
+				       packet.req.rtid, packet.req.number,
+				       error, vma->vm_start, vma->vm_end);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error inserting mapping for 0x%p "
-						"(req: TID: %d, syscall: %lu) error: %d, " 
-						"vm_start: 0x%lx, vm_end: 0x%lx\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number, error,
-						vma->vm_start, vma->vm_end);
+				pr_err("%s: error inserting mapping for 0x%p (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+				       __func__, vmf->virtual_address,
+				       packet.req.rtid, packet.req.number,
+				       error, vma->vm_start, vma->vm_end);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 			}
 		}
 		else
 		error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE), pfn+pix);
 		if (error) {
-#if 1 /* POSTK_DEBUG_TEMP_FIX_11 */ /* rus_vm_fault() multi-thread fix */
-			printk("%s: vm_insert_pfn returned %d\n", __FUNCTION__, error);
+			pr_err("%s: vm_insert_pfn returned %d\n", __func__, error);
 			if (error == -EBUSY) {
 				error = 0;
 			} else {
 				break;
 			}
-#else /* POSTK_DEBUG_TEMP_FIX_11 */
-			break;
-#endif /* POSTK_DEBUG_TEMP_FIX_11 */
 		}
 	}
 #else
@@ -955,15 +909,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-		printk("%s: remote PF failed for 0x%#lx, pgoff: %lu "
-				"(req: TID: %d, syscall: %lu)\n",
-				__FUNCTION__, vmf->address, vmf->pgoff,
-				packet->req.rtid, packet->req.number);
+		pr_err("%s: remote PF failed for 0x%#lx, pgoff: %lu (req: TID: %d, syscall: %lu)\n",
+		       __func__, vmf->address, vmf->pgoff,
+		       packet.req.rtid, packet.req.number);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		printk("%s: remote PF failed for 0x%p, pgoff: %lu "
-				"(req: TID: %d, syscall: %lu)\n",
-				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
-				packet->req.rtid, packet->req.number);
+		pr_err("%s: remote PF failed for 0x%p, pgoff: %lu (req: TID: %d, syscall: %lu)\n",
+		       __func__, vmf->virtual_address, vmf->pgoff,
+		       packet.req.rtid, packet.req.number);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
@@ -972,9 +924,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ret = VM_FAULT_NOPAGE;
 
 put_and_out:
-	mcctrl_put_per_thread_data(ptd);
-	pr_ptd("put", task_pid_vnr(current), ptd);
- no_ptd:
 	mcctrl_put_per_proc_data(ppd);
  no_ppd:
 	return ret;
