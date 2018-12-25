@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "486c3b34_58c7ecbe",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2071,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-25T05:53:28Z",
+      "side": 1,
+      "message": "Default should be enabled.",
+      "range": {
+        "startLine": 2071,
+        "startChar": 0,
+        "endLine": 2071,
+        "endChar": 41
+      },
+      "revId": "6794b15284d6f7d71a3d03b56174c69a588270af",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "af7f59a7_37b9b1a4",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5201,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-25T05:53:28Z",
+      "side": 1,
+      "message": "You should insert !proc-\u003ethp_disable in do_shmget(), see https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/436578\nAnd, you should put this commit on 436578.",
+      "range": {
+        "startLine": 5201,
+        "startChar": 0,
+        "endLine": 5201,
+        "endChar": 50
+      },
+      "revId": "6794b15284d6f7d71a3d03b56174c69a588270af",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
