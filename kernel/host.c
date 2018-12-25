@@ -599,6 +599,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	int ret = 0;
 	struct perf_ctrl_desc *pcd;
 	unsigned int mode = 0;
+	unsigned long t_s = 0;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -658,6 +659,47 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			__FUNCTION__, packet->ttid);
 		waitq_wakeup(&thread->scd_wq);
 		ret = 0;
+		break;
+
+	case SCD_MSG_REMOTE_PAGE_FAULT:
+		thread = find_thread(0, packet->fault_tid);
+		if (!thread) {
+			kprintf("%s: WARNING: no thread for remote pf %d\n",
+				__func__, packet->fault_tid);
+			pckt.err = ret = -EINVAL;
+			goto out_remote_pf;
+		}
+#ifdef PROFILE_ENABLE
+		/* We cannot use thread->profile_start_ts here because the
+		 * caller may be utilizing it already */
+
+		if (thread->profile) {
+			t_s = rdtsc();
+		}
+#endif // PROFILE_ENABLE
+
+		dkprintf("remote page fault,pid=%d,va=%lx,reason=%x\n",
+			 thread->proc->pid, packet->fault_address,
+			 packet->fault_reason|PF_POPULATE);
+		pckt.err = page_fault_process_vm(thread->vm,
+					(void *)packet->fault_address,
+					packet->fault_reason|PF_POPULATE);
+
+#ifdef PROFILE_ENABLE
+		if (thread->profile) {
+			profile_event_add(PROFILE_remote_page_fault,
+					(rdtsc() - t_s));
+		}
+#endif // PROFILE_ENABLE
+		thread_unlock(thread);
+
+out_remote_pf:
+		pckt.msg = SCD_MSG_REMOTE_PAGE_FAULT_ANSWER;
+		pckt.ref = packet->ref;
+		pckt.arg = packet->arg;
+		pckt.reply = packet->reply;
+		pckt.pid = packet->pid;
+		syscall_channel_send(resp_channel, &pckt);
 		break;
 
 	case SCD_MSG_SEND_SIGNAL:
