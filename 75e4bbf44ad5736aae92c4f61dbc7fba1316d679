@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "468824c5_4f83205d",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 782,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T12:31:20Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: INFO: no per-process structure for pid %d (tid %d), trying to use pid %d\\n\",",
+      "revId": "75e4bbf44ad5736aae92c4f61dbc7fba1316d679",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
