@@ -613,6 +613,10 @@ retry_alloc:
 		else {
 			/* Update packet reference */
 			packet = wqhln->packet;
+			if (free_packet && packet != free_packet) {
+				ihk_ikc_release_packet(
+					(struct ihk_ikc_free_packet *)free_packet);
+			}
 			free_packet = packet;
 			req = &packet->req;
 			{
