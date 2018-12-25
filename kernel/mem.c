@@ -115,9 +115,11 @@ struct pagealloc_track_entry {
 	ihk_spinlock_t addr_list_lock;
 };
 
+#ifndef POSTK_DEBUG_ARCH_DEP_89 /* unused struct page_table delete */
 struct page_table {
 	pte_t entry[PT_ENTRIES];
 };
+#endif /* !POSTK_DEBUG_ARCH_DEP_89 */
 
 struct ihk_dump_page {
 	unsigned long start;
@@ -981,7 +983,6 @@ void coredump(struct thread *thread, void *regs)
 		return;
 	}
 
-#ifndef POSTK_DEBUG_ARCH_DEP_18
 	ret = gencore(thread, regs, &coretable, &chunks);
 	if (ret != 0) {
 		dkprintf("could not generate a core file image\n");
@@ -998,7 +999,6 @@ void coredump(struct thread *thread, void *regs)
 		kprintf("core dump failed.\n");
 	}
 	freecore(&coretable);
-#endif /* POSTK_DEBUG_ARCH_DEP_18 */
 }
 
 #ifndef POSTK_DEBUG_ARCH_DEP_8
@@ -1667,7 +1667,7 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 
 		flush_tlb_single((unsigned long)(p + (i << PAGE_SHIFT)));
 	}
-	barrier();
+	barrier();	/* Temporary fix for Thunder-X */
 	return (char *)p + offset;
 }
 

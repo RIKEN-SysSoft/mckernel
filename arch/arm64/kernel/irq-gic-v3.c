@@ -1,5 +1,4 @@
-/* irq-gic-v3.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
-
+/* irq-gic-v3.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <irq.h>
 #include <arm-gic-v2.h>
 #include <arm-gic-v3.h>
@@ -8,6 +7,8 @@
 #include <process.h>
 #include <syscall.h>
 #include <debug.h>
+#include <arch-timer.h>
+#include <cls.h>
 
 //#define DEBUG_GICV3
 
@@ -264,6 +265,7 @@ static void arm64_raise_spi_gicv3(uint32_t cpuid, uint32_t vector)
 static void arm64_raise_lpi_gicv3(uint32_t cpuid, uint32_t vector)
 {
 	// @todo.impl
+	ekprintf("%s called.\n", __func__);
 }
  
 void arm64_issue_ipi_gicv3(uint32_t cpuid, uint32_t vector)
@@ -281,7 +283,7 @@ void arm64_issue_ipi_gicv3(uint32_t cpuid, uint32_t vector)
 		// send LPI (allow only to host)
 		arm64_raise_lpi_gicv3(cpuid, vector);
 	} else {
-		ekprintf("#%d is bad irq number.", vector);
+		ekprintf("#%d is bad irq number.\n", vector);
 	}
 }
 
@@ -289,10 +291,11 @@ extern int interrupt_from_user(void *);
 void handle_interrupt_gicv3(struct pt_regs *regs)
 {
 	uint64_t irqnr;
+	const int from_user = interrupt_from_user(regs);
 
 	irqnr = gic_read_iar();
 	cpu_enable_nmi();
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	while (irqnr != ICC_IAR1_EL1_SPURIOUS) {
 		if ((irqnr < 1020) || (irqnr >= 8192)) {
 			gic_write_eoir(irqnr);
@@ -300,11 +303,51 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 		}
 		irqnr = gic_read_iar();
 	}
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+
+	/* for migration by IPI */
+	if (get_this_cpu_local_var()->flags & CPU_FLAG_NEED_MIGRATE) {
+		schedule();
+		check_signal(0, regs, 0);
+	}
+}
+
+static uint64_t gic_mpidr_to_affinity(unsigned long mpidr)
+{
+	uint64_t aff;
+
+	aff = ((uint64_t)MPIDR_AFFINITY_LEVEL(mpidr, 3) << 32 |
+			 MPIDR_AFFINITY_LEVEL(mpidr, 2) << 16 |
+			 MPIDR_AFFINITY_LEVEL(mpidr, 1) << 8  |
+			 MPIDR_AFFINITY_LEVEL(mpidr, 0));
+	return aff;
+}
+
+static void init_spi_routing(uint32_t irq, uint32_t linux_cpu)
+{
+	uint64_t spi_route_reg_val, spi_route_reg_offset;
+
+	if (irq < 32 || 1020 <= irq) {
+		ekprintf("%s: irq is not spi number. (irq=%d)\n",
+			 __func__, irq);
+		return;
+	}
+
+	/* write to GICD_IROUTER */
+	spi_route_reg_offset = irq * 8;
+	spi_route_reg_val = gic_mpidr_to_affinity(cpu_logical_map(linux_cpu));
+
+	writeq_relaxed(spi_route_reg_val,
+		       (void *)(dist_base + GICD_IROUTER +
+				spi_route_reg_offset));
 }
 
 void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 {
+	extern int spi_table[];
+	extern int nr_spi_table;
+	int i;
+
 	dist_base = map_fixed_area(dist_base_pa, size, 1 /*non chachable*/);
 
 #ifdef USE_CAVIUM_THUNDER_X
@@ -313,6 +356,14 @@ void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 		is_cavium_thunderx = 1;
 	}
 #endif
+
+	/* initialize spi routing */
+	for (i = 0; i < nr_spi_table; i++) {
+		if (spi_table[i] == -1) {
+			continue;
+		}
+		init_spi_routing(spi_table[i], i);
+	}
 }
 
 void gic_cpu_init_gicv3(unsigned long cpu_base_pa, unsigned long size)
@@ -349,11 +400,23 @@ void gic_enable_gicv3(void)
 	void *rd_sgi_base = rbase + 0x10000 /* SZ_64K */;
 	int i;
 	unsigned int enable_ppi_sgi = GICD_INT_EN_SET_SGI;
+	extern int ihk_param_nr_pmu_irq_affi;
+	extern int ihk_param_pmu_irq_affi[CONFIG_SMP_MAX_CORES];
 
-	if (is_use_virt_timer()) {
-		enable_ppi_sgi |= GICD_ENABLE << get_virt_timer_intrid();
-	} else {
-		enable_ppi_sgi |= GICD_ENABLE << get_phys_timer_intrid();
+	enable_ppi_sgi |= GICD_ENABLE << get_timer_intrid();
+
+	if (0 < ihk_param_nr_pmu_irq_affi) {
+		for (i = 0; i < ihk_param_nr_pmu_irq_affi; i++) {
+			if ((0 <= ihk_param_pmu_irq_affi[i]) &&
+			    (ihk_param_pmu_irq_affi[i] <
+			     sizeof(enable_ppi_sgi) * BITS_PER_BYTE)) {
+				enable_ppi_sgi |= GICD_ENABLE <<
+					ihk_param_pmu_irq_affi[i];
+			}
+		}
+	}
+	else {
+		enable_ppi_sgi |= GICD_ENABLE << INTRID_PERF_OVF;
 	}
 
 	/*
@@ -366,9 +429,10 @@ void gic_enable_gicv3(void)
 	/*
 	 * Set priority on PPI and SGI interrupts
 	 */
-	for (i = 0; i < 32; i += 4)
+	for (i = 0; i < 32; i += 4) {
 		writel_relaxed(GICD_INT_DEF_PRI_X4,
-					rd_sgi_base + GIC_DIST_PRI + i * 4 / 4);
+			       rd_sgi_base + GIC_DIST_PRI + i);
+	}
 
 	/* sync wait */
 	gic_do_wait_for_rwp(rbase);
@@ -404,9 +468,12 @@ void gic_enable_gicv3(void)
 	gic_write_bpr1(0);
 
 	/* Set specific IPI to NMI */
-	writeb_relaxed(GICD_INT_NMI_PRI, rd_sgi_base + GIC_DIST_PRI + INTRID_CPU_STOP);
-	writeb_relaxed(GICD_INT_NMI_PRI, rd_sgi_base + GIC_DIST_PRI + INTRID_MEMDUMP);
-	writeb_relaxed(GICD_INT_NMI_PRI, rd_sgi_base + GIC_DIST_PRI + INTRID_STACK_TRACE);
+	writeb_relaxed(GICD_INT_NMI_PRI,
+		       rd_sgi_base + GIC_DIST_PRI + INTRID_CPU_STOP);
+	writeb_relaxed(GICD_INT_NMI_PRI,
+		       rd_sgi_base + GIC_DIST_PRI + INTRID_MULTI_NMI);
+	writeb_relaxed(GICD_INT_NMI_PRI,
+		       rd_sgi_base + GIC_DIST_PRI + INTRID_STACK_TRACE);
 
 	/* sync wait */
 	gic_do_wait_for_rwp(rbase);

@@ -167,6 +167,9 @@ myfree(void *p)
 static int
 linux_open(char *fname, int flag, int mode)
 {
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+	return arch_linux_open(fname, flag, mode);
+#else /* POSTK_DEBUG_ARCH_DEP_78 */
 	ihk_mc_user_context_t ctx0;
 	int		fd;
 
@@ -175,15 +178,20 @@ linux_open(char *fname, int flag, int mode)
 	ihk_mc_syscall_arg2(&ctx0) = mode;
 	fd = syscall_generic_forwarding(__NR_open, &ctx0);
 	return fd;
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
 }
 
 static int
 linux_unlink(char *fname)
 {
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+	return arch_linux_unlink(fname);
+#else /* POSTK_DEBUG_ARCH_DEP_78 */
 	ihk_mc_user_context_t ctx0;
 
 	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) fname;
 	return syscall_generic_forwarding(__NR_unlink, &ctx0);
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
 }
 
 static ssize_t
@@ -722,7 +730,11 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 		return cc;
 	}
 	si->udata_buf = myalloc(si, UDATA_BUFSIZE);
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+	si->swapfname = kmalloc(strlen_user(fname) + 1, IHK_MC_AP_NOWAIT);
+#else /* POSTK_DEBUG_ARCH_DEP_46 */
 	si->swapfname = kmalloc(strlen(fname) + 1, IHK_MC_AP_NOWAIT);
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
 	if (si->swapfname == NULL) {
 		kfree(si);
 		ekprintf("do_pageout: Cannot allocate working memory in kmalloc\n");

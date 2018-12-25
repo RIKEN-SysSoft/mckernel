@@ -23,6 +23,11 @@
 #include "mcctrl.h"
 #include <linux/version.h>
 #include <linux/semaphore.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_81 /* build support for linux-v4.11.x or later */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+#include <linux/cred.h>
+#endif
+#endif /* POSTK_DEBUG_ARCH_DEP_81 */
 
 //#define PROCFS_DEBUG
 

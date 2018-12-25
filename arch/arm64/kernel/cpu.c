@@ -1,4 +1,4 @@
-/* cpu.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* cpu.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <ihk/cpu.h>
 #include <ihk/debug.h>
 #include <ihk/mm.h>
@@ -34,6 +34,7 @@
 #ifdef POSTK_DEBUG_ARCH_DEP_65
 #include <hwcap.h>
 #endif /* POSTK_DEBUG_ARCH_DEP_65 */
+#include <virt.h>
 
 //#define DEBUG_PRINT_CPU
 
@@ -45,7 +46,6 @@
 #endif
 
 struct cpuinfo_arm64 cpuinfo_data[NR_CPUS];	/* index is logical cpuid */
-static unsigned int per_cpu_timer_val[NR_CPUS] = { 0 };
 
 static struct list_head handlers[1024];
 static void cpu_init_interrupt_handler(void);
@@ -116,137 +116,54 @@ static struct ihk_mc_interrupt_handler cpu_stop_handler = {
 	.priv = NULL,
 };
 
-/* @ref.impl include/clocksource/arm_arch_timer.h */
-#define ARCH_TIMER_CTRL_ENABLE		(1 << 0)
-#define ARCH_TIMER_CTRL_IT_MASK		(1 << 1)
-#define ARCH_TIMER_CTRL_IT_STAT		(1 << 2)
-
-static void physical_timer_handler(void *priv)
+extern long freeze_thaw(void *nmi_ctx);
+static void multi_nm_interrupt_handler(void *priv)
 {
-	unsigned int ctrl = 0;
-	int cpu = ihk_mc_get_processor_id();
-
-	dkprintf("CPU%d: catch physical timer\n", cpu);
-
-	asm volatile("mrs %0, cntp_ctl_el0" : "=r" (ctrl));
-	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
-		unsigned int zero = 0;
-		unsigned int val = ctrl;
-		unsigned int clocks = per_cpu_timer_val[cpu];
-		unsigned long irqstate;
-		struct cpu_local_var *v = get_this_cpu_local_var();
-
-		/* set resched flag */
-		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-		v->flags |= CPU_FLAG_NEED_RESCHED;
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
-
-		/* gen control register value */
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-		val |= ARCH_TIMER_CTRL_ENABLE;
-
-		/* set timer re-enable for periodic */
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (zero));
-		asm volatile("msr cntp_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
-	}
-}
-
-static struct ihk_mc_interrupt_handler phys_timer_handler = {
-	.func = physical_timer_handler,
-	.priv = NULL,
-};
-
-static void virtual_timer_handler(void *priv)
-{
-	unsigned int ctrl = 0;
-	int cpu = ihk_mc_get_processor_id();
-
-	dkprintf("CPU%d: catch virtual timer\n", cpu);
-
-	asm volatile("mrs %0, cntv_ctl_el0" : "=r" (ctrl));
-	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
-		unsigned int zero = 0;
-		unsigned int val = ctrl;
-		unsigned int clocks = per_cpu_timer_val[cpu];
-		unsigned long irqstate;
-		struct cpu_local_var *v = get_this_cpu_local_var();
-
-		/* set resched flag */
-		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-		v->flags |= CPU_FLAG_NEED_RESCHED;
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
-
-		/* gen control register value */
-		val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-		val |= ARCH_TIMER_CTRL_ENABLE;
-
-		/* set timer re-enable for periodic */
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (zero));
-		asm volatile("msr cntv_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
-	}
-}
-
-static struct ihk_mc_interrupt_handler virt_timer_handler = {
-	.func = virtual_timer_handler,
-	.priv = NULL,
-};
-
-static void memdump_interrupt_handler(void *priv)
-{
-	struct pt_regs *regs;
+	extern int nmi_mode;
+	struct pt_regs *regs = (struct pt_regs *)priv;
 	union arm64_cpu_local_variables *clv;
 
-	regs = cpu_local_var(current)->uctx;
-	clv = get_arm64_this_cpu_local();
+	switch (nmi_mode) {
+	case 1:
+	case 2:
+		/* mode == 1or2, for FREEZER NMI */
+		dkprintf("%s: freeze mode NMI catch. (nmi_mode=%d)\n",
+			 __func__, nmi_mode);
+		freeze_thaw(NULL);
+		break;
 
-	if (regs && interrupt_from_user(regs)) {
-		memcpy(clv->arm64_cpu_local_thread.panic_regs, regs->regs, sizeof(regs->regs));
-		clv->arm64_cpu_local_thread.panic_regs[31] = regs->sp;
-		clv->arm64_cpu_local_thread.panic_regs[32] = regs->pc;
-		clv->arm64_cpu_local_thread.panic_regs[33] = regs->pstate;
-	}
-	else {
-		asm volatile (
-		"stp	x0,   x1,  [%3, #16 *  0]\n"
-		"stp	x2,   x3,  [%3, #16 *  1]\n"
-		"stp	x4,   x5,  [%3, #16 *  2]\n"
-		"stp	x6,   x7,  [%3, #16 *  3]\n"
-		"stp	x8,   x9,  [%3, #16 *  4]\n"
-		"stp	x10,  x11, [%3, #16 *  5]\n"
-		"stp	x12,  x13, [%3, #16 *  6]\n"
-		"stp	x14,  x15, [%3, #16 *  7]\n"
-		"stp	x16,  x17, [%3, #16 *  8]\n"
-		"stp	x18,  x19, [%3, #16 *  9]\n"
-		"stp	x20,  x21, [%3, #16 * 10]\n"
-		"stp	x22,  x23, [%3, #16 * 11]\n"
-		"stp	x24,  x25, [%3, #16 * 12]\n"
-		"stp	x26,  x27, [%3, #16 * 13]\n"
-		"stp	x28,  x29, [%3, #16 * 14]\n"
-		"str	x30,	   [%3, #16 * 15]\n"
-		"mov	%0, sp\n"
-		"adr	%1, 1f\n"
-		"mrs	%2, spsr_el1\n"
-	"1:"
-		: "=r" (clv->arm64_cpu_local_thread.panic_regs[31]),	/* sp */
-		  "=r" (clv->arm64_cpu_local_thread.panic_regs[32]),	/* pc */
-		  "=r" (clv->arm64_cpu_local_thread.panic_regs[33])	/* spsr_el1 */
-		: "r"  (&clv->arm64_cpu_local_thread.panic_regs)
-		: "memory"
-		);
-	}
+	case 0:
+		/* mode == 0,    for MEMDUMP NMI */
+		clv = get_arm64_this_cpu_local();
 
-	clv->arm64_cpu_local_thread.paniced = 1;
+		if (regs) {
+			memcpy(clv->arm64_cpu_local_thread.panic_regs,
+			       regs->regs, sizeof(regs->regs));
+			clv->arm64_cpu_local_thread.panic_regs[31] = regs->sp;
+			clv->arm64_cpu_local_thread.panic_regs[32] = regs->pc;
+			clv->arm64_cpu_local_thread.panic_regs[33] =
+				regs->pstate;
+		}
+		clv->arm64_cpu_local_thread.paniced = 1;
+		ihk_mc_query_mem_areas();
+		/* memdump-nmi is halted McKernel, break is unnecessary. */
+		/* fall through */
+	case 3:
+		/* mode == 3,    for SHUTDOWN-WAIT NMI */
+		while (1) {
+			cpu_halt();
+		}
+		break;
 
-	while(1)
-	{
-		cpu_halt();
+	default:
+		ekprintf("%s: Unknown nmi-mode(%d) detected.\n",
+			 __func__, nmi_mode);
+		break;
 	}
 }
 
-static struct ihk_mc_interrupt_handler memdump_handler = {
-	.func = memdump_interrupt_handler,
+static struct ihk_mc_interrupt_handler multi_nmi_handler = {
+	.func = multi_nm_interrupt_handler,
 	.priv = NULL,
 };
 
@@ -333,19 +250,160 @@ static void setup_processor(void)
 
 static char *trampoline_va, *first_page_va;
 
-unsigned long is_use_virt_timer(void)
+static inline uint64_t pwr_arm64hpc_read_imp_fj_core_uarch_restrection_el1(void)
 {
-	extern unsigned long ihk_param_use_virt_timer;
+	uint64_t reg;
 
-	switch (ihk_param_use_virt_timer) {
-	case 0: /* physical */
-	case 1: /* virtual */
-		break;
-	default: /* invalid */
-		panic("PANIC: is_use_virt_timer(): timer select neither phys-timer nor virt-timer.\n");
-		break;
+	asm volatile("mrs_s %0, " __stringify(IMP_FJ_CORE_UARCH_RESTRECTION_EL1)
+		     : "=r" (reg) : : "memory");
+	return reg;
+}
+
+static ihk_spinlock_t imp_fj_core_uarch_restrection_el1_lock =
+	SPIN_LOCK_UNLOCKED;
+static inline void pwr_arm64hpc_write_imp_fj_core_uarch_restrection_el1(uint64_t set_bit,
+									uint64_t clear_bit)
+{
+	uint64_t reg;
+	unsigned long flags;
+
+	flags = ihk_mc_spinlock_lock(&imp_fj_core_uarch_restrection_el1_lock);
+	reg = pwr_arm64hpc_read_imp_fj_core_uarch_restrection_el1();
+	reg = (reg & ~clear_bit) | set_bit;
+	asm volatile("msr_s " __stringify(IMP_FJ_CORE_UARCH_RESTRECTION_EL1) ", %0"
+		     : : "r" (reg) : "memory");
+	ihk_mc_spinlock_unlock(&imp_fj_core_uarch_restrection_el1_lock, flags);
+}
+
+static inline uint64_t pwr_arm64hpc_read_imp_soc_standby_ctrl_el1(void)
+{
+	uint64_t reg;
+
+	asm volatile("mrs_s %0, " __stringify(IMP_SOC_STANDBY_CTRL_EL1)
+		     : "=r" (reg) : : "memory");
+	return reg;
+}
+
+static ihk_spinlock_t imp_soc_standby_ctrl_el1_lock = SPIN_LOCK_UNLOCKED;
+static inline void pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(uint64_t set_bit,
+							       uint64_t clear_bit)
+{
+	unsigned long flags;
+	uint64_t reg;
+
+	flags = ihk_mc_spinlock_lock(&imp_soc_standby_ctrl_el1_lock);
+	reg = pwr_arm64hpc_read_imp_soc_standby_ctrl_el1();
+	reg = (reg & ~clear_bit) | set_bit;
+	asm volatile("msr_s " __stringify(IMP_SOC_STANDBY_CTRL_EL1) ", %0"
+		     : : "r" (reg) : "memory");
+	ihk_mc_spinlock_unlock(&imp_soc_standby_ctrl_el1_lock, flags);
+}
+
+static unsigned long *retention_state_flag;
+
+static inline int is_hpcpwr_available(void)
+{
+	if (retention_state_flag)
+		return 1;
+	else
+		return 0;
+}
+
+static inline void pwr_arm64hpc_map_retention_state_flag(void)
+{
+	extern unsigned long ihk_param_retention_state_flag_pa;
+	unsigned long size = BITS_TO_LONGS(NR_CPUS) * sizeof(unsigned long);
+
+	if (!ihk_param_retention_state_flag_pa) {
+		return;
 	}
-	return ihk_param_use_virt_timer;
+	retention_state_flag = map_fixed_area(ihk_param_retention_state_flag_pa,
+					      size, 0);
+}
+
+static inline int pwr_arm64hpc_retention_state_get(uint64_t *val)
+{
+	unsigned long linux_core_id;
+	int cpu = ihk_mc_get_processor_id();
+	int ret;
+
+	if (!is_hpcpwr_available()) {
+		*val = 0;
+		return 0;
+	}
+
+	ret = ihk_mc_get_core(cpu, &linux_core_id, NULL, NULL);
+	if (ret) {
+		return ret;
+	}
+	*val = test_bit(linux_core_id, retention_state_flag);
+	return ret;
+}
+
+static inline int pwr_arm64hpc_retention_state_set(uint64_t val)
+{
+	unsigned long linux_core_id;
+	int cpu = ihk_mc_get_processor_id();
+	int ret;
+
+	if (!is_hpcpwr_available()) {
+		return 0;
+	}
+
+	ret = ihk_mc_get_core(cpu, &linux_core_id, NULL, NULL);
+	if (ret) {
+		return ret;
+	}
+
+	if (val) {
+		set_bit(cpu, retention_state_flag);
+	} else {
+		clear_bit(cpu, retention_state_flag);
+	}
+	return ret;
+}
+
+static inline int pwr_arm64hpc_enable_retention_state(void)
+{
+	if (!is_hpcpwr_available()) {
+		return 0;
+	}
+
+	pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(IMP_SOC_STANDBY_CTRL_EL1_RETENTION,
+						    0);
+	return 0;
+}
+
+static inline void init_power_management(void)
+{
+	int state;
+	uint64_t imp_fj_clear_bit = 0;
+	uint64_t imp_soc_clear_bit = 0;
+
+	if (!is_hpcpwr_available()) {
+		return;
+	}
+
+	/* retention state */
+	state = pwr_arm64hpc_retention_state_set(0);
+	if (state) {
+		panic("error: initialize power management\n");
+	}
+
+	/* issue state */
+	imp_fj_clear_bit |= IMP_FJ_CORE_UARCH_RESTRECTION_EL1_ISSUE_RESTRICTION;
+
+	/* eco_state  */
+	imp_fj_clear_bit |= IMP_FJ_CORE_UARCH_RESTRECTION_EL1_FL_RESTRICT_TRANS;
+	imp_soc_clear_bit |= IMP_SOC_STANDBY_CTRL_EL1_ECO_MODE;
+
+	/* ex_pipe_state */
+	imp_fj_clear_bit |= IMP_FJ_CORE_UARCH_RESTRECTION_EL1_EX_RESTRICTION;
+
+	/* write */
+	pwr_arm64hpc_write_imp_fj_core_uarch_restrection_el1(0,
+							     imp_fj_clear_bit);
+	pwr_arm64hpc_write_imp_soc_standby_ctrl_el1(0, imp_soc_clear_bit);
 }
 
 /*@
@@ -363,23 +421,19 @@ void ihk_mc_init_ap(void)
 	kprintf("# of cpus : %d\n", cpu_info->ncpus);
 	init_processors_local(cpu_info->ncpus);
 	
-	kprintf("IKC IRQ vector: %d, IKC target CPU APIC: %d\n", 
-			ihk_ikc_irq, ihk_ikc_irq_apicid);
-
 	/* Do initialization for THIS cpu (BSP) */
 	assign_processor_id();
 
 	ihk_mc_register_interrupt_handler(INTRID_CPU_STOP, &cpu_stop_handler);
-	ihk_mc_register_interrupt_handler(INTRID_MEMDUMP, &memdump_handler);
+	ihk_mc_register_interrupt_handler(INTRID_MULTI_NMI, &multi_nmi_handler);
 	ihk_mc_register_interrupt_handler(
-		ihk_mc_get_vector(IHK_TLB_FLUSH_IRQ_VECTOR_START), &remote_tlb_flush_handler);
+		ihk_mc_get_vector(IHK_TLB_FLUSH_IRQ_VECTOR_START),
+		&remote_tlb_flush_handler);
+	ihk_mc_register_interrupt_handler(get_timer_intrid(),
+					  get_timer_handler());
 
-	if (is_use_virt_timer()) {
-		ihk_mc_register_interrupt_handler(get_virt_timer_intrid(), &virt_timer_handler);
-	} else {
-		ihk_mc_register_interrupt_handler(get_phys_timer_intrid(), &phys_timer_handler);
-	}
 	init_smp_processor();
+	init_power_management();
 }
 
 extern void vdso_init(void);
@@ -388,15 +442,13 @@ long (*__arm64_syscall_handler)(int, ihk_mc_user_context_t *);
 /* @ref.impl arch/arm64/include/asm/arch_timer.h::arch_timer_get_cntkctl */
 static inline unsigned int arch_timer_get_cntkctl(void)
 {
-	unsigned int cntkctl;
-	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
-	return cntkctl;
+	return read_sysreg(cntkctl_el1);
 }
 
 /* @ref.impl arch/arm64/include/asm/arch_timer.h::arch_timer_set_cntkctl */
 static inline void arch_timer_set_cntkctl(unsigned int cntkctl)
 {
-	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+	write_sysreg(cntkctl, cntkctl_el1);
 }
 
 #ifdef CONFIG_ARM_ARCH_TIMER_EVTSTREAM
@@ -462,19 +514,19 @@ void init_cpu(void)
 {
 	if(gic_enable) 
 		gic_enable();
+
+	arm64_init_per_cpu_perfctr();
 	arm64_enable_pmu();
+
+	if (xos_is_tchip()) {
+		vhbm_barrier_registers_init();
+		scdrv_registers_init();
+		hpc_registers_init();
+	}
+	arm64_enable_user_access_pmu_regs();
 }
 
 #ifdef CONFIG_ARM64_VHE
-/* @ref.impl arch/arm64/include/asm/virt.h */
-static inline int is_kernel_in_hyp_mode(void)
-{
-	unsigned long el;
-
-	asm("mrs %0, CurrentEL" : "=r" (el));
-	return el == CurrentEL_EL2;
-}
-
 /* @ref.impl arch/arm64/kernel/smp.c */
 /* Whether the boot CPU is running in HYP mode or not */
 static int boot_cpu_hyp_mode;
@@ -519,7 +571,11 @@ void setup_arm64(void)
 
 	arm64_init_perfctr();
 
+	arch_timer_init();
+
 	gic_init();
+
+	pwr_arm64hpc_map_retention_state_flag();
 
 	init_cpu();
 
@@ -563,6 +619,7 @@ void setup_arm64_ap(void (*next_func)(void))
 	debug_monitors_init();
 	arch_timer_configure_evtstream();
 	init_cpu();
+	init_power_management();
 	call_ap_func(next_func);
 
 	/* BUG */
@@ -592,6 +649,7 @@ static void show_context_stack(struct pt_regs *regs)
 	max_loop = (stack_top - sp) / min_stack_frame_size;
 
 	for (i = 0; i < max_loop; i++) {
+		extern char _head[], _end[];
 		uintptr_t *fp, *lr;
 		fp = (uintptr_t *)sp;
 		lr = (uintptr_t *)(sp + 8);
@@ -600,7 +658,8 @@ static void show_context_stack(struct pt_regs *regs)
 			break;
 		}
 
-		if ((*lr < MAP_KERNEL_START) || (*lr > MAP_KERNEL_START + MAP_KERNEL_SIZE)) {
+		if ((*lr < (unsigned long)_head) ||
+		    (*lr > (unsigned long)_end)) {
 			break;
 		}
 
@@ -625,7 +684,7 @@ void handle_IPI(unsigned int vector, struct pt_regs *regs)
 	else {
 		list_for_each_entry(h, &handlers[vector], list) {
 			if (h->func) {
-				h->func(h->priv);
+				h->func(h->priv == NULL ? regs : h->priv);
 			}
 		}
 	}
@@ -641,7 +700,18 @@ static void __arm64_wakeup(int hw_cpuid, unsigned long entry)
 /** IHK Functions **/
 
 /* send WFI(Wait For Interrupt) instruction */
-extern void cpu_do_idle(void);
+static inline void cpu_do_idle(void)
+{
+	extern void __cpu_do_idle(void);
+	uint64_t retention;
+	int state;
+
+	state = pwr_arm64hpc_retention_state_get(&retention);
+	if ((state == 0) && (retention != 0)) {
+		pwr_arm64hpc_enable_retention_state();
+	}
+	__cpu_do_idle();
+}
 
 /* halt by WFI(Wait For Interrupt) */
 void cpu_halt(void)
@@ -1115,20 +1185,32 @@ long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int
 		int j = 0;
 
 		/* generate strings */
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "processor\t: %d\n", cpuinfo->hwid);
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "Features\t:");
+		loff += scnprintf(lbuf + loff, lbuf_size - loff,
+				  "processor\t: %d\n", cpuinfo->hwid);
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "Features\t:");
 
 		for (j = 0; hwcap_str[j]; j++) {
 			if (elf_hwcap & (1 << j)) {
-				loff += snprintf(lbuf + loff, lbuf_size - loff, " %s", hwcap_str[j]);
+				loff += scnprintf(lbuf + loff,
+						  lbuf_size - loff,
+						  " %s", hwcap_str[j]);
 			}
 		}
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "\n");
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU implementer\t: 0x%02x\n", MIDR_IMPLEMENTOR(midr));
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU architecture: 8\n");
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU variant\t: 0x%x\n", MIDR_VARIANT(midr));
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU part\t: 0x%03x\n", MIDR_PARTNUM(midr));
-		loff += snprintf(lbuf + loff, lbuf_size - loff, "CPU revision\t: %d\n\n", MIDR_REVISION(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff, "\n");
+		loff += scnprintf(lbuf + loff, lbuf_size - loff,
+				  "CPU implementer\t: 0x%02x\n",
+				  MIDR_IMPLEMENTOR(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff,
+				  "CPU architecture: 8\n");
+		loff += scnprintf(lbuf + loff, lbuf_size - loff,
+				  "CPU variant\t: 0x%x\n",
+				  MIDR_VARIANT(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff,
+				  "CPU part\t: 0x%03x\n",
+				  MIDR_PARTNUM(midr));
+		loff += scnprintf(lbuf + loff, lbuf_size - loff,
+				  "CPU revision\t: %d\n\n",
+				  MIDR_REVISION(midr));
 
 		/* check buffer depletion */
 		if ((i < num_processors - 1) && ((lbuf_size - loff) == 1)) {
@@ -1410,6 +1492,10 @@ out:
 void
 save_fp_regs(struct thread *thread)
 {
+	if (thread == &cpu_local_var(idle)) {
+		return;
+	}
+
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
 		if (check_and_allocate_fp_regs(thread) != 0) {
 			// alloc error.
@@ -1471,26 +1557,6 @@ restore_fp_regs(struct thread *thread)
 }
 
 void
-lapic_timer_enable(unsigned int clocks)
-{
-	unsigned int val = 0;
-
-	/* gen control register value */
-	asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
-	val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK);
-	val |= ARCH_TIMER_CTRL_ENABLE;
-
-	if (is_use_virt_timer()) {
-		asm volatile("msr cntv_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
-	} else {
-		asm volatile("msr cntp_tval_el0, %0" : : "r" (clocks));
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
-	}
-	per_cpu_timer_val[ihk_mc_get_processor_id()] = clocks;
-}
-
-void
 unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 {
 	const uintptr_t address = (uintptr_t)fault_addr;
@@ -1542,26 +1608,6 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 	return;
 }
 
-void
-lapic_timer_disable()
-{
-	unsigned int zero = 0;
-	unsigned int val = 0;
-
-	/* gen control register value */
-	asm volatile("mrs %0, cntp_ctl_el0" : "=r" (val));
-	val &= ~(ARCH_TIMER_CTRL_IT_STAT | ARCH_TIMER_CTRL_IT_MASK | ARCH_TIMER_CTRL_ENABLE);
-
-	if (is_use_virt_timer()) {
-		asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
-		asm volatile("msr cntv_tval_el0, %0" : : "r" (zero));
-	} else {
-		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
-		asm volatile("msr cntp_tval_el0, %0" : : "r" (zero));
-	}
-	per_cpu_timer_val[ihk_mc_get_processor_id()] = 0;
-}
-
 void init_tick(void)
 {
 	dkprintf("init_tick():\n");
@@ -1590,25 +1636,174 @@ void arch_start_pvclock(void)
 void
 mod_nmi_ctx(void *nmi_ctx, void (*func)())
 {
-	/* TODO: skeleton for rusage */
+	func();
+}
+
+extern void freeze(void);
+void __freeze(void)
+{
+	freeze();
+}
+
+
+#define SYSREG_READ_S(sys_reg)  case (sys_reg): asm volatile("mrs_s %0, " __stringify(sys_reg) : "=r" (*val)); break
+static inline int arch_cpu_mrs(uint32_t sys_reg, uint64_t *val)
+{
+	int ret = 0;
+
+	switch (sys_reg) {
+		SYSREG_READ_S(IMP_FJ_TAG_ADDRESS_CTRL_EL1);
+		SYSREG_READ_S(IMP_SCCR_CTRL_EL1);
+		SYSREG_READ_S(IMP_SCCR_ASSIGN_EL1);
+		SYSREG_READ_S(IMP_SCCR_SET0_L2_EL1);
+		SYSREG_READ_S(IMP_SCCR_SET1_L2_EL1);
+		SYSREG_READ_S(IMP_SCCR_L1_EL0);
+		SYSREG_READ_S(IMP_PF_CTRL_EL1);
+		SYSREG_READ_S(IMP_PF_STREAM_DETECT_CTRL_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL0_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL1_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL2_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL3_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL4_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL5_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL6_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_CTRL7_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE0_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE1_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE2_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE3_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE4_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE5_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE6_EL0);
+		SYSREG_READ_S(IMP_PF_INJECTION_DISTANCE7_EL0);
+		SYSREG_READ_S(IMP_BARRIER_CTRL_EL1);
+		SYSREG_READ_S(IMP_BARRIER_BST_BIT_EL1);
+		SYSREG_READ_S(IMP_BARRIER_INIT_SYNC_BB0_EL1);
+		SYSREG_READ_S(IMP_BARRIER_INIT_SYNC_BB1_EL1);
+		SYSREG_READ_S(IMP_BARRIER_INIT_SYNC_BB2_EL1);
+		SYSREG_READ_S(IMP_BARRIER_INIT_SYNC_BB3_EL1);
+		SYSREG_READ_S(IMP_BARRIER_INIT_SYNC_BB4_EL1);
+		SYSREG_READ_S(IMP_BARRIER_INIT_SYNC_BB5_EL1);
+		SYSREG_READ_S(IMP_BARRIER_ASSIGN_SYNC_W0_EL1);
+		SYSREG_READ_S(IMP_BARRIER_ASSIGN_SYNC_W1_EL1);
+		SYSREG_READ_S(IMP_BARRIER_ASSIGN_SYNC_W2_EL1);
+		SYSREG_READ_S(IMP_BARRIER_ASSIGN_SYNC_W3_EL1);
+		SYSREG_READ_S(IMP_SOC_STANDBY_CTRL_EL1);
+		SYSREG_READ_S(IMP_FJ_CORE_UARCH_CTRL_EL2);
+		SYSREG_READ_S(IMP_FJ_CORE_UARCH_RESTRECTION_EL1);
+		/* fall through */
+	default:
+		return -EINVAL;
+	}
+	return ret;
+}
+
+static inline int arch_cpu_read_register(struct ihk_os_cpu_register *desc)
+{
+	int ret = 0;
+	uint64_t value;
+
+	if (desc->addr) {
+		panic("memory mapped register is not supported.\n");
+	} else if (desc->addr_ext) {
+		ret = arch_cpu_mrs(desc->addr_ext, &value);
+		if (ret == 0) {
+			desc->val = value;
+		}
+	} else {
+		ret = -EINVAL;
+	}
+	return ret;
+}
+
+#define SYSREG_WRITE_S(sys_reg) case (sys_reg): asm volatile("msr_s " __stringify(sys_reg) ", %0" :: "r" (val)); break
+static inline int arch_cpu_msr(uint32_t sys_reg, uint64_t val)
+{
+	int ret = 0;
+
+	switch (sys_reg) {
+	SYSREG_WRITE_S(IMP_FJ_TAG_ADDRESS_CTRL_EL1);
+	SYSREG_WRITE_S(IMP_SCCR_CTRL_EL1);
+	SYSREG_WRITE_S(IMP_SCCR_ASSIGN_EL1);
+	SYSREG_WRITE_S(IMP_SCCR_SET0_L2_EL1);
+	SYSREG_WRITE_S(IMP_SCCR_SET1_L2_EL1);
+	SYSREG_WRITE_S(IMP_SCCR_L1_EL0);
+	SYSREG_WRITE_S(IMP_PF_CTRL_EL1);
+	SYSREG_WRITE_S(IMP_PF_STREAM_DETECT_CTRL_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL0_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL1_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL2_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL3_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL4_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL5_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL6_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_CTRL7_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE0_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE1_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE2_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE3_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE4_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE5_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE6_EL0);
+	SYSREG_WRITE_S(IMP_PF_INJECTION_DISTANCE7_EL0);
+	SYSREG_WRITE_S(IMP_BARRIER_CTRL_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_BST_BIT_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_INIT_SYNC_BB0_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_INIT_SYNC_BB1_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_INIT_SYNC_BB2_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_INIT_SYNC_BB3_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_INIT_SYNC_BB4_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_INIT_SYNC_BB5_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_ASSIGN_SYNC_W0_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_ASSIGN_SYNC_W1_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_ASSIGN_SYNC_W2_EL1);
+	SYSREG_WRITE_S(IMP_BARRIER_ASSIGN_SYNC_W3_EL1);
+	SYSREG_WRITE_S(IMP_FJ_CORE_UARCH_CTRL_EL2);
+	SYSREG_WRITE_S(IMP_FJ_CORE_UARCH_RESTRECTION_EL1);
+	/* fallthrough */
+	case IMP_SOC_STANDBY_CTRL_EL1:
+		asm volatile("msr_s " __stringify(IMP_SOC_STANDBY_CTRL_EL1) ", %0"
+			     : : "r" (val) : "memory");
+		if (val & IMP_SOC_STANDBY_CTRL_EL1_MODE_CHANGE) {
+			wfe();
+		}
+		break;
+	default:
+		return -EINVAL;
+	}
+	return ret;
+}
+
+static inline int arch_cpu_write_register(struct ihk_os_cpu_register *desc)
+{
+	int ret = 0;
+
+	if (desc->addr) {
+		panic("memory mapped register is not supported.\n");
+	} else if (desc->addr_ext) {
+		ret = arch_cpu_msr(desc->addr_ext, desc->val);
+	} else {
+		ret = -EINVAL;
+	}
+	return ret;
 }
 
 int arch_cpu_read_write_register(
 		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
-	/* TODO: skeleton for patch:0676 */
+	int ret;
 	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
-//		desc->val = rdmsr(desc->addr);
+		ret = arch_cpu_read_register(desc);
 	}
 	else if (op == MCCTRL_OS_CPU_WRITE_REGISTER) {
-//		wrmsr(desc->addr, desc->val);
+		ret = arch_cpu_write_register(desc);
 	}
 	else {
-		return -1;
+		ret = -1;
 	}
 
-	return 0;
+	return ret;
 }
 
 int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)

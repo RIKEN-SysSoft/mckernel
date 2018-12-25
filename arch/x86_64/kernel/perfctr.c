@@ -353,6 +353,13 @@ int ihk_mc_perfctr_stop(unsigned long counter_mask)
 	goto fn_exit;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+int ihk_mc_perfctr_first_stop(unsigned long counter_mask)
+{
+	return ihk_mc_perfctr_stop(counter_mask);
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
+
 // init for fixed counter
 int ihk_mc_perfctr_fixed_init(int counter, int mode)
 {
@@ -498,3 +505,21 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
 
 	return ret;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+int ihk_mc_perf_counter_mask_check(unsigned long counter_mask)
+{
+	if ((counter_mask & PERF_COUNTERS_MASK) |
+	    (counter_mask & FIXED_PERF_COUNTERS_MASK)) {
+		return 1;
+	}
+	return 0;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_109 /* perf_counter_get arch-depents. */
+int ihk_mc_perf_get_num_counters(void)
+{
+	return NUM_PERF_COUNTERS;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_109 */

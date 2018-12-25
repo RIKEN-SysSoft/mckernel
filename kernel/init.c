@@ -224,14 +224,14 @@ static void monitor_init()
 	}
 
 	z = sizeof(struct ihk_os_monitor) +
-	    sizeof(struct ihk_os_cpu_monitor) * (cpu_info->ncpus - 1);
+	    sizeof(struct ihk_os_cpu_monitor) * cpu_info->ncpus;
 	z = (z + PAGE_SIZE -1) >> PAGE_SHIFT;
 	monitor = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);
 	memset(monitor, 0, z * PAGE_SIZE);
-	monitor->num_processors = (cpu_info->ncpus - 1);
+	monitor->num_processors = cpu_info->ncpus;
 	phys = virt_to_phys(monitor);
 	ihk_set_monitor(phys, sizeof(struct ihk_os_monitor) +
-	                    sizeof(struct ihk_os_cpu_monitor) * (cpu_info->ncpus - 1));
+			sizeof(struct ihk_os_cpu_monitor) * cpu_info->ncpus);
 	return;
 #else /* POSTK_DEBUG_TEMP_FIX_73 */
 

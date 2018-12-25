@@ -1,4 +1,4 @@
-/* sysreg.h COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* sysreg.h COPYRIGHT FUJITSU LIMITED 2016-2018 */
 /*
  * Macros for accessing system registers with older binutils.
  *
@@ -23,6 +23,7 @@
 
 #include <types.h>
 #include <stringify.h>
+#include <ihk/types.h>
 
 /*
  * ARMv8 ARM reserves the following encoding for system registers:
@@ -55,12 +56,6 @@
 #define sys_reg_CRn(id)	(((id) >> CRn_shift) & CRn_mask)
 #define sys_reg_CRm(id)	(((id) >> CRm_shift) & CRm_mask)
 #define sys_reg_Op2(id)	(((id) >> Op2_shift) & Op2_mask)
-
-#ifdef __ASSEMBLY__
-#define __emit_inst(x).inst (x)
-#else
-#define __emit_inst(x)".inst " __stringify((x)) "\n\t"
-#endif
 
 #define SYS_MIDR_EL1			sys_reg(3, 0, 0, 0, 0)
 #define SYS_MPIDR_EL1			sys_reg(3, 0, 0, 0, 5)
@@ -142,6 +137,12 @@
 #define ID_AA64ISAR0_SHA2_SHIFT		12
 #define ID_AA64ISAR0_SHA1_SHIFT		8
 #define ID_AA64ISAR0_AES_SHIFT		4
+
+/* id_aa64isar1 */
+#define ID_AA64ISAR1_LRCPC_SHIFT	20
+#define ID_AA64ISAR1_FCMA_SHIFT		16
+#define ID_AA64ISAR1_JSCVT_SHIFT	12
+#define ID_AA64ISAR1_DPB_SHIFT		0
 
 /* id_aa64pfr0 */
 #define ID_AA64PFR0_SVE_SHIFT		32
@@ -272,15 +273,46 @@
 /* Safe value for MPIDR_EL1: Bit31:RES1, Bit30:U:0, Bit24:MT:0 */
 #define SYS_MPIDR_SAFE_VAL		(1UL << 31)
 
-#ifdef __ASSEMBLY__
+/* SYS_MIDR_EL1 */
+//mask
+#define SYS_MIDR_EL1_IMPLEMENTER_MASK	(0xFFUL)
+#define SYS_MIDR_EL1_PPNUM_MASK		(0xFFFUL)
+//shift
+#define SYS_MIDR_EL1_IMPLEMENTER_SHIFT	(24)
+#define SYS_MIDR_EL1_PPNUM_SHIFT	(0x4)
+//val
+#define SYS_MIDR_EL1_IMPLEMENTER_FJ	(0x46)
+#define SYS_MIDR_EL1_PPNUM_TCHIP	(0x1)
 
+#define READ_ACCESS	(0)
+#define WRITE_ACCESS	(1)
+#define ACCESS_REG_FUNC(name, reg) \
+	static void xos_access_##name(uint8_t flag, uint64_t *reg_value) \
+	{ \
+		if (flag == READ_ACCESS) { \
+			__asm__ __volatile__("mrs_s %0," __stringify(reg) "\n\t" \
+				:"=&r"(*reg_value)::); \
+		} \
+		else if (flag == WRITE_ACCESS) { \
+			__asm__ __volatile__("msr_s" __stringify(reg) ", %0\n\t" \
+				::"r"(*reg_value):); \
+		} else { \
+			; \
+		} \
+	}
+
+#define XOS_FALSE	(0)
+#define XOS_TRUE	(1)
+
+#ifdef __ASSEMBLY__
+#define __emit_inst(x).inst (x)
 	.irp	num,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
 	.equ	.L__reg_num_x\num, \num
 	.endr
 	.equ	.L__reg_num_xzr, 31
 
 	.macro	mrs_s, rt, sreg
-	 __emit_inst(0xd5200000|(\sreg)|(.L__reg_num_\rt))
+	__emit_inst(0xd5200000|(\sreg)|(.L__reg_num_\rt))
 	.endm
 
 	.macro	msr_s, sreg, rt
@@ -288,7 +320,7 @@
 	.endm
 
 #else
-
+#define __emit_inst(x)".inst " __stringify((x)) "\n\t"
 asm(
 "	.irp	num,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30\n"
 "	.equ	.L__reg_num_x\\num, \\num\n"
@@ -304,6 +336,28 @@ asm(
 "	.endm\n"
 );
 
+ACCESS_REG_FUNC(midr_el1, SYS_MIDR_EL1);
+static int xos_is_tchip(void)
+{
+	uint64_t reg = 0;
+	int ret = 0, impl = 0, part = 0;
+
+	xos_access_midr_el1(READ_ACCESS, &reg);
+
+	impl = (reg >> SYS_MIDR_EL1_IMPLEMENTER_SHIFT) &
+		SYS_MIDR_EL1_IMPLEMENTER_MASK;
+	part = (reg >> SYS_MIDR_EL1_PPNUM_SHIFT) & SYS_MIDR_EL1_PPNUM_MASK;
+
+	if ((impl == SYS_MIDR_EL1_IMPLEMENTER_FJ) &&
+	    (part == SYS_MIDR_EL1_PPNUM_TCHIP)) {
+		ret = XOS_TRUE;
+	}
+	else {
+		ret = XOS_FALSE;
+	}
+
+	return ret;
+}
 #endif
 
 /*
@@ -343,5 +397,7 @@ asm(
 
 /* @ref.impl arch/arm64/include/asm/kvm_arm.h */
 #define CPTR_EL2_TZ		(1 << 8)
+
+#include "imp-sysreg.h"
 
 #endif	/* __ASM_SYSREG_H */

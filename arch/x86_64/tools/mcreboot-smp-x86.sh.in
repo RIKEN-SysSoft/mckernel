@@ -13,12 +13,19 @@
 # Note that the script does not output anything unless an error occurs.
 
 ret=1
-prefix="@prefix@"
-BINDIR="${prefix}/bin"
-SBINDIR="${prefix}/sbin"
-ETCDIR=@ETCDIR@
-KMODDIR="${prefix}/kmod"
-KERNDIR="${prefix}/@TARGET@/kernel"
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# prefix="@prefix@"
+# BINDIR="${prefix}/bin"
+# SBINDIR="${prefix}/sbin"
+# ETCDIR=@ETCDIR@
+# KMODDIR="${prefix}/kmod"
+# KERNDIR="${prefix}/@TARGET@/kernel"
+DESTDIR="@DESTDIR@"
+BINDIR="${DESTDIR}/@BINDIR@"
+SBINDIR="${DESTDIR}/@SBINDIR@"
+ETCDIR=@DESTDIR@/@ETCDIR@
+KMODDIR="${DESTDIR}/@KMODDIR@"
+KERNDIR="${DESTDIR}/@KERNDIR@"
 ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
 MCK_BUILDID=@BUILDID@
 

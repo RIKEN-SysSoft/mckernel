@@ -13,7 +13,6 @@
 unsigned long __page_fault_handler_address;
 extern int interrupt_from_user(void *);
 
-void set_signal(int sig, void *regs, struct siginfo *info);
 static void do_bad_area(unsigned long addr, unsigned int esr, struct pt_regs *regs);
 static int do_page_fault(unsigned long addr, unsigned int esr, struct pt_regs *regs);
 static int do_translation_fault(unsigned long addr, unsigned int esr, struct pt_regs *regs);
@@ -105,12 +104,13 @@ void do_mem_abort(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 {
 	const struct fault_info *inf = fault_info + (esr & 63);
 	struct siginfo info;
+	const int from_user = interrupt_from_user(regs);
 
 	/* set_cputime called in inf->fn() */
 	if (!inf->fn(addr, esr, regs))
 		return;
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	kprintf("Unhandled fault: %s (0x%08x) at 0x%016lx\n", inf->name, esr, addr);
 	info.si_signo = inf->sig;
 	info.si_errno = 0;
@@ -118,7 +118,7 @@ void do_mem_abort(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 	info._sifields._sigfault.si_addr  = (void*)addr;
 
 	arm64_notify_die("", regs, &info, esr);
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 /*
@@ -127,21 +127,24 @@ void do_mem_abort(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 void do_sp_pc_abort(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 {
 	struct siginfo info;
+	const int from_user = interrupt_from_user(regs);
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 
 	info.si_signo = SIGBUS;
 	info.si_errno = 0;
 	info.si_code  = BUS_ADRALN;
 	info._sifields._sigfault.si_addr  = (void*)addr;
 	arm64_notify_die("", regs, &info, esr);
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 static void do_bad_area(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 {
 	struct siginfo info;
-	set_cputime(interrupt_from_user(regs) ? 1: 2);
+	const int from_user = interrupt_from_user(regs);
+
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	/*
 	 * If we are in kernel mode at this point, we have no context to
 	 * handle this fault with.
@@ -163,7 +166,7 @@ static void do_bad_area(unsigned long addr, unsigned int esr, struct pt_regs *re
 			 (addr < PAGE_SIZE) ? "NULL pointer dereference" : "paging request", addr);
 		panic("OOps.");
 	}
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
 
 static int is_el0_instruction_abort(unsigned int esr)
@@ -192,6 +195,7 @@ static int do_page_fault(unsigned long addr, unsigned int esr,
 		}
 	}
 
+	/* set_cputime() call in page_fault_handler() */
 	page_fault_handler = (void *)__page_fault_handler_address;
 	(*page_fault_handler)((void *)addr, reason, regs);
 
@@ -252,10 +256,10 @@ int do_debug_exception(unsigned long addr, unsigned int esr, struct pt_regs *reg
 {
 	const struct fault_info *inf = debug_fault_info + DBG_ESR_EVT(esr);
 	struct siginfo info;
-	int from_user = interrupt_from_user(regs);
+	const int from_user = interrupt_from_user(regs);
 	int ret = -1;
 
-	set_cputime(from_user ? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 
 	if (!inf->fn(addr, esr, regs)) {
 		ret = 1;
@@ -274,7 +278,7 @@ int do_debug_exception(unsigned long addr, unsigned int esr, struct pt_regs *reg
 
 	ret = 0;
 out:
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 	return ret;
 }
 
@@ -283,7 +287,9 @@ out:
  */
 static int do_bad(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 {
-	set_cputime(interrupt_from_user(regs) ? 1: 2);
-	set_cputime(0);
+	const int from_user = interrupt_from_user(regs);
+
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 	return 1;
 }

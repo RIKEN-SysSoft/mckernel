@@ -14,12 +14,29 @@ if [ ! -f "$INFILE" ]; then
 	exit 1
 fi
 
+# POSTK_DEBUG_ARCH_DEP_93 vmcore2mckdump fix x86 depend [BEGIN]
+ARCH_NAME=@ARCH@
+if [ "X$ARCH_NAME" = "X" ]; then
+	echo "ARCH_NAME is empty."
+	exit 1
+fi
+
+if [ "$ARCH_NAME" = "x86_64" ]; then
+	ARCH_NAME=x86
+fi
+# POSTK_DEBUG_ARCH_DEP_93 vmcore2mckdump fix x86 depend [END]
+
+# POSTK_DEBUG_ARCH_DEP_93 vmcore2mckdump fix x86 depend [BEGIN]
+# POSTK_DEBUG_ARCH_DEP_102 fix timeout of expect command [BEGIN]
+#/usr/bin/expect -c "
+#set timeout 60
+# POSTK_DEBUG_ARCH_DEP_102 fix timeout of expect command [END]
 /usr/bin/expect -c "
-set timeout 60
+set timeout 300
 spawn /usr/bin/crash $VMLINUX $INFILE
 
 expect \"crash>\"
-send \"mod -s ihk_smp_x86 $INSTALLDIR/kmod/ihk-smp-x86.ko\n\"
+send \"mod -s ihk_smp_${ARCH_NAME} $INSTALLDIR/kmod/ihk-smp-${ARCH_NAME}.ko\n\"
 
 expect \"crash>\"
 send \"extend $INSTALLDIR/lib/ldump2mcdump.so\n\"
@@ -33,6 +50,27 @@ send \"extend -u $INSTALLDIR/lib/ldump2mcdump.so\n\"
 expect \"crash>\"
 send \"quit\n\"
 "
+# POSTK_DEBUG_ARCH_DEP_93 vmcore2mckdump fix x86 depend [ELSE]
+#/usr/bin/expect -c "
+#set timeout 60
+#spawn /usr/bin/crash $VMLINUX $INFILE
+#
+#expect \"crash>\"
+#send \"mod -s ihk_smp_x86 $INSTALLDIR/kmod/ihk-smp-x86.ko\n\"
+#
+#expect \"crash>\"
+#send \"extend $INSTALLDIR/lib/ldump2mcdump.so\n\"
+#
+#expect \"crash>\"
+#send \"ldump2mcdump 0 -o $OUTFILE\n\"
+#
+#expect \"crash>\"
+#send \"extend -u $INSTALLDIR/lib/ldump2mcdump.so\n\"
+#
+#expect \"crash>\"
+#send \"quit\n\"
+#"
+# POSTK_DEBUG_ARCH_DEP_93 vmcore2mckdump fix x86 depend [END]
 if [ -f ${OUTFILE} ]; then
 	echo "mcdump: ${OUTFILE} is extracted."
 	exit 0

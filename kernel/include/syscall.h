@@ -171,6 +171,10 @@ typedef unsigned long __cpu_set_unit;
 #define MPOL_SHM_PREMAP           0x08
 
 struct program_load_desc {
+#ifdef POSTK_DEBUG_TEMP_FIX_76 /* add program_load_desc magic */
+	unsigned long magic;
+#define PLD_MAGIC 0xcafecafe44332211UL
+#endif /* POSTK_DEBUG_TEMP_FIX_76 */
 	int num_sections;
 	int cpu;
 	int pid;
@@ -371,13 +375,8 @@ struct coretable {		/* table entry for a core chunk */
 	unsigned long addr;	/* physical addr of the chunk */
 };
 
-#ifdef POSTK_DEBUG_TEMP_FIX_1
-void create_proc_procfs_files(int pid, int tid, int cpuid);
-void delete_proc_procfs_files(int pid, int tid);
-#else /* POSTK_DEBUG_TEMP_FIX_1 */
 void create_proc_procfs_files(int pid, int cpuid);
 void delete_proc_procfs_files(int pid);
-#endif /* POSTK_DEBUG_TEMP_FIX_1 */
 void create_os_procfs_files(void);
 void delete_os_procfs_files(void);
 
@@ -591,6 +590,17 @@ typedef struct uti_attr {
 	                   (sizeof(uint64_t) * 8)];
 	uint64_t flags; /* Representing location and behavior hints by bitmap */
 } uti_attr_t;
+
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+int arch_linux_open(char *fname, int flag, int mode);
+int arch_linux_unlink(char *fname);
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+struct thread;
+void arch_ptrace_syscall_enter(struct thread *thread, long setret);
+long arch_ptrace_syscall_exit(struct thread *thread, long setret);
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 
 struct uti_ctx {
 	union {

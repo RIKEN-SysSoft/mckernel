@@ -4,7 +4,9 @@ MCOVERLAYFS_MODULE=@MCOVERLAYFS_MODULE@
 .PHONY: clean install modules
 
 modules:
+ifneq ($(MCOVERLAYFS_MODULE),none)
 	+@(cd $(MCOVERLAYFS_MODULE) && make modules)
+endif
 
 clean:
 	@(cd linux-3.10.0-327.36.1.el7 && make clean)
@@ -13,5 +15,6 @@ clean:
 	@(cd linux-4.18.14 && make clean)
 
 install:
+ifneq ($(MCOVERLAYFS_MODULE),none)
 	@(cd $(MCOVERLAYFS_MODULE); make install)
-
+endif

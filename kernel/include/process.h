@@ -381,7 +381,11 @@ struct user
 	unsigned long int  u_debugreg [8];
 };
 
+#ifdef POSTK_DEBUG_ARCH_DEP_65
+#define	AUXV_LEN	20
+#else /* POSTK_DEBUG_ARCH_DEP_65 */
 #define	AUXV_LEN	18
+#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 
 struct vm_range {
 	struct rb_node vm_rb_node;

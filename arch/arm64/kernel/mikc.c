@@ -19,7 +19,7 @@ int ihk_mc_ikc_init_first_local(struct ihk_ikc_channel_desc *channel,
 
 	memset(channel, 0, sizeof(struct ihk_ikc_channel_desc));
 
-	mikc_queue_pages = ((2 * num_processors * MASTER_IKCQ_PKTSIZE)
+	mikc_queue_pages = ((4 * num_processors * MASTER_IKCQ_PKTSIZE)
 			+ (PAGE_SIZE - 1)) / PAGE_SIZE;
 
 	/* Place both sides in this side */

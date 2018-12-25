@@ -242,6 +242,8 @@ fi
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
 AC_DEFINE_UNQUOTED(ROOTFSDIR,"$prefix/rootfs",[Path of bind-mount source directory])
 
+DESTDIR=$prefix	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+
 case $WITH_TARGET in
 # POSTK_DEBUG_ARCH_DEP_30, Expansion of the branch.
 #    attached-mic|builtin-x86|smp-x86)
@@ -283,126 +285,129 @@ case $WITH_TARGET in
 	;;
 esac
 
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.[begin]
+# xxxDIR=$prefix/xxx => xxxDIR=xxx change
 case $WITH_TARGET in
     attached-mic)
 	if test "X$KERNDIR" = X; then
-		KERNDIR="$prefix/attached/kernel"
+		KERNDIR="attached/kernel"
 	fi
 	if test "X$BINDIR" = X; then
-		BINDIR="$prefix/bin"
+		BINDIR="bin"
 	fi
 	if test "X$SBINDIR" = X; then
-		SBINDIR="$prefix/sbin"
+		SBINDIR="sbin"
 	fi
 	if test "X$KMODDIR" = X; then
-		KMODDIR="$prefix/kmod"
+		KMODDIR="kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/share/man"
+		MANDIR="share/man"
 	fi
 	;;
     builtin-mic)
 	if test "X$KERNDIR" = X; then
-		KERNDIR="$prefix/attached/kernel"
+		KERNDIR="attached/kernel"
 	fi
 	if test "X$BINDIR" = X; then
-		BINDIR="$prefix/attached/bin"
+		BINDIR="attached/bin"
 	fi
 	if test "X$SBINDIR" = X; then
-		SBINDIR="$prefix/attached/sbin"
+		SBINDIR="attached/sbin"
 	fi
 	if test "X$KMODDIR" = X; then
-		KMODDIR="$prefix/attached/kmod"
+		KMODDIR="attached/kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/share/man"
+		MANDIR="share/man"
 	fi
 	;;
     builtin-x86)
 	if test "X$KERNDIR" = X; then
-		KERNDIR="$prefix/attached/kernel"
+		KERNDIR="attached/kernel"
 	fi
 	if test "X$BINDIR" = X; then
-		BINDIR="$prefix/bin"
+		BINDIR="bin"
 	fi
 	if test "X$SBINDIR" = X; then
-		SBINDIR="$prefix/sbin"
+		SBINDIR="sbin"
 	fi
 	if test "X$KMODDIR" = X; then
-		KMODDIR="$prefix/kmod"
+		KMODDIR="kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/share/man"
+		MANDIR="share/man"
 	fi
 	;;
     smp-x86)
 	if test "X$KERNDIR" = X; then
-		KERNDIR="$prefix/smp-x86/kernel"
+		KERNDIR="smp-x86/kernel"
 	fi
 	if test "X$BINDIR" = X; then
-		BINDIR="$prefix/bin"
+		BINDIR="bin"
 	fi
 	if test "X$SBINDIR" = X; then
-		SBINDIR="$prefix/sbin"
+		SBINDIR="sbin"
 	fi
 	if test "X$MCKERNEL_INCDIR" = X; then
-		MCKERNEL_INCDIR="$prefix/include"
+		MCKERNEL_INCDIR="include"
 	fi
         if test "X$MCKERNEL_LIBDIR" = X; then
-                MCKERNEL_LIBDIR="$prefix/lib"
+                MCKERNEL_LIBDIR="lib"
         fi
 	if test "X$INCDIR" = X; then
-		INCDIR="$prefix/include"
+		INCDIR="include"
 	fi
 	if test "X$ETCDIR" = X; then
-		ETCDIR="$prefix/etc"
+		ETCDIR="etc"
 	fi
 	if test "X$INCLUDEDIR" = X; then
-		INCLUDEDIR="$prefix/include"
+		INCLUDEDIR="include"
 	fi
 	if test "X$KMODDIR" = X; then
-		KMODDIR="$prefix/kmod"
+		KMODDIR="kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/share/man"
+		MANDIR="share/man"
 	fi
 	;;
     smp-arm64)
 	if test "X$KERNDIR" = X; then
-		KERNDIR="$prefix/smp-arm64/kernel"
+		KERNDIR="smp-arm64/kernel"
 	fi
 	if test "X$BINDIR" = X; then
-		BINDIR="$prefix/bin"
+		BINDIR="bin"
 	fi
 	if test "X$SBINDIR" = X; then
-		SBINDIR="$prefix/sbin"
+		SBINDIR="sbin"
 	fi
 	if test "X$MCKERNEL_INCDIR" = X; then
-		MCKERNEL_INCDIR="$prefix/include"
+		MCKERNEL_INCDIR="include"
 	fi
         if test "X$MCKERNEL_LIBDIR" = X; then
-                MCKERNEL_LIBDIR="$prefix/lib"
+                MCKERNEL_LIBDIR="lib"
         fi
 	if test "X$INCDIR" = X; then
-		INCDIR="$prefix/include"
+		INCDIR="include"
 	fi
 	if test "X$ETCDIR" = X; then
-		ETCDIR="$prefix/etc"
+		ETCDIR="etc"
 	fi
 	if test "X$INCLUDEDIR" = X; then
-		INCLUDEDIR="$prefix/include"
+		INCLUDEDIR="include"
 	fi
 	if test "X$KMODDIR" = X; then
-		KMODDIR="$prefix/kmod"
+		KMODDIR="kmod"
 	fi
 	if test "X$MANDIR" = X; then
-		MANDIR="$prefix/share/man"
+		MANDIR="share/man"
 	fi
 	;;
     *)
 	AC_MSG_ERROR([target $WITH_TARGET is unknwon])
 	;;
 esac
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.[end]
 
 KDIR="$WITH_KERNELSRC"
 UNAME_R="$WITH_UNAME_R"
@@ -487,6 +492,7 @@ EOF
 	fi
 else
 	AC_MSG_WARN([mcoverlayfs is disabled. You will not be able to run anything.])
+	MCOVERLAYFS_MODULE=none
 fi
 
 if test "x$ENABLE_QLMPI" = "xyes" ; then
@@ -529,15 +535,22 @@ else
 fi
 
 if test "x$MCKERNEL_INCDIR" != "x" ; then
-   AC_DEFINE_UNQUOTED(MCKERNEL_INCDIR,"$MCKERNEL_INCDIR",[McKernel specific headers])
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+#   AC_DEFINE_UNQUOTED(MCKERNEL_INCDIR,"$MCKERNEL_INCDIR",[McKernel specific headers])
+   AC_DEFINE_UNQUOTED(MCKERNEL_INCDIR,"$DESTDIR/$MCKERNEL_INCDIR",[McKernel specific headers])
 fi
 
 if test "x$MCKERNEL_LIBDIR" != "x" ; then
-   AC_DEFINE_UNQUOTED(MCKERNEL_LIBDIR,"$MCKERNEL_LIBDIR",[McKernel specific libraries])
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+#   AC_DEFINE_UNQUOTED(MCKERNEL_LIBDIR,"$MCKERNEL_LIBDIR",[McKernel specific libraries])
+   AC_DEFINE_UNQUOTED(MCKERNEL_LIBDIR,"$DESTDIR/$MCKERNEL_LIBDIR",[McKernel specific libraries])
 fi
 
-AC_DEFINE_UNQUOTED(BINDIR,"$BINDIR",[Path of install directory for binary])
-AC_DEFINE_UNQUOTED(SBINDIR,"$SBINDIR",[Path of install directory for system binary])
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# AC_DEFINE_UNQUOTED(BINDIR,"$BINDIR",[Path of install directory for binary])
+# AC_DEFINE_UNQUOTED(SBINDIR,"$SBINDIR",[Path of install directory for system binary])
+AC_DEFINE_UNQUOTED(BINDIR,"$DESTDIR/$BINDIR",[Path of install directory for binary])
+AC_DEFINE_UNQUOTED(SBINDIR,"$DESTDIR/$SBINDIR",[Path of install directory for system binary])
 
 AC_DEFINE_UNQUOTED(IHK_VERSION,"$IHK_VERSION",[IHK version string])
 AC_DEFINE_UNQUOTED(MCKERNEL_VERSION,"$MCKERNEL_VERSION",[McKernel version string])
@@ -557,6 +570,7 @@ AC_SUBST(ARCH)
 AC_SUBST(KDIR)
 AC_SUBST(UNAME_R)
 AC_SUBST(TARGET)
+AC_SUBST(DESTDIR)	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 AC_SUBST(BINDIR)
 AC_SUBST(SBINDIR)
 AC_SUBST(MCKERNEL_INCDIR)
@@ -593,7 +607,6 @@ AC_CONFIG_FILES([
 	executer/user/mcexec.1:executer/user/mcexec.1in
 	executer/user/vmcore2mckdump
 	executer/user/arch/$ARCH/Makefile
-	executer/user/arch/x86_64/Makefile
 	executer/kernel/mcctrl/Makefile
 	executer/kernel/mcctrl/arch/$ARCH/Makefile
 	executer/kernel/mcoverlayfs/Makefile

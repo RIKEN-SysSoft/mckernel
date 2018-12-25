@@ -160,6 +160,12 @@ typedef unsigned long pte_t;
 #define PM_PRESENT          PM_STATUS(4LL)
 #define PM_SWAP             PM_STATUS(2LL)
 
+#ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
+#define USER_STACK_PREPAGE_SIZE	LARGE_PAGE_SIZE
+#define USER_STACK_PAGE_MASK	LARGE_PAGE_MASK
+#define USER_STACK_PAGE_P2ALIGN	LARGE_PAGE_P2ALIGN
+#define USER_STACK_PAGE_SHIFT	LARGE_PAGE_SHIFT
+#endif /* POSTK_DEBUG_ARCH_DEP_104 */
 
 /* For easy conversion, it is better to be the same as architecture's ones */
 enum ihk_mc_pt_attribute {

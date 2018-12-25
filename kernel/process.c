@@ -1,4 +1,4 @@
-/* process.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* process.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 /**
  * \file process.c
  *  License details are found in the file LICENSE.
@@ -1996,7 +1996,12 @@ retry:
 #endif /*POSTK_DEBUG_ARCH_DEP_21*/
 
 	/*****/
+#ifdef POSTK_DEBUG_TEMP_FIX_86 /* from patch_process_vm() rusage count fix. */
+	if (ptep && !pgsize_is_contiguous(pgsize) &&
+	    !(reason & PF_PATCH)) {
+#else
 	if (ptep && !pgsize_is_contiguous(pgsize)) {
+#endif
 		//if(rusage_memory_stat_add_with_page(range, phys, pgsize, pgsize, page)) {
 		if(rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
 			/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
@@ -2235,13 +2240,14 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	int stack_align_padding = 0;
 
 	/* Create stack range */
+#ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
+	end = STACK_TOP(&thread->vm->region) & USER_STACK_PAGE_MASK;
+	minsz = USER_STACK_PREPAGE_SIZE & USER_STACK_PAGE_MASK;
+#else /* POSTK_DEBUG_ARCH_DEP_104 */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
-#ifdef POSTK_DEBUG_ARCH_DEP_80 /* user stack prepage size fix */
-	minsz = LARGE_PAGE_SIZE;
-#else /* POSTK_DEBUG_ARCH_DEP_80 */
 	minsz = (pn->stack_premap
 			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-#endif /* POSTK_DEBUG_ARCH_DEP_80 */
+#endif /* POSTK_DEBUG_ARCH_DEP_104 */
 	maxsz = (end - thread->vm->region.map_start) / 2;
 	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
 	if (size > maxsz) {
@@ -2250,13 +2256,21 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	else if (size < minsz) {
 		size = minsz;
 	}
+#ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
+	size = (size + USER_STACK_PREPAGE_SIZE - 1) & USER_STACK_PAGE_MASK;
+#else /* POSTK_DEBUG_ARCH_DEP_104 */
 	size = (size + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+#endif /* POSTK_DEBUG_ARCH_DEP_104 */
 	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
 			__FUNCTION__,
 			pn->stack_premap,
 			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
 			minsz, size);
+#ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
+	start = (end - size) & USER_STACK_PAGE_MASK;
+#else /* POSTK_DEBUG_ARCH_DEP_104 */
 	start = (end - size) & LARGE_PAGE_MASK;
+#endif /* POSTK_DEBUG_ARCH_DEP_104 */
 
 	/* Apply user allocation policy to stacks */
 	/* TODO: make threshold kernel or mcexec argument */
@@ -2266,8 +2280,17 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 			__FUNCTION__, size, minsz,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
+#ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag, start);
+				USER_STACK_PAGE_P2ALIGN,
+						IHK_MC_AP_NOWAIT | ap_flag,
+						start);
+#else /* POSTK_DEBUG_ARCH_DEP_104 */
+	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
+				LARGE_PAGE_P2ALIGN,
+						IHK_MC_AP_NOWAIT | ap_flag,
+						start);
+#endif /* POSTK_DEBUG_ARCH_DEP_104 */
 
 	if (!stack) {
 		kprintf("%s: error: couldn't allocate initial stack\n",
@@ -2282,20 +2305,37 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
+#ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
+	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
+			vrflag, NULL, 0, USER_STACK_PAGE_SHIFT, &range)) != 0) {
+		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
+		return rc;
+	}
+#else /* POSTK_DEBUG_ARCH_DEP_104 */
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
 					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		kprintf("%s: error addding process memory range: %d\n", rc);
 		return rc;
 	}
+#endif /* POSTK_DEBUG_ARCH_DEP_104 */
 
 	/* Map physical pages for initial stack frame */
+#ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 	error = ihk_mc_pt_set_range(thread->vm->address_space->page_table,
-								thread->vm, (void *)(end - minsz),
-								(void *)end, virt_to_phys(stack),
-								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
-								LARGE_PAGE_SHIFT, range, 0
-								);
+				    thread->vm, (void *)(end - minsz),
+				    (void *)end, virt_to_phys(stack),
+				    arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
+							  NULL),
+				    USER_STACK_PAGE_SHIFT, range, 0);
+#else /* POSTK_DEBUG_ARCH_DEP_104 */
+	error = ihk_mc_pt_set_range(thread->vm->address_space->page_table,
+				    thread->vm, (void *)(end - minsz),
+				    (void *)end, virt_to_phys(stack),
+				    arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
+							  NULL),
+				    LARGE_PAGE_SHIFT, range, 0);
+#endif /* POSTK_DEBUG_ARCH_DEP_104 */
 
 	if (error) {
 		kprintf("init_process_stack:"

@@ -1,4 +1,4 @@
-/* control.c COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* control.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 /**
  * \file executer/kernel/control.c
  *  License details are found in the file LICENSE.
@@ -49,6 +49,9 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <uapi/linux/sched/types.h>
 #endif
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+#include <archdeps.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 
 //#define DEBUG
 
@@ -85,6 +88,10 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
                      unsigned long, unsigned long, unsigned long,
                      unsigned long, unsigned long *);
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *,
+			struct file *);
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -310,6 +317,10 @@ struct mcos_handler_info {
 };
 
 struct mcos_handler_info;
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+LIST_HEAD(host_threads); /* Used for FS switch */
+DEFINE_RWLOCK(host_thread_lock);
+#else /* POSTK_DEBUG_ARCH_DEP_99 */
 static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
@@ -320,9 +331,15 @@ struct host_thread {
 	int     pid;
 	int     tid;
 	unsigned long usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	unsigned long ltls;
+	unsigned long rtls;
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 	unsigned long lfs;
 	unsigned long rfs;
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 };
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 {
@@ -2128,7 +2145,11 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 
 		perf_desc->ctrl_type = PERF_CTRL_SET;
 		perf_desc->err = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+		perf_desc->target_cntr = i + ARCH_PERF_CONTER_START;
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 		perf_desc->target_cntr = i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 		perf_desc->config = attr.config;
 		perf_desc->exclude_kernel = attr.exclude_kernel;
 		perf_desc->exclude_user = attr.exclude_user;
@@ -2188,7 +2209,11 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 
 		perf_desc->ctrl_type = PERF_CTRL_GET;
 		perf_desc->err = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+		perf_desc->target_cntr = i + ARCH_PERF_CONTER_START;
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 		perf_desc->target_cntr = i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 
 		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
 		isp.msg = SCD_MSG_PERF_CTRL;
@@ -2235,7 +2260,11 @@ long mcctrl_perf_enable(ihk_os_t os)
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+		cntr_mask |= 1UL << (i + ARCH_PERF_CONTER_START);
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 		cntr_mask |= 1UL << i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
@@ -2288,7 +2317,11 @@ long mcctrl_perf_disable(ihk_os_t os)
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */
+		cntr_mask |= 1UL << (i + ARCH_PERF_CONTER_START);
+#else /* POSTK_DEBUG_ARCH_DEP_86 */
 		cntr_mask |= 1UL << i;
+#endif /* POSTK_DEBUG_ARCH_DEP_86 */
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
@@ -2407,10 +2440,16 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 
 extern void *get_user_sp(void);
 extern void set_user_sp(unsigned long);
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+extern void restore_tls(unsigned long addr);
+extern void save_tls_ctx(void __user *ctx);
+extern unsigned long get_tls_ctx(void __user *ctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 extern void restore_fs(unsigned long fs);
-extern void save_fs_ctx(void *);
-extern unsigned long get_fs_ctx(void *);
-extern unsigned long get_rsp_ctx(void *);
+extern void save_fs_ctx(void *ctx);
+extern unsigned long get_fs_ctx(void *ctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+extern unsigned long get_rsp_ctx(void *ctx);
 
 long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 {
@@ -2454,6 +2493,7 @@ long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 	return rc;
 }
 
+#ifndef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
 {
 	int rc = 0;
@@ -2471,15 +2511,24 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, stru
 		goto out;
 	}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	save_tls_ctx(desc.lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 	save_fs_ctx(desc.lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
 	memset(thread, '\0', sizeof(struct host_thread));
 	thread->pid = task_tgid_vnr(current);
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	thread->ltls = get_tls_ctx(desc.lctx);
+	thread->rtls = get_tls_ctx(desc.lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 	thread->lfs = get_fs_ctx(desc.lctx);
-	thread->rfs = get_fs_ctx(desc.rctx);
+	thread->rfs = get_fs_ctx(desc.lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
@@ -2487,23 +2536,24 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, stru
 	write_unlock_irqrestore(&host_thread_lock, flags);
 
 	/* How ppd refcount reaches zero depends on how utility-thread exits:
-	   (1) MCEXEC_UP_CREATE_PPD sets to 1
-	   (2) mcexec_util_thread2() increments to 2
-	   (3) Tracer detects exit/exit_group/killed by signal of tracee
-               and decrements to 1 via mcexec_terminate_thread()
-	   (4) Tracer calls exit_fd(), it calls release_handler(),
-	       it decrements to 0
-
-	   KNOWN ISSUE: 
-               mcexec_terminate_thread() isn't called when tracer is
-	       unexpectedly killed so the refcount remains 1 when 
-	       exiting release_handler()
-	*/
+	 *  (1) MCEXEC_UP_CREATE_PPD sets to 1
+	 *  (2) mcexec_util_thread2() increments to 2
+	 *  (3) syscall hook detects exit/exit_group call
+	 *	and decrements to 1 via mcexec_terminate_thread()
+	 *  (4) mcexec calls exit_fd(), it calls release_handler(),
+	 *	it decrements to 0
+	 *
+	 *  KNOWN ISSUE:
+	 *	mcexec_terminate_thread() isn't called when mcexec is
+	 *	killed by signal so the refcount remains 1 when
+	 *	calling release_handler()
+	 */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
 	pr_ppd("get", task_pid_vnr(current), ppd);
  out:
 	return rc;
 }
+#endif /* !POSTK_DEBUG_ARCH_DEP_99 */
 
 /* Return value: 0 if target is uti thread, -EINVAL if not */
 long
@@ -2524,11 +2574,19 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	}
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+		if (arg)
+			restore_tls(thread->ltls);
+		else
+			restore_tls(thread->rtls);
+		goto out;
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 		if (arg)
 			restore_fs(thread->lfs);
 		else
 			restore_fs(thread->rfs);
 		goto out;
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 	}
 	ret = -EINVAL;
  out:

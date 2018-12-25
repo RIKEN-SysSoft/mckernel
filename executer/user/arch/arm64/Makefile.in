@@ -1,6 +1,9 @@
 CC=@CC@
 AR=ar
-BINDIR=@BINDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# BINDIR=@BINDIR@
+DESTDIR ?= @DESTDIR@
+BINDIR=$(DESTDIR)/@BINDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I.
 VPATH=@abs_srcdir@
@@ -12,8 +15,8 @@ all: $(TARGET)
 ../../libmcexec.a: archdep.o arch_syscall.o
 	$(AR) cr ../../libmcexec.a archdep.o arch_syscall.o
 
-archdep.o: archdep.S
-	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
+archdep.o: archdep.c archdep.S
+	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $^
 
 arch_syscall.o: arch_syscall.c
 	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<

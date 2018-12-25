@@ -276,6 +276,9 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	              + sizeof(struct program_image_section) * nhdrs);
 	memset(desc, '\0', sizeof(struct program_load_desc)
 	                   + sizeof(struct program_image_section) * nhdrs);
+#ifdef POSTK_DEBUG_TEMP_FIX_76 /* add program_load_desc magic */
+	desc->magic = PLD_MAGIC;
+#endif /* POSTK_DEBUG_TEMP_FIX_76 */
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
@@ -3016,7 +3019,11 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 	uti_desc->uti_clv = uti_clv;
 	
 	/* Initialize list of syscall arguments for syscall_intercept */
+#ifdef POSTK_DEBUG_ARCH_DEP_35
+	if (sizeof(struct syscall_struct) * 11 > page_size) {
+#else /* POSTK_DEBUG_ARCH_DEP_35 */
 	if (sizeof(struct syscall_struct) * 11 > PAGE_SIZE) {
+#endif /* POSTK_DEBUG_ARCH_DEP_35 */
 		fprintf(stderr, "%s: ERROR: param is too large\n", __FUNCTION__);
 		rc = -ENOMEM;
 		goto out;

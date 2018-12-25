@@ -175,7 +175,7 @@ int kprintf(const char *format, ...)
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
 	}
 
-	barrier();
+	barrier();	/* Temporary fix for Thunder-X */
 	return len;
 }
 

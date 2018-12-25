@@ -1,6 +1,13 @@
 /* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
 #include <linux/kallsyms.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */
+#include <linux/uaccess.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_46 */
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+#include <linux/slab.h>
+#include <linux/rwlock_types.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 #include "../../../config.h"
 #include "../../mcctrl.h"
 
@@ -13,6 +20,18 @@
 #define	dprintk(...)
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { \
+		pr_info("%s: " msg ",tid=%d,refc=%d\n", \
+			__func__, tid, atomic_read(&ppd->refcount)); \
+	} while (0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while (0)
+#endif
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 static struct vdso_image *_vdso_image_64;
@@ -257,6 +276,39 @@ struct trans_uctx {
 	unsigned long fs;
 };
 
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+void
+restore_tls(unsigned long addr)
+{
+	wrmsrl(MSR_FS_BASE, addr);
+}
+
+void
+save_tls_ctx(void __user *ctx)
+{
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
+
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return;
+	}
+	rdmsrl(MSR_FS_BASE, kctx.fs);
+}
+
+unsigned long
+get_tls_ctx(void __user *ctx)
+{
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
+
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return 0;
+	}
+	return kctx.fs;
+}
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
 void
 restore_fs(unsigned long fs)
 {
@@ -278,6 +330,7 @@ get_fs_ctx(void *ctx)
 
 	return tctx->fs;
 }
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
 
 unsigned long
 get_rsp_ctx(void *ctx)
@@ -367,3 +420,67 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc,
+			struct file *file)
+{
+	extern struct list_head host_threads;
+	extern rwlock_t host_thread_lock;
+	int rc = 0;
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	struct uti_save_fs_desc desc;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
+
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		pr_err("%s: Error: copy_from_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	save_tls_ctx(desc.lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	save_fs_ctx(desc.lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	thread->ltls = get_tls_ctx(desc.lctx);
+	thread->rtls = get_tls_ctx(desc.lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->lfs = get_fs_ctx(desc.lctx);
+	thread->rfs = get_fs_ctx(desc.lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_add_tail(&thread->list, &host_threads);
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+	 *  (1) MCEXEC_UP_CREATE_PPD sets to 1
+	 *  (2) mcexec_util_thread2() increments to 2
+	 *  (3) syscall hook detects exit/exit_group call
+	 *	and decrements to 1 via mcexec_terminate_thread()
+	 *  (4) mcexec calls exit_fd(), it calls release_handler(),
+	 *	it decrements to 0
+	 *
+	 *  KNOWN ISSUE:
+	 *	mcexec_terminate_thread() isn't called when mcexec is
+	 *	killed by signal so the refcount remains 1 when
+	 *	calling release_handler()
+	 */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	pr_ppd("get", task_pid_vnr(current), ppd);
+ out:
+	return rc;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */

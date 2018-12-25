@@ -1,0 +1,11 @@
+[Unit]
+Description = Interface for Heterogeneous Kernels and McKernel.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart = /opt/ppos/etc/FJSVxosmck "start"
+ExecStop  = /opt/ppos/etc/FJSVxosmck "stop"
+
+[Install]
+WantedBy = multi-user.target sshmode.target fastboot.target
