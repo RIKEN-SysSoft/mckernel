@@ -208,6 +208,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_PERF_ACK:
 	case SCD_MSG_SEND_SIGNAL_ACK:
 	case SCD_MSG_PROCFS_ANSWER:
+	case SCD_MSG_REMOTE_PAGE_FAULT_ANSWER:
 		mcctrl_wakeup_cb(__os, pisp);
 		break;
 

@@ -237,8 +237,7 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 
 	/* Wait until the status goes back to IHK_SCD_REQ_THREAD_SPINNING or
 	   IHK_SCD_REQ_THREAD_DESCHEDULED because two wake-up attempts are competing.
-	   Note that mcexec_terminate_thread() and remote page fault and
-	   returning EINTR would compete. */
+	   Note that mcexec_terminate_thread() and returning EINTR would compete. */
 	if (res->req_thread_status == IHK_SCD_REQ_THREAD_TO_BE_WOKEN) {
 		printk("%s: INFO: someone else is waking up the McKernel thread, "
 				"pid: %d, req status: %lu, syscall nr: %lu\n",
@@ -273,7 +272,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
                       unsigned long *ret)
 {
 	struct ikc_scd_packet *packet;
-    struct ikc_scd_packet *free_packet = NULL;
+	struct ikc_scd_packet *free_packet = NULL;
 	struct syscall_request *req;
 	struct syscall_response *resp;
 	unsigned long syscall_ret;
@@ -479,214 +478,43 @@ extern struct host_thread *host_threads;
 extern rwlock_t host_thread_lock;
 #endif
 
-int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason)
+int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr,
+		      uint64_t reason, struct mcctrl_per_proc_data *ppd,
+		      struct ikc_scd_packet *packet)
 {
-	struct ikc_scd_packet *packet;
-	struct ikc_scd_packet *free_packet = NULL;
-	struct syscall_request *req;
-	struct syscall_response *resp;
 	int error;
-	struct wait_queue_head_list_node *wqhln;
-	unsigned long irqflags;
-	struct mcctrl_per_proc_data *ppd;
-	struct mcctrl_per_thread_data *ptd;
-	unsigned long phys;
-	int retry;
+	struct mcctrl_wakeup_desc *desc;
+	int do_frees = 1;
 	
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
-	
-	/* Look up per-process structure */
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-
-	if (!ppd) {
-		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
-				__FUNCTION__, task_tgid_vnr(current));
-		return -EINVAL;
-	}
-
-	ptd = mcctrl_get_per_thread_data(ppd, current);
-	if (!ptd) {
-		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);		
-		error = -ENOENT;
-		goto no_ptd;
-	}
-	pr_ptd("get", task_pid_vnr(current), ptd);
-	packet = (struct ikc_scd_packet *)ptd->data;
-	if (!packet) {
-		printk("%s: no packet registered for TID %d\n",
-				__FUNCTION__, task_pid_vnr(current));
-		error = -ENOENT;
-		goto out_put_ppd;
-	}
-
-	req = &packet->req;
-
-	/* Map response structure */
-	phys = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
-			packet->resp_pa, sizeof(*resp));
-	resp = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
-			phys, sizeof(*resp), NULL, 0);
-	if (!resp) {
-		printk("%s: ERROR: invalid response structure address\n",
-			__FUNCTION__);
-		error = -EINVAL;
-		goto out;
-	}
-
-retry_alloc:
-	wqhln = kmalloc(sizeof(*wqhln), GFP_ATOMIC);
-	if (!wqhln) {
-		printk("WARNING: coudln't alloc wait queue head, retrying..\n");
-		goto retry_alloc;
-	}
-	memset(wqhln, 0, sizeof(struct wait_queue_head_list_node));
-
-	/* Prepare per-thread wait queue head */
-	wqhln->task = current;
-	/* Save the TID explicitly, because mcexec_syscall(), where the request
-	 * will be matched, is in IRQ context and can't call task_pid_vnr() */
-	wqhln->rtid = task_pid_vnr(current);
-	wqhln->req = 0;
-	init_waitqueue_head(&wqhln->wq_syscall);
-
-	irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
-	/* Add to exact list */
-	list_add_tail(&wqhln->list, &ppd->wq_list_exact);
-	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
 
 	/* Request page fault */
-	resp->ret = -EFAULT;
-	resp->fault_address = (unsigned long)fault_addr;
-	resp->fault_reason = reason;
-	resp->stid = task_pid_vnr(current);
+	packet->msg = SCD_MSG_REMOTE_PAGE_FAULT;
+	packet->fault_address = (unsigned long)fault_addr;
+	packet->fault_reason = reason;
 
-#define STATUS_PAGER_COMPLETED	1
-#define	STATUS_PAGE_FAULT	3
-	req->valid = 0;
-
-	if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
-		printk("%s: WARNING: failed to notify PID %d\n",
-			__FUNCTION__, packet->pid);
+	/* we need to alloc desc ourselves because GFP_ATOMIC */
+retry_alloc:
+	desc = kmalloc(sizeof(*desc), GFP_ATOMIC);
+	if (!desc) {
+		pr_warn("WARNING: coudln't alloc remote page fault wait desc, retrying..\n");
+		goto retry_alloc;
 	}
 
-	mb();
-	resp->status = STATUS_PAGE_FAULT;
-
-	retry = 0;
-	for (;;) {
-		dprintk("%s: tid: %d, fault_addr: %p SLEEPING\n", 
-				__FUNCTION__, task_pid_vnr(current), fault_addr);
-		/* wait for response */
-		error = wait_event_interruptible(wqhln->wq_syscall, wqhln->req);
-
-		/* Delay signal handling */
-		if (error == -ERESTARTSYS) {
-			printk("%s: INFO: interrupted by signal\n", __FUNCTION__);
-			retry++;
-			if (retry < 5) { /* mcexec is alive */
-				printk("%s: INFO: retry=%d\n", __FUNCTION__, retry);
-				continue;
-			}
-		}
-
-		/* Remove per-thread wait queue head */
-		irqflags = ihk_ikc_spinlock_lock(&ppd->wq_list_lock);
-		list_del(&wqhln->list);
-		ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, irqflags);
-
-		dprintk("%s: tid: %d, fault_addr: %p WOKEN UP\n", 
-				__FUNCTION__, task_pid_vnr(current), fault_addr);
-
-		if (retry >= 5) {
-			kfree(wqhln);
-			kprintf("%s: INFO: mcexec is gone or retry count exceeded,pid=%d,retry=%d\n", __FUNCTION__, task_tgid_vnr(current), retry);
-			error = -EINVAL;
-			goto out;
-		}
-
-		if (error) {
-			kfree(wqhln);
-			printk("remote_page_fault:interrupted. %d\n", error);
-			goto out;
-		}
-		else {
-			/* Update packet reference */
-			packet = wqhln->packet;
-			free_packet = packet;
-			req = &packet->req;
-			{
-				unsigned long phys2;
-				struct syscall_response *resp2;
-				phys2 = ihk_device_map_memory(ihk_os_to_dev(usrdata->os), 
-						packet->resp_pa, sizeof(*resp));
-				resp2 = ihk_device_map_virtual(ihk_os_to_dev(usrdata->os), 
-						phys2, sizeof(*resp), NULL, 0);
-
-				if (resp != resp2) {
-					resp = resp2;
-					phys = phys2;
-					printk("%s: updated new remote PA for resp\n", __FUNCTION__);
-				}
-			}
-		}
-
-		if (!req->valid) {
-			printk("remote_page_fault:not valid\n");
-		}
-		req->valid = 0;
-
-		/* check result */
-		if (req->number != __NR_mmap) {
-			printk("remote_page_fault:unexpected response. %lx %lx\n",
-					req->number, req->args[0]);
-			error = -EIO;
-			goto out;
-		}
-#define	PAGER_REQ_RESUME	0x0101
-		else if (req->args[0] != PAGER_REQ_RESUME) {
-			resp->ret = pager_call(usrdata->os, (void *)req);
-
-			if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
-				printk("%s: WARNING: failed to notify PID %d\n",
-						__FUNCTION__, packet->pid);
-			}
-
-			mb();
-			resp->status = STATUS_PAGER_COMPLETED;
-			break;
-			//continue;
-		}
-		else {
-			error = req->args[1];
-			if (error) {
-				printk("remote_page_fault:response %d\n", error);
-				kfree(wqhln);
-				goto out;
-			}
-		}
-		break;
+	/* packet->target_cpu was set in rus_vm_fault if a thread was found */
+	error = mcctrl_ikc_send_wait(usrdata->os, packet->target_cpu, packet,
+				     0, desc, &do_frees, 0);
+	if (do_frees)
+		kfree(desc);
+	if (error < 0) {
+		pr_warn("%s: WARNING: failed to request remote page fault PID %d: %d\n",
+			__func__, packet->pid, error);
 	}
 
-	kfree(wqhln);
-	error = 0;
-out:
-	/* Release remote page-fault response packet */
-	if (free_packet) {
-		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)free_packet);
-	}
-
-	ihk_device_unmap_virtual(ihk_os_to_dev(usrdata->os), resp, sizeof(*resp));
-	ihk_device_unmap_memory(ihk_os_to_dev(usrdata->os), phys, sizeof(*resp));
-
-out_put_ppd:
-	mcctrl_put_per_thread_data(ptd);
-	pr_ptd("put", task_pid_vnr(current), ptd);
- no_ptd:
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu, error: %d\n",
-			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason, error);
-
-	mcctrl_put_per_proc_data(ppd);
+		__func__, task_pid_vnr(current), fault_addr,
+		(unsigned long)reason, error);
 	return error;
 }
 
@@ -726,7 +554,9 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
-	struct ikc_scd_packet *packet;
+	struct task_struct *task = current;
+	struct ikc_scd_packet packet = { };
+	unsigned long rsysnum = 0;
 	int ret = 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
@@ -738,33 +568,36 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 
 	/* Look up per-process structure */
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(task));
 	if (!ppd) {
-		kprintf("%s: INFO: no per-process structure for pid %d (tid %d), try to use pid %d\n", 
-				__FUNCTION__, task_tgid_vnr(current), task_pid_vnr(current), vma->vm_mm->owner->pid);
-		ppd = mcctrl_get_per_proc_data(usrdata, vma->vm_mm->owner->pid);
+		dprintk("%s: INFO: no per-process structure for pid %d (tid %d), trying to use pid %d\n",
+			__func__, task_tgid_vnr(task), task_pid_vnr(task),
+			vma->vm_mm->owner->pid);
+		task = vma->vm_mm->owner;
+		ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(task));
 	}
 
 	if (!ppd) {
-		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
-				__FUNCTION__, task_tgid_vnr(current));
+		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+				__func__, task_tgid_vnr(task));
 		ret = VM_FAULT_SIGBUS;
 		goto no_ppd;
 	}
+	packet.fault_tid = ppd->pid;
 
-	ptd = mcctrl_get_per_thread_data(ppd, current);
-	if (!ptd) {
-		printk("%s: ERROR: mcctrl_get_per_thread_data failed\n", __FUNCTION__);
-		ret = VM_FAULT_SIGBUS;
-		goto no_ptd;
-	}
-	pr_ptd("get", task_pid_vnr(current), ptd);
-	packet = (struct ikc_scd_packet *)ptd->data;
-	if (!packet) {
-		ret = VM_FAULT_SIGBUS;
-		printk("%s: no packet registered for TID %d\n",
-				__FUNCTION__, task_pid_vnr(current));
-		goto put_and_out;
+	ptd = mcctrl_get_per_thread_data(ppd, task);
+	if (ptd) {
+		struct ikc_scd_packet *ptd_packet;
+
+		pr_ptd("get", task_pid_vnr(task), ptd);
+		ptd_packet = (struct ikc_scd_packet *)ptd->data;
+		if (ptd_packet) {
+			packet.target_cpu = ptd_packet->ref;
+			packet.fault_tid = ptd_packet->req.rtid;
+			rsysnum = ptd_packet->req.number;
+		}
+		mcctrl_put_per_thread_data(ptd);
+		pr_ptd("put", task_pid_vnr(task), ptd);
 	}
 
 	for (try = 1; ; ++try) {
@@ -780,15 +613,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		if (!error || (try >= NTRIES)) {
 			if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error translating 0x%#lx "
-						"(req: TID: %u, syscall: %lu)\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number);
+				pr_err("%s: error translating 0x%#lx (req: TID: %u, syscall: %lu)\n",
+				       __func__, vmf->address,
+				       packet.fault_tid, rsysnum);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error translating 0x%p "
-						"(req: TID: %u, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
+				pr_err("%s: error translating 0x%p (req: TID: %u, syscall: %lu)\n",
+				       __func__, vmf->virtual_address,
+				       packet.fault_tid, rsysnum);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 			}
 
@@ -801,21 +632,21 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			reason |= PF_WRITE;
 		}
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-		error = remote_page_fault(usrdata, (void *)vmf->address, reason);
+		error = remote_page_fault(usrdata, (void *)vmf->address,
+					  reason, ppd, &packet);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		error = remote_page_fault(usrdata, vmf->virtual_address, reason);
+		error = remote_page_fault(usrdata, vmf->virtual_address,
+					  reason, ppd, &packet);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error forwarding PF for 0x%#lx "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number);
+			pr_err("%s: error forwarding PF for 0x%#lx (req: TID: %d, syscall: %lu)\n",
+			       __func__, vmf->address,
+			       packet.fault_tid, rsysnum);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error forwarding PF for 0x%p "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
+			pr_err("%s: error forwarding PF for 0x%p (req: TID: %d, syscall: %lu)\n",
+			       __func__, vmf->virtual_address,
+			       packet.fault_tid, rsysnum);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 			break;
 		}
@@ -850,19 +681,15 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error inserting mapping for 0x%#lx "
-						"(req: TID: %d, syscall: %lu) error: %d, " 
-						"vm_start: 0x%lx, vm_end: 0x%lx\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number, error,
-						vma->vm_start, vma->vm_end);
+				pr_err("%s: error inserting mapping for 0x%#lx (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+				       __func__, vmf->address,
+				       packet.fault_tid, rsysnum,
+				       error, vma->vm_start, vma->vm_end);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error inserting mapping for 0x%p "
-						"(req: TID: %d, syscall: %lu) error: %d, " 
-						"vm_start: 0x%lx, vm_end: 0x%lx\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number, error,
-						vma->vm_start, vma->vm_end);
+				pr_err("%s: error inserting mapping for 0x%p (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+				       __func__, vmf->virtual_address,
+				       packet.fault_tid, rsysnum, error,
+				       vma->vm_start, vma->vm_end);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 			}
 		}
@@ -875,16 +702,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 					      pfn+pix);
 #endif
 		if (error) {
-#if 1 /* POSTK_DEBUG_TEMP_FIX_11 */ /* rus_vm_fault() multi-thread fix */
-			printk("%s: vm_insert_pfn returned %d\n", __FUNCTION__, error);
+			pr_err("%s: vm_insert_pfn returned %d\n",
+			       __func__, error);
 			if (error == -EBUSY) {
 				error = 0;
 			} else {
 				break;
 			}
-#else /* POSTK_DEBUG_TEMP_FIX_11 */
-			break;
-#endif /* POSTK_DEBUG_TEMP_FIX_11 */
 		}
 	}
 #else
@@ -893,15 +717,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-		printk("%s: remote PF failed for 0x%#lx, pgoff: %lu "
-				"(req: TID: %d, syscall: %lu)\n",
-				__FUNCTION__, vmf->address, vmf->pgoff,
-				packet->req.rtid, packet->req.number);
+		pr_err("%s: remote PF failed for 0x%#lx, pgoff: %lu (req: TID: %d, syscall: %lu)\n",
+		       __func__, vmf->address, vmf->pgoff,
+		       packet.fault_tid, rsysnum);
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		printk("%s: remote PF failed for 0x%p, pgoff: %lu "
-				"(req: TID: %d, syscall: %lu)\n",
-				__FUNCTION__, vmf->virtual_address, vmf->pgoff,
-				packet->req.rtid, packet->req.number);
+		pr_err("%s: remote PF failed for 0x%p, pgoff: %lu (req: TID: %d, syscall: %lu)\n",
+		       __func__, vmf->virtual_address, vmf->pgoff,
+		       packet.fault_tid, rsysnum);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
@@ -910,9 +732,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	ret = VM_FAULT_NOPAGE;
 
 put_and_out:
-	mcctrl_put_per_thread_data(ptd);
-	pr_ptd("put", task_pid_vnr(current), ptd);
- no_ptd:
 	mcctrl_put_per_proc_data(ppd);
  no_ppd:
 	return ret;
