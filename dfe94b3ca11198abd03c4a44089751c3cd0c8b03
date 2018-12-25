@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "39a7f947_0935d0d8",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 5209,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T06:12:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tekprintf(\"%s: WARNING: arch_get_smaller_page_size failed. size: %ld, error: %d\\n\",",
+      "revId": "dfe94b3ca11198abd03c4a44089751c3cd0c8b03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
