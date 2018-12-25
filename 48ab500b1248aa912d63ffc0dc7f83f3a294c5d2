@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8f3358ea_a129c4c0",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 550,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T10:05:04Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason, struct mcctrl_per_proc_data *ppd, struct ikc_scd_packet *packet)",
+      "revId": "48ab500b1248aa912d63ffc0dc7f83f3a294c5d2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f154b77_24c6c11c",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 780,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T10:05:04Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: INFO: no per-process structure for pid %d (tid %d), trying to use pid %d\\n\",",
+      "revId": "48ab500b1248aa912d63ffc0dc7f83f3a294c5d2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "feaa6644_f2c76dfd",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 898,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T10:05:04Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tpr_err(\"%s: vm_insert_pfn returned %d\\n\", __func__, error);",
+      "revId": "48ab500b1248aa912d63ffc0dc7f83f3a294c5d2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
