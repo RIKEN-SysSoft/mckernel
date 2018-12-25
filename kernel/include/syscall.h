@@ -52,6 +52,9 @@
 #define	SCD_MSG_PROCFS_ANSWER		0x13
 #define	SCD_MSG_PROCFS_RELEASE		0x15
 
+#define SCD_MSG_REMOTE_PAGE_FAULT	0x18
+#define SCD_MSG_REMOTE_PAGE_FAULT_ANSWER 0x19
+
 #define	SCD_MSG_DEBUG_LOG		0x20
 
 #define SCD_MSG_SYSFS_REQ_CREATE        0x30
@@ -295,6 +298,14 @@ struct ikc_scd_packet {
 			void *resp;
 			int *spin_sleep; /* 1: waiting in linux_wait_event() 0: woken up by someone else */
 		} futex;
+
+		/* SCD_MSG_REMOTE_PAGE_FAULT */
+		struct {
+			int target_cpu;
+			int fault_tid;
+			unsigned long fault_address;
+			unsigned long fault_reason;
+		};
 	};
 	/* char padding[8]; */ /* We want the size to be 128 bytes */
 };
@@ -312,7 +323,6 @@ struct syscall_response {
 	unsigned long req_thread_status;
 	long ret;
 	unsigned long fault_address;
-	unsigned long fault_reason;
 };
 
 struct syscall_post {

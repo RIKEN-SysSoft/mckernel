@@ -193,7 +193,6 @@ struct syscall_response {
 	unsigned long req_thread_status;
 	long ret;
 	unsigned long fault_address;
-	unsigned long fault_reason;
 };
 
 struct syscall_ret_desc {

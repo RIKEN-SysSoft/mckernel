@@ -241,7 +241,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 #define	STATUS_IN_PROGRESS	0
 #define	STATUS_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
-#define	STATUS_SYACALL		4
+#define	STATUS_SYSCALL		4
 	while (res.status != STATUS_COMPLETED) {
 		while (res.status == STATUS_IN_PROGRESS) {
 			struct cpu_local_var *v;
@@ -295,42 +295,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			cpu_restore_interrupt(flags);
 		}
 
-		if (res.status == STATUS_PAGE_FAULT) {
-#ifdef PROFILE_ENABLE
-			/* We cannot use thread->profile_start_ts here because the
-			 * caller may be utilizing it already */
-			unsigned long t_s = 0;
-			if (thread->profile) {
-				t_s = rdtsc();
-			}
-#endif // PROFILE_ENABLE
-
-			dkprintf("STATUS_PAGE_FAULT in syscall, pid: %d\n", 
-					cpu_local_var(current)->proc->pid);
-			dkprintf("remote page fault,va=%lx,reason=%x\n", res.fault_address, res.fault_reason|PF_POPULATE);
-			error = page_fault_process_vm(thread->vm,
-					(void *)res.fault_address,
-					res.fault_reason|PF_POPULATE);
-
-			/* send result */
-			req2.number = __NR_mmap;
-#define PAGER_RESUME_PAGE_FAULT	0x0101
-			req2.args[0] = PAGER_RESUME_PAGE_FAULT;
-			req2.args[1] = error;
-			/* The current thread is the requester and only the waiting thread
-			 * may serve the request */
-			req2.rtid = cpu_local_var(current)->tid;
-			req2.ttid = res.stid;
-
-			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
-			send_syscall(&req2, cpu, &res);
-#ifdef PROFILE_ENABLE
-			profile_event_add(PROFILE_remote_page_fault,
-					(rdtsc() - t_s));
-#endif // PROFILE_ENABLE
-		}
-
-		if (res.status == STATUS_SYACALL) {
+		if (res.status == STATUS_SYSCALL) {
 			struct syscall_request *requestp;
 			struct syscall_request request;
 			int num;
