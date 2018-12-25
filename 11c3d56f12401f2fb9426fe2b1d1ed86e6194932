@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8ce2f7d6_be4539fb",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 550,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T10:00:26Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr, uint64_t reason, struct mcctrl_per_proc_data *ppd, struct ikc_scd_packet *packet)",
+      "revId": "11c3d56f12401f2fb9426fe2b1d1ed86e6194932",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ddaee710_6dda1d71",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 780,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T10:00:26Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: INFO: no per-process structure for pid %d (tid %d), trying to use pid %d\\n\",",
+      "revId": "11c3d56f12401f2fb9426fe2b1d1ed86e6194932",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74a53411_ef4a7768",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 840,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T10:00:26Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (16, 32)\n \t\tif (error) {\n[...]\n+\t\t\t\tpr_err(\"%s: error forwarding PF for 0x%#lx (req: TID: %d, syscall: %lu)\\n\",",
+      "revId": "11c3d56f12401f2fb9426fe2b1d1ed86e6194932",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a2eed069_1176dfe1",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 898,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2018-12-25T10:00:26Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tpr_err(\"%s: vm_insert_pfn returned %d\\n\", __func__, error);",
+      "revId": "11c3d56f12401f2fb9426fe2b1d1ed86e6194932",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
