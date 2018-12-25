@@ -1,7 +1,18 @@
-/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
+/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <linux/kallsyms.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+#include <linux/sched/task_stack.h>
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0) */
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
+#include <linux/ptrace.h>
+#include <linux/uaccess.h>
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+#include <linux/slab.h>
+#include <linux/rwlock_types.h>
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 #include <asm/vdso.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
@@ -15,6 +26,18 @@
 #define	dprintk(...)
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { \
+		pr_info("%s: " msg ",tid=%d,refc=%d\n", \
+			__func__, tid, atomic_read(&ppd->refcount)); \
+	} while (0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while (0)
+#endif
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 
 #define D(fmt, ...) printk("%s(%d) " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
@@ -144,59 +167,61 @@ out:
 void *
 get_user_sp(void)
 {
-	/* TODO; skeleton for UTI */
-	return NULL;
+	return (void *)current_pt_regs()->sp;
 }
 
 void
 set_user_sp(void *usp)
 {
-	/* TODO; skeleton for UTI */
+	current_pt_regs()->sp = (unsigned long)usp;
 }
 
-/* TODO; skeleton for UTI */
 struct trans_uctx {
 	volatile int cond;
 	int fregsize;
-
-	unsigned long rax;
-	unsigned long rbx;
-	unsigned long rcx;
-	unsigned long rdx;
-	unsigned long rsi;
-	unsigned long rdi;
-	unsigned long rbp;
-	unsigned long r8;
-	unsigned long r9;
-	unsigned long r10;
-	unsigned long r11;
-	unsigned long r12;
-	unsigned long r13;
-	unsigned long r14;
-	unsigned long r15;
-	unsigned long rflags;
-	unsigned long rip;
-	unsigned long rsp;
-	unsigned long fs;
+	struct user_pt_regs regs;
+	unsigned long tls_baseaddr;
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	/* TODO; skeleton for UTI */
+	const unsigned long tpidrro = 0;
+
+	asm volatile(
+	"	msr	tpidr_el0, %0\n"
+	"	msr	tpidrro_el0, %1"
+	: : "r" (addr), "r" (tpidrro));
 }
 
 void
-save_fs_ctx(void *ctx)
+save_tls_ctx(void __user *ctx)
 {
-	/* TODO; skeleton for UTI */
+	struct trans_uctx __user *tctx = ctx;
+	unsigned long baseaddr;
+
+	asm volatile(
+	"	mrs	%0, tpidr_el0"
+	: "=r" (baseaddr));
+
+	if (copy_to_user(&tctx->tls_baseaddr, &baseaddr,
+			 sizeof(tctx->tls_baseaddr))) {
+		pr_err("%s: copy_to_user failed.\n", __func__);
+		return;
+	}
 }
 
 unsigned long
-get_fs_ctx(void *ctx)
+get_tls_ctx(void __user *ctx)
 {
-	/* TODO; skeleton for UTI */
-	return 0;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
+
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return 0;
+	}
+	return kctx.tls_baseaddr;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
@@ -317,3 +342,88 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc,
+			struct file *file)
+{
+	extern struct list_head host_threads;
+	extern rwlock_t host_thread_lock;
+	int rc = 0;
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	struct uti_save_fs_desc desc;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
+	struct trans_uctx klctx;
+	struct trans_uctx *__user rctx = NULL;
+	struct trans_uctx *__user lctx = NULL;
+
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		pr_err("%s: Error: copy_from_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+	rctx = desc.rctx;
+	lctx = desc.lctx;
+
+	klctx.cond = 0;
+	klctx.fregsize = 0;
+	klctx.regs = current_pt_regs()->user_regs;
+
+	if (copy_to_user(lctx, &klctx, sizeof(klctx))) {
+		pr_err("%s: Error: copy_to_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	save_tls_ctx(lctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	save_fs_ctx(lctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	thread->ltls = get_tls_ctx(lctx);
+	thread->rtls = get_tls_ctx(rctx);
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->lfs = get_fs_ctx(lctx);
+	thread->rfs = get_fs_ctx(rctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_add_tail(&thread->list, &host_threads);
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	if (copy_from_user(&current_pt_regs()->user_regs,
+			   &rctx->regs, sizeof(rctx->regs))) {
+		rc = -EFAULT;
+		goto out;
+	}
+	restore_tls(get_tls_ctx(rctx));
+
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+	 *  (1) MCEXEC_UP_CREATE_PPD sets to 1
+	 *  (2) mcexec_util_thread2() increments to 2
+	 *  (3) syscall hook detects exit/exit_group call
+	 *	and decrements to 1 via mcexec_terminate_thread()
+	 *  (4) mcexec calls exit_fd(), it calls release_handler(),
+	 *	it decrements to 0
+	 *
+	 *  KNOWN ISSUE:
+	 *	mcexec_terminate_thread() isn't called when mcexec is
+	 *	killed by signal so the refcount remains 1 when
+	 *	calling release_handler()
+	 */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	pr_ppd("get", task_pid_vnr(current), ppd);
+out:
+	return rc;
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */

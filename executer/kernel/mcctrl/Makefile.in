@@ -1,10 +1,15 @@
-# Makefile.in COPYRIGHT FUJITSU LIMITED 2016
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2016-2018
 KDIR ?= @KDIR@
 ARCH ?= @ARCH@
 src = @abs_srcdir@
-KMODDIR=@KMODDIR@
-BINDIR=@BINDIR@
-INCLUDEDIR=@INCLUDEDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# KMODDIR=@KMODDIR@
+# BINDIR=@BINDIR@
+# INCLUDEDIR=@INCLUDEDIR@
+DESTDIR ?= @DESTDIR@
+KMODDIR=$(DESTDIR)/@KMODDIR@
+BINDIR=$(DESTDIR)/@BINDIR@
+INCLUDEDIR=$(DESTDIR)/@INCLUDEDIR@
 IHK_BASE=$(src)/../../../../ihk
 
 obj-m += mcctrl.o
@@ -32,8 +37,8 @@ mcctrl-y += sysfs.o sysfs_files.o arch/$(ARCH)/archdeps.o
 KBUILD_EXTRA_SYMBOLS = @abs_builddir@/../../../../ihk/linux/core/Module.symvers
 
 ifeq ($(ARCH), arm64)
-EXTRA_CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
-EXTRA_CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+EXTRA_CFLAGS += $(foreach i, $(shell seq 6 120), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+EXTRA_CFLAGS += $(foreach i, $(shell seq 6 110), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
 endif
 
 .PHONY: clean install modules

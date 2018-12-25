@@ -17,8 +17,15 @@ freeze()
 
 	monitor->status_bak = monitor->status;
 	monitor->status = IHK_OS_MONITOR_KERNEL_FROZEN;
+#ifdef POSTK_DEBUG_ARCH_DEP_82 /* Add cpu_pause() to freeze loop */
+	while (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
+		cpu_halt();
+		cpu_pause();
+	}
+#else /* POSTK_DEBUG_ARCH_DEP_82 */
 	while (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN)
 		cpu_halt();
+#endif /* POSTK_DEBUG_ARCH_DEP_82 */
 	monitor->status = monitor->status_bak;
 }
 

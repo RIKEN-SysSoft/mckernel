@@ -1,6 +1,9 @@
 KDIR ?= @KDIR@
 ARCH ?= @ARCH@
-KMODDIR = @KMODDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# KMODDIR = @KMODDIR@
+DESTDIR ?= @DESTDIR@
+KMODDIR = $(DESTDIR)/@KMODDIR@
 src = @abs_srcdir@
 
 obj-m += mcoverlay.o

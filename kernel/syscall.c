@@ -2301,7 +2301,11 @@ static int ptrace_report_exec(struct thread *thread)
 	return 0;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+void ptrace_syscall_event(struct thread *thread)
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 static void ptrace_syscall_event(struct thread *thread)
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 {
 	int ptrace = thread->ptrace;
 
@@ -2579,8 +2583,12 @@ SYSCALL_DECLARE(execve)
 	}
 
 	if (thread->ptrace) {
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+		arch_ptrace_syscall_enter(thread, 0);
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 		ihk_mc_syscall_ret(ctx) = 0;
 		ptrace_syscall_event(thread);
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
@@ -3768,9 +3776,16 @@ perf_counter_alloc(struct thread *thread)
 {
 	int ret = -EINVAL;
 	int i = 0;
+#ifdef POSTK_DEBUG_ARCH_DEP_109 /* perf_counter_get arch-depents. */
+	const int counters = ihk_mc_perf_get_num_counters();
+
+	// find avail generic counter
+	for (i = 0; i < counters; i++) {
+#else /* POSTK_DEBUG_ARCH_DEP_109 */
 
 	// find avail generic counter
 	for (i = 0; i < NUM_PERF_COUNTERS; i++) {
+#endif /* POSTK_DEBUG_ARCH_DEP_109 */
 		if(!(thread->pmc_alloc_map & (1 << i))) {
 			ret = i;
 			break;
@@ -3900,16 +3915,24 @@ void perf_start(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
+#else /* POSTK_DEBUG_ARCH_DEP_87 */
 	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
 		perf_counter_set(leader);
 		counter_mask |= 1UL << counter_id;
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
+#else /* POSTK_DEBUG_ARCH_DEP_87 */
 		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
 			perf_counter_set(sub);
 			counter_mask |= 1UL << counter_id;
 		}
@@ -3928,15 +3951,23 @@ perf_reset(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
+#else /* POSTK_DEBUG_ARCH_DEP_87 */
 	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
 		ihk_mc_perfctr_reset(counter_id);
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
+#else /* POSTK_DEBUG_ARCH_DEP_87 */
 		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
 			ihk_mc_perfctr_reset(counter_id);
 		}
 	}
@@ -3950,15 +3981,23 @@ perf_stop(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
+#else /* POSTK_DEBUG_ARCH_DEP_87 */
 	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
 		counter_mask |= 1UL << counter_id;
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
+#else /* POSTK_DEBUG_ARCH_DEP_87 */
 		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
 		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
 			counter_mask |= 1UL << counter_id;
 		}
 	}
@@ -9264,6 +9303,7 @@ static void do_mod_exit(int status){
 }
 #endif
 
+#ifndef POSTK_DEBUG_ARCH_DEP_85 /* delete unnecessary pmc_xxx system call */
 #ifdef ENABLE_PERF
 /* select counter type */
 SYSCALL_DECLARE(pmc_init)
@@ -9278,33 +9318,17 @@ SYSCALL_DECLARE(pmc_init)
     return ihk_mc_perfctr_init(counter, type, mode);
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-SYSCALL_DECLARE(pmc_start)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_start((int)counter);
-}
-#else
 SYSCALL_DECLARE(pmc_start)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_start(1 << counter);
 }
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-SYSCALL_DECLARE(pmc_stop)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_stop((int)counter);
-}
-#else
 SYSCALL_DECLARE(pmc_stop)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
     return ihk_mc_perfctr_stop(1 << counter);
 }
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
 SYSCALL_DECLARE(pmc_reset)
 {
@@ -9312,6 +9336,7 @@ SYSCALL_DECLARE(pmc_reset)
     return ihk_mc_perfctr_reset(counter);
 }
 #endif /*ENABLE_PERF*/
+#endif /* !POSTK_DEBUG_ARCH_DEP_85 */
 
 extern void save_uctx(void *, void *);
 
@@ -9755,8 +9780,12 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	cpu_enable_interrupt();
 
 	if (cpu_local_var(current)->ptrace) {
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+		arch_ptrace_syscall_enter(cpu_local_var(current), -ENOSYS);
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 		ihk_mc_syscall_ret(ctx) = -ENOSYS;
 		ptrace_syscall_event(cpu_local_var(current));
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 		num = ihk_mc_syscall_number(ctx);
 	}
 
@@ -9802,9 +9831,13 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 	if (cpu_local_var(current)->ptrace) {
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+		l = arch_ptrace_syscall_exit(cpu_local_var(current), l);
+#else /* POSTK_DEBUG_ARCH_DEP_110 */
 		ihk_mc_syscall_ret(ctx) = l;
 		ptrace_syscall_event(cpu_local_var(current));
 		l = ihk_mc_syscall_ret(ctx);
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 	}
 
 	save_syscall_return_value(num, l);

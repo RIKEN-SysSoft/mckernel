@@ -2172,6 +2172,30 @@ save_uctx(void *uctx, struct x86_user_context *regs)
 	ctx->fregsize = 0;
 }
 
+#ifdef POSTK_DEBUG_ARCH_DEP_78 /* arch dep syscallno hide */
+int
+arch_linux_open(char *fname, int flag, int mode)
+{
+	ihk_mc_user_context_t ctx0;
+	int		fd;
+
+	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) fname;
+	ihk_mc_syscall_arg1(&ctx0) = flag;
+	ihk_mc_syscall_arg2(&ctx0) = mode;
+	fd = syscall_generic_forwarding(__NR_open, &ctx0);
+	return fd;
+}
+
+int
+arch_linux_unlink(char *fname)
+{
+	ihk_mc_user_context_t ctx0;
+
+	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) fname;
+	return syscall_generic_forwarding(__NR_unlink, &ctx0);
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_78 */
+
 int do_process_vm_read_writev(int pid, 
 		const struct iovec *local_iov,
 		unsigned long liovcnt,
@@ -2809,5 +2833,21 @@ time_t time(void) {
 
 	return ret;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */
+extern void ptrace_syscall_event(struct thread *thread);
+void arch_ptrace_syscall_enter(struct thread *thread, long setret)
+{
+	ihk_mc_syscall_ret(ctx) = setret;
+	ptrace_syscall_event(thread);
+}
+
+long arch_ptrace_syscall_exit(struct thread *thread, long setret)
+{
+	ihk_mc_syscall_ret(ctx) = setret;
+	ptrace_syscall_event(thread);
+	return ihk_mc_syscall_ret(ctx);
+}
+#endif /* POSTK_DEBUG_ARCH_DEP_110 */
 
 /*** End of File ***/

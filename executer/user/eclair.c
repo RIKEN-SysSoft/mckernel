@@ -73,7 +73,11 @@ static dump_mem_chunks_t *mem_chunks;
 static int num_processors = -1;
 static asymbol **symtab = NULL;
 static ssize_t nsyms;
+#ifdef POSTK_DEBUG_ARCH_DEP_34
+uintptr_t kernel_base;
+#else /* POSTK_DEBUG_ARCH_DEP_34 */
 static uintptr_t kernel_base;
+#endif /* POSTK_DEBUG_ARCH_DEP_34 */
 static struct thread_info *tihead = NULL;
 static struct thread_info **titailp = &tihead;
 static struct thread_info *curr_thread = NULL;
@@ -93,6 +97,7 @@ uintptr_t lookup_symbol(char *name) {
 	return NOSYMBOL;
 } /* lookup_symbol() */
 
+#ifndef POSTK_DEBUG_ARCH_DEP_34
 #define NOPHYS ((uintptr_t)-1)
 
 static uintptr_t virt_to_phys(uintptr_t va) {
@@ -111,6 +116,7 @@ static uintptr_t virt_to_phys(uintptr_t va) {
 
 	return NOPHYS;
 } /* virt_to_phys() */
+#endif /* !POSTK_DEBUG_ARCH_DEP_34 */
 
 static int read_physmem(uintptr_t pa, void *buf, size_t size) {
 	off_t off;

@@ -441,6 +441,15 @@ static int process_msg_prepare_process(unsigned long rphys)
 		return -ENOMEM;
 	}
 
+#ifdef POSTK_DEBUG_TEMP_FIX_76 /* add program_load_desc magic */
+	if (p->magic != PLD_MAGIC) {
+		kprintf("%s: broken mcexec program_load_desc\n", __func__);
+		ihk_mc_unmap_virtual(p, npages);
+		ihk_mc_unmap_memory(NULL, phys, sz);
+		return -EFAULT;
+	}
+#endif /* POSTK_DEBUG_TEMP_FIX_76 */
+
 	n = p->num_sections;
 	if (n > 16 || 0 >= n) {
 		kprintf("%s: ERROR: ELF sections other than 1 to 16 ??\n",
@@ -724,7 +733,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 				break;
 			}
 
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+			ret = ihk_mc_perfctr_first_stop(1 << pcd->target_cntr);
+#else /* POSTK_DEBUG_ARCH_DEP_107 */
 			ret = ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
 			if (ret != 0) {
 				break;
 			}

@@ -1,17 +1,29 @@
-# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2016
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2018
 CC=@CC@
 MCC=mpicc
-BINDIR=@BINDIR@
-SBINDIR=@SBINDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# BINDIR=@BINDIR@
+# SBINDIR=@SBINDIR@
+DESTDIR ?= @DESTDIR@
+BINDIR=$(DESTDIR)/@BINDIR@
+SBINDIR=$(DESTDIR)/@SBINDIR@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 LIBDIR=@libdir@
-MANDIR=@MANDIR@
-MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
-MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# MANDIR=@MANDIR@
+# MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
+# MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
+MANDIR=$(DESTDIR)/@MANDIR@
+MCKERNEL_INCDIR=$(DESTDIR)/@MCKERNEL_INCDIR@
+MCKERNEL_LIBDIR=$(DESTDIR)/@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 ARCH=@ARCH@
-CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I@abs_builddir@/../../../ihk/linux/include
+# POSTK_DEBUG_ARCH_DEP_94 arch depends move [BEGIN]
+CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I@abs_builddir@/../../../ihk/linux/include -I$(VPATH)/arch/${ARCH}/include
+# POSTK_DEBUG_ARCH_DEP_94 [ELSE]
+#CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I@abs_builddir@/../../../ihk/linux/include
+# POSTK_DEBUG_ARCH_DEP_94 [END]
 LDFLAGS=@LDFLAGS@
 CPPFLAGS_SYSCALL_INTERCEPT=@CPPFLAGS_SYSCALL_INTERCEPT@
 LDFLAGS_SYSCALL_INTERCEPT=@LDFLAGS_SYSCALL_INTERCEPT@
@@ -35,8 +47,20 @@ ifeq ($(WITH_SYSCALL_INTERCEPT),yes)
 endif
 
 ifeq ($(ARCH), arm64)
-CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
-CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+CFLAGS += $(foreach i, $(shell seq 6 120), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+CFLAGS += $(foreach i, $(shell seq 6 110), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+
+# get HOST-kernel memory settings
+HOST_DIR=@KDIR@
+HOST_CONFIG=$(HOST_DIR)/.config
+HOST_KERNEL_64K_PAGES=$(shell grep -E "^CONFIG_ARM64_64K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_64K_PAGES=||g')
+HOST_KERNEL_VA_BITS=$(shell grep -E "^CONFIG_ARM64_VA_BITS=" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_VA_BITS=||g')
+
+ifeq ($(HOST_KERNEL_64K_PAGES), y)
+CFLAGS += -DCONFIG_ARM64_64K_PAGES
+endif
+CFLAGS += -DCONFIG_ARM64_VA_BITS=$(HOST_KERNEL_VA_BITS)
+
 endif
 
 all: $(TARGET)
@@ -47,7 +71,11 @@ mcexec: mcexec.c libmcexec.a
 # POSTK_DEBUG_ARCH_DEP_34, eclair arch depend separate.
 ifeq ($(ARCH), arm64)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
+# POSTK_DEBUG_ARCH_DEP_94 arch depends move [BEGIN]
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
+# POSTK_DEBUG_ARCH_DEP_94 [ELSE]
+#	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/${ARCH}/include $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
+# POSTK_DEBUG_ARCH_DEP_94 [END]
 else
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
 	$(CC) -I.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS)
@@ -105,9 +133,11 @@ install::
 	mkdir -p -m 755 $(MANDIR)/man1
 	install -m 644 mcexec.1 $(MANDIR)/man1/mcexec.1
 ifeq ($(ENABLE_QLMPI),yes)
+	mkdir -p -m 755 $(MCKERNEL_INCDIR)	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 	install -m 644 ../include/qlmpilib.h $(MCKERNEL_INCDIR)
 	install -m 755 libqlmpi.so $(MCKERNEL_LIBDIR)
 	install -m 755 libqlfort.so $(MCKERNEL_LIBDIR)
+	mkdir -p -m 755 $(SBINDIR)	# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
 	install -m 755 ql_server $(SBINDIR)
 	install -m 755 ql_mpiexec_start $(BINDIR)
 	install -m 755 ql_mpiexec_finalize $(BINDIR)

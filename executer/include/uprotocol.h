@@ -112,6 +112,10 @@ typedef unsigned long __cpu_set_unit;
 #define MPOL_SHM_PREMAP           0x08
 
 struct program_load_desc {
+#ifdef POSTK_DEBUG_TEMP_FIX_76 /* add program_load_desc magic */
+	unsigned long magic;
+#define PLD_MAGIC 0xcafecafe44332211UL
+#endif /* POSTK_DEBUG_TEMP_FIX_76 */
 	int num_sections;
 	int cpu;
 	int pid;

@@ -23,7 +23,6 @@
 #define NOT_IMPLEMENTED()  do { kprintf("%s is not implemented\n", __func__); while(1);} while(0)
 
 extern void save_debugreg(unsigned long *debugreg);
-extern unsigned long do_kill(struct thread *thread, int pid, int tid, int sig, struct siginfo *info, int ptracecont);
 extern int interrupt_from_user(void *);
 
 enum aarch64_regset {
@@ -948,23 +947,32 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	}
 
 	mcs_rwlock_writer_lock(&proc->update_lock, &lock);
-	if(!(proc->ptrace & PT_TRACED)){
+	if (!(thread->ptrace & PT_TRACED)) {
 		mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
 		return;
 	}
-	thread->exit_status = sig;
+
 	/* Transition thread state */
-	proc->status = PS_DELAY_TRACED;
+	thread->exit_status = sig;
 	thread->status = PS_TRACED;
-	proc->ptrace &= ~PT_TRACE_SYSCALL;
-	if (sig == SIGSTOP || sig == SIGTSTP ||
-			sig == SIGTTIN || sig == SIGTTOU) {
-		proc->signal_flags |= SIGNAL_STOP_STOPPED;
-	} else {
-		proc->signal_flags &= ~SIGNAL_STOP_STOPPED;
-	}
-	parent_pid = proc->parent->pid;
+	thread->ptrace &= ~PT_TRACE_SYSCALL;
 	save_debugreg(thread->ptrace_debugreg);
+	if (sig == SIGSTOP || sig == SIGTSTP ||
+	    sig == SIGTTIN || sig == SIGTTOU) {
+		thread->signal_flags |= SIGNAL_STOP_STOPPED;
+	}
+	else {
+		thread->signal_flags &= ~SIGNAL_STOP_STOPPED;
+	}
+
+	if (thread == proc->main_thread) {
+		proc->status = PS_DELAY_TRACED;
+		parent_pid = proc->parent->pid;
+	}
+	else {
+		parent_pid = thread->report_proc->pid;
+		waitq_wakeup(&thread->report_proc->waitpid_q);
+	}
 	mcs_rwlock_writer_unlock(&proc->update_lock, &lock);
 
 	memset(&info, '\0', sizeof info);

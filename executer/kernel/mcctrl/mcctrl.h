@@ -449,7 +449,8 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data);
 void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd);
 void mcctrl_put_per_thread_data(struct mcctrl_per_thread_data* ptd);
 #ifdef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
-inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task)
+static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd,
+									struct task_struct *task)
 {
 	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
 	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
@@ -576,4 +577,20 @@ struct mcctrl_ioctl_getrusage_desc {
 	size_t size_rusage;
 };
 
+#ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
+struct host_thread {
+	struct list_head list;
+	struct mcos_handler_info *handler;
+	int     pid;
+	int     tid;
+	unsigned long usp;
+#ifdef POSTK_DEBUG_ARCH_DEP_91 /* F-segment is x86 depend name */
+	unsigned long ltls;
+	unsigned long rtls;
+#else /* POSTK_DEBUG_ARCH_DEP_91 */
+	unsigned long lfs;
+	unsigned long rfs;
+#endif /* POSTK_DEBUG_ARCH_DEP_91 */
+};
+#endif /* POSTK_DEBUG_ARCH_DEP_99 */
 #endif

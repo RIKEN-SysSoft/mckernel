@@ -25,11 +25,13 @@ get_syscall_number(syscall_args *args)
 	return args->orig_rax;
 }
 
+#ifndef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
 static inline unsigned long
 get_syscall_return(syscall_args *args)
 {
 	return args->rax;
 }
+#endif /* !POSTK_DEBUG_ARCH_DEP_90 */
 
 static inline unsigned long
 get_syscall_arg1(syscall_args *args)
@@ -120,4 +122,8 @@ set_syscall_arg6(syscall_args *args, unsigned long value)
 {
 	args->r9 = value;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_90 /* syscall_enter check is arch depend. */
+#define syscall_enter(argsp) (get_syscall_return(argsp) == -ENOSYS)
+#endif /* POSTK_DEBUG_ARCH_DEP_90 */
 #endif

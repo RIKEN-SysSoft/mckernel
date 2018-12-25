@@ -350,6 +350,19 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+	struct syscall_request *request = NULL;
+	int retry;
+
+	request = (struct syscall_request *)__get_free_page(GFP_KERNEL);
+	if (!request) {
+		pr_err("%s: ERROR: struct syscall_request allocation failed.\n",
+			__func__);
+		syscall_ret = -ENOMEM;
+		goto err;
+	}
+	memset(request, '\0', sizeof(struct syscall_request));
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 	struct syscall_request _request[2];
 	struct syscall_request *request;
 	int retry;
@@ -359,6 +372,7 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 		request = _request + 1;
 	else
 		request = _request;
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	request->number = num;
 	request->args[0] = arg1;
 	request->args[1] = arg2;
@@ -374,7 +388,12 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
 				__FUNCTION__, task_tgid_vnr(current));
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+		syscall_ret = -EINVAL;
+		goto err;
+#else /* POSTK_DEBUG_ARCH_DEP_106 */
 		return -EINVAL;
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	}
 
 	ptd = mcctrl_get_per_thread_data(ppd, current);
@@ -527,6 +546,11 @@ out_put_ppd:
 		__FUNCTION__, task_pid_vnr(current), num, syscall_ret);
 
 	mcctrl_put_per_proc_data(ppd);
+#ifdef POSTK_DEBUG_ARCH_DEP_106 /* Fix virt_to_phys() area to get_free_page */
+
+err:
+	free_page((unsigned long)request);
+#endif /* POSTK_DEBUG_ARCH_DEP_106 */
 	return syscall_ret;
 }
 
@@ -986,6 +1010,9 @@ static struct vm_operations_struct rus_vmops = {
 
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
+#ifdef POSTK_DEBUG_ARCH_DEP_100 /* rus_mmap() setting vm_flags arch depend defined */
+	vma->vm_flags |= arch_vm_flags;
+#else /* POSTK_DEBUG_ARCH_DEP_100 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
 //	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND | VM_MIXEDMAP;
 	vma->vm_flags |= VM_RESERVED | VM_MIXEDMAP;
@@ -993,6 +1020,7 @@ static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 //	vma->vm_flags |= VM_DONTDUMP | VM_DONTEXPAND | VM_MIXEDMAP;
 	vma->vm_flags |= VM_DONTDUMP | VM_MIXEDMAP;
 #endif
+#endif /* POSTK_DEBUG_ARCH_DEP_100 */
 	vma->vm_ops = &rus_vmops;
 	return 0;
 }

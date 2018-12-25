@@ -1,16 +1,21 @@
 # Remove mcoverlay if loaded
 
-if grep mcoverlay /proc/modules &>/dev/null; then
-    if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
-    if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
-    if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
-    if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
-    if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
-    if ! rmmod mcoverlay 2>/dev/null; then
-	echo "error: removing mcoverlay" >&2
-	# Return -EINVAL
-	exit -22
+# POSTK_DEBUG_ARCH_DEP_95 if disable mcoverlayfs script nothing to do
+ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
+if [ "${ENABLE_MCOVERLAYFS}" == "yes" ]; then
+    if grep mcoverlay /proc/modules &>/dev/null; then
+        if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; then umount -l /tmp/mcos/mcos0_sys; fi
+        if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; then umount -l /tmp/mcos/mcos0_proc; fi
+        if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; then umount -l /tmp/mcos/linux_proc; fi
+        if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
+        if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
+        if ! rmmod mcoverlay 2>/dev/null; then
+            echo "error: removing mcoverlay" >&2
+            # Return -EINVAL
+            exit -22
+        fi
     fi
-fi
 
-exit 0
+    exit 0
+fi
+# POSTK_DEBUG_ARCH_DEP_95 end

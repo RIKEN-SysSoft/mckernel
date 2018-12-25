@@ -7,10 +7,16 @@
 # \author McKernel Development Team
 #
 
-prefix="@prefix@"
-BINDIR="@BINDIR@"
-SBINDIR="@SBINDIR@"
-KMODDIR="@KMODDIR@"
-KERNDIR="@KERNDIR@"
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# prefix="@prefix@"
+# BINDIR="@BINDIR@"
+# SBINDIR="@SBINDIR@"
+# KMODDIR="@KMODDIR@"
+# KERNDIR="@KERNDIR@"
+DESTDIR="@DESTDIR@"
+BINDIR="${DESTDIR}/@BINDIR@"
+SBINDIR="${DESTDIR}/@SBINDIR@"
+KMODDIR="${DESTDIR}/@KMODDIR@"
+KERNDIR="${DESTDIR}/@KERNDIR@"
 
 "$SBINDIR/ihkosctl" 0 shutdown

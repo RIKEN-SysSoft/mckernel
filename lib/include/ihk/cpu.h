@@ -16,7 +16,7 @@
 
 #include <list.h>
 #include <ihk/context.h>
-#include <arch/cpu.h>
+#include <arch/cpu.h>	/* Temporary fix for Thunder-X */
 
 void cpu_enable_interrupt(void);
 void cpu_disable_interrupt(void);
@@ -24,6 +24,8 @@ void cpu_halt(void);
 void cpu_safe_halt(void);
 void cpu_restore_interrupt(unsigned long);
 void cpu_pause(void);
+
+#define barrier()   arch_barrier()	/* Temporary fix for Thunder-X */
 
 unsigned long cpu_disable_interrupt_save(void);
 

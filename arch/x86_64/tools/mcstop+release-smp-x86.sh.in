@@ -7,12 +7,19 @@
 # This is an example script for destroying McKernel and releasing IHK resources
 # Note that the script does no output anything unless an error occurs.
 
-prefix="@prefix@"
-BINDIR="@BINDIR@"
-SBINDIR="@SBINDIR@"
-ETCDIR=@ETCDIR@
-KMODDIR="@KMODDIR@"
-KERNDIR="@KERNDIR@"
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# prefix="@prefix@"
+# BINDIR="@BINDIR@"
+# SBINDIR="@SBINDIR@"
+# ETCDIR=@ETCDIR@
+# KMODDIR="@KMODDIR@"
+# KERNDIR="@KERNDIR@"
+DESTDIR="@DESTDIR@"
+BINDIR="${DESTDIR}/@BINDIR@"
+SBINDIR="${DESTDIR}/@SBINDIR@"
+ETCDIR=@DESTDIR@/@ETCDIR@
+KMODDIR="${DESTDIR}/@KMODDIR@"
+KERNDIR="${DESTDIR}/@KERNDIR@"
 
 mem=""
 cpus=""

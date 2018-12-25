@@ -1,8 +1,14 @@
 TARGET = @TARGET@
-SBINDIR = @SBINDIR@
-INCDIR =  @INCDIR@
-ETCDIR = @ETCDIR@
-MANDIR = @MANDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# SBINDIR = @SBINDIR@
+# INCDIR =  @INCDIR@
+# ETCDIR = @ETCDIR@
+# MANDIR = @MANDIR@
+DESTDIR ?= @DESTDIR@
+SBINDIR = $(DESTDIR)/@SBINDIR@
+INCDIR = $(DESTDIR)/@INCDIR@
+ETCDIR = $(DESTDIR)/@ETCDIR@
+MANDIR = $(DESTDIR)/@MANDIR@
 
 all: executer-mcctrl executer-mcoverlayfs executer-user mckernel mck-tools
 

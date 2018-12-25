@@ -1,7 +1,10 @@
 # Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2016
 CC=@CC@
 MCC=mpicc
-BINDIR=@BINDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# BINDIR=@BINDIR@
+DESTDIR ?= @DESTDIR@
+BINDIR=$(DESTDIR)/@BINDIR@
 SBINDIR=@SBINDIR@
 prefix=@prefix@
 exec_prefix=@exec_prefix@

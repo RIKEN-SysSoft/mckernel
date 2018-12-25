@@ -1,6 +1,9 @@
 CC=@CC@
 AR=ar
-BINDIR=@BINDIR@
+# POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
+# BINDIR=@BINDIR@
+DESTDIR ?= @DESTDIR@
+BINDIR=$(DESTDIR)/@BINDIR@
 KDIR ?= @KDIR@
 CFLAGS=-Wall -O -I.
 VPATH=@abs_srcdir@

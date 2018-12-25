@@ -65,13 +65,24 @@ int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event);
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
+#ifdef POSTK_DEBUG_ARCH_DEP_107 /* Add perfctr_first_stop I/F */
+int ihk_mc_perfctr_first_stop(unsigned long counter_mask);
+#endif /* POSTK_DEBUG_ARCH_DEP_107 */
+#ifndef POSTK_DEBUG_TEMP_FIX_31
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
+#endif /* POSTK_DEBUG_TEMP_FIX_31 */
 int ihk_mc_perfctr_reset(int counter);
 int ihk_mc_perfctr_set(int counter, long value);
 int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
 unsigned long ihk_mc_perfctr_read_msr(int counter);
 int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status);
+#ifdef POSTK_DEBUG_ARCH_DEP_87 /* perf_mask_check arch-dependents. */
+int ihk_mc_perf_counter_mask_check(unsigned long counter_mask);
+#endif /* POSTK_DEBUG_ARCH_DEP_87 */
+#ifdef POSTK_DEBUG_ARCH_DEP_109 /* perf_counter_get arch-depents. */
+int ihk_mc_perf_get_num_counters(void);
+#endif /* POSTK_DEBUG_ARCH_DEP_109 */
 
 #endif
 

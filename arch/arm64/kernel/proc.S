@@ -30,7 +30,7 @@
  */
 #if defined(CONFIG_HAS_NMI)
 #include <arm-gic-v3.h>
-ENTRY(cpu_do_idle)
+ENTRY(__cpu_do_idle)
 	mrs	x0, daif			// save I bit
 	msr	daifset, #2			// set I bit
 	mrs_s	x1, ICC_PMR_EL1			// save PMR
@@ -41,13 +41,13 @@ ENTRY(cpu_do_idle)
 	msr_s	ICC_PMR_EL1, x1			// restore PMR
 	msr	daif, x0			// restore I bit
 	ret
-ENDPROC(cpu_do_idle)
+ENDPROC(__cpu_do_idle)
 #else /* defined(CONFIG_HAS_NMI) */
-ENTRY(cpu_do_idle)
+ENTRY(__cpu_do_idle)
 	dsb	sy				// WFI may enter a low-power mode
 	wfi
 	ret
-ENDPROC(cpu_do_idle)
+ENDPROC(__cpu_do_idle)
 #endif /* defined(CONFIG_HAS_NMI) */
 
 /*
