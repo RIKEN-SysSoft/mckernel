@@ -45,6 +45,46 @@
       "revId": "6794b15284d6f7d71a3d03b56174c69a588270af",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fbff4485_976788b8",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9585,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-25T06:12:49Z",
+      "side": 1,
+      "message": "Please add Linux kernel version switch.",
+      "revId": "6794b15284d6f7d71a3d03b56174c69a588270af",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c1003c25_b5702841",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9594,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2018-12-25T06:12:49Z",
+      "side": 1,
+      "message": "Please use generic_forward\u001c.",
+      "range": {
+        "startLine": 9594,
+        "startChar": 0,
+        "endLine": 9594,
+        "endChar": 9
+      },
+      "revId": "6794b15284d6f7d71a3d03b56174c69a588270af",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
