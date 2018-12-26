@@ -35,8 +35,7 @@
 #define dprintf(...)
 #endif
 
-extern int snprintf(char * buf, size_t size, const char *fmt, ...);
-extern int sprintf(char * buf, const char *fmt, ...);
+extern int snprintf(char *buf, size_t size, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
@@ -324,6 +323,8 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 
 		for (cpu = 0; cpu < num_processors; ++cpu) {
 			ans = snprintf(buf, count, "cpu%d\n", cpu);
+			if (ans < 0 || ans > count)
+				goto err;
 			if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
 				goto err;
 		}
@@ -333,7 +334,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 #ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
 	else if (!strcmp(p, "cpuinfo")) { /* "/proc/cpuinfo" */
 		ans = ihk_mc_show_cpuinfo(buf, count, 0, &eof);
-		if (ans < 0)
+		if (ans < 0 || ans > count)
 			goto err;
 		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
 			goto err;
@@ -452,7 +453,8 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 					""
 				);
 
-			if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+			if (ans < 0 || ans > count ||
+			    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 				ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 				goto err;
 			}
@@ -573,30 +575,35 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			proc->rgid, proc->egid, proc->sgid, proc->fsgid,
 			state,
 			(lockedsize + 1023) >> 10);
-		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+		if (ans < 0 || ans > count ||
+		    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			goto err;
 		}
 
 		ans = snprintf(buf, count, "Cpus_allowed:\t%s\n", cpu_bitmask);
-		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+		if (ans < 0 || ans > count ||
+		    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
 		ans = snprintf(buf, count, "Cpus_allowed_list:\t%s\n",
 			       cpu_list);
-		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+		if (ans < 0 || ans > count ||
+		    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
 		ans = snprintf(buf, count, "Mems_allowed:\t%s\n",
 			       numa_bitmask);
-		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+		if (ans < 0 || ans > count ||
+		    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
 		ans = snprintf(buf, count, "Mems_allowed_list:\t%s\n",
 			       numa_list);
-		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
+		if (ans < 0 || ans > count ||
+		    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			kfree(bitmasks);
 			goto err;
 		}
@@ -701,7 +708,8 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		    0, 0LL, 0L, 0L	      // policy...
 		);
 
-		if (buf_add(&buf_top, &buf_cur, buf, ans) < 0)
+		if (ans < 0 || ans > count ||
+		    buf_add(&buf_top, &buf_cur, buf, ans) < 0)
 			goto err;
 		ans = 0;
 		goto end;

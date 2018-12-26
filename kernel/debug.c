@@ -25,7 +25,7 @@
 struct ihk_kmsg_buf *kmsg_buf;
 
 extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
-extern int sprintf(char * buf, const char *fmt, ...);
+extern int snprintf(char *buf, size_t size, const char *fmt, ...);
 extern void eventfd(int type);
 static ihk_spinlock_t kmsg_lock;
 extern char *find_command_line(char *name);
@@ -110,7 +110,8 @@ int __kprintf(const char *format, ...)
 	}
 
 	/* Copy into the local buf */
-	len = sprintf(buf, "[%3d]: ", ihk_mc_get_processor_id());
+	len = snprintf(buf, KPRINTF_LOCAL_BUF_LEN, "[%3d]: ",
+		       ihk_mc_get_processor_id());
 
 	va_start(va, format);
 	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
@@ -149,7 +150,8 @@ int kprintf(const char *format, ...)
 	}
 
 	/* Copy into the local buf */
-	len = sprintf(buf, "[%3d]: ", ihk_mc_get_processor_id());
+	len = snprintf(buf, KPRINTF_LOCAL_BUF_LEN, "[%3d]: ",
+		       ihk_mc_get_processor_id());
 
 	va_start(va, format);
 	len += vsnprintf(buf + len, KPRINTF_LOCAL_BUF_LEN - len - 2, format, va);
