@@ -60,9 +60,9 @@
 
 #ifdef CONFIG_HAS_NMI
 #define GICD_INT_NMI_PRI		0x40
-#define GICD_INT_DEF_PRI		0xc0
+#define GICD_INT_DEF_PRI		0xc0U
 #else
-#define GICD_INT_DEF_PRI		0xa0
+#define GICD_INT_DEF_PRI		0xa0U
 #endif
 #define GICD_INT_DEF_PRI_X4		((GICD_INT_DEF_PRI << 24) |\
 					(GICD_INT_DEF_PRI << 16) |\

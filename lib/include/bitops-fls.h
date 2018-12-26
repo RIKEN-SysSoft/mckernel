@@ -2,7 +2,7 @@
 #ifndef INCLUDE_BITOPS_FLS_H
 #define INCLUDE_BITOPS_FLS_H
 
-static inline int fls(int x)
+static inline int fls(unsigned int x)
 {
 	int r = 32;
 	if (!x) {
