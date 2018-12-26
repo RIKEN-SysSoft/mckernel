@@ -101,7 +101,6 @@ elseif (BUILD_TARGET STREQUAL "smp-arm64")
 		${PROJECT_SOURCE_DIR}/arch/${ARCH}/kernel/trampoline.S
 		${PROJECT_SOURCE_DIR}/arch/${ARCH}/kernel/traps.c
 		${PROJECT_SOURCE_DIR}/arch/${ARCH}/kernel/vdso.c
-		${PROJECT_SOURCE_DIR}/arch/${ARCH}/kernel/vdso.so.S
 
 	)
 

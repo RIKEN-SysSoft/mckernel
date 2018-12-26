@@ -26,18 +26,6 @@ SECTIONS
 		*(.rodata .rodata.*)
 	} :data
 
-	.vdso : ALIGN(0x10000) {
-		vdso_page = .;
-
-		. = vdso_page + 0x00000;
-		*(.vdso.data)
-
-		. = vdso_page + 0x10000;
-		*(.vdso.text)
-
-		. = ALIGN(0x10000);
-	} : data = 0xf4
-
 	.bss : {
 		*(.bss .bss.*)
 	}
