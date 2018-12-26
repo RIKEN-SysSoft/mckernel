@@ -1474,9 +1474,10 @@ static void numa_distances_init()
 			char buf[1024];
 			char *pbuf = buf;
 
-			pbuf += sprintf(pbuf, "NUMA %d distances: ", i);
+			pbuf += snprintf(pbuf, 1024, "NUMA %d distances: ", i);
 			for (j = 0; j < ihk_mc_get_nr_numa_nodes(); ++j) {
-				pbuf += sprintf(pbuf, "%d (%d), ",
+				pbuf += snprintf(pbuf, 1024 - (pbuf - buf),
+						"%d (%d), ",
 						memory_nodes[i].nodes_by_distance[j].id,
 						memory_nodes[i].nodes_by_distance[j].distance);
 			}
@@ -1519,7 +1520,8 @@ void numa_sysfs_setup(void) {
 	char path[PATH_MAX];
 
 	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
-		sprintf(path, "/sys/devices/system/node/node%d/meminfo", i);
+		snprintf(path, PATH_MAX,
+			 "/sys/devices/system/node/node%d/meminfo", i);
 
 		error = sysfs_createf(&numa_sysfs_meminfo, &memory_nodes[i],
 				0444, path);
