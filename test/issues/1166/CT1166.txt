@@ -1,0 +1,19 @@
+Script started on Mon Jan  7 16:10:54 2019
+[sira@localhost 1166]$ make test
+sh ./CT1166.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-3 -m 1G ... done
+CT1166 START
+CT1166T01: OK open(/dev/fb0)
+CT1166T02: OK mmap(MAP_PRIVATE)
+CT1166T03: OK store private fb0
+CT1166T04: OK load private fb0
+CT1166T05: OK fork
+CT1166T06: OK store private fb0 by child
+CT1166T07: OK load private fb0 by child
+CT1166T08: OK private fb0 do not updated
+CT1166 all tests are OK
+[sira@localhost 1166]$ exit
+exit
+
+Script done on Mon Jan  7 16:11:05 2019
