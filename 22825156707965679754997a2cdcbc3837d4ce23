@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1f8e93a9_5d5ce382",
+        "filename": "test/issues/1166/CT1166.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-08T00:53:05Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\twhile (waitpid(pid, \u0026st, 0) \u003d\u003d -1 \u0026\u0026 errno \u003d\u003d EINTR);",
+      "revId": "22825156707965679754997a2cdcbc3837d4ce23",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
