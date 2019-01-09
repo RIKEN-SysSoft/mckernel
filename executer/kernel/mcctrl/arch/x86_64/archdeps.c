@@ -1,4 +1,4 @@
-/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
+/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <linux/version.h>
 #include <linux/kallsyms.h>
 #ifdef POSTK_DEBUG_ARCH_DEP_46 /* user area direct access fix. */

@@ -1,3 +1,4 @@
+/* elfcoregpl.h COPYRIGHT FUJITSU LIMITED 2018 */
 #ifndef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 /* 
  * Structures and defines from GPLed file.

@@ -1,0 +1,64 @@
+/home/m-takagi/project/os/install/sbin/mcreboot.sh -m 32M@0,32M@1
+/home/m-takagi/project/os/install/bin/mcexec mcexec_test_proc/exec_setmempolicy_mbind 0x8003 0x3 2 0x8000 0x0 2 1 1
+-----
+OK:set_mempolicy - mode:(MPOL_INTERLEAVE) nodemask:0x3 maxnode:2
+OK:get_mempolicy - mode:(MPOL_INTERLEAVE) rst:-1 (MPOL_INTERLEAVE is not implemented yet)
+-----
+[00] OK:mmap - addr:(0x00002aaaab43c000) len:4096 prot:0x3 flags:0x22
+[00] OK:mbind - addr:(0x00002aaaab43c000) len:4096 mode:(MPOL_DEFAULT) nodemask:0x0 maxnode:2 flags:1
+[00] OK:get_mempolicy - addr:(0x00002aaaab43c000) mode:(MPOL_DEFAULT)
+[00] OK:mmap - addr:(0x00002aaaab43c000) len:4096 prot:0x3 flags:0x32
+[00] OK:mmap - addr:(0x00002aaaab43d000) len:4096 prot:0x3 flags:0x22
+-----
+/home/m-takagi/project/os/install/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[ -1]: no_execute_available: 1
+[ -1]: NUM_PERF_COUNTERS: 4, NUM_FIXED_PERF_COUNTERS: 3
+[ -1]: Invariant TSC supported.
+[ -1]: setup_x86 done.
+[ -1]: ns_per_tsc: 384
+[ -1]: KCommand Line: hidos    dump_level=24   time_sharing
+[ -1]: Physical memory: 0x100ef3000 - 0x102400000, 22073344 bytes, 5389 pages available @ NUMA: 0
+[ -1]: Physical memory: 0x880400000 - 0x882400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 22073344, pages: 5389
+[ -1]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 33554432, pages: 8192
+[ -1]: NUMA 0 distances: 0 (10), 1 (21), 
+[ -1]: NUMA 1 distances: 1 (10), 0 (21), 
+[ -1]: map_fixed: phys: 0x90000 => 0xffff860000005000 (2 pages)
+[ -1]: Trampoline area: 0x90000 
+[ -1]: map_fixed: phys: 0x0 => 0xffff860000007000 (1 pages)
+[ -1]: # of cpus : 8
+[ -1]: locals = ffff880880424000
+[  0]: BSP: 0 (HW ID: 1 @ NUMA 0)
+[  0]: BSP: booted 7 AP CPUs
+[  0]: Master channel init acked.
+[  0]: vdso is enabled
+IHK/McKernel booted.
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f5f000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f62000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f86000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f94000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f95000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100fad000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100fd8000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100ffd000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100ffe000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff88010122c000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101256000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101266000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101266000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101270000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 0, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101273000) policy(MPOL_INTERLEAVE) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 0, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101278000) policy(MPOL_INTERLEAVE) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 2aaaab43c000, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[662]: non-default addr-policy found, addr(0x00002aaaab43c000) policy(MPOL_DEFAULT) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[803]: default addr-policy found, addr(0x00002aaaab43c000) policy(MPOL_INTERLEAVE) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 0, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff88010127b000) policy(MPOL_INTERLEAVE) <default policy>
+[  0]: fileobj_free(ffff880100fae020 ffff88085056acc0): free failed. -32
+[  0]: fileobj_free(ffff880100fc8020 ffff88085056aea0): free failed. -32
+[  0]: fileobj_free(ffff880100fe6020 ffff88085056aae0): free failed. -32
+

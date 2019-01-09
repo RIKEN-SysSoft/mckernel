@@ -1,4 +1,4 @@
-/* context.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* context.h COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #ifndef __HEADER_ARM64_IHK_CONTEXT_H
 #define __HEADER_ARM64_IHK_CONTEXT_H
 
@@ -27,7 +27,9 @@ struct pt_regs {
 		};
 	};
 	unsigned long orig_x0;
+	unsigned long orig_pc;
 	unsigned long syscallno;
+	unsigned long __padding;
 };
 
 typedef struct pt_regs ihk_mc_user_context_t;

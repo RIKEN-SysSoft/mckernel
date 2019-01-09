@@ -43,7 +43,7 @@ static int progress_refc;
 	if (count < NROW_STAT) { \
 		array[count++] += (end - start);	\
 	} \
-} while(0)
+} while (0)
 
 static int cyc_prog1_count, cyc_prog2_count, cyc_init1_count, cyc_init2_count, cyc_start_count, cyc_stop1_count, cyc_stop2_count, cyc_stop3_count, cyc_finalize_count;
 static unsigned long cyc_prog1[NROW_STAT];
@@ -266,17 +266,17 @@ void progress_init()
  		pr_err("%s: error: pthread_cond_init failed (%d)\n", __func__, ret);
 		goto out;		
 	}
-	
+
 	if ((ret = pthread_attr_init(&pthread_attr))) {
  		pr_err("%s: error: pthread_attr_init failed (%d)\n", __func__, ret);
 		goto out;
 	}
-	
+
 	if ((ret = uti_attr_init(&uti_attr))) {
  		pr_err("%s: error: uti_attr_init failed (%d)\n", __func__, ret);
 		goto out;
 	}
-	
+
 #if 0
 	if ((ret = UTI_ATTR_SAME_L1(&uti_attr))) {
 		pr_err("%s: error: UTI_ATTR_SAME_L1 failed\n", __func__);
@@ -294,7 +294,7 @@ void progress_init()
 	end = rdtsc_light();
 	RECORD_STAT(cyc_init1_count, cyc_init1, end, start);
 #endif
-	
+
 #ifdef PROFILE
 	start = rdtsc_light();
 #endif
@@ -355,7 +355,7 @@ void progress_start()
 	progress_flag_down = 1;
 	pthread_cond_signal(&progress_cond_down);
 	pthread_mutex_unlock(&progress_mutex);
-	
+
 #ifdef PROFILE
 	end = rdtsc_light();
 	RECORD_STAT(cyc_start_count, cyc_start, end, start);

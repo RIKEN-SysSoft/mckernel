@@ -1,3 +1,4 @@
+/* perfctr.c COPYRIGHT FUJITSU LIMITED 2018 */
 /**
  * \file perfctr.c
  *  License details are found in the file LICENSE.

@@ -130,6 +130,8 @@ char *find_command_line(char *name)
 	return strstr(cmdline, name);
 }
 
+extern int safe_kernel_map;
+
 static void parse_kargs(void)
 {
 	char *ptr;

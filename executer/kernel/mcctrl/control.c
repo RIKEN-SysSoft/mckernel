@@ -2298,7 +2298,6 @@ long mcctrl_perf_enable(ihk_os_t os)
 			kfree(perf_desc);
 			return ret;
 		}
-
 	}
 	kfree(perf_desc);
 
@@ -2505,7 +2504,7 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, stru
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
-	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
 		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
 		rc = -EFAULT;
 		goto out;

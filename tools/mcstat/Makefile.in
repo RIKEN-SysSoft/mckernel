@@ -1,4 +1,3 @@
-# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2016
 CC=@CC@
 MCC=mpicc
 # POSTK_DEBUG_ARCH_DEP_105 make install DESTDIR enable.
