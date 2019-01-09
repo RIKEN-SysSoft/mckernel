@@ -1,3 +1,4 @@
+/* cpu.c COPYRIGHT FUJITSU LIMITED 2018 */
 /**
  * \file cpu.c
  *  License details are found in the file LICENSE.

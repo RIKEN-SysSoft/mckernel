@@ -25,18 +25,12 @@ async_progress.o:: async_progress.c util.h
 	$(CC) $(CFLAGS) -I$(UTI_DIR)/include -c $<
 
 util.o:: util.c util.h
-	$(CC) $(CFLAGS) -qopenmp -c $<
+	$(CC) $(CFLAGS) -c $<
 
-014: 014.o async_progress.o util.o
-	$(LD) -o $@ $^ $(LDFLAGS)
+fwq.o:: fwq.c fwq.h
+	$(CC) $(CFLAGS) -c $<
 
-015: 015.o async_progress.o
-	$(LD) -o $@ $^ $(LDFLAGS)
-
-016: 016.o async_progress.o util.o
-	$(LD) -o $@ $^ $(LDFLAGS) -qopenmp
-
-016.o::016.c
+delay.o:: delay.c delay.h
 	$(CC) $(CFLAGS) -qopenmp -c $<
 
 011: 011.o
@@ -45,10 +39,22 @@ util.o:: util.c util.h
 011.o::011.c
 	$(CC) $(CFLAGS) -qopenmp -c $<
 
-%: %.o
+014: 014.o async_progress.o util.o delay.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-%.o::%.c
+015: 015.o async_progress.o
+	$(LD) -o $@ $^ $(LDFLAGS)
+
+016: 016.o async_progress.o util.o delay.o
+	$(LD) -o $@ $^ $(LDFLAGS) -qopenmp
+
+016.o::016.c
+	$(CC) $(CFLAGS) -qopenmp -c $<
+
+%: %.o util.o fwq.o
+	$(LD) -o $@ $^ $(LDFLAGS)
+
+%.o:: %.c util.h fwq.h
 	$(CC) $(CFLAGS) -c $<
 
 clean:

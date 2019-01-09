@@ -23,6 +23,7 @@
 #include <types.h>
 #include <ctype.h>
 #include <limits.h>
+#include <memory.h>
 
 unsigned char _ctype[] = {
 	_C,_C,_C,_C,_C,_C,_C,_C,                        /* 0-7 */
@@ -584,7 +585,7 @@ static char *string(char *buf, char *end, char *s, struct printf_spec spec)
 {
 	int len, i;
 
-	if ((unsigned long)s < 4096)
+	if ((unsigned long)s < PAGE_SIZE)
 		s = "<NULL>";
 
 	len = strnlen(s, spec.precision);

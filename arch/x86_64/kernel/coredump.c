@@ -1,3 +1,4 @@
+/* coredump.c COPYRIGHT FUJITSU LIMITED 2018 */
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #include <process.h>
 #include <elfcore.h>

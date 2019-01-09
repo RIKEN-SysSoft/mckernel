@@ -1006,10 +1006,18 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 			error = ihk_mc_pt_clear_range(vm->address_space->page_table,
 					vm, (void *)start, (void *)end);
 		} else {
+#ifdef POSTK_DEBUG_TEMP_FIX_87 /* from device-map rusage count fix. */
 			error = ihk_mc_pt_free_range(vm->address_space->page_table,
-					vm, (void *)start, (void *)end,
-					(range->flag & VR_PRIVATE) ? NULL :
-						range->memobj);
+						     vm, (void *)start,
+						     (void *)end,
+						     range->memobj);
+#else /* POSTK_DEBUG_TEMP_FIX_87 */
+			error = ihk_mc_pt_free_range(vm->address_space->page_table,
+						     vm, (void *)start,
+						     (void *)end,
+						     (range->flag & VR_PRIVATE) ?
+						     NULL : range->memobj);
+#endif /* POSTK_DEBUG_TEMP_FIX_87 */
 		}
 		if (range->memobj) {
 			memobj_unref(range->memobj);
@@ -2243,7 +2251,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	/* Create stack range */
 #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 	end = STACK_TOP(&thread->vm->region) & USER_STACK_PAGE_MASK;
-	minsz = USER_STACK_PREPAGE_SIZE & USER_STACK_PAGE_MASK;
+	minsz = (pn->stack_premap + USER_STACK_PREPAGE_SIZE - 1) &
+		USER_STACK_PAGE_MASK;
 #else /* POSTK_DEBUG_ARCH_DEP_104 */
 	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
 	minsz = (pn->stack_premap
@@ -2283,12 +2292,12 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
-				USER_STACK_PAGE_P2ALIGN,
+						USER_STACK_PAGE_P2ALIGN,
 						IHK_MC_AP_NOWAIT | ap_flag,
 						start);
 #else /* POSTK_DEBUG_ARCH_DEP_104 */
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN,
+						LARGE_PAGE_P2ALIGN,
 						IHK_MC_AP_NOWAIT | ap_flag,
 						start);
 #endif /* POSTK_DEBUG_ARCH_DEP_104 */

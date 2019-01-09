@@ -1,0 +1,94 @@
+/home/m-takagi/project/os/install/sbin/mcreboot.sh -m 32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1,32M@1
+/home/m-takagi/project/os/install/bin/mcexec mcexec_test_proc/exec_setmempolicy_mbind 0x8003 0x3 2 0x8000 0x0 2 1 1
+-----
+OK:set_mempolicy - mode:(MPOL_INTERLEAVE) nodemask:0x3 maxnode:2
+OK:get_mempolicy - mode:(MPOL_INTERLEAVE) rst:-1 (MPOL_INTERLEAVE is not implemented yet)
+-----
+[00] OK:mmap - addr:(0x00002aaaab43c000) len:4096 prot:0x3 flags:0x22
+[00] OK:mbind - addr:(0x00002aaaab43c000) len:4096 mode:(MPOL_DEFAULT) nodemask:0x0 maxnode:2 flags:1
+[00] OK:get_mempolicy - addr:(0x00002aaaab43c000) mode:(MPOL_DEFAULT)
+[00] OK:mmap - addr:(0x00002aaaab43c000) len:4096 prot:0x3 flags:0x32
+[00] OK:mmap - addr:(0x00002aaaab43d000) len:4096 prot:0x3 flags:0x22
+-----
+/home/m-takagi/project/os/install/sbin/ihkosctl 0 kmsg
+ available @ NUMA: 1
+[ -1]: Physical memory: 0x934400000 - 0x936400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x936400000 - 0x938400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x938400000 - 0x93a400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x93a400000 - 0x93c400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x93c400000 - 0x93e400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x93e400000 - 0x940400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x940400000 - 0x942400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x942400000 - 0x944400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x944400000 - 0x946400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x946400000 - 0x948400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x948400000 - 0x94a400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x94a400000 - 0x94c400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x94c400000 - 0x94e400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x94e400000 - 0x950400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x950400000 - 0x952400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x952400000 - 0x954400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x954400000 - 0x956400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x956400000 - 0x958400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x958400000 - 0x95a400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x95a400000 - 0x95c400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x95c400000 - 0x95e400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x95e400000 - 0x960400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x960400000 - 0x962400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x962400000 - 0x964400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x964400000 - 0x966400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x966400000 - 0x968400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x968400000 - 0x96a400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x96a400000 - 0x96c400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x96c400000 - 0x96e400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x96e400000 - 0x970400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x970400000 - 0x972400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x972400000 - 0x974400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x974400000 - 0x976400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x976400000 - 0x978400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x978400000 - 0x97a400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x97a400000 - 0x97c400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x97c400000 - 0x97e400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: Physical memory: 0x97e400000 - 0x980400000, 33554432 bytes, 8192 pages available @ NUMA: 1
+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 4283469824, pages: 1045769
+[ -1]: NUMA: 1, Linux NUMA: 1, type: 1, available bytes: 4294967296, pages: 1048576
+[ -1]: NUMA 0 distances: 0 (10), 1 (21), 
+[ -1]: NUMA 1 distances: 1 (10), 0 (21), 
+[ -1]: map_fixed: phys: 0x90000 => 0xffff860000047000 (2 pages)
+[ -1]: Trampoline area: 0x90000 
+[ -1]: map_fixed: phys: 0x0 => 0xffff860000049000 (1 pages)
+[ -1]: # of cpus : 8
+[ -1]: locals = ffff880880424000
+[  0]: BSP: 0 (HW ID: 1 @ NUMA 0)
+[  0]: BSP: booted 7 AP CPUs
+[  0]: Master channel init acked.
+[  0]: vdso is enabled
+IHK/McKernel booted.
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f63000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f66000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f8a000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101000000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f98000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100f99000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100fb1000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880100fdc000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101201000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101202000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101230000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff88010125a000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff88010126a000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff88010126a000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101274000) policy(MPOL_DEFAULT) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 0, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff880101277000) policy(MPOL_INTERLEAVE) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 0, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff88010127c000) policy(MPOL_INTERLEAVE) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 2aaaab43c000, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[662]: non-default addr-policy found, addr(0x00002aaaab43c000) policy(MPOL_DEFAULT) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[803]: default addr-policy found, addr(0x00002aaaab43c000) policy(MPOL_INTERLEAVE) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[645]: virt_addr: 0, policy: MPOL_INTERLEAVE
+[  0]: mckernel_allocate_aligned_pages_node[806]: addr-policy not found or default addr-policy found, addr(0xffff88010127f000) policy(MPOL_INTERLEAVE) <default policy>
+[  0]: fileobj_free(ffff880100fb2020 ffff8808505ead80): free failed. -32
+[  0]: fileobj_free(ffff880100fcc020 ffff8808505eac00): free failed. -32
+[  0]: fileobj_free(ffff880100fea020 ffff8808505ea1e0): free failed. -32
+
