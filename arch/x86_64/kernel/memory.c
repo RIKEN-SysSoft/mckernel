@@ -1,3 +1,4 @@
+/* memory.c COPYRIGHT FUJITSU LIMITED 2018 */
 /**
  * \file memory.c
  *  License details are found in the file LICENSE.
@@ -38,6 +39,8 @@ static char *last_page;
 extern char _head[], _end[];
 
 extern unsigned long x86_kernel_phys_base;
+
+int safe_kernel_map;
 
 /* Arch specific early allocation routine */
 void *early_alloc_pages(int nr_pages)

@@ -1,0 +1,5 @@
+/home/m-takagi/project/os/install/sbin/mcreboot.sh -m 32M@0
+/home/m-takagi/project/os/install/bin/mcexec mcexec_test_proc/exec_setmempolicy_mbind 0x8003 0x0 1 0x8000 0x0 1 1 1
+-----
+NG:set_mempolicy - mode:(MPOL_INTERLEAVE) nodemask:0x0 maxnode:1 rst:-1
+Error: failed to mcexec

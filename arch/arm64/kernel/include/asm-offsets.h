@@ -15,8 +15,9 @@
 #define S_PC		0x100	/* offsetof(struct pt_regs, pc) */
 #define S_PSTATE	0x108	/* offsetof(struct pt_regs, pstate) */
 #define S_ORIG_X0	0x110	/* offsetof(struct pt_regs, orig_x0) */
-#define S_SYSCALLNO	0x118	/* offsetof(struct pt_regs, syscallno) */
-#define S_FRAME_SIZE	0x120	/* sizeof(struct pt_regs) */
+#define S_ORIG_PC	0x118	/* offsetof(struct pt_regs, orig_pc) */
+#define S_SYSCALLNO	0x120	/* offsetof(struct pt_regs, syscallno) */
+#define S_FRAME_SIZE	0x130	/* sizeof(struct pt_regs) must be 16 byte align */
 
 #define CPU_INFO_SETUP	0x10	/* offsetof(struct cpu_info, cpu_setup) */
 #define CPU_INFO_SZ	0x18	/* sizeof(struct cpu_info) */

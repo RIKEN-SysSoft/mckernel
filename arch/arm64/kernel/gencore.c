@@ -1,4 +1,4 @@
-/* gencore.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* gencore.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #ifndef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #include <ihk/debug.h>
 #include <kmalloc.h>

@@ -1,4 +1,4 @@
-# Makefile.build.in COPYRIGHT FUJITSU LIMITED 2015-2016
+# Makefile.build.in COPYRIGHT FUJITSU LIMITED 2015-2018
 ARCH = @ARCH@
 VPATH=@abs_srcdir@
 SRC=$(VPATH)

@@ -1,4 +1,4 @@
-/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 /**
  * \file syscall.c
  *  License details are found in the file LICENSE.
@@ -672,6 +672,8 @@ ptrace_detach_thread(struct thread *thread, int data)
 			 */
 			thread_exit_signal(thread);
 		}
+		/* Wake parent (if sleeping in wait4()) */
+		waitq_wakeup(&proc->parent->waitpid_q);
 	}
 
 	if (data) {
@@ -1437,9 +1439,15 @@ terminate_host(int pid)
 	proc = find_process(pid, &lock);
 	if(!proc)
 		return;
-	proc->nohost = 1;
-	process_unlock(proc, &lock);
-	do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
+
+	if (proc->nohost != 1) {
+		proc->nohost = 1;
+		process_unlock(proc, &lock);
+		do_kill(cpu_local_var(current), pid, -1, SIGKILL, NULL, 0);
+	}
+	else {
+		process_unlock(proc, &lock);
+	}
 }
 
 void eventfd(int type)
@@ -3107,7 +3115,7 @@ getcred(int *_buf)
 	struct syscall_request request IHK_DMA_ALIGN;
 	unsigned long phys;
 
-	if((((unsigned long)_buf) ^ ((unsigned long)(_buf + 8))) & ~4095)
+	if ((((unsigned long)_buf) ^ ((unsigned long)(_buf + 8))) & PAGE_MASK)
 		buf = _buf + 8;
 	else
 		buf = _buf;
@@ -5778,17 +5786,13 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 				struct syscall_request request IHK_DMA_ALIGN; 
 				struct timespec tv[2];
 				struct timespec *tv_now = tv;
-				request.number = n;
-				unsigned long __phys;                                          
 
-				if((((unsigned long)tv) ^ ((unsigned long)(tv + 1))) & ~4095)
+				if ((((unsigned long)tv) ^
+				    ((unsigned long)(tv + 1))) & PAGE_MASK)
 					tv_now = tv + 1;
-				if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, 
-						(void *)tv_now, &__phys)) { 
-					return -EFAULT; 
-				}
 
-				request.args[0] = __phys;               
+				request.number = n;
+				request.args[0] = virt_to_phys(tv_now);
 				request.args[1] = (flags & FUTEX_CLOCK_REALTIME)?
 						      CLOCK_REALTIME: CLOCK_MONOTONIC;
 
@@ -9423,12 +9427,8 @@ int util_thread(struct uti_attr *arg)
 	}
 
  out:
-	if (rctx) {
-		kfree(rctx);
-	}
-	if (uti_clv) {
-		kfree(uti_clv);
-	}
+	kfree(rctx);
+	kfree(uti_clv);
 
 	return rc;
 }

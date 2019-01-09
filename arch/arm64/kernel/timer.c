@@ -8,15 +8,13 @@
 #include <cputype.h>
 #include <irq.h>
 #include <arch-timer.h>
+#include <debug.h>
 
 //#define DEBUG_PRINT_TIMER
 
 #ifdef DEBUG_PRINT_TIMER
-#define dkprintf kprintf
-#define ekprintf kprintf
-#else
-#define dkprintf(...) do { if (0) kprintf(__VA_ARGS__); } while (0)
-#define ekprintf kprintf
+#undef DDEBUG_DEFAULT
+#define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
 static unsigned int per_cpu_timer_val[NR_CPUS] = { 0 };

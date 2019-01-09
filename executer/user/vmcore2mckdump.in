@@ -1,4 +1,5 @@
 #!/bin/sh
+# vmcore2mckdump.in COPYRIGHT FUJITSU LIMITED 2017-2018
 export VMLINUX=/usr/lib/debug/lib/modules/`uname -r`/vmlinux
 export INSTALLDIR=@prefix@
 export INFILE=$1

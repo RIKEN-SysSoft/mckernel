@@ -1,0 +1,9 @@
+/home/m-takagi/project/os/install/sbin/mcreboot.sh -m 32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0,32M@0
+/home/m-takagi/project/os/install/bin/mcexec mcexec_test_proc/exec_setmempolicy_mbind 0x8000 0x0 1 0x8003 0x0 1 0 1
+-----
+OK:set_mempolicy - mode:(MPOL_DEFAULT) nodemask:0x0 maxnode:1
+OK:get_mempolicy - mode:(MPOL_DEFAULT) nodemask:0x0 maxnode:1
+-----
+[00] OK:mmap - addr:(0x00002aaaab42a000) len:4096 prot:0x3 flags:0x22
+[00] NG:mbind - addr:(0x00002aaaab42a000) len:4096 mode:(MPOL_INTERLEAVE) nodemask:0x0 maxnode:1 flags:0 rst:-1
+Error: failed to mcexec
