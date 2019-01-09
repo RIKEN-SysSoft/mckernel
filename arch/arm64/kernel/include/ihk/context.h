@@ -27,7 +27,9 @@ struct pt_regs {
 		};
 	};
 	unsigned long orig_x0;
+	unsigned long orig_pc;
 	unsigned long syscallno;
+	unsigned long __padding;
 };
 
 typedef struct pt_regs ihk_mc_user_context_t;

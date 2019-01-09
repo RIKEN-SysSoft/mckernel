@@ -22,7 +22,7 @@
  */
 
 #include <linkage.h>
-#include "asm_syscall.h"
+#include <asm-syscall.h>
 
 	.text
 

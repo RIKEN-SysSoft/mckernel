@@ -24,6 +24,7 @@ STATIC_ASSERT(offsetof(struct pt_regs, sp) == S_SP);
 STATIC_ASSERT(offsetof(struct pt_regs, pc) == S_PC);
 STATIC_ASSERT(offsetof(struct pt_regs, pstate) == S_PSTATE);
 STATIC_ASSERT(offsetof(struct pt_regs, orig_x0) == S_ORIG_X0);
+STATIC_ASSERT(offsetof(struct pt_regs, orig_pc) == S_ORIG_PC);
 STATIC_ASSERT(offsetof(struct pt_regs, syscallno) == S_SYSCALLNO);
 STATIC_ASSERT(sizeof(struct pt_regs) == S_FRAME_SIZE);
 
