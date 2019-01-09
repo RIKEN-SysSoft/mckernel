@@ -17,6 +17,7 @@
 #include <syscall.h>
 #include <debug.h>
 
+void terminate_mcexec(int, int);
 extern void ptrace_report_signal(struct thread *thread, int sig);
 extern void clear_single_step(struct thread *thread);
 void terminate(int, int);
@@ -50,56 +51,54 @@ uintptr_t debug_constants[] = {
 	-1,
 };
 
-static ihk_spinlock_t cpuid_head_lock = SPIN_LOCK_UNLOCKED;
-static int cpuid_head = 1;
-
 extern int num_processors;
 
 int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 {
 	int min_queue_len = -1;
-	int i, min_cpu = -1;
+	int cpu, min_cpu = -1, uti_cpu = -1;
 	unsigned long irqstate;
 
 	irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
 
-	/* cpu_head lock */
-	ihk_mc_spinlock_lock_noirq(&cpuid_head_lock);
-
 	/* Find the first allowed core with the shortest run queue */
-	for (i = 0; i < num_processors; cpuid_head++, i++) {
+	for (cpu = 0; cpu < num_processors; ++cpu) {
 		struct cpu_local_var *v;
 
-		/* cpuid_head over cpu_info->ncpus, cpuid_head = BSP reset. */
-		if (cpuid_head >= num_processors) {
-			cpuid_head = 0;
-		}
+		if (!CPU_ISSET(cpu, cpu_set))
+			continue;
 
-		if (!CPU_ISSET(cpuid_head, cpu_set)) continue;
-
-		v = get_cpu_local_var(cpuid_head);
+		v = get_cpu_local_var(cpu);
 		ihk_mc_spinlock_lock_noirq(&v->runq_lock);
 		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n",
-			 __func__, cpuid_head, v->runq_len, v->runq_reserved);
+			 __func__, cpu, v->runq_len, v->runq_reserved);
 		if (min_queue_len == -1 ||
 		    v->runq_len + v->runq_reserved < min_queue_len) {
 			min_queue_len = v->runq_len + v->runq_reserved;
-			min_cpu = cpuid_head;
+			min_cpu = cpu;
 		}
-		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
 
-		if (min_queue_len == 0) {
-			cpuid_head++;
-			break;
+		/* Record the last tie CPU */
+		if (min_cpu != cpu &&
+		    v->runq_len + v->runq_reserved == min_queue_len) {
+			uti_cpu = cpu;
 		}
+		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d,min_cpu=%d,uti_cpu=%d\n",
+			 __func__, cpu, v->runq_len, v->runq_reserved,
+			 min_cpu, uti_cpu);
+
+		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
+#if 0
+		if (min_queue_len == 0)
+			break;
+#endif
 	}
 
-	/* cpu_head unlock */
-	ihk_mc_spinlock_unlock_noirq(&cpuid_head_lock);
-
+	min_cpu = use_last ? uti_cpu : min_cpu;
 	if (min_cpu != -1) {
 		if (get_cpu_local_var(min_cpu)->status != CPU_STATUS_RESERVED)
-			get_cpu_local_var(min_cpu)->status = CPU_STATUS_RESERVED;
+			get_cpu_local_var(min_cpu)->status =
+				CPU_STATUS_RESERVED;
 		__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved,
 				     1);
 	}
@@ -535,6 +534,8 @@ SYSCALL_DECLARE(rt_sigreturn)
 	thread->sigmask.__val[0] = ksigsp.uc.uc_sigmask.__val[0];
 	thread->sigstack.ss_flags = ksigsp.uc.uc_stack.ss_flags;
 	if(ksigsp.restart){
+		regs->orig_x0 = regs->regs[0];
+		regs->orig_pc = regs->pc;
 		return syscall(ksigsp.syscallno, regs);
 	}
 
@@ -1109,6 +1110,17 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 
 	if(regs == NULL){ /* call from syscall */
 		regs = thread->uctx;
+
+		/*
+		 * Call do_signal() directly syscalls,
+		 * need to save the return value.
+		 */
+		if (rc == -EINTR) {
+			if (regs->syscallno == __NR_rt_sigtimedwait ||
+			    regs->syscallno == __NR_rt_sigsuspend) {
+				regs->regs[0] = rc;
+			}
+		}
 	}
 	else{
 		rc = regs->regs[0];
@@ -1371,12 +1383,16 @@ interrupt_from_user(void *regs0)
 
 void save_syscall_return_value(int num, unsigned long rc)
 {
+	const struct thread *thread = cpu_local_var(current);
+
 	/*
 	 * Save syscall return value.
 	 */
-	if (cpu_local_var(current) && cpu_local_var(current)->uctx &&
-			num != __NR_rt_sigsuspend) {
-		ihk_mc_syscall_arg0(cpu_local_var(current)->uctx) = rc;
+	if (thread &&
+	    thread->uctx &&
+	    ((thread->uctx->regs[0] == thread->uctx->orig_x0) &&
+	     (thread->uctx->pc == thread->uctx->orig_pc))) {
+		thread->uctx->regs[0] = rc;
 	}
 }
 
@@ -1452,6 +1468,111 @@ __check_signal(unsigned long rc, void *regs0, int num, int irq_disabled)
 
 out:
 	return;
+}
+
+static int
+check_sig_pending_thread(struct thread *thread)
+{
+	int found = 0;
+	struct list_head *head;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	struct sig_pending *next;
+	struct sig_pending *pending;
+	__sigset_t w;
+	__sigset_t x;
+	int sig = 0;
+	struct k_sigaction *k;
+	struct cpu_local_var *v;
+
+	v = get_this_cpu_local_var();
+	w = thread->sigmask.__val[0];
+
+	lock = &thread->sigcommon->lock;
+	head = &thread->sigcommon->sigpending;
+	for (;;) {
+		mcs_rwlock_reader_lock(lock, &mcs_rw_node);
+
+		list_for_each_entry_safe(pending, next, head, list) {
+			for (x = pending->sigmask.__val[0], sig = 0; x;
+			     sig++, x >>= 1)
+				;
+			k = thread->sigcommon->action + sig - 1;
+			if ((sig != SIGCHLD && sig != SIGURG) ||
+			    (k->sa.sa_handler != SIG_IGN &&
+			     k->sa.sa_handler != NULL)) {
+				if (!(pending->sigmask.__val[0] & w)) {
+					if (pending->interrupted == 0) {
+						pending->interrupted = 1;
+						found = 1;
+						if (sig != SIGCHLD &&
+						    sig != SIGURG &&
+						    !k->sa.sa_handler) {
+							found = 2;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+
+		if (found == 2) {
+			break;
+		}
+
+		if (lock == &thread->sigpendinglock) {
+			break;
+		}
+
+		lock = &thread->sigpendinglock;
+		head = &thread->sigpending;
+	}
+
+	if (found == 2) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		terminate_mcexec(0, sig);
+		return 1;
+	}
+	else if (found == 1) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		interrupt_syscall(thread, 0);
+		return 1;
+	}
+	return 0;
+}
+
+void
+check_sig_pending(void)
+{
+	struct thread *thread;
+	struct cpu_local_var *v;
+
+	if (clv == NULL)
+		return;
+
+	v = get_this_cpu_local_var();
+repeat:
+	v->runq_irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+	list_for_each_entry(thread, &(v->runq), sched_list) {
+
+		if (thread == NULL || thread == &cpu_local_var(idle)) {
+			continue;
+		}
+
+		if (thread->in_syscall_offload == 0) {
+			continue;
+		}
+
+		if (thread->proc->group_exit_status & 0x0000000100000000L) {
+			continue;
+		}
+
+		if (check_sig_pending_thread(thread))
+			goto repeat;
+	}
+	ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
 }
 
 unsigned long
@@ -1709,27 +1830,11 @@ done:
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
 		int status = tthread->status;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_74 /* interrupt_syscall() timing change */
-#ifdef POSTK_DEBUG_TEMP_FIX_48 /* nohost flag missed fix */
-		if(tthread->proc->status != PS_EXITED)
-			interrupt_syscall(tthread, 0);
-#else /* POSTK_DEBUG_TEMP_FIX_48 */
-		if(!tthread->proc->nohost)
-			interrupt_syscall(tthread, 0);
-#endif /* POSTK_DEBUG_TEMP_FIX_48 */
-#endif /* POSTK_DEBUG_TEMP_FIX_74 */
-
 		if (thread != tthread) {
 			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
 				 tproc->pid, tthread->cpu_id);
-#define IPI_CPU_NOTIFY 0
 			ihk_mc_interrupt_cpu(tthread->cpu_id, INTRID_CPU_NOTIFY);
 		}
-
-#ifndef POSTK_DEBUG_TEMP_FIX_74 /* interrupt_syscall() timing change */
-		if(!tthread->proc->nohost)
-			interrupt_syscall(tthread, 0);
-#endif /* !POSTK_DEBUG_TEMP_FIX_74 */
 
 		if (status != PS_RUNNING) {
 			if(sig == SIGKILL){

@@ -22,6 +22,29 @@ void vdso_gettimeofday_unused_funcs(void)
 	UNUSED(xos_is_tchip);
 }
 
+extern int __kernel_gettimeofday(struct timeval *tv, void *tz);
+
+static inline void cpu_pause_for_vsyscall(void)
+{
+	asm volatile ("yield" ::: "memory");
+}
+
+static inline void vdso_calculate_time_from_tsc(struct timespec *ts,
+						struct tod_data_s *tod_data)
+{
+	UNUSED(xgetbv);
+	UNUSED(xsetbv);
+	UNUSED(rdpmc);
+	UNUSED(rdmsr);
+	UNUSED(set_perfctl);
+	UNUSED(start_perfctr);
+	UNUSED(stop_perfctr);
+	UNUSED(clear_perfctl);
+	UNUSED(set_perfctr);
+	UNUSED(read_perfctr);
+	UNUSED(xos_is_tchip);
+}
+
 static inline struct tod_data_s *get_tod_data_addr(void)
 {
 	unsigned long addr;
@@ -49,7 +72,7 @@ int __kernel_gettimeofday(struct timeval *tv, void *tz)
 
 	/* DO it locally if supported */
 	if (!tz && tod_data->do_local) {
-		calculate_time_from_tsc(&ats);
+		vdso_calculate_time_from_tsc(&ats, tod_data);
 
 		tv->tv_sec = ats.tv_sec;
 		tv->tv_usec = ats.tv_nsec / 1000;
@@ -112,7 +135,7 @@ int __kernel_clock_gettime(clockid_t clk_id, struct timespec *tp)
 
 	/* DO it locally if supported */
 	if (tod_data->do_local && clk_id == CLOCK_REALTIME) {
-		calculate_time_from_tsc(&ats);
+		vdso_calculate_time_from_tsc(&ats, tod_data);
 
 		tp->tv_sec = ats.tv_sec;
 		tp->tv_nsec = ats.tv_nsec;
