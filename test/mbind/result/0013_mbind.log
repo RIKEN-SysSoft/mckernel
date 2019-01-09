@@ -1,0 +1,48 @@
+/home/m-takagi/project/os/install/sbin/mcreboot.sh -m 32M@0
+/home/m-takagi/project/os/install/bin/mcexec mcexec_test_proc/exec_setmempolicy_mbind_shared 0x8002 0x1 1 0x8001 0x1 1 0 1
+-----
+OK:set_mempolicy - mode:(MPOL_BIND) nodemask:0x1 maxnode:1
+-----
+[00] OK:shmat - addr:(0x00002aaaab43b000) len:4096 prot:0x3 flags:0x8021
+[00] OK:mbind - addr:(0x00002aaaab43b000) len:4096 mode:(MPOL_PREFERRED) nodemask:0x1 maxnode:1 flags:0
+[00] OK:get_mempolicy - addr:(0x00002aaaab43b000) mode:(MPOL_PREFERRED)
+[00] OK:shmat - addr:(0x00002aaaab43c000) len:4096 prot:0x3 flags:0x22
+-----
+/home/m-takagi/project/os/install/sbin/ihkosctl 0 kmsg
+IHK/McKernel started.
+[ -1]: no_execute_available: 1
+[ -1]: NUM_PERF_COUNTERS: 4, NUM_FIXED_PERF_COUNTERS: 3
+[ -1]: Invariant TSC supported.
+[ -1]: setup_x86 done.
+[ -1]: ns_per_tsc: 384
+[ -1]: KCommand Line: hidos    dump_level=24   time_sharing
+[ -1]: Physical memory: 0x100ed4000 - 0x102400000, 22200320 bytes, 5420 pages available @ NUMA: 0
+[ -1]: NUMA: 0, Linux NUMA: 0, type: 1, available bytes: 22200320, pages: 5420
+[ -1]: NUMA 0 distances: 0 (10), 
+[ -1]: map_fixed: phys: 0x90000 => 0xffff860000005000 (2 pages)
+[ -1]: Trampoline area: 0x90000 
+[ -1]: map_fixed: phys: 0x0 => 0xffff860000007000 (1 pages)
+[ -1]: # of cpus : 8
+[ -1]: locals = ffff880100ef7000
+[  0]: BSP: 0 (HW ID: 1 @ NUMA 0)
+[  0]: BSP: booted 7 AP CPUs
+[  0]: Master channel init acked.
+[  0]: vdso is enabled
+IHK/McKernel booted.
+[  0]: numa_mem_policy=2
+[  0]: mckernel_allocate_aligned_pages_node[669]: applying default-policy, addr(0x0000000000000000) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaec7000) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaeab830) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaea4163) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaf539d0) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaea61ae) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaea5cf8) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[738]: applying addr-policy (and it's not default-policy), addr(0x00002aaaab43b000) policy(MPOL_PREFERRED) <addr policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaab43c000) policy(MPOL_BIND) <default policy:Mapping of MAP_SHARED>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaf601c0) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaab22f298) policy(MPOL_BIND) <default policy>
+[  0]: mckernel_allocate_aligned_pages_node[808]: applying default-policy, addr(0x00002aaaaaf194f0) policy(MPOL_BIND) <default policy>
+[  0]: fileobj_free(ffff880100fd2020 ffff8808533d28a0): free failed. -32
+[  0]: fileobj_free(ffff880100fec020 ffff8808533d2840): free failed. -32
+[  0]: fileobj_free(ffff88010120a020 ffff8808533d2cc0): free failed. -32
+

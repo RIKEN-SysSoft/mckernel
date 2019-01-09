@@ -1,6 +1,9 @@
 #!/bin/sh
-source ./config
-MC_HOME=${SRC_PATH}
+source ${HOME}/.mck_test_config
+
+TEST_DIR=`pwd`
+MC_HOME=`pwd`/../..
+
 cd $MC_HOME
 
 if [ $# -eq 1 ]; then

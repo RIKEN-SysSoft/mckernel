@@ -5,6 +5,7 @@
 #include <asm-offsets.h>
 #include <esr.h>
 #include <thread_info.h>
+#include <asm-syscall.h>
 
 /*
  * Bad Abort numbers
@@ -77,6 +78,7 @@
 
 	.macro	kernel_exit, el, need_enable_step = 0
 	.if 	\el == 0
+	bl	check_sig_pending
 	bl	check_need_resched		// or reschedule is needed.
 	mov	x0, #0
 	mov	x1, sp
@@ -86,6 +88,9 @@
 	mov	x1, sp
 	mov	x2, #0
 	bl	check_signal_irq_disabled	// check whether the signal is delivered(for kernel_exit)
+	.endif
+	.if	\el == 1
+	bl	check_sig_pending
 	.endif
 	disable_irq x1				// disable interrupts
 	.if	\need_enable_step == 1
@@ -367,7 +372,12 @@ el0_sync:
 	b	el0_inv
 el0_svc:
 	uxtw	scno, w8			// syscall number in w8
-	stp	x0, scno, [sp, #S_ORIG_X0]	// save the original x0 and syscall number
+	cmp	scno, #__NR_rt_sigreturn
+	b.eq	1f
+	str	x0, [sp, #S_ORIG_X0]		// save the original x0
+	ldr	x16, [sp, #S_PC]
+	str	x16, [sp, #S_ORIG_PC]		// save the original pc
+1:	str	scno, [sp, #S_SYSCALLNO]	// save syscall number
 	enable_nmi
 	enable_dbg_and_irq x0
 	adrp	x16, __arm64_syscall_handler
