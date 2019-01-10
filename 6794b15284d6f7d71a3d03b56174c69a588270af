@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "4631b34c_96d21866",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-01-10T10:59:00Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "cb37d93f_8edd3719",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 7,
+        "endChar": 45
+      },
+      "revId": "6794b15284d6f7d71a3d03b56174c69a588270af",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "486c3b34_58c7ecbe",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 2
