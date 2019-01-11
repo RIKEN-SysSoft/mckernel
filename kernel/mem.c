@@ -1447,15 +1447,12 @@ static ssize_t numa_sysfs_show_meminfo(struct sysfs_ops *ops,
 
 #ifdef IHK_RBTREE_ALLOCATOR
 	len += snprintf(&sbuf[len], size - len, "Node %d MemTotal:%15d kB\n",
-			node->id,
-			node->nr_pages << (PAGE_SHIFT - 10));
+			node->id, node->nr_pages << (PAGE_SHIFT - 10));
 	len += snprintf(&sbuf[len], size - len, "Node %d MemFree:%16d kB\n",
-			node->id,
-			node->nr_free_pages << (PAGE_SHIFT - 10));
+			node->id, node->nr_free_pages << (PAGE_SHIFT - 10));
 	len += snprintf(&sbuf[len], size - len, "Node %d MemUsed:%16d kB\n",
-			node->id,
-			(node->nr_pages - node->nr_free_pages)
-				<< (PAGE_SHIFT - 10));
+			node->id, (node->nr_pages - node->nr_free_pages)
+			<< (PAGE_SHIFT - 10));
 #endif
 
 	return len;

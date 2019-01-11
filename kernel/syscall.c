@@ -672,8 +672,6 @@ ptrace_detach_thread(struct thread *thread, int data)
 			 */
 			thread_exit_signal(thread);
 		}
-		/* Wake parent (if sleeping in wait4()) */
-		waitq_wakeup(&proc->parent->waitpid_q);
 	}
 
 	if (data) {

@@ -1870,7 +1870,8 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 		pgaddr = (void *)(fault_addr & ~(pgsize - 1));
 	}
 
-	arch_adjust_allocate_page_size(fault_addr, ptep, &pgaddr, &pgsize);
+	arch_adjust_allocate_page_size(vm->address_space->page_table,
+				       fault_addr, ptep, &pgaddr, &pgsize);
 
 	/*****/
 	dkprintf("%s: ptep=%lx,pte_is_null=%d,pte_is_fileoff=%d\n", __FUNCTION__, ptep, ptep ? pte_is_null(ptep) : -1, ptep ? pte_is_fileoff(ptep, pgsize) : -1);
