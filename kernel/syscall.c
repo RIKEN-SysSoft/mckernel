@@ -1923,7 +1923,9 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	populate_len = len;
 
 	if (!(flags & MAP_ANONYMOUS)) {
-		if (atomic_cmpxchg4(&memobj->status, MEMOBJ_TO_BE_PREFETCHED,
+		/* Don't pre-populate if not mapping the whole file */
+		if (len == memobj->size &&
+		    atomic_cmpxchg4(&memobj->status, MEMOBJ_TO_BE_PREFETCHED,
 				    MEMOBJ_READY)) {
 			populated_mapping = 1;
 			populate_len = memobj->size;
