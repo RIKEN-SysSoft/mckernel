@@ -512,7 +512,7 @@ static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
 			"%s/cpu%d/cache/index%d/ways_of_associativity",
 			prefix, cpu_number, index);
 
-	param.nbits = nr_cpumask_bits;
+	param.nbits = nr_cpu_ids;
 	param.ptr = &cache->shared_cpu_map;
 
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
@@ -550,7 +550,7 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 			"%s/cpu%d/topology/core_id",
 			prefix, cpu_number);
 
-	param.nbits = nr_cpumask_bits;
+	param.nbits = nr_cpu_ids;
 	param.ptr = &cpu->core_siblings;
 
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
@@ -560,7 +560,7 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 			"%s/cpu%d/topology/core_siblings_list",
 			prefix, cpu_number);
 
-	param.nbits = nr_cpumask_bits;
+	param.nbits = nr_cpu_ids;
 	param.ptr = &cpu->thread_siblings;
 
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
@@ -729,11 +729,12 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
 			"/sys/devices/system/node/possible");
 
+
 	list_for_each_entry(p, &udp->node_topology_list, chain) {
 		struct sysfs_handle handle;
 		int cpu;
 		size_t offset = 0;
-		param.nbits = nr_cpumask_bits;
+		param.nbits = nr_cpu_ids;
 		param.ptr = &p->cpumap;
 
 		for (node = 0; node < udp->mem_info->n_numa_nodes; ++node) {
@@ -979,7 +980,7 @@ static int setup_one_pci(struct mcctrl_usrdata *udp, const char *name)
 	}
 
 	param.ptr = &udp->cpu_online;
-	param.nbits = nr_cpumask_bits;
+	param.nbits = nr_cpu_ids;
 	if (node >= 0) {
 		struct node_topology *node_topo;
 
@@ -987,7 +988,7 @@ static int setup_one_pci(struct mcctrl_usrdata *udp, const char *name)
 				&udp->node_topology_list, chain) {
 			if (node_topo->saved->node_number == node) {
 				param.ptr = &node_topo->cpumap;
-				param.nbits = nr_cpumask_bits;
+				param.nbits = nr_cpu_ids;
 				break;
 			}
 		}
