@@ -17,6 +17,7 @@
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
 #include <linux/ratelimit.h>
+#include <linux/version.h>
 #include "overlayfs.h"
 
 static int ovl_encode_maybe_copy_up(struct dentry *dentry)
@@ -287,6 +288,7 @@ static int ovl_encode_fh(struct inode *inode, u32 *fid, int *max_len,
 	return type;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 /*
  * Find or instantiate an overlay dentry from real dentries and index.
  */
@@ -838,11 +840,14 @@ static struct dentry *ovl_get_parent(struct dentry *dentry)
 	WARN_ON_ONCE(1);
 	return ERR_PTR(-EIO);
 }
+#endif
 
 const struct export_operations ovl_export_operations = {
 	.encode_fh	= ovl_encode_fh,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 	.fh_to_dentry	= ovl_fh_to_dentry,
 	.fh_to_parent	= ovl_fh_to_parent,
 	.get_name	= ovl_get_name,
 	.get_parent	= ovl_get_parent,
+#endif
 };

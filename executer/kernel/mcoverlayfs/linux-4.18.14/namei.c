@@ -15,6 +15,8 @@
 #include <linux/ratelimit.h>
 #include <linux/mount.h>
 #include <linux/exportfs.h>
+#include <linux/version.h>
+#include <linux/kallsyms.h>
 #include "overlayfs.h"
 
 struct ovl_lookup_data {
@@ -94,6 +96,10 @@ invalid:
 
 static int ovl_acceptable(void *ctx, struct dentry *dentry)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
+	static bool (*is_subdir)(struct dentry *new_dentry, struct dentry *old_dentry);
+#endif
+
 	/*
 	 * A non-dir origin may be disconnected, which is fine, because
 	 * we only need it for its unique inode number.
@@ -104,6 +110,13 @@ static int ovl_acceptable(void *ctx, struct dentry *dentry)
 	/* Don't decode a deleted empty directory */
 	if (d_unhashed(dentry))
 		return 0;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
+	if (!is_subdir) {
+		is_subdir = (void *)kallsyms_lookup_name("is_subdir");
+		WARN_ON(!is_subdir);
+	}
+#endif
 
 	/* Check if directory belongs to the layer we are decoding from */
 	return is_subdir(dentry, ((struct vfsmount *)ctx)->mnt_root);

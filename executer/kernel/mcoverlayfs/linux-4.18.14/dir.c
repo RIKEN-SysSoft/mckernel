@@ -17,6 +17,7 @@
 #include <linux/posix_acl_xattr.h>
 #include <linux/atomic.h>
 #include <linux/ratelimit.h>
+#include <linux/version.h>
 #include "overlayfs.h"
 
 static unsigned short ovl_redirect_max = 256;
@@ -601,9 +602,12 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
 	if (!inode)
 		goto out_drop_write;
 
+//normally added in 4.19, but rhel backported so lazy choice
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
 	spin_lock(&inode->i_lock);
 	inode->i_state |= I_CREATING;
 	spin_unlock(&inode->i_lock);
+#endif
 
 	inode_init_owner(inode, dentry->d_parent->d_inode, mode);
 	attr.mode = inode->i_mode;
