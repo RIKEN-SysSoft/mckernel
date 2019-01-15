@@ -41,8 +41,9 @@
 #define LARGE_PAGE_MASK    (~((unsigned long)LARGE_PAGE_SIZE - 1))
 #define LARGE_PAGE_P2ALIGN (LARGE_PAGE_SHIFT - PAGE_SHIFT)
 
-#define USER_END           0x0000800000000000UL
-#define TASK_UNMAPPED_BASE 0x00002AAAAAA00000UL
+#define USER_END              0x0000800000000000UL
+#define LD_TASK_UNMAPPED_BASE 0x0000155555500000UL
+#define TASK_UNMAPPED_BASE    0x00002AAAAAA00000UL
 
 /*
  * Canonical negative addresses (i.e., the smallest kernel virtual address)
