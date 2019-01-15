@@ -18,6 +18,7 @@
 #include <linux/seq_file.h>
 #include <linux/posix_acl_xattr.h>
 #include <linux/exportfs.h>
+#include <linux/version.h>
 #include "overlayfs.h"
 
 MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
@@ -726,7 +727,11 @@ static int ovl_mount_dir_noesc(const char *name, struct path *path)
 	return 0;
 
 out_put:
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
 	path_put_init(path);
+#else
+	path_put(path);
+#endif
 out:
 	return err;
 }
@@ -744,7 +749,11 @@ static int ovl_mount_dir(const char *name, struct path *path)
 			if (ovl_dentry_remote(path->dentry)) {
 				pr_err("overlayfs: filesystem on '%s' not supported as upperdir\n",
 				       tmp);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
 				path_put_init(path);
+#else
+				path_put(path);
+#endif
 				err = -EINVAL;
 			}
 		kfree(tmp);
@@ -805,7 +814,11 @@ static int ovl_lower_dir(const char *name, struct path *path,
 	return 0;
 
 out_put:
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
 	path_put_init(path);
+#else
+	path_put(path);
+#endif
 out:
 	return err;
 }
