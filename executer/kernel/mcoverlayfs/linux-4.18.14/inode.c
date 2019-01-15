@@ -250,6 +250,22 @@ int ovl_permission(struct inode *inode, int mask)
 	return err;
 }
 
+static int ovl_readlink(struct dentry *dentry, char __user *buf, int bufsiz)
+{
+	struct path realpath;
+	struct inode *realinode;
+
+	ovl_path_real(dentry, &realpath);
+	realinode = realpath.dentry->d_inode;
+
+	if (!realinode->i_op->readlink)
+		return -EINVAL;
+
+	touch_atime(&realpath);
+
+	return realinode->i_op->readlink(realpath.dentry, buf, bufsiz);
+}
+
 static const char *ovl_get_link(struct dentry *dentry,
 				struct inode *inode,
 				struct delayed_call *done)
@@ -454,6 +470,7 @@ static const struct inode_operations ovl_file_inode_operations = {
 static const struct inode_operations ovl_symlink_inode_operations = {
 	.setattr	= ovl_setattr,
 	.get_link	= ovl_get_link,
+	.readlink	= ovl_readlink,
 	.getattr	= ovl_getattr,
 	.listxattr	= ovl_listxattr,
 	.update_time	= ovl_update_time,
