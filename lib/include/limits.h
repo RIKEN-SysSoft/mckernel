@@ -15,6 +15,10 @@
 
 #define INT_MAX 0x7fffffff
 #define INT_MIN -0x80000000
+#define UINT_MAX 0xffffffff
+#define LONG_MAX 0x7fffffffffffffffL
+#define LONG_MIN -0x8000000000000000L
+#define ULONG_MAX 0xffffffffffffffffL
 #define IOV_MAX 1024
 
 #ifndef PATH_MAX
