@@ -172,17 +172,12 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 		p->sections[i].remote_pa = up;
 
-		/* TODO: Maybe we need flag */
 		if (pn->sections[i].interp) {
 			vm->region.map_end = e;
 		}
-		else if (i == 0) {
+		else if (pn->sections[i].prot & PROT_EXEC) {
 			vm->region.text_start = s;
 			vm->region.text_end = e;
-		} 
-		else if (i == 1) {
-			vm->region.data_start = s;
-			vm->region.data_end = e;
 		} 
 		else {
 			vm->region.data_start =
@@ -212,8 +207,15 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		pn->at_entry += aout_base;
 	}
 
+	vm->region.map_start = vm->region.map_end = TASK_UNMAPPED_BASE;
+
 	vm->region.brk_start = vm->region.brk_end =
 		(vm->region.data_end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+
+	if (vm->region.brk_start >= vm->region.map_start) {
+		kprintf("%s: ERROR: data section is too large (end addr: %lx)\n",
+			__func__, vm->region.data_end);
+	}
 
 #if 0
 	{
@@ -529,17 +531,12 @@ static int process_msg_prepare_process(unsigned long rphys)
 	vm->region.user_end = pn->user_end;
 	if(vm->region.user_end > USER_END)
 		vm->region.user_end = USER_END;
-	if(vm->region.user_start != 0UL ||
-	   vm->region.user_end < TASK_UNMAPPED_BASE){
-		vm->region.map_start = 
-			(vm->region.user_start +
-			 (vm->region.user_end - vm->region.user_start) / 3) &
-			LARGE_PAGE_MASK;
-	}
-	else{
-		vm->region.map_start = TASK_UNMAPPED_BASE;
-	}
-	vm->region.map_end = vm->region.map_start;
+
+	/* map_start / map_end is used to track memory area
+	 * to which the program is loaded
+	 */
+	vm->region.map_start = vm->region.map_end = LD_TASK_UNMAPPED_BASE;
+
 	memcpy(proc->rlimit, pn->rlimit, sizeof(struct rlimit) * MCK_RLIM_MAX);
 	dkprintf("%s: rlim_cur: %ld, rlim_max: %ld, stack_premap: %ld\n",
 			__FUNCTION__,
