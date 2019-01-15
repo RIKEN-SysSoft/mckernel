@@ -13,6 +13,7 @@
 #include <linux/xattr.h>
 #include <linux/posix_acl.h>
 #include <linux/ratelimit.h>
+#include <linux/version.h>
 #include "overlayfs.h"
 
 
@@ -778,8 +779,12 @@ static bool ovl_hash_bylower(struct super_block *sb, struct dentry *upper,
 static struct inode *ovl_iget5(struct super_block *sb, struct inode *newinode,
 			       struct inode *key)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
 	return newinode ? inode_insert5(newinode, (unsigned long) key,
 					 ovl_inode_test, ovl_inode_set, key) :
+#else
+	return
+#endif
 			  iget5_locked(sb, (unsigned long) key,
 				       ovl_inode_test, ovl_inode_set, key);
 }
