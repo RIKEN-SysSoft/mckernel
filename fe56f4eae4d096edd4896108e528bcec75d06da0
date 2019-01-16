@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c7512e08_94de91b8",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2763,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:35:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{walk_pte_l1, set_range_l1, PTL2_SIZE, PTL2_SHIFT, PTL2_CONT_SIZE, PTL2_CONT_SHIFT}, /*PTL2: second*/",
+      "revId": "fe56f4eae4d096edd4896108e528bcec75d06da0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08c70878_0d1c3743",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2764,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:35:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{walk_pte_l2, set_range_l2, PTL3_SIZE, PTL3_SHIFT, PTL3_CONT_SIZE, PTL2_CONT_SHIFT}, /*PTL3: first*/",
+      "revId": "fe56f4eae4d096edd4896108e528bcec75d06da0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ffaf9383_8eff5219",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2765,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:35:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{walk_pte_l3, set_range_l3, PTL4_SIZE, PTL4_SHIFT, PTL4_CONT_SIZE, PTL2_CONT_SHIFT}, /*PTL4: zero*/",
+      "revId": "fe56f4eae4d096edd4896108e528bcec75d06da0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
