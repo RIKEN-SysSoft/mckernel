@@ -1,0 +1,225 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ef73f828_280626cb",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "ERROR: Please use git commit description style \u0027commit \u003c12+ chars of sha1\u003e (\"\u003ctitle line\u003e\")\u0027 - ie: \u0027commit fatal: bad o (\"32becf37368a1603e\")\u0027\n* Merge cd7ab307fae9bc8aa49d23b32becf37368a1603e",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9629e536_03ce7818",
+        "filename": "test/contiguous_pte/arm64_4KB_setting.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30750e93_8c2e2014",
+        "filename": "test/contiguous_pte/go_contiguous_pte_test.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for test_case in `grep -E \u0027^TEST_CASE_DEF\u0027 ${contiguous_pte_test_dir}/src/test_case.list`",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c356b8b_965aafd0",
+        "filename": "test/contiguous_pte/go_contiguous_pte_test.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttp_num\u003d`echo $test_case | sed \u0027s|TEST_CASE_DEF(contiguous_pte,||g\u0027 | sed \u0027s|)$||g\u0027`",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "39eb6941_ac8a878f",
+        "filename": "test/contiguous_pte/src/test_mck.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: macros should not use a trailing semicolon\n+#define TEST_CASE_DEF(ts, number)\t\t\t\t\\\n+\tvoid *ts ## number ## _setup(int tp_num,\t\t\\\n+\t\t\t\t\tint argc,\t\t\\\n+\t\t\t\t\tchar **argv);\t\t\\\n+\tconst char *ts ## number(int tp_num, void *arg);\t\\\n+\tvoid ts ## number ## _teardown(int tp_num, void *arg);",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3da996d_dc59cdc6",
+        "filename": "test/contiguous_pte/src/test_mck.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\tvoid ts ## number ## _teardown(int tp_num, void *arg);",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d8d96816_f93ac1f3",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define SETUP_EMPTY(ts, num)    SETUP_FUNC(ts, num) {return NULL; }",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e8394a0a_fab1ce44",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define SETUP_EMPTY(ts, num)    SETUP_FUNC(ts, num) {return NULL; }",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c349feec_1179572b",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define RUN_EMPTY(ts, num)      RUN_FUNC(ts, num) { return NULL; }",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c1e5b52d_90a025a1",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define RUN_EMPTY(ts, num)      RUN_FUNC(ts, num) { return NULL; }",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9be43997_e874a8d8",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define TEARDOWN_EMPTY(ts, num) TEARDOWN_FUNC(ts, num) { }",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75f15fc2_19ff0839",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define __tp_assert(ts, num, line, test, msg)\t\\\n+\tdo {\t\t\t\t\t\\\n+\t\tif (!(test))\t\t\t\\\n+\t\t\treturn (msg);\t\t\\\n+\t} while (0)",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1f68ddb8_941ec706",
+        "filename": "test/contiguous_pte/src/test_mck.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:34:58Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(a)\n+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))",
+      "revId": "c7646c6474e1a40346da59bb17213365cd642fd3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
