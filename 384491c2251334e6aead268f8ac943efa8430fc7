@@ -1,0 +1,395 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5e9054dc_f495c283",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tkprintf(\"%s: total_memory\u003d%ld,size\u003d%ld\\n\", __FUNCTION__, rusage.total_memory, size);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "83eea9e2_97f28006",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\tkprintf(\"%s: total_memory\u003d%ld,size\u003d%ld\\n\", __FUNCTION__, rusage.total_memory, size);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d8082330_2554a8f7",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\tkprintf(\"%s: total_memory\u003d%ld\\n\", __FUNCTION__, rusage.total_memory);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6461040_64e2dae2",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_atomic_add_long(size, \u0026rusage.memory_stat_rss[rusage_pgsize_to_pgtype(pgsize)]);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2681dd31_33856a79",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_atomic_add_long(-size, \u0026rusage.memory_stat_rss[rusage_pgsize_to_pgtype(pgsize)]);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b09a4724_7317302c",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_atomic_add_long(size, \u0026rusage.memory_stat_mapped_file[rusage_pgsize_to_pgtype(pgsize)]);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe0fbbf7_12c5d4fb",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_atomic_add_long(-size, \u0026rusage.memory_stat_mapped_file[rusage_pgsize_to_pgtype(pgsize)]);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48d3a3ca_03fc18e3",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 220,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+^I^I                                \u0026rusage.memory_kmem_max_usage,$",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3113b17_eec7029d",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 254,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif (rusage.total_memory_usage + size \u003e rusage.total_memory - RUSAGE_OOM_MARGIN) {",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46b7efe2_29d6f605",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 255,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tkprintf(\"%s: memory used:%ld available:%ld\\n\", __FUNCTION__, rusage.total_memory_usage, rusage.total_memory);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c35d160_7a218291",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 255,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: memory used:%ld available:%ld\\n\", __FUNCTION__, rusage.total_memory_usage, rusage.total_memory);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3f80eb9_48fafd75",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 287,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tretval \u003d __sync_val_compare_and_swap(\u0026rusage.total_memory_max_usage,",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9868d522_05c06916",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (rusage.total_memory_max_usage \u003e rusage.total_memory_max_usage_old + (1 * (1ULL \u003c\u003c 30))) {",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1fbd9824_b0f77535",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 292,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: max(%ld) \u003e old + 1GB,numa_id\u003d%d\\n\", __FUNCTION__, rusage.total_memory_max_usage, numa_id);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af34d5e8_fe08a746",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 292,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\tkprintf(\"%s: max(%ld) \u003e old + 1GB,numa_id\u003d%d\\n\", __FUNCTION__, rusage.total_memory_max_usage, numa_id);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92e3598e_fcfd6c0e",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 293,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\trusage.total_memory_max_usage_old \u003d rusage.total_memory_max_usage;",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "adc72151_6e088370",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 312,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tkprintf(\"%s: Error, total_memory_usage\u003d%ld,size\u003d%ld\\n\", __FUNCTION__, rusage.total_memory_max_usage, size);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc6056cb_0d162f72",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 312,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: Error, total_memory_usage\u003d%ld,size\u003d%ld\\n\", __FUNCTION__, rusage.total_memory_max_usage, size);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a186cc82_131991df",
+        "filename": "kernel/mem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1757,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\tdkprintf(\"%s: rusage.total_memory\u003d%ld\\n\", __FUNCTION__, rusage.total_memory);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ccfc39bd_b5ddfeeb",
+        "filename": "kernel/mem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1757,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"%s: rusage.total_memory\u003d%ld\\n\", __FUNCTION__, rusage.total_memory);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "14130c5a_7fd02cd1",
+        "filename": "kernel/mem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1769,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* It must precedes numa_init() because rusage.total_memory is initialized in numa_init() */",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e152baf_52b525cc",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3693,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"memory_stat_rss[%d]\u003d%ld\\n\", i, rusage.memory_stat_rss[i]);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5865da39_6bcbb995",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3696,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:38:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"memory_stat_mapped_file[%d]\u003d%ld\\n\", i, rusage.memory_stat_mapped_file[i]);",
+      "revId": "384491c2251334e6aead268f8ac943efa8430fc7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
