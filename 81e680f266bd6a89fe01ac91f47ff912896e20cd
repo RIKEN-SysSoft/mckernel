@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3e2cc65b_58436975",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/dir.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 606,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 18, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba2e97e7_0a0d77ca",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/export.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 16, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f4052475_f01f85f0",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/export.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 847,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 16, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87471767_0c833cf4",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/inode.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 782,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 18, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ad99d43_882a39c2",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/namei.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 99,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(4, 16, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fab4b0b6_df69fb65",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/namei.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tstatic bool (*is_subdir)(struct dentry *new_dentry, struct dentry *old_dentry);",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "128fefdc_93ea488d",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/namei.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 114,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(4, 16, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7964b282_d2734f11",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/super.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 730,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 15, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3a26839_f22e3796",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/super.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 752,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 15, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c57ff1d9_90454bdf",
+        "filename": "executer/kernel/mcoverlayfs/linux-4.18.14/super.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 817,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-16T03:39:19Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 15, 0)",
+      "revId": "81e680f266bd6a89fe01ac91f47ff912896e20cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
