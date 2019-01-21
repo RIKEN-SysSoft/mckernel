@@ -3287,7 +3287,24 @@ int main_loop(struct thread_data_s *my_thread)
 				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 				break;
 			}
+#if ENABLE_MCOVERLAYFS
+			__dprintf("openat: %s,tid=%d\n",
+				pathbuf, my_thread->remote_tid);
 
+			if ((int)w.sr.args[0] == AT_FDCWD &&
+					pathbuf[0] == '/') {
+				fn = chgpath(pathbuf, tmpbuf);
+			}
+			else {
+				fn = pathbuf;
+			}
+
+			ret = openat(w.sr.args[0], fn, w.sr.args[2],
+				w.sr.args[3]);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#else
 			if ((int)w.sr.args[0] != AT_FDCWD &&
 			    pathbuf[0] != '/') {
 				/* dirfd != AT_FDCWD */
@@ -3335,6 +3352,7 @@ int main_loop(struct thread_data_s *my_thread)
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
+#endif /* ENABLE_MCOVERLAYFS */
 
 		case __NR_futex:
 			ret = clock_gettime(w.sr.args[1], &tv);
