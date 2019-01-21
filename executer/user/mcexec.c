@@ -3542,7 +3542,6 @@ gettid_out:
 			    /* Child process */
 			    case 0: {
 				int ret = 1;
-				struct newprocess_desc npdesc;
 				struct rpgtable_desc rpt;
 
 				ischild = 1;
@@ -3613,9 +3612,6 @@ fork_child_sync_pipe:
 				}
 				fork_sync_top = NULL;
 				pthread_mutex_init(&fork_sync_mutex, NULL);
-
-				npdesc.pid = getpid();
-				ioctl(fd, MCEXEC_UP_NEW_PROCESS, &npdesc);
 
 				/* TODO: does the forked thread run in a pthread context? */
 				while (getppid() != 1 &&
