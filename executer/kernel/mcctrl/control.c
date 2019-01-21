@@ -390,23 +390,15 @@ static void release_handler(ihk_os_t os, void *param)
 			__FUNCTION__, info);
 }
 
-static long mcexec_newprocess(ihk_os_t os,
-                              struct newprocess_desc *__user udesc,
-                              struct file *file)
+static long mcexec_newprocess(ihk_os_t os, struct file *file)
 {
-	struct newprocess_desc desc;
 	struct mcos_handler_info *info;
 
-	if (copy_from_user(&desc, udesc, sizeof(struct newprocess_desc))) { 
-		return -EFAULT;
-	}
 	info = new_mcos_handler_info(os, file);
-#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
 	if (info == NULL) {
 		return -ENOMEM;
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_64 */
-	info->pid = desc.pid;
+	info->pid = task_tgid_vnr(current);
 	ihk_os_register_release_handler(file, release_handler, info);
 	ihk_os_set_mcos_private_data(file, info);
 	return 0;
@@ -1725,12 +1717,14 @@ mcexec_getcredv(int __user *virt)
 }
 
 int mcexec_create_per_process_data(ihk_os_t os,
-				   struct rpgtable_desc * __user rpt)
+				   struct rpgtable_desc * __user rpt,
+				   struct file *file)
 {
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int i;
 	struct rpgtable_desc krpt;
+	long ret;
 
 	if (rpt &&
 	    copy_from_user(&krpt, rpt, sizeof(krpt))) {
@@ -1749,6 +1743,10 @@ int mcexec_create_per_process_data(ihk_os_t os,
 	if (!ppd) {
 		printk("%s: ERROR: allocating per-process data\n", __FUNCTION__);
 		return -ENOMEM;
+	}
+	if ((ret = mcexec_newprocess(os, file))) {
+		kfree(ppd);
+		return ret;
 	}
 	memset(ppd, 0, sizeof(struct mcctrl_per_proc_data)); /* debug */
 
@@ -3164,7 +3162,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 
 	case MCEXEC_UP_CREATE_PPD:
 		return mcexec_create_per_process_data(os,
-					    (struct rpgtable_desc * __user)arg);
+				      (struct rpgtable_desc * __user)arg, file);
 
 	case MCEXEC_UP_GET_NODES:
 		return mcexec_get_nodes(os);
@@ -3175,10 +3173,6 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	case MCEXEC_UP_STRNCPY_FROM_USER:
 		return mcexec_strncpy_from_user(os, 
 				(struct strncpy_from_user_desc *)arg);
-
-	case MCEXEC_UP_NEW_PROCESS:
-		return mcexec_newprocess(os, (struct newprocess_desc *)arg,
-		                         file);
 
 	case MCEXEC_UP_OPEN_EXEC:
 		return mcexec_open_exec(os, (char *)arg);
