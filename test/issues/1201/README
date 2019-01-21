@@ -1,0 +1,34 @@
+【Issue#1201 動作確認】
+□ テスト内容
+テスト内容は以下の通りである。
+1. Issue 指摘事項の再現確認
+C1201T01 stress-6-1-signalonfork-001 を 100 回連続で正常終了することを確認。
+         対策前は 20 回程度の連続実行で確実に再現するため、100 回の連続実行
+         で発生しなければ対策されたと判断する。
+
+2. LTP を用いて既存処理に影響しないことを確認
+   プロセス生成処理関連を変更したため、fork のテストを選定した。
+C1201T02 fork01 が PASS すること
+C1201T03 fork02 が PASS すること
+C1201T04 fork03 が PASS すること
+C1201T05 fork04 が PASS すること
+C1201T06 fork07 が PASS すること
+C1201T07 fork08 が PASS すること
+C1201T08 fork09 が PASS すること
+C1201T09 fork10 が PASS すること
+C1201T10 fork11 が PASS すること
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel を ビルドした際に生成される
+mck_test_config.sample ファイルを $HOME に コピーし、適宜編集すること。
+
+また、C1201.sh の以下の指定を適宜変更すること。
+STRESSTESTDIR=  ストレステストが存在するパス。
+		($HOME/stress_test の場合は変更不要)
+
+□ 実行結果
+C1201.txt 参照。
+すべての項目をPASSしていることを確認。

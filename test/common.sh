@@ -75,6 +75,20 @@ if ((USEOSTEST)); then
 	TESTMCK="$OSTEST/bin/test_mck"
 fi
 
+if ((${USESTRESSTEST-0})); then
+	if [[ -z "$STRESS_TEST" ]]; then
+		if [[ -f "$HOME/stress_test/bin/signalonfork" ]]; then
+			STRESS_TEST="$HOME/stress_test"
+		fi
+	fi
+
+	if [[ ! -x "$STRESS_TEST/bin/signalonfork" ]]; then
+		echo no STRESS_TEST found $STRESS_TEST >&2
+		exit 1
+	fi
+	STRESSTESTBIN="$STRESS_TEST/bin"
+fi
+
 # compat variables
 BINDIR="$BIN"
 SBINDIR="$SBIN"
