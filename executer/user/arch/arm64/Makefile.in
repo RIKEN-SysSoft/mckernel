@@ -9,13 +9,10 @@ LIBS=@LIBS@
 
 all: $(TARGET)
 
-../../libmcexec.a: archdep.o arch_syscall.o
-	$(AR) cr ../../libmcexec.a archdep.o arch_syscall.o
+../../libmcexec.a: archdep.o
+	$(AR) cr ../../libmcexec.a archdep.o
 
 archdep.o: archdep.S
-	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
-
-arch_syscall.o: arch_syscall.c
 	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
 
 clean:
