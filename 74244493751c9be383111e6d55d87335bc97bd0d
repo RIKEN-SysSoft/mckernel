@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "99c26ea0_e08b75f9",
+        "filename": "test/common.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-01-22T08:13:55Z",
+      "side": 1,
+      "message": "(nitpick) \"if ((USESTRESSTEST)); then\" like the other tests above should be the same, zero if unset, (unless the sourcing script has set -u, but none of our scripts do it), let\u0027s keep the same syntax for all tests.",
+      "revId": "74244493751c9be383111e6d55d87335bc97bd0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
