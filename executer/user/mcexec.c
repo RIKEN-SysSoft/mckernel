@@ -2489,7 +2489,7 @@ int main(int argc, char **argv)
 	__dprintf("desc->rlimit[MCK_RLIMIT_STACK]=%ld,%ld\n", desc->rlimit[MCK_RLIMIT_STACK].rlim_cur, desc->rlimit[MCK_RLIMIT_STACK].rlim_max);
 
 	ncpu = ioctl(fd, MCEXEC_UP_GET_CPU, 0);
-	if(ncpu == -1){
+	if (ncpu <= 0) {
 		fprintf(stderr, "No CPU found.\n");
 		return 1;
 	}
@@ -2831,111 +2831,6 @@ do_generic_syscall(
 		ret = -errno;
 	}
 
-	/* Overlayfs /sys/X directory lseek() problem work around */
-	if (w->sr.number == __NR_lseek && ret == -EINVAL) {
-		char proc_path[PATH_MAX];
-		char path[PATH_MAX];
-		struct stat sb;
-		int len;
-
-		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
-
-		/* Get filename */
-		if ((len = readlink(proc_path, path, sizeof(path))) < 0) {
-			fprintf(stderr, "%s: error: readlink() failed for %s\n",
-				__FUNCTION__, proc_path);
-			perror(": ");
-			goto out;
-		}
-
-		path[len] = 0;
-
-		/* Not in /sys? */
-		if (strncmp(path, "/sys/", 5))
-			goto out;
-
-		/* Stat */
-		if (stat(path, &sb) < 0) {
-			fprintf(stderr, "%s: error stat() failed for %s\n",
-				__FUNCTION__, path);
-			goto out;
-		}
-
-		/* Not dir? */
-		if ((sb.st_mode & S_IFMT) != S_IFDIR)
-			goto out;
-
-		ret = 0;
-	}
-	/* Fake that nodeX in /sys/devices/system/node do not exist,
-	 * where X >= number of LWK NUMA nodes */
-#ifdef POSTK_DEBUG_ARCH_DEP_55
-# ifdef __aarch64__
-#  define __nr_getdents __NR_getdents64
-# else
-#  define __nr_getdents __NR_getdents
-# endif
-	else if (w->sr.number == __nr_getdents && ret > 0) {
-#else  /*POSTK_DEBUG_ARCH_DEP_55*/
-	else if (w->sr.number == __NR_getdents && ret > 0) {
-#endif /*POSTK_DEBUG_ARCH_DEP_55*/
-		struct linux_dirent {
-			long           d_ino;
-			off_t          d_off;
-			unsigned short d_reclen;
-			char           d_name[];
-		};
-		struct linux_dirent *d;
-		char *buf = (char *)w->sr.args[1];
-		int bpos = 0;
-		int nodes,len;
-		char proc_path[PATH_MAX];
-		char path[PATH_MAX];
-
-		sprintf(proc_path, "/proc/self/fd/%d", (int)w->sr.args[0]);
-
-		/* Get filename */
-		len = readlink(proc_path, path, sizeof(path));
-		if (len < 0 || len >= sizeof(path)) {
-			fprintf(stderr, "%s: error: readlink() failed for %s\n",
-				__FUNCTION__, proc_path);
-			goto out;
-		}
-		path[len] = 0;
-
-		/* Not /sys/devices/system/node ? */
-		if (strcmp(path, "/sys/devices/system/node"))
-			goto out;
-
-		nodes = ioctl(fd, MCEXEC_UP_GET_NODES, 0);
-		if (nodes == -1) {
-			goto out;
-		}
-
-		d = (struct linux_dirent *) (buf + bpos);
-		for (bpos = 0; bpos < ret; ) {
-			int nodeid, tmp_reclen;
-			d = (struct linux_dirent *) (buf + bpos);
-
-			if (sscanf(d->d_name, "node%d", &nodeid) != 1) {
-				bpos += d->d_reclen;
-				continue;
-			}
-
-			if (nodeid >= nodes) {
-				tmp_reclen = d->d_reclen;
-				memmove(buf + bpos,
-						buf + bpos + tmp_reclen,
-						ret - bpos - tmp_reclen);
-				ret -= tmp_reclen;
-				continue;
-			}
-
-			bpos += d->d_reclen;
-		}
-	}
-
-out:
 	__dprintf("do_generic_syscall(%ld):%ld (%#lx)\n", w->sr.number, ret, ret);
 	return ret;
 }
@@ -3153,96 +3048,389 @@ int close_cloexec_fds(int mcos_fd)
 	return 0;
 }
 
-void chgdevpath(char *in, char *buf)
+
+/* List of blacklisted paths
+ *
+ * Since we abuse sscanf, there are a few constraints:
+ *  - scanf cannot be used to differenciate strings with no pattern,
+ *    so if no cpu/node number is to be matched the last character of
+ *    the string is matched by hand
+ *  - this also holds true when there is a match but not at the end.
+ *  - scanf is called with three int arguments, do not specify anything bigger!
+ *  - cpuid/nodeid specify the position where each element should be found
+ *  - symlinks can be assumed to be resolved
+ */
+
+struct overlay_blacklist_entry {
+	char *pattern;
+	int lastchar;
+} overlay_blacklists[] = {
+	{ "/sys/devices/system/cpu/cpu%d", -1 },
+	{ "/sys/devices/system/cpu/cpu%*d/node%d", -1 },
+	{ "/sys/bus/cpu/devices/cpu%d", -1 },
+	{ "/sys/bus/cpu/drivers/processor/cpu%d", -1 },
+	{ "/sys/devices/system/node/node%d", -1 },
+	{ "/sys/devices/system/node/node%*d/cpu%d", -1 },
+	{ "/sys/devices/system/node/node%*d/memor%c", 'y' },
+	{ "/sys/bus/node/devices/node%d", -1 },
+	{ "/sys/devices/system/node/has%c", '_' },
+	{ "/sys/fs/cgrou%c", 'p' },
+	{ "/sys/devices/pci%*[^/]/%*[^/]/local_cpu%c", 's' },
+	{ NULL, 0 },
+};
+
+int overlay_blacklist(const char *path)
 {
-	if(!strcmp(in, "/dev/xpmem")){
-		sprintf(in, "/dev/null");
+	int val;
+	struct overlay_blacklist_entry *entry;
+	int rc;
+
+	if (strncmp(path, "/sys/", 5))
+		return 0;
+
+	for (entry = overlay_blacklists; entry->pattern; entry++) {
+		val = 0;
+		rc = sscanf(path, entry->pattern, &val);
+		if (rc < 1)
+			continue;
+		if (entry->lastchar != -1 && val != entry->lastchar)
+			continue;
+		return -ENOENT;
 	}
+
+	return 0;
 }
 
-char *
-chgpath(char *in, char *buf)
+/* Fixup paths that need to point to mckernel files
+ * dirfd/in are openat/fstatat/faccessat arguments,
+ * buf is a buffer we can dirty assumed to be PATH_MAX long
+ * returns path to use *with dirfd* if it was provided.
+ */
+const char *
+overlay_path(int dirfd, const char *in, char *buf)
 {
-	chgdevpath(in, buf);
+	const char *path = in;
+	char *linkpath, *tmppath;
+	char tmpbuf[PATH_MAX], tmpbuf2[PATH_MAX];
 
-#ifdef ENABLE_MCOVERLAYFS
+	struct stat sb;
+	ssize_t n;
+	int rc;
+
+	__dprintf("considering fd %d path %s\n", dirfd, in);
+
+	if (dirfd != AT_FDCWD && in[0] != '/') {
+		snprintf(buf, PATH_MAX, "/proc/self/fd/%d", dirfd);
+
+		n = readlink(buf, tmpbuf, PATH_MAX);
+		if (n == PATH_MAX || n < 0) {
+			if (n == PATH_MAX)
+				errno = ENAMETOOLONG;
+			fprintf(stderr,
+				"%s: readlink /proc/self/fd/%d failed: %d\n",
+				__func__, dirfd, errno);
+			return in;
+		}
+		tmpbuf[n] = 0;
+
+		if (n > 0 && tmpbuf[n-1] == '/')
+			n--;
+
+		n += snprintf(tmpbuf + n, PATH_MAX - n, "/%s", in);
+		if (n >= PATH_MAX) {
+			fprintf(stderr, "%s: %s truncated\n",
+				__func__, tmpbuf);
+			return in;
+		}
+
+		path = tmpbuf;
+	} else if (in[0] != '/') {
+		path = getcwd(tmpbuf, PATH_MAX);
+		if (path == NULL) {
+			fprintf(stderr, "%s: could not getcwd(): %d\n",
+				__func__, errno);
+			return in;
+		}
+
+		n = strlen(tmpbuf);
+		if (n > 0 && tmpbuf[n-1] == '/')
+			n--;
+
+		n += snprintf(tmpbuf + n, PATH_MAX - n, "/%s", in);
+		if (n >= PATH_MAX) {
+			fprintf(stderr, "%s: %s truncated\n",
+				__func__, tmpbuf);
+			return in;
+		}
+
+		path = tmpbuf;
+	}
+
+	__dprintf("glued to %s\n", path);
+
+	if (!strcmp(path, "/dev/xpmem"))
+		return "/dev/null";
+
+	if (!strncmp(path, "/proc/self/", 11)) {
+		n = snprintf(buf, PATH_MAX, "/proc/mcos%d/%d/%s",
+			     mcosid, getpid(), path + 11);
+		goto checkexist;
+	}
+
+	if (!strncmp(path, "/proc/", 6)) {
+		n = snprintf(buf, PATH_MAX, "/proc/mcos%d/%s",
+			     mcosid, path + 6);
+		goto checkexist;
+	}
+
+	if (!strncmp(path, "/sys/", 5)) {
+		goto checkexist_resolvelinks;
+	}
+
 	return in;
-#endif // ENABLE_MCOVERLAYFS
-	char	*fn = in;
-	struct stat	sb;
 
-	if (!strncmp(fn, "/proc/self/", 11)){
-		sprintf(buf, "/proc/mcos%d/%d/%s", mcosid, getpid(), fn + 11);
-		fn = buf;
+checkexist_resolvelinks:
+	/* now, for the fun part: since /sys is full of symlinks, we need
+	 * to check every single component of that path for links
+	 * (in the real path!) and consider the final destination
+	 */
+	if (path != tmpbuf) {
+		strcpy(tmpbuf, path);
+		path = tmpbuf;
 	}
-	else if(!strncmp(fn, "/proc/", 6)){
-		sprintf(buf, "/proc/mcos%d/%s", mcosid, fn + 6);
-		fn = buf;
-	}
-	else if(!strcmp(fn, "/sys/devices/system/cpu/online")){
-		fn = "/admin/fs/attached/files/sys/devices/system/cpu/online";
-	}
-	else
-		return in;
+	linkpath = tmpbuf;
+	while ((linkpath = strchr(linkpath + 1, '/'))) {
+		linkpath[0] = 0;
+		rc = lstat(tmpbuf, &sb);
 
-	if(stat(fn, &sb) == -1)
+		/* Could not exist on linux - no more links */
+		if (rc == -1) {
+			linkpath[0] = '/';
+			break;
+		}
+
+		if (S_ISLNK(sb.st_mode)) {
+			n = readlink(tmpbuf, buf, PATH_MAX);
+			if (n >= PATH_MAX || n < 0)
+				return in;
+			buf[n] = 0;
+
+			if (buf[0] == '/') {
+				/* cannot snprintf from same source and dest */
+				n = snprintf(tmpbuf2, PATH_MAX, "%s/%s", buf,
+					     linkpath);
+				if (n >= PATH_MAX)
+					return in;
+				strcpy(tmpbuf, tmpbuf2);
+				linkpath = tmpbuf;
+			} else {
+				strcpy(tmpbuf2, linkpath + 1);
+
+				/* remove link component from path */
+				linkpath = strrchr(tmpbuf, '/');
+				if (linkpath != tmpbuf)
+					linkpath[0] = 0;
+				else
+					linkpath[1] = 0;
+
+				/* go back as many / as there are ..
+				 * otherwise kernel would need intermediate
+				 * directories to exist on mckernel side */
+				tmppath = buf;
+				while (!strncmp(tmppath, "../", 3)) {
+					linkpath = strrchr(tmpbuf, '/');
+					if (!linkpath) // should never happen
+						return in;
+					if (linkpath != tmpbuf)
+						linkpath[0] = 0;
+					tmppath += 3;
+				}
+				n = linkpath - tmpbuf;
+				n += snprintf(linkpath, PATH_MAX - n,
+					      "/%s/%s", tmppath, tmpbuf2);
+				if (n >= PATH_MAX)
+					return in;
+			}
+		}
+		linkpath[0] = '/';
+		linkpath++;
+	}
+
+	n = snprintf(buf, PATH_MAX, "/sys/devices/virtual/mcos/mcos%d",
+		     mcosid);
+	tmppath = buf + n;
+	n += snprintf(buf + n, PATH_MAX - n, "/sys/%s", path + 5);
+	path = tmppath;
+
+checkexist:
+	if (n >= PATH_MAX) {
+		fprintf(stderr, "%s: %s truncated\n", __func__, buf);
 		return in;
-	return fn;
+	}
+
+	rc = stat(buf, &sb);
+	__dprintf("trying %s: %d\n", buf, rc == -1 ? errno : 0);
+	if (rc == -1 && errno == ENOENT) {
+		if (overlay_blacklist(path)) {
+			__dprintf("blacklisted %s\n", path);
+			return "/nonexisting";
+		}
+		return in;
+	}
+
+	return buf;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_72 /* add __NR_newfstat */
-static int
-syscall_pathname(int dirfd, char *pathname, size_t size)
+struct linux_dirent {
+	unsigned long  d_ino;     /* Inode number */
+	unsigned long  d_off;     /* Offset to next linux_dirent */
+	unsigned short d_reclen;  /* Length of this linux_dirent */
+	char           d_name[];  /* Filename (null-terminated) */
+				  /* length is actually (d_reclen - 2 -
+				   * offsetof(struct linux_dirent, d_name)) */
+/*	char           pad;       // Zero padding byte
+ *	char           d_type;    // File type (since linux 2.6.4) at reclen-1
+ */
+};
+struct linux_dirent64 {
+	ino64_t        d_ino;    /* 64-bit inode number */
+	off64_t        d_off;    /* 64-bit offset to next structure */
+	unsigned short d_reclen; /* Size of this dirent */
+	unsigned char  d_type;   /* File type */
+	char           d_name[]; /* Filename (null-terminated) */
+};
+
+static inline unsigned short dirent_reclen(int sysnum, void *_dirp)
 {
-	int ret = 0;
-	char *tempbuf = NULL;
-	size_t tempbuf_size;
 
-	if (pathname[0] == '/') {
-		goto out;
-	}
+#ifdef	__NR_getdents
+		if (sysnum == __NR_getdents) {
+			struct linux_dirent *dirp = _dirp;
 
-	if (dirfd != AT_FDCWD) {
-		int len;
-		char dfdpath[64];
-		snprintf(dfdpath, sizeof(dfdpath), "/proc/self/fd/%d", dirfd);
-
-		tempbuf_size = size;
-		tempbuf = malloc(tempbuf_size);
-		if (tempbuf == NULL) {
-			ret = -ENOMEM;
-			goto out;
+			return dirp->d_reclen;
 		}
+#endif
+		if (sysnum == __NR_getdents64) {
+			struct linux_dirent64 *dirp = _dirp;
 
-		ret = readlink(dfdpath, tempbuf, tempbuf_size);
-		if (ret == -1) {
-			ret = -errno;
-			goto out;
+			return dirp->d_reclen;
 		}
-
-		len = strlen(pathname);
-		if (tempbuf_size <= ret + 1 + len + 1) {
-			ret = -ENAMETOOLONG;
-			goto out;
-		}
-		tempbuf[ret] = '/';
-		strncpy(&tempbuf[ret+1], pathname, len+1);
-
-		strcpy(pathname, tempbuf);
-	}
-out:
-	if (tempbuf) {
-		free(tempbuf);
-	}
-	return ret;
+		fprintf(stderr, "%s: unexpected syscall number %d\n",
+			__func__, sysnum);
+		exit(-1);
 }
-#endif /*POSTK_DEBUG_ARCH_DEP_72*/
+
+static inline char *dirent_name(int sysnum, void *_dirp)
+{
+
+#ifdef	__NR_getdents
+		if (sysnum == __NR_getdents) {
+			struct linux_dirent *dirp = _dirp;
+
+			return dirp->d_name;
+		}
+#endif
+		if (sysnum == __NR_getdents64) {
+			struct linux_dirent64 *dirp = _dirp;
+
+			return dirp->d_name;
+		}
+		fprintf(stderr, "%s: unexpected syscall number %d\n",
+			__func__, sysnum);
+		exit(-1);
+}
+
+int overlay_getdents(int sysnum, int dirfd, void *_dirp, unsigned int count)
+{
+	char buf[PATH_MAX], _dirpath[PATH_MAX];
+	char *dirpath = _dirpath;
+	void *dirp, *linuxdirp;
+	int ret, pos, linuxfd, linuxret, linuxpos, pathlen;
+	unsigned short reclen;
+
+	ret = syscall(sysnum, dirfd, _dirp, count);
+	if (ret < 0)
+		return -errno;
+	if (ret == 0)
+		return 0;
+
+	snprintf(buf, PATH_MAX, "/proc/self/fd/%d", dirfd);
+
+	pathlen = readlink(buf, dirpath, PATH_MAX);
+	if (pathlen == PATH_MAX || pathlen < 0) {
+		if (pathlen == PATH_MAX)
+			errno = ENAMETOOLONG;
+		fprintf(stderr,
+			"%s: readlink /proc/self/fd/%d failed: %d\n",
+			__func__, dirfd, errno);
+		return ret;
+	}
+	dirpath[pathlen] = 0;
+	if (!strncmp(dirpath, "/proc/mcos", 10)) {
+		dirpath = strchr(dirpath + 10, '/') - 5;
+		strncpy(dirpath, "/proc", 5);
+	} else if (!strncmp(dirpath, "/sys/devices/virtual/mcos/mcos", 30)) {
+		dirpath = strchr(dirpath + 30, '/');
+	} else {
+		return ret;
+	}
+	pathlen -= dirpath - _dirpath;
+
+	linuxfd = open(dirpath, O_RDONLY|O_DIRECTORY);
+	if (linuxfd < 0) {
+		if (errno != ENOENT) {
+			fprintf(stderr, "%s: could not open %s\n",
+				__func__, dirpath);
+		}
+		return ret;
+	}
+	linuxret = syscall(sysnum, linuxfd, _dirp + ret, count - ret);
+	if (linuxret < 0) {
+		fprintf(stderr, "%s: linux getdents failed: %d\n",
+			__func__, errno);
+		close(linuxfd);
+		return ret;
+	}
+
+	for (linuxpos = ret; linuxpos < ret + linuxret;) {
+		linuxdirp = _dirp + linuxpos;
+		reclen = dirent_reclen(sysnum, linuxdirp);
+		snprintf(dirpath + pathlen, PATH_MAX - pathlen, "/%s",
+			 dirent_name(sysnum, linuxdirp));
+		/* remove blacklist */
+		if (overlay_blacklist(dirpath)) {
+			__dprintf("blacklisted %s\n", dirpath);
+			memmove(_dirp + linuxpos,
+				_dirp + linuxpos + reclen,
+				ret + linuxret - linuxpos - reclen);
+			linuxret -= reclen;
+			continue;
+		}
+		/* remove duplicates */
+		for (pos = 0; pos < ret;) {
+			dirp = (struct linux_dirent64 *)(_dirp + pos);
+			if (!strcmp(dirent_name(sysnum, dirp),
+				    dirent_name(sysnum, linuxdirp))) {
+				memmove(_dirp + linuxpos,
+					_dirp + linuxpos + reclen,
+					ret + linuxret - linuxpos - reclen);
+				linuxret -= reclen;
+				break;
+			}
+			pos += dirent_reclen(sysnum, dirp);
+		}
+		if (pos >= ret)
+			linuxpos += reclen;
+	}
+	close(linuxfd);
+	return ret + linuxret;
+}
 
 int main_loop(struct thread_data_s *my_thread)
 {
 	struct syscall_wait_desc w;
 	long ret;
-	char *fn;
+	const char *fn;
 	int sig;
 	int term;
 	struct timespec tv;
@@ -3271,10 +3459,6 @@ int main_loop(struct thread_data_s *my_thread)
 
 		switch (w.sr.number) {
 		case __NR_openat:
-			/* initialize buffer */
-			memset(tmpbuf, '\0', sizeof(tmpbuf));
-			memset(pathbuf, '\0', sizeof(pathbuf));
-
 			/* check argument 1 dirfd */
 			ret = do_strncpy_from_user(fd, pathbuf,
 			                           (void *)w.sr.args[1],
@@ -3287,51 +3471,14 @@ int main_loop(struct thread_data_s *my_thread)
 				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 				break;
 			}
+			pathbuf[ret] = 0;
+			__dprintf("openat: %d, %s,tid=%d\n", (int)w.sr.args[0],
+				  pathbuf, my_thread->remote_tid);
 
-			if ((int)w.sr.args[0] != AT_FDCWD &&
-			    pathbuf[0] != '/') {
-				/* dirfd != AT_FDCWD */
-				__dprintf("openat(dirfd != AT_FDCWD)\n");
-				snprintf(tmpbuf, sizeof(tmpbuf),
-				         "/proc/self/fd/%d", (int)w.sr.args[0]);
-				ret = readlink(tmpbuf, pathbuf,
-				               sizeof(pathbuf) - 1);
-				if (ret == -1 &&
-				    (errno == ENOENT ||
-				     errno == EINVAL)) {
-					do_syscall_return(fd, cpu, -EBADF, 0, 0,
-					                  0, 0);
-					break;
-				}
-				if (ret < 0) {
-					do_syscall_return(fd, cpu, -errno, 0, 0,
-					                  0, 0);
-					break;
-				}
-				__dprintf("  %s -> %s\n", tmpbuf, pathbuf);
-				ret = do_strncpy_from_user(fd, tmpbuf,
-				                           (void *)w.sr.args[1],
-				                           PATH_MAX);
-				if (ret >= PATH_MAX) {
-					ret = -ENAMETOOLONG;
-				}
-				if (ret < 0) {
-					do_syscall_return(fd, cpu, ret, 0, 0, 0,
-					                  0);
-					break;
-				}
-				strncat(pathbuf, "/",
-					sizeof(pathbuf) - strlen(pathbuf) - 1);
-				strncat(pathbuf, tmpbuf,
-					sizeof(pathbuf) - strlen(pathbuf) - 1);
-			}
-			else {
-			}
-			__dprintf("openat: %s,tid=%d\n", pathbuf, my_thread->remote_tid);
+			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
 
-			fn = chgpath(pathbuf, tmpbuf);
-
-			ret = open(fn, w.sr.args[2], w.sr.args[3]);
+			ret = openat(w.sr.args[0], fn, w.sr.args[2],
+				     w.sr.args[3]);
 			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
@@ -3931,57 +4078,30 @@ return_execve2:
 				ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
-#ifdef POSTK_DEBUG_ARCH_DEP_36
-#ifdef __aarch64__
 		case __NR_readlinkat:
-			/* initialize buffer */
-			memset(tmpbuf, '\0', sizeof(tmpbuf));
-			memset(pathbuf, '\0', sizeof(pathbuf));
-
 			/* check argument 1 dirfd */
-			if ((int)w.sr.args[0] != AT_FDCWD) {
-				/* dirfd != AT_FDCWD */
-				__dprintf("readlinkat(dirfd != AT_FDCWD)\n");
-				snprintf(tmpbuf, sizeof(tmpbuf), "/proc/self/fd/%d", (int)w.sr.args[0]);
-				ret = readlink(tmpbuf, pathbuf, sizeof(pathbuf) - 1);
-				if (ret < 0) {
-					do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
-					break;
-				}
-				__dprintf("  %s -> %s\n", tmpbuf, pathbuf);
-				ret = do_strncpy_from_user(fd, tmpbuf, (void *)w.sr.args[1], PATH_MAX);
-				if (ret >= PATH_MAX) {
-					ret = -ENAMETOOLONG;
-				}
-				if (ret < 0) {
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-				}
-				strncat(pathbuf, "/", 1);
-				strncat(pathbuf, tmpbuf, strlen(tmpbuf) + 1);
-			} else {
-				/* dirfd == AT_FDCWD */
-				__dprintf("readlinkat(dirfd == AT_FDCWD)\n");
-				ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
-				if (ret >= PATH_MAX) {
-					ret = -ENAMETOOLONG;
-				}
-				if (ret < 0) {
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-				}
+			ret = do_strncpy_from_user(fd, pathbuf,
+					(void *)w.sr.args[1], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
 			}
-			__dprintf("readlinkat: %s\n", pathbuf);
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+			pathbuf[ret] = 0;
+			__dprintf("readlinkat: %d, %s\n", (int)w.sr.args[0], pathbuf);
 
-			fn = chgpath(pathbuf, tmpbuf);
+			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
 
-			ret = readlink(fn, (char *)w.sr.args[2], w.sr.args[3]);
-			__dprintf("readlinkat: dirfd=%d, path=%s, buf=%s, ret=%ld\n", 
+			ret = readlinkat(w.sr.args[0], fn, (char *)w.sr.args[2],
+					 w.sr.args[3]);
+			SET_ERR(ret);
+			__dprintf("readlinkat: dirfd=%d, path=%s, buf=%s, ret=%ld\n",
 				(int)w.sr.args[0], fn, (char *)w.sr.args[2], ret);
-			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
-#else	/* __aarch64__ */
+#ifdef __NR_readlink
 		case __NR_readlink:
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
@@ -3992,42 +4112,17 @@ return_execve2:
 				break;
 			}
 
-			fn = chgpath(pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
 
 			ret = readlink(fn, (char *)w.sr.args[1], w.sr.args[2]);
+			SET_ERR(ret);
 			__dprintf("readlink: path=%s, buf=%s, ret=%ld\n", 
 				fn, (char *)w.sr.args[1], ret);
-			SET_ERR(ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
-#endif	/* __aarch64__ */
-#else	/* POSTK_DEBUG_ARCH_DEP_36 */
-		case __NR_readlink:
-			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
-			if (ret >= PATH_MAX) {
-				ret = -ENAMETOOLONG;
-			}
-			if (ret < 0) {
-				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-				break;
-			}
+#endif	/* __NR_readlink */
 
-			fn = chgpath(pathbuf, tmpbuf);
-
-			ret = readlink(fn, (char *)w.sr.args[1], w.sr.args[2]);
-			__dprintf("readlink: path=%s, buf=%s, ret=%ld\n", 
-				fn, (char *)w.sr.args[1], ret);
-			SET_ERR(ret);
-			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-			break;
-#endif	/* POSTK_DEBUG_ARCH_DEP_36 */
-
-#ifdef POSTK_DEBUG_ARCH_DEP_72 /* add __NR_newfstat */
 		case __NR_newfstatat:
-			/* initialize buffer */
-			memset(tmpbuf, '\0', sizeof(tmpbuf));
-			memset(pathbuf, '\0', sizeof(pathbuf));
-
 			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[1], PATH_MAX);
 			if (ret >= PATH_MAX) {
 				ret = -ENAMETOOLONG;
@@ -4036,53 +4131,19 @@ return_execve2:
 				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 				break;
 			}
+			pathbuf[ret] = 0;
 
-			if (pathbuf[0] == '\0') {
-				// empty string
-				if ((int)w.sr.args[3] & AT_EMPTY_PATH) {
-					if ((int)w.sr.args[0] == AT_FDCWD) {
-						if (NULL == getcwd(pathbuf, PATH_MAX)) {
-							do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
-							break;
-						}
-					} else {
-						char dfdpath[64];
-						snprintf(dfdpath, sizeof(dfdpath), "/proc/self/fd/%d", (int)w.sr.args[0]);
-						ret = readlink(dfdpath, pathbuf, PATH_MAX);
-						if (ret == -1) {
-							do_syscall_return(fd, cpu, -errno, 0, 0, 0, 0);
-							break;
-						}
-						pathbuf[ret] = '\0';
-					}
-				}
-			} else if (pathbuf[0] != '/') {
-				// relative path
-				ret = syscall_pathname((int)w.sr.args[0], pathbuf, PATH_MAX);
-				if (ret < 0) {
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-				}
-			}
+			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
 
-			fn = chgpath(pathbuf, tmpbuf);
-			if (fn[0] == '/') {
-				ret = fstatat((int)w.sr.args[0],
-					      fn,
-					      (struct stat*)w.sr.args[2],
-					      (int)w.sr.args[3]);
-				__dprintf("fstatat: dirfd=%d, pathname=%s, buf=%p, flags=%x, ret=%ld\n",
-					  (int)w.sr.args[0], fn, (void*)w.sr.args[2], (int)w.sr.args[3], ret);
-			} else {
-				ret = fstatat((int)w.sr.args[0],
-					      (const char*)w.sr.args[1],
-					      (struct stat*)w.sr.args[2],
-					      (int)w.sr.args[3]);
-				__dprintf("fstatat: dirfd=%d, pathname=%s, buf=%p, flags=%x, ret=%ld\n",
-					  (int)w.sr.args[0], (char*)w.sr.args[1], (void*)w.sr.args[2], (int)w.sr.args[3], ret);
-			}
-
+			ret = fstatat((int)w.sr.args[0],
+				      fn,
+				      (struct stat *)w.sr.args[2],
+				      (int)w.sr.args[3]);
 			SET_ERR(ret);
+			__dprintf("fstatat: dirfd=%d, pathname=%s, buf=%p, flags=%x, ret=%ld\n",
+				  (int)w.sr.args[0], fn, (void *)w.sr.args[2],
+				  (int)w.sr.args[3], ret);
+
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 #ifdef __NR_stat
@@ -4096,17 +4157,47 @@ return_execve2:
 				break;
 			}
 
-			fn = chgpath(pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
 
 			ret = stat(fn, (struct stat *)w.sr.args[1]);
-			__dprintf("stat: path=%s, ret=%ld\n", fn, ret);
 			SET_ERR(ret);
+			__dprintf("stat: path=%s, ret=%ld\n", fn, ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 #endif /* __NR_stat */
-#else /* POSTK_DEBUG_ARCH_DEP_72 */
-		case __NR_stat:
-			ret = do_strncpy_from_user(fd, pathbuf, (void *)w.sr.args[0], PATH_MAX);
+
+		case __NR_faccessat:
+			ret = do_strncpy_from_user(fd, pathbuf,
+					(void *)w.sr.args[1], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+			pathbuf[ret] = 0;
+
+			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
+
+			/* the syscall doesn't take flags argument, link
+			 * resolution happened first so don't do it again
+			 */
+			ret = faccessat((int)w.sr.args[0], fn,
+					(int)w.sr.args[2],
+					AT_SYMLINK_NOFOLLOW);
+			SET_ERR(ret);
+			__dprintf("faccessat: dirfd=%d, pathname=%s, mode=%d, ret=%ld\n",
+				  (int)w.sr.args[0], fn, (int)w.sr.args[2],
+				  ret);
+
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+
+#ifdef __NR_access
+		case __NR_access:
+			ret = do_strncpy_from_user(fd, pathbuf,
+					(void *)w.sr.args[0], PATH_MAX);
 			if (ret >= PATH_MAX) {
 				ret = -ENAMETOOLONG;
 			}
@@ -4115,14 +4206,24 @@ return_execve2:
 				break;
 			}
 
-			fn = chgpath(pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
 
-			ret = stat(fn, (struct stat *)w.sr.args[1]);
-			__dprintf("stat: path=%s, ret=%ld\n", fn, ret);
+			ret = access(fn, (int)w.sr.args[1]);
 			SET_ERR(ret);
+			__dprintf("access: path=%s, ret=%ld\n", fn, ret);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
-#endif /* POSTK_DEBUG_ARCH_DEP_72 */
+#endif /* __NR_access */
+#ifdef	__NR_getdents
+		case __NR_getdents:
+#endif
+		case __NR_getdents64:
+			ret = overlay_getdents(w.sr.number,
+					(int)w.sr.args[0],
+					(struct linux_dirent *)w.sr.args[1],
+					(unsigned int)w.sr.args[2]);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
 
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
@@ -4324,10 +4425,29 @@ return_linux_spawn:
 			break;
 		}
 
-		default:
-			if (archdep_syscall(&w, &ret)) {
-				ret = do_generic_syscall(&w);
+#ifdef __NR_open
+		case __NR_open:
+			ret = do_strncpy_from_user(fd, pathbuf,
+					(void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
 			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+			__dprintf("open: %s\n", pathbuf);
+
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+
+			ret = open(fn, w.sr.args[1], w.sr.args[2]);
+			SET_ERR(ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+#endif
+
+		default:
+			ret = do_generic_syscall(&w);
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
