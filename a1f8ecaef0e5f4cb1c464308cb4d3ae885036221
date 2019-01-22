@@ -16,6 +16,29 @@
       "revId": "a1f8ecaef0e5f4cb1c464308cb4d3ae885036221",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a87cd205_185ae344",
+        "filename": "test/issues/1201/C1201.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-01-22T05:47:06Z",
+      "side": 1,
+      "message": "~/.mck_test_configに入れてください。",
+      "range": {
+        "startLine": 6,
+        "startChar": 0,
+        "endLine": 6,
+        "endChar": 14
+      },
+      "revId": "a1f8ecaef0e5f4cb1c464308cb4d3ae885036221",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
