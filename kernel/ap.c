@@ -258,6 +258,12 @@ cpu_sysfs_setup(void)
 		if (error) {
 			panic("cpu_sysfs_setup:sysfs_symlinkf failed\n");
 		}
+
+		error = sysfs_symlinkf(targeth, "/sys/bus/cpu/drivers/processor/cpu%d",
+				cpu);
+		if (error) {
+			panic("cpu_sysfs_setup:sysfs_symlinkf failed\n");
+		}
 	}
 
 	return;
