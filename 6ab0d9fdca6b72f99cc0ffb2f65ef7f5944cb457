@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b32367fa_7542daf2",
+        "filename": "kernel/ap.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 262,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T06:00:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d sysfs_symlinkf(targeth, \"/sys/bus/cpu/drivers/processor/cpu%d\",",
+      "revId": "6ab0d9fdca6b72f99cc0ffb2f65ef7f5944cb457",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ecffd60_0f43782d",
+        "filename": "kernel/ap.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 265,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T06:00:25Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027cpu_sysfs_setup\u0027, this function\u0027s name, in a string\n+\t\t\tpanic(\"cpu_sysfs_setup:sysfs_symlinkf failed\\n\");",
+      "revId": "6ab0d9fdca6b72f99cc0ffb2f65ef7f5944cb457",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
