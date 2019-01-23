@@ -578,34 +578,6 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 	return;
 } /* setup_cpu_sysfs_files() */
 
-static void setup_cpus_sysfs_files_node_link(struct mcctrl_usrdata *udp)
-{
-	int error;
-	int cpu;
-	struct sysfs_handle handle;
-
-	for (cpu = 0; cpu < udp->cpu_info->n_cpus; ++cpu) {
-		int node = linux_numa_2_mckernel_numa(udp,
-				cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)));
-
-		error = sysfsm_lookupf(udp->os, &handle,
-				"/sys/devices/system/node/node%d", node);
-		if (error) {
-			panic("sysfsm_lookupf: node for CPU");
-		}
-
-		error = sysfsm_symlinkf(udp->os, handle,
-				"/sys/devices/system/cpu/cpu%d/node%d",
-				cpu, node);
-		if (error) {
-			panic("sysfsm_symlinkf(CPU in node)");
-		}
-	}
-
-	error = 0;
-	return;
-}
-
 static void setup_cpus_sysfs_files(struct mcctrl_usrdata *udp)
 {
 	int error;
@@ -730,7 +702,7 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 			"/sys/devices/system/node/possible");
 
 	list_for_each_entry(p, &udp->node_topology_list, chain) {
-		struct sysfs_handle handle;
+		struct sysfs_handle node_handle, cpu_handle;
 		int cpu;
 		size_t offset = 0;
 		param.nbits = nr_cpumask_bits;
@@ -761,6 +733,20 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 				"/sys/devices/system/node/node%d/cpulist",
 				p->mckernel_numa_id);
 
+		error = sysfsm_lookupf(udp->os, &node_handle,
+				       "/sys/devices/system/node/node%d",
+				       p->mckernel_numa_id);
+		if (error) {
+			panic("sysfsm_lookupf(node)");
+		}
+
+		error = sysfsm_symlinkf(udp->os, node_handle,
+					"/sys/bus/node/devices/node%d",
+					p->mckernel_numa_id);
+		if (error) {
+			panic("sysfsm_symlinkf(bus node)");
+		}
+
 		/* Add CPU symlinks for this node */
 		for (cpu = 0; cpu < udp->cpu_info->n_cpus; ++cpu) {
 			if (linux_numa_2_mckernel_numa(udp,
@@ -769,13 +755,20 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 				continue;
 			}
 
-			error = sysfsm_lookupf(udp->os, &handle,
+			error = sysfsm_symlinkf(udp->os, node_handle,
+					"/sys/devices/system/cpu/cpu%d/node%d",
+					cpu, p->mckernel_numa_id);
+			if (error) {
+				panic("sysfsm_symlinkf(node in CPU)");
+			}
+
+			error = sysfsm_lookupf(udp->os, &cpu_handle,
 					"/sys/devices/system/cpu/cpu%d", cpu);
 			if (error) {
 				panic("sysfsm_lookupf(CPU in node)");
 			}
 
-			error = sysfsm_symlinkf(udp->os, handle,
+			error = sysfsm_symlinkf(udp->os, cpu_handle,
 					"/sys/devices/system/node/node%d/cpu%d",
 					p->mckernel_numa_id, cpu);
 			if (error) {
@@ -1172,7 +1165,6 @@ void setup_sysfs_files(ihk_os_t os)
 	setup_local_snooping_files(os);
 	setup_cpus_sysfs_files(udp);
 	setup_node_files(udp);
-	setup_cpus_sysfs_files_node_link(udp);
 #ifdef SETUP_PCI_FILES
 	setup_pci_files(udp);
 #endif
