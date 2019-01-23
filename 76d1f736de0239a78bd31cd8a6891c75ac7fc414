@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4d009942_e3ca9657",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nkernel (while it works on vanilla 4.18...); instead of debugging this further",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ccf3b75b_4370165a",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3203,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (entry-\u003elastchar !\u003d (char)-1 \u0026\u0026 ids[rc - 1] !\u003d entry-\u003elastchar)",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec506070_03db1b30",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3354,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t\t\t * directories to exist on mckernel side */",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d173089_2bbf85cb",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3415,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t\t\t   * offsetof(struct linux_dirent, d_name)) */",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "355a2bd9_416dca0d",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4245,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__dprintf(\"readlinkat: %d, %s\\n\", (int)w.sr.args[0], pathbuf);",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98b30c4a_8818449b",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4252,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__dprintf(\"readlinkat: dirfd\u003d%d, path\u003d%s, buf\u003d%s, ret\u003d%ld\\n\",",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "462420da_2fcdaa85",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4253,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t(int)w.sr.args[0], fn, (char *)w.sr.args[2], ret);",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "174340e2_400269ae",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4295,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__dprintf(\"fstatat: dirfd\u003d%d, pathname\u003d%s, buf\u003d%p, flags\u003d%x, ret\u003d%ld\\n\",",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1bea82a8_43abf276",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4342,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__dprintf(\"faccessat: dirfd\u003d%d, pathname\u003d%s, mode\u003d%d, ret\u003d%ld\\n\",",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "40567525_516692fe",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4372,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-23T08:09:08Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\t\tcase __NR_getdents64:",
+      "revId": "76d1f736de0239a78bd31cd8a6891c75ac7fc414",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
