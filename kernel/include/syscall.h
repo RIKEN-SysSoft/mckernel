@@ -174,7 +174,10 @@ typedef unsigned long __cpu_set_unit;
 #define MPOL_NO_BSS               0x04
 #define MPOL_SHM_PREMAP           0x08
 
+#define PLD_MAGIC 0xcafecafe44332211UL
+
 struct program_load_desc {
+	unsigned long magic;
 	int num_sections;
 	int cpu;
 	int pid;
