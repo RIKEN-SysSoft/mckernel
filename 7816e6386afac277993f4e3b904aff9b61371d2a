@@ -1,0 +1,2792 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9bbd7208_6945e40d",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern long freeze_thaw(void *nmi_ctx);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce8ec2bf_8f6ba84c",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern int nmi_mode;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a4050d14_41c66c50",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 264,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline void pwr_arm64hpc_write_imp_fj_core_uarch_restrection_el1(uint64_t set_bit,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c30564e_68b05c3f",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 265,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t\tuint64_t clear_bit)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e9b380b_dabfe8e1",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 273,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tasm volatile(\"msr_s \" __stringify(IMP_FJ_CORE_UARCH_RESTRECTION_EL1) \", %0\"",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13d5f0b3_2f276452",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 289,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t       uint64_t clear_bit)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "babd2ba4_34c0ef5c",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 314,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern unsigned long ihk_param_retention_state_flag_pa;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "51e762f0_490dafe7",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 315,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc\n+\tunsigned long size \u003d BITS_TO_LONGS(NR_CPUS) * sizeof(unsigned long);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa6262c4_bed6b5aa",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 372,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tpwr_arm64hpc_write_imp_soc_standby_ctrl_el1(IMP_SOC_STANDBY_CTRL_EL1_RETENTION,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "88682e36_1fd13027",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 652,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\textern char _head[], _end[];",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05077601_494ff34a",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 705,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern void __cpu_do_idle(void);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e8bfaa04_d0c65a01",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: Macros with multiple statements should be enclosed in a do - while loop\n+#define SYSREG_READ_S(sys_reg)  case (sys_reg): asm volatile(\"mrs_s %0, \" __stringify(sys_reg) : \"\u003dr\" (*val)); break",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b32bb7b5_e5d1a2db",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define SYSREG_READ_S(sys_reg)  case (sys_reg): asm volatile(\"mrs_s %0, \" __stringify(sys_reg) : \"\u003dr\" (*val)); break",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3593364c_a8079374",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1719,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define SYSREG_WRITE_S(sys_reg) case (sys_reg): asm volatile(\"msr_s \" __stringify(sys_reg) \", %0\" :: \"r\" (val)); break",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5babde8_44cca1cd",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1719,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: Macros with multiple statements should be enclosed in a do - while loop\n+#define SYSREG_WRITE_S(sys_reg) case (sys_reg): asm volatile(\"msr_s \" __stringify(sys_reg) \", %0\" :: \"r\" (val)); break",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d8495e9e_43ece132",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1765,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tasm volatile(\"msr_s \" __stringify(IMP_SOC_STANDBY_CTRL_EL1) \", %0\"",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0b6fcf5_040a7c0b",
+        "filename": "arch/arm64/kernel/include/arch-lock.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+} __attribute__((aligned(4))) ihk_spinlock_t;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b1fb98cf_4a6b666e",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define PWR_REG_MASK(reg, feild)  (((UL(1) \u003c\u003c ((reg##_##feild##_MSB) - (reg##_##feild##_LSB) + 1)) - 1) \u003c\u003c (reg##_##feild##_LSB))",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5bd5359f_3b8ff304",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_FJ_TAG_ADDRESS_CTRL_EL1_TBO0_MASK\t(1UL \u003c\u003c IMP_FJ_TAG_ADDRESS_CTRL_EL1_TBO0_SHIFT)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9d1a90e_7048e8e0",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_FJ_TAG_ADDRESS_CTRL_EL1_SEC0_MASK\t(1UL \u003c\u003c IMP_FJ_TAG_ADDRESS_CTRL_EL1_SEC0_SHIFT)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "17ae93e2_d837477d",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_FJ_TAG_ADDRESS_CTRL_EL1_PFE0_MASK\t(1UL \u003c\u003c IMP_FJ_TAG_ADDRESS_CTRL_EL1_PFE0_SHIFT)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e254c9fb_ee7fcd05",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_SCCR_CTRL_EL1_EL1AE_MASK\t\t(1UL \u003c\u003c IMP_SCCR_CTRL_EL1_EL1AE_SHIFT)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0f25bb2_354f0448",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_SOC_STANDBY_CTRL_EL1_ECO_MODE\t\tPWR_REG_MASK(IMP_SOC_STANDBY_CTRL_EL1, ECO_MODE)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd8af1ad_b1879436",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_SOC_STANDBY_CTRL_EL1_MODE_CHANGE\t\tPWR_REG_MASK(IMP_SOC_STANDBY_CTRL_EL1, MODE_CHANGE)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cc4c9d55_d39c4d99",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_SOC_STANDBY_CTRL_EL1_RETENTION\t\tPWR_REG_MASK(IMP_SOC_STANDBY_CTRL_EL1, RETENTION)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99343d39_27787880",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_FJ_CORE_UARCH_RESTRECTION_EL1_FL_RESTRICT_TRANS\tPWR_REG_MASK(IMP_FJ_CORE_UARCH_RESTRECTION_EL1, FL_RESTRICT_TRANS)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "991afbb5_f68e29c1",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_FJ_CORE_UARCH_RESTRECTION_EL1_ISSUE_RESTRICTION\tPWR_REG_MASK(IMP_FJ_CORE_UARCH_RESTRECTION_EL1, ISSUE_RESTRICTION)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e790b22_6e111834",
+        "filename": "arch/arm64/kernel/include/imp-sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define IMP_FJ_CORE_UARCH_RESTRECTION_EL1_EX_RESTRICTION\tPWR_REG_MASK(IMP_FJ_CORE_UARCH_RESTRECTION_EL1, EX_RESTRICTION)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7741da76_697986ae",
+        "filename": "arch/arm64/kernel/include/sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 293,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__asm__ __volatile__(\"mrs_s %0,\" __stringify(reg) \"\\n\\t\" \\",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4aebea57_2e6b05b5",
+        "filename": "arch/arm64/kernel/include/sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 294,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027:\u0027 (ctx:ExV)\n+\t\t\t\t:\"\u003d\u0026r\"(*reg_value)::); \\\n \t\t\t\t^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1351e4d5_26eee4fe",
+        "filename": "arch/arm64/kernel/include/sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 297,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__asm__ __volatile__(\"msr_s\" __stringify(reg) \", %0\\n\\t\" \\",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f7aaf9b_ade9027a",
+        "filename": "arch/arm64/kernel/include/sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 298,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027:\u0027 (ctx:VxB)\n+\t\t\t\t::\"r\"(*reg_value):); \\\n \t\t\t\t                 ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2371d521_f78c8745",
+        "filename": "arch/arm64/kernel/include/sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 308,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: space prohibited between function name and open parenthesis \u0027(\u0027\n+#define __emit_inst(x).inst (x)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e73af464_7aa3c24d",
+        "filename": "arch/arm64/kernel/include/sysreg.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 308,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define __emit_inst(x).inst (x)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bebbb9a0_bfb4b02f",
+        "filename": "arch/arm64/kernel/irq-gic-v3.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 347,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern int spi_table[];",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cefe48b0_2435de39",
+        "filename": "arch/arm64/kernel/irq-gic-v3.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 348,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern int nr_spi_table;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e62a7c06_741e7bff",
+        "filename": "arch/arm64/kernel/irq-gic-v3.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 403,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern int ihk_param_nr_pmu_irq_affi;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d935dfb_8b5b09e0",
+        "filename": "arch/arm64/kernel/irq-gic-v3.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 404,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern int ihk_param_pmu_irq_affi[CONFIG_SMP_MAX_CORES];",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45c3b9eb_fa1aa0e6",
+        "filename": "arch/arm64/kernel/irq-gic-v3.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 408,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\tif (0 \u003c ihk_param_nr_pmu_irq_affi) {",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dafcafcc_2d04b36e",
+        "filename": "arch/arm64/kernel/irq-gic-v3.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 410,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\t\t\tif ((0 \u003c\u003d ihk_param_pmu_irq_affi[i]) \u0026\u0026",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4facfa3_daac562d",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1701,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%lx+,%s: calling memory_stat_rss_add(),size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62ab1132_999741f1",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1709,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%lx+,%s: calling memory_stat_rss_add(),size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81e30aa6_f327bf02",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2060,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{ walk_pte_l1_safe, visit_pte_l1_safe, PTL2_SIZE, PTL2_SHIFT }, /*PTL2*/",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "52d21992_ce159f89",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2061,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{ walk_pte_l2_safe, visit_pte_l2_safe, PTL3_SIZE, PTL3_SHIFT }, /*PTL3*/",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2812344c_4e53df00",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2062,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{ walk_pte_l3_safe, visit_pte_l3_safe, PTL4_SIZE, PTL4_SHIFT }, /*PTL4*/",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc93194e_3107570a",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2150,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tarch_flush_tlb_single(get_address_space_id(args-\u003evm-\u003eaddress_space-\u003epage_table),",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4936eec0_7180566b",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2160,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: page\u003d%p,is_in_memobj\u003d%d,(old \u0026 PTE_DIRTY)\u003d%lx,memobj\u003d%p,args-\u003ememobj-\u003eflags\u003d%x\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "828b6fca_00c3eeea",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2176,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tihk_mc_free_pages_user(phys_to_virt(phys),",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf2c003f_d005ca57",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2178,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%s: freeing regular page at 0x%lx\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dcd27300_f06247c2",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2180,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%lx-,%s: calling memory_stat_rss_sub(),phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a1c208d_a68fadc0",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2192,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: freeing file-backed page at 0x%lx\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c566b7fb_fb6217a1",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2195,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%lx-,%s: calling memory_stat_rss_sub(),phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86c8ea5a_6811c3cd",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2203,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: !calling memory_stat_rss_sub(),virt\u003d%lx,phys\u003d%lx\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dad2c6bb_9335d7d6",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2286,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tihk_mc_free_pages_user(phys_to_virt(phys),",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0c5bdd4_f62717d0",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2287,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t       tbl.pgsize / PAGE_SIZE);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dac4cad6_19c04e77",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"%s: freeing large page at 0x%lx\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d7ec384_6743eab8",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2290,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"%lx-,%s: memory_stat_rss_sub(),phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d0a28d1_3ec2fa45",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2299,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"%s: XPMEM attach,phys\u003d%lx\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87e4dfe8_0e72121e",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2303,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tihk_mc_free_pages_user(phys_to_virt(phys),",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "faf86d52_a340891c",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2304,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t       tbl.pgsize / PAGE_SIZE);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92886cd5_ac46b1c7",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2305,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%s: having unmapped page-struct, freeing large page at 0x%lx\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6aab33b9_fb7b44be",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2307,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t/* Track page-\u003ecount for !MF_PREMAP pages */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c7d446d3_c8723adc",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2308,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%lx-,%s: calling memory_stat_rss_sub(),phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0b853edc_bea5fafc",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2722,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%lx+,%s: calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64cc6e1a_0e9b9475",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2725,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: !calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "374a4003_5ddf37f0",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2812,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t// Call memory_stat_rss_add() here because pgshift is resolved here",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e9eac478_9b42ae45",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2816,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%lx+,%s: calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59fd117b_9d5f931d",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2820,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%s: !calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ce94ef8_cd7c2405",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int ihk_param_pmu_irq_affi[CONFIG_SMP_MAX_CORES];",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "53ffbd11_b4093d44",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int ihk_param_nr_pmu_irq_affi;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "225ba84e_0c30bd08",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+\tif (0 \u003c ihk_param_nr_pmu_irq_affi) {",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f65dcc3_af043fb1",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tret \u003d ihk_mc_register_interrupt_handler(ihk_param_pmu_irq_affi[i],",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d986798_b00d3c6b",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\tcpu_pmu.handler);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "308ec83e_cd02fa80",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define\tARMV8_IDX_COUNTER_LAST\t(ARMV8_IDX_CYCLE_COUNTER + get_per_cpu_pmu()-\u003enum_events - 1)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f82ccc58_414501b1",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define\tARMV8_PMU_OVSR_MASK\t\t0xffffffff\t/* Mask for writable bits */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e91a8ee4_3592327c",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 186,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_CPU_CYCLES]\t\t\u003d ARMV8_PMUV3_PERFCTR_CPU_CYCLES,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0bec688a_257809b3",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 187,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_INSTRUCTIONS]\t\t\u003d ARMV8_PMUV3_PERFCTR_INST_RETIRED,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "28b4e103_a5ce6705",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 189,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_CACHE_MISSES]\t\t\u003d ARMV8_PMUV3_PERFCTR_L1D_CACHE_REFILL,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "602cee80_412166f2",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 190,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]\t\u003d ARMV8_PMUV3_PERFCTR_PC_WRITE_RETIRED,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f0aa3167_7fe68a76",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 191,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_BRANCH_MISSES]\t\t\u003d ARMV8_PMUV3_PERFCTR_BR_MIS_PRED,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e303446_d31fa477",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 192,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_BUS_CYCLES]\t\t\u003d ARMV8_PMUV3_PERFCTR_BUS_CYCLES,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3027fb3_020e3644",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 193,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]\t\u003d ARMV8_PMUV3_PERFCTR_STALL_FRONTEND,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ebc8e27_caaab84a",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 194,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]\t\u003d ARMV8_PMUV3_PERFCTR_STALL_BACKEND,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "21f9cda3_302d2121",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[C(L1D)][C(OP_READ)][C(RESULT_MISS)]\t\u003d ARMV8_PMUV3_PERFCTR_L1D_CACHE_REFILL,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e267a1d1_4c2b454b",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[C(L1D)][C(OP_WRITE)][C(RESULT_MISS)]\t\u003d ARMV8_PMUV3_PERFCTR_L1D_CACHE_REFILL,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "60a4abee_7c6d1a5a",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 209,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[C(L1I)][C(OP_READ)][C(RESULT_MISS)]\t\u003d ARMV8_PMUV3_PERFCTR_L1I_CACHE_REFILL,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55ef4342_1874aa00",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 211,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[C(DTLB)][C(OP_READ)][C(RESULT_MISS)]\t\u003d ARMV8_PMUV3_PERFCTR_L1D_TLB_REFILL,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5706441e_a1dbb91b",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[C(ITLB)][C(OP_READ)][C(RESULT_MISS)]\t\u003d ARMV8_PMUV3_PERFCTR_L1I_TLB_REFILL,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b398196d_67173140",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[C(BPU)][C(OP_READ)][C(RESULT_MISS)]\t\u003d ARMV8_PMUV3_PERFCTR_BR_MIS_PRED,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "732ee750_dc40e775",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 220,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t[C(BPU)][C(OP_WRITE)][C(RESULT_MISS)]\t\u003d ARMV8_PMUV3_PERFCTR_BR_MIS_PRED,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f49815f6_9f100cd3",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 336,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t  [PERF_COUNT_HW_CACHE_RESULT_MAX])",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c53082eb_0a0b6cd1",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 627,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c:__armv8pmu_probe_pmu() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9097cb70_bfa71759",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1622,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: ERROR hold_thread returned %d,tid\u003d%d\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f155ee43_5f5723ac",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1943,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t\tvolatile int cond;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bfc598b0_dee5d838",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2625,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31016c27_599d9bb7",
+        "filename": "arch/arm64/kernel/timer.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 121,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern unsigned long ihk_param_use_virt_timer;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ec424dc_72768664",
+        "filename": "arch/arm64/kernel/timer.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027is_use_virt_timer\u0027, this function\u0027s name, in a string\n+\t\tpanic(\"PANIC: is_use_virt_timer(): timer select neither phys-timer nor virt-timer.\\n\");",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4861f55c_c2e7a2dd",
+        "filename": "arch/arm64/kernel/vdso/asm_syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#define DECLARATOR(number,name)\t\t.equ __NR_##name, number\n                          ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80bfcdd3_75ed8997",
+        "filename": "arch/arm64/kernel/vdso/asm_syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define DECLARATOR(number,name)\t\t.equ __NR_##name, number",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "76840f2a_8dc0e244",
+        "filename": "arch/arm64/kernel/vdso/asm_syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#define SYSCALL_HANDLED(number,name)\tDECLARATOR(number,name)\n                               ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0842c4f0_7ea7856e",
+        "filename": "arch/arm64/kernel/vdso/asm_syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#define SYSCALL_HANDLED(number,name)\tDECLARATOR(number,name)\n                                     \t                 ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "78fcbe7b_80879e71",
+        "filename": "arch/arm64/kernel/vdso/asm_syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#define SYSCALL_DELEGATED(number,name)\tDECLARATOR(number,name)\n                                 ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "341d9982_2ea02f0a",
+        "filename": "arch/arm64/kernel/vdso/asm_syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#define SYSCALL_DELEGATED(number,name)\tDECLARATOR(number,name)\n                                       \t                 ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d5d92d6_4f4d90c8",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2837,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24b1bfc4_01aad813",
+        "filename": "executer/kernel/mcctrl/Makefile.in",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Use of EXTRA_CFLAGS is deprecated, please use `ccflags-y instead.\n+EXTRA_CFLAGS +\u003d $(foreach i, $(shell seq 6 120), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8bf57b9e_a2dad47b",
+        "filename": "executer/kernel/mcctrl/Makefile.in",
+        "patchSetId": 2
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Use of EXTRA_CFLAGS is deprecated, please use `ccflags-y instead.\n+EXTRA_CFLAGS +\u003d $(foreach i, $(shell seq 6 110), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6a0103f_71263686",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4,11,0)\n                                           ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0728e1f8_12c24440",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4,11,0)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7acda19b_3691fed5",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4,11,0)\n                                              ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7cd0676e_46363b8d",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Single statement macros should not use a do {} while (0) loop\n+#define pr_ppd(msg, tid, ppd) do { \\\n+\t\tpr_info(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", \\\n+\t\t\t__func__, tid, atomic_read(\u0026ppd-\u003erefcount)); \\\n+\t} while (0)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "320db6c6_a4ac2d1e",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 349,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern struct list_head host_threads;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ac4bf360_677b2e36",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 350,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern rwlock_t host_thread_lock;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69146aef_5b4085fa",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_100 /* rus_mmap() setting vm_flags arch depend defined */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f2b2fa46_e3bee196",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "176c23fa_19d10af9",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_100 /* rus_mmap() setting vm_flags arch depend defined */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b5bf76b_0971a1dd",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                          ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96d7806d_0eb7224d",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8b503308_917f5a7c",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                            ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec9aaa88_34789434",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Single statement macros should not use a do {} while (0) loop\n+#define pr_ppd(msg, tid, ppd) do { \\\n+\t\tpr_info(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", \\\n+\t\t\t__func__, tid, atomic_read(\u0026ppd-\u003erefcount)); \\\n+\t} while (0)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a84c1ce_9454157c",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 427,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern struct list_head host_threads;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4984165b_b6af68b2",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 428,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern rwlock_t host_thread_lock;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb574a2b_bca0588d",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_100 /* rus_mmap() setting vm_flags arch depend defined */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f1ecf471_13081d19",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ea30714b_6a50b829",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_100 /* rus_mmap() setting vm_flags arch depend defined */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a3b72b84_b0cc17cb",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                            ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a9885ffb_b0072669",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                          ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe4f8f54_eb705a7d",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5bc1f748_f32d4c19",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96b89f11_2ea002b3",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2148,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "693f97e9_04ec1b0c",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2212,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "583d46f0_f756e076",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2263,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d13fa07a_16a2d70d",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2320,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_86 /* make perf counter start id architecture dependent */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "379890d1_14854534",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2445,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void save_tls_ctx(void __user *ctx);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "28bdb4e7_3de3645d",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2446,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long get_tls_ctx(void __user *ctx);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e3688d6_1175b2ca",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2449,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void save_fs_ctx(void *ctx);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "efeb1fa1_069b8bf5",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2450,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long get_fs_ctx(void *ctx);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a406cc20_4bb870ec",
+        "filename": "executer/kernel/mcctrl/mcctrl.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 452,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d86d18d_e8c8828f",
+        "filename": "executer/kernel/mcctrl/mcctrl.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 453,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t\tstruct task_struct *task)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "447b5cee_ec95f86a",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4,11,0)\n                                              ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f385e570_476cf520",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4,11,0)\n                                           ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "26291839_eab3fae0",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4,11,0)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5fb1d150_ebc3302f",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1013,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_100 /* rus_mmap() setting vm_flags arch depend defined */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef8b3a63_c5cf1698",
+        "filename": "executer/user/arch/arm64/arch-eclair.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern uintptr_t kernel_base;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "778563b2_c8c9fc65",
+        "filename": "executer/user/arch/arm64/arch_args.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct {",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09a25ed0_d7053403",
+        "filename": "executer/user/arch/arm64/archdep.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* @ref.impl arch/arm64/include/asm/atomic_ll_sc.h::__ll_sc___cmpxchg_case_mb_8() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9bfbcbf_c721b7c0",
+        "filename": "executer/user/arch/arm64/archdep.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* @ref.impl arch/arm64/include/asm/atomic_ll_sc.h::__ll_sc___cmpxchg_case_mb_4() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9706122_aefdd7bc",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern uintptr_t kernel_base;",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d55ad189_2428afdc",
+        "filename": "executer/user/arch/x86_64/arch_args.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 127,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+#define syscall_enter(argsp) (get_syscall_return(argsp) \u003d\u003d -ENOSYS)",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "12820866_a6662cc7",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 235,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tElf64_Phdr *ph \u003d NULL;\n \t           ^",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be1082ff_7544bc6a",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 270,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(thread-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89017e16_3765b460",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 271,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t    (void *)p, \u0026phys) !\u003d 0) {",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c0bbda6_6a4137d0",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 312,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e80eec9_733ee7b3",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 393,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b9900244_b789f188",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 434,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(thread-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ccc1826f_a91f33ed",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 435,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t    (void *)p, \u0026phys) !\u003d 0) {",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "565ae354_3f611fe0",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 450,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"coretable[%d]: %lx@%lx(%lx)\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef96eda5_9935958f",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 458,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"coretable[%d]: %lx@%lx(%lx)\\n\",",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69b1a11d_d36eca30",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 475,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(thread-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48ea4be0_b29c07ad",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 604,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "089001aa_94dd112b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2304,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a48f076a_6ca4f552",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2586,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d21ada0d_5faa54d2",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9783,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "52081c9a_c8107d0c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9784,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\tarch_ptrace_syscall_enter(cpu_local_var(current), -ENOSYS);",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "013be4d9_cabbe2ed",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9834,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T08:36:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_ARCH_DEP_110 /* archdep for ihk_mc_syscall_ret() set before ptrace_syscall_event() */",
+      "revId": "7816e6386afac277993f4e3b904aff9b61371d2a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
