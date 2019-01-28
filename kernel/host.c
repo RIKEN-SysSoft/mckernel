@@ -441,6 +441,13 @@ static int process_msg_prepare_process(unsigned long rphys)
 		return -ENOMEM;
 	}
 
+	if (p->magic != PLD_MAGIC) {
+		kprintf("%s: broken mcexec program_load_desc\n", __func__);
+		ihk_mc_unmap_virtual(p, npages);
+		ihk_mc_unmap_memory(NULL, phys, sz);
+		return -EFAULT;
+	}
+
 	n = p->num_sections;
 	if (n > 16 || 0 >= n) {
 		kprintf("%s: ERROR: ELF sections other than 1 to 16 ??\n",
