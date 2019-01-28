@@ -1757,14 +1757,10 @@ static void rusage_init()
 	dkprintf("%s: rusage.total_memory=%ld\n", __FUNCTION__, rusage.total_memory);
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 extern void monitor_init(void);
-#endif /* POSTK_DEBUG_TEMP_FIX_73 */
 void mem_init(void)
 {
-#ifdef POSTK_DEBUG_TEMP_FIX_73 /* NULL access for *monitor fix */
 	monitor_init();
-#endif /* !POSTK_DEBUG_TEMP_FIX_73 */
 
 	/* It must precedes numa_init() because rusage.total_memory is initialized in numa_init() */
 	rusage_init();
