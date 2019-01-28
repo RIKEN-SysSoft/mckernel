@@ -276,6 +276,7 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	              + sizeof(struct program_image_section) * nhdrs);
 	memset(desc, '\0', sizeof(struct program_load_desc)
 	                   + sizeof(struct program_image_section) * nhdrs);
+	desc->magic = PLD_MAGIC;
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
