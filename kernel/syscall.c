@@ -9016,9 +9016,14 @@ SYSCALL_DECLARE(move_pages)
 		return -EINVAL;
 	}
 
-	if (flags == MPOL_MF_MOVE_ALL) {
+	switch (flags) {
+	case MPOL_MF_MOVE_ALL:
 		kprintf("%s: ERROR: MPOL_MF_MOVE_ALL"
-				" not supported\n", __FUNCTION__);
+			" not supported\n", __func__);
+		return -EINVAL;
+	case MPOL_MF_MOVE:
+		break;
+	default:
 		return -EINVAL;
 	}
 
