@@ -2236,13 +2236,9 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	int stack_align_padding = 0;
 
 	/* Create stack range */
-	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
-#ifdef POSTK_DEBUG_ARCH_DEP_80 /* user stack prepage size fix */
-	minsz = LARGE_PAGE_SIZE;
-#else /* POSTK_DEBUG_ARCH_DEP_80 */
-	minsz = (pn->stack_premap
-			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-#endif /* POSTK_DEBUG_ARCH_DEP_80 */
+	end = STACK_TOP(&thread->vm->region) & USER_STACK_PAGE_MASK;
+	minsz = (pn->stack_premap + USER_STACK_PREPAGE_SIZE - 1) &
+		USER_STACK_PAGE_MASK;
 	maxsz = (end - thread->vm->region.map_start) / 2;
 	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
 	if (size > maxsz) {
@@ -2251,13 +2247,13 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	else if (size < minsz) {
 		size = minsz;
 	}
-	size = (size + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+	size = (size + USER_STACK_PREPAGE_SIZE - 1) & USER_STACK_PAGE_MASK;
 	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
 			__FUNCTION__,
 			pn->stack_premap,
 			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
 			minsz, size);
-	start = (end - size) & LARGE_PAGE_MASK;
+	start = (end - size) & USER_STACK_PAGE_MASK;
 
 	/* Apply user allocation policy to stacks */
 	/* TODO: make threshold kernel or mcexec argument */
@@ -2268,7 +2264,9 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
-				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag, start);
+						USER_STACK_PAGE_P2ALIGN,
+						IHK_MC_AP_NOWAIT | ap_flag,
+						start);
 
 	if (!stack) {
 		kprintf("%s: error: couldn't allocate initial stack\n",
@@ -2284,7 +2282,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
+			vrflag, NULL, 0, USER_STACK_PAGE_SHIFT, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		kprintf("%s: error addding process memory range: %d\n", rc);
 		return rc;
@@ -2292,12 +2290,11 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Map physical pages for initial stack frame */
 	error = ihk_mc_pt_set_range(thread->vm->address_space->page_table,
-								thread->vm, (void *)(end - minsz),
-								(void *)end, virt_to_phys(stack),
-								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
-								LARGE_PAGE_SHIFT, range, 0
-								);
-
+				    thread->vm, (void *)(end - minsz),
+				    (void *)end, virt_to_phys(stack),
+				    arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
+							  NULL),
+				    USER_STACK_PAGE_SHIFT, range, 0);
 	if (error) {
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",
