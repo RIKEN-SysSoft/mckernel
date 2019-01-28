@@ -1,0 +1,208 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3c531738_aa6ffd0c",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ })$",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6376f41b_d71ccef2",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_THUNDERX\tMIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX)",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "79abd749_8345292d",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_THUNDERX_81XX MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX_81XX)",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5dc73f80_eb6908b7",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_THUNDERX_83XX MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX_83XX)",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec840980_b1f3dd7e",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_CAVIUM_THUNDERX2 MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX2)",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d53a9ec_ddf6ce49",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_QCOM_FALKOR_V1 MIDR_CPU_MODEL(ARM_CPU_IMP_QCOM, QCOM_CPU_PART_FALKOR_V1)",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fdd87879_bf0f5ad8",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1012,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "ERROR: switch and case should be at the same indent\n+\t\tswitch (read_cpuid_id() \u0026 MIDR_CPU_MODEL_MASK) {\n[...]\n+\t\t\tcase MIDR_CPU_MODEL(ARM_CPU_IMP_BRCM, BRCM_CPU_PART_VULCAN):\n+\t\t\tcase MIDR_CPU_MODEL(0x43, 0x0af):  /* Cavium ThunderX2 */\n[...]\n+\t\t\tdefault:",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2a306279_21e61c87",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1018,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tcase MIDR_CPU_MODEL(ARM_CPU_IMP_BRCM, BRCM_CPU_PART_VULCAN):",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9180302a_f6ee59fe",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1019,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tcase MIDR_CPU_MODEL(0x43, 0x0af):  /* Cavium ThunderX2 */",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c69e7f5a_a034a3de",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1020,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tpte |\u003d PROT_DEFAULT | PTE_ATTRINDX(MT_DEVICE_GRE);",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "22641524_2d8207b4",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1023,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tpte |\u003d PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL_NC);",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "960c00ed_28805bcf",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-28T03:51:27Z",
+      "side": 1,
+      "message": "ERROR: switch and case should be at the same indent\n+\tswitch (read_cpuid_id() \u0026 MIDR_CPU_MODEL_MASK) {\n[...]\n+\t\tcase MIDR_CPU_MODEL(ARM_CPU_IMP_BRCM, BRCM_CPU_PART_VULCAN):\n[...]\n+\t\tcase MIDR_CPU_MODEL(0x43, 0x0af):  /* Cavium ThunderX2 */",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
