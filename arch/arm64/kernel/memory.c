@@ -16,6 +16,7 @@
 #include <vdso.h>
 #include <debug.h>
 #include <rusage_private.h>
+#include <cputype.h>
 
 //#define DEBUG
 
@@ -1020,7 +1021,19 @@ static unsigned long attr_to_pageattr(enum ihk_mc_pt_attribute attr)
  	if (attr & PTATTR_UNCACHABLE) {
 		pte |= PROT_DEFAULT | PTE_ATTRINDX(MT_DEVICE_nGnRE);
 	} else if (attr & PTATTR_WRITE_COMBINED) {
-		pte |= PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL_NC);
+		switch (read_cpuid_id() & MIDR_CPU_MODEL_MASK) {
+		/*
+		 * Fix up arm64 braindamage of using NORMAL_NC for write
+		 * combining when Device GRE exists specifically for the
+		 * purpose. Needed on ThunderX2.
+		 */
+		case MIDR_CPU_MODEL(ARM_CPU_IMP_BRCM, BRCM_CPU_PART_VULCAN):
+		case MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX2):
+			pte |= PROT_DEFAULT | PTE_ATTRINDX(MT_DEVICE_GRE);
+			break;
+		default:
+			pte |= PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL_NC);
+		}
 	} else {
 		pte |= PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL);
 	}
