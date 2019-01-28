@@ -17,8 +17,10 @@ freeze()
 
 	monitor->status_bak = monitor->status;
 	monitor->status = IHK_OS_MONITOR_KERNEL_FROZEN;
-	while (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN)
+	while (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
 		cpu_halt();
+		cpu_pause();
+	}
 	monitor->status = monitor->status_bak;
 }
 
