@@ -193,7 +193,7 @@ AC_ARG_ENABLE([mcoverlayfs],
 	      AC_HELP_STRING([--enable-mcoverlayfs],
 			     [enable mcoverlayfs implementation]),
 	      [ENABLE_MCOVERLAYFS=$enableval],
-	      [ENABLE_MCOVERLAYFS=yes])
+	      [ENABLE_MCOVERLAYFS=no])
 
 AC_ARG_ENABLE([rusage],
 	      AC_HELP_STRING([--enable-rusage],

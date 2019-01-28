@@ -1,7 +1,9 @@
 #ifndef _LINUX_LIST_H
 #define _LINUX_LIST_H
 
+#ifndef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
 /**
  * container_of - cast a member of a structure out to the containing structure
  * @ptr:        the pointer to the member.
