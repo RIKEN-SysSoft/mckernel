@@ -334,14 +334,6 @@ out:
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_12
-#define PFN_WRITE_COMBINED PTE_ATTRINDX(MT_NORMAL_NC)
-static inline bool pte_is_write_combined(pte_t pte)
-{
-	return ((pte_val(pte) & PTE_ATTRINDX_MASK) == PFN_WRITE_COMBINED);
-}
-#endif /* POSTK_DEBUG_ARCH_DEP_12 */
-
 #ifdef POSTK_DEBUG_ARCH_DEP_99 /* mcexec_uti_save_fs() move to arch depend. */
 long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc,
 			struct file *file)
