@@ -346,11 +346,9 @@ struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 	struct mcos_handler_info *info;
 
 	info = kmalloc(sizeof(struct mcos_handler_info), GFP_KERNEL);
-#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
 	if (info == NULL) {
 		return NULL;
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	memset(info, '\0', sizeof(struct mcos_handler_info));
 	info->ud = ihk_host_os_get_usrdata(os);
 	info->file = file;
@@ -418,11 +416,9 @@ static long mcexec_newprocess(ihk_os_t os,
 		return -EFAULT;
 	}
 	info = new_mcos_handler_info(os, file);
-#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
 	if (info == NULL) {
 		return -ENOMEM;
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 	info->pid = desc.pid;
 	ihk_os_register_release_handler(file, release_handler, info);
 	ihk_os_set_mcos_private_data(file, info);
@@ -454,12 +450,10 @@ static long mcexec_start_image(ihk_os_t os,
 	}
 
 	info = new_mcos_handler_info(os, file);
-#ifdef POSTK_DEBUG_TEMP_FIX_64 /* host process is SIGKILLed fix. */
 	if (info == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
-#endif /* POSTK_DEBUG_TEMP_FIX_64 */
 
 	info->pid = desc->pid;
 	info->cpu = desc->cpu;
