@@ -138,6 +138,24 @@
     },
     {
       "key": {
+        "uuid": "fe0ed23b_fc4d9813",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1017,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-01-28T05:07:03Z",
+      "side": 1,
+      "message": "Problem is they do different directions, one is PTE -\u003e general flag, while the other one does the opposite..",
+      "parentUuid": "e23f8758_529909ac",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "2a306279_21e61c87",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
@@ -184,6 +202,24 @@
       "side": 1,
       "message": "Use the macros you introduced?",
       "parentUuid": "9180302a_f6ee59fe",
+      "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "561d3514_963d6b28",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1019,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-01-28T05:07:03Z",
+      "side": 1,
+      "message": "Let me update that, the macros came later :)",
+      "parentUuid": "e8cdba6f_4461998f",
       "revId": "26bf2a487330e2563d99d642d961ea47db3a5e8f",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
