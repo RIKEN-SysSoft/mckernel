@@ -3901,16 +3901,14 @@ void perf_start(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
-	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
 		perf_counter_set(leader);
 		counter_mask |= 1UL << counter_id;
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
-		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
 			perf_counter_set(sub);
 			counter_mask |= 1UL << counter_id;
 		}
@@ -3929,15 +3927,13 @@ perf_reset(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
-	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
 		ihk_mc_perfctr_reset(counter_id);
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
-		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
 			ihk_mc_perfctr_reset(counter_id);
 		}
 	}
@@ -3951,15 +3947,13 @@ perf_stop(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 
 	counter_id = leader->counter_id;
-	if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-	    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
 		counter_mask |= 1UL << counter_id;
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
-		if ((1UL << counter_id & PERF_COUNTERS_MASK) |
-		    (1UL << counter_id & FIXED_PERF_COUNTERS_MASK)) {
+		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
 			counter_mask |= 1UL << counter_id;
 		}
 	}

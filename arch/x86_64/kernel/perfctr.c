@@ -499,6 +499,15 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
 	return ret;
 }
 
+int ihk_mc_perf_counter_mask_check(unsigned long counter_mask)
+{
+	if ((counter_mask & PERF_COUNTERS_MASK) |
+	    (counter_mask & FIXED_PERF_COUNTERS_MASK)) {
+		return 1;
+	}
+	return 0;
+}
+
 int ihk_mc_perf_get_num_counters(void)
 {
 	return NUM_PERF_COUNTERS;
