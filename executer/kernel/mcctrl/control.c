@@ -1653,42 +1653,6 @@ mcexec_getcred(unsigned long phys)
 {
 	int	*virt = phys_to_virt(phys);
 
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	int ret = -EINVAL;
-
-	if (virt[0] == 0 || virt[0] == task_pid_vnr(current)) {
-		virt[0] = GUIDVAL(current_uid());
-		virt[1] = GUIDVAL(current_euid());
-		virt[2] = GUIDVAL(current_suid());
-		virt[3] = GUIDVAL(current_fsuid());
-		virt[4] = GUIDVAL(current_gid());
-		virt[5] = GUIDVAL(current_egid());
-		virt[6] = GUIDVAL(current_sgid());
-		virt[7] = GUIDVAL(current_fsgid());
-
-		ret = 0;
-	} else {
-		const struct task_struct *task_p =
-			pid_task(find_get_pid(virt[0]), PIDTYPE_PID);
-		if (task_p) {
-			const struct cred *t_cred = __task_cred(task_p);
-
-			rcu_read_lock();
-			virt[0] = GUIDVAL(t_cred->uid);
-			virt[1] = GUIDVAL(t_cred->euid);
-			virt[2] = GUIDVAL(t_cred->suid);
-			virt[3] = GUIDVAL(t_cred->fsuid);
-			virt[4] = GUIDVAL(t_cred->gid);
-			virt[5] = GUIDVAL(t_cred->egid);
-			virt[6] = GUIDVAL(t_cred->sgid);
-			virt[7] = GUIDVAL(t_cred->fsgid);
-			rcu_read_unlock();
-
-			ret = 0;
-		}
-	}
-	return ret;
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	virt[0] = GUIDVAL(current_uid());
 	virt[1] = GUIDVAL(current_euid());
 	virt[2] = GUIDVAL(current_suid());
@@ -1698,7 +1662,6 @@ mcexec_getcred(unsigned long phys)
 	virt[6] = GUIDVAL(current_sgid());
 	virt[7] = GUIDVAL(current_fsgid());
 	return 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 }
 
 int
