@@ -222,7 +222,7 @@ int gencore(struct thread *thread, void *regs,
 	    struct coretable **coretable, int *chunks)
 {
 	struct coretable *ct = NULL;
-	Elf64_Ehdr eh;
+	Elf64_Ehdr *eh = NULL;
 	Elf64_Phdr *ph = NULL;
 	void *note = NULL;
 	struct vm_range *range, *next;
@@ -288,8 +288,17 @@ int gencore(struct thread *thread, void *regs,
 
 	dkprintf("now generate a core file image\n");
 
-	offset += sizeof(eh);
-	fill_elf_header(&eh, segs);
+	eh = kmalloc(sizeof(*eh), IHK_MC_AP_NOWAIT);
+	if (eh == NULL) {
+		dkprintf("could not alloc a elf header table.\n");
+		goto fail;
+	}
+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */
+	memset(eh, 0, sizeof(*eh));
+#endif /* POSTK_DEBUG_TEMP_FIX_63 */
+
+	offset += sizeof(*eh);
+	fill_elf_header(eh, segs);
 
 	/* program header table */
 	phsize = sizeof(Elf64_Phdr) * segs;
@@ -362,9 +371,9 @@ int gencore(struct thread *thread, void *regs,
 		goto fail;
 	}
 
-	ct[0].addr = virt_to_phys(&eh);	/* ELF header */
+	ct[0].addr = virt_to_phys(eh);	/* ELF header */
 	ct[0].len = 64; 
-	dkprintf("coretable[0]: %lx@%lx(%lx)\n", ct[0].len, ct[0].addr, &eh);
+	dkprintf("coretable[0]: %lx@%lx(%lx)\n", ct[0].len, ct[0].addr, eh);
 
 	ct[1].addr = virt_to_phys(ph);	/* program header table */
 	ct[1].len = phsize;
@@ -473,6 +482,7 @@ void freecore(struct coretable **coretable)
 	struct coretable *ct = *coretable;
 	kfree(phys_to_virt(ct[2].addr));	/* NOTE segment */
 	kfree(phys_to_virt(ct[1].addr));	/* ph */
+	kfree(phys_to_virt(ct[0].addr));	/* eh */
 	kfree(*coretable);
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_18 */
