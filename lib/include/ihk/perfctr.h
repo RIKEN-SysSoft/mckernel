@@ -55,6 +55,8 @@ enum ihk_perfctr_type {
 	PERFCTR_MAX_TYPE,
 };
 
+#define IHK_MC_PERFCTR_STOP_FIRST 1
+
 #ifdef POSTK_DEBUG_TEMP_FIX_29
 int ihk_mc_perfctr_init(int counter, uint64_t config, int mode);
 int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode);
@@ -64,7 +66,7 @@ int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_29*/
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event);
 int ihk_mc_perfctr_start(unsigned long counter_mask);
-int ihk_mc_perfctr_stop(unsigned long counter_mask);
+int ihk_mc_perfctr_stop(unsigned long counter_mask, int flags);
 int ihk_mc_perfctr_fixed_init(int counter, int mode);
 int ihk_mc_perfctr_reset(int counter);
 int ihk_mc_perfctr_set(int counter, long value);

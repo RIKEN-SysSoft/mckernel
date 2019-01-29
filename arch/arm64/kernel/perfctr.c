@@ -113,30 +113,30 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	return ret < 0 ? ret : 0;
 }
 
-int ihk_mc_perfctr_stop(unsigned long counter_mask)
+int ihk_mc_perfctr_stop(unsigned long counter_mask, int flags)
 {
-	int ret = 0;
-	int counter;
-	unsigned long counter_bit;
+	int i = 0;
 
-	for (counter = 0, counter_bit = 1;
-	     counter_bit < counter_mask;
-	     counter++, counter_bit <<= 1) {
-		if (!(counter_mask & counter_bit))
-			continue;
+	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
+		if (counter_mask & (1UL << i)) {
+			int ret = 0;
 
-		ret = cpu_pmu.disable_counter(counter);
-		if (ret < 0)
-			break;
+			ret = cpu_pmu.disable_counter(i);
+			if (ret < 0) {
+				continue;
+			}
 
-		// ihk_mc_perfctr_startが呼ばれるときには、
-		// init系関数が呼ばれるのでdisableにする。
-		ret = cpu_pmu.disable_intens(counter);
-		if (ret < 0)
-			break;
+			if (!(flags & IHK_MC_PERFCTR_STOP_FIRST)) {
+				// ihk_mc_perfctr_startが呼ばれるときには、
+				// init系関数が呼ばれるのでdisableにする。
+				ret = cpu_pmu.disable_intens(i);
+				if (ret < 0) {
+					continue;
+				}
+			}
+		}
 	}
-
-	return ret < 0 ? ret : 0;
+	return 0;
 }
 
 int ihk_mc_perfctr_reset(int counter)
