@@ -183,3 +183,8 @@ int ihk_mc_perfctr_fixed_init(int counter, int mode)
 {
 	return -1;
 }
+
+int ihk_mc_perf_get_num_counters(void)
+{
+	return cpu_pmu.per_cpu[ihk_mc_get_processor_id()].num_events;
+}

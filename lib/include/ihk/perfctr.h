@@ -72,6 +72,7 @@ int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
 unsigned long ihk_mc_perfctr_read_msr(int counter);
 int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status);
+int ihk_mc_perf_get_num_counters(void);
 
 #endif
 
