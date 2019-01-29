@@ -3105,11 +3105,7 @@ SYSCALL_DECLARE(tkill)
 }
 
 int *
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-getcred(int *_buf, int tid)
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 getcred(int *_buf)
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 {
 	int	*buf;
 	struct syscall_request request IHK_DMA_ALIGN;
@@ -3119,9 +3115,6 @@ getcred(int *_buf)
 		buf = _buf + 8;
 	else
 		buf = _buf;
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	buf[0] = tid;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	phys = virt_to_phys(buf);
 	request.number = __NR_setfsuid;
 	request.args[0] = phys;
@@ -3132,22 +3125,14 @@ getcred(int *_buf)
 }
 
 void
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-do_setresuid(int tid)
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 do_setresuid()
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 {
 	int	_buf[16];
 	int	*buf;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	buf = getcred(_buf, tid);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	buf = getcred(_buf);
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 
 	proc->ruid = buf[0];
 	proc->euid = buf[1];
@@ -3156,22 +3141,14 @@ do_setresuid()
 }
 
 void
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-do_setresgid(int tid)
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 do_setresgid()
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 {
 	int	_buf[16];
 	int	*buf;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	buf = getcred(_buf, tid);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	buf = getcred(_buf);
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 
 	proc->rgid = buf[4];
 	proc->egid = buf[5];
@@ -3185,11 +3162,7 @@ SYSCALL_DECLARE(setresuid)
 
 	rc = syscall_generic_forwarding(__NR_setresuid, ctx);
 	if(rc == 0){
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		do_setresuid(0);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresuid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -3200,11 +3173,7 @@ SYSCALL_DECLARE(setreuid)
 
 	rc = syscall_generic_forwarding(__NR_setreuid, ctx);
 	if(rc == 0){
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		do_setresuid(0);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresuid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -3215,11 +3184,7 @@ SYSCALL_DECLARE(setuid)
 
 	rc = syscall_generic_forwarding(__NR_setuid, ctx);
 	if(rc == 0){
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		do_setresuid(0);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresuid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -3234,12 +3199,7 @@ SYSCALL_DECLARE(setfsuid)
 	request.args[0] = fsuid;
 	request.args[1] = 0;
 	newfsuid = do_syscall(&request, ihk_mc_get_processor_id());
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	do_setresuid((int)(newfsuid >> 32));
-	newfsuid &= (1UL << 32) - 1;
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	do_setresuid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	return newfsuid;
 }
 
@@ -3249,11 +3209,7 @@ SYSCALL_DECLARE(setresgid)
 
 	rc = syscall_generic_forwarding(__NR_setresgid, ctx);
 	if(rc == 0){
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		do_setresgid(0);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresgid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -3264,11 +3220,7 @@ SYSCALL_DECLARE(setregid)
 
 	rc = syscall_generic_forwarding(__NR_setregid, ctx);
 	if(rc == 0){
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		do_setresgid(0);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresgid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -3279,11 +3231,7 @@ SYSCALL_DECLARE(setgid)
 
 	rc = syscall_generic_forwarding(__NR_setgid, ctx);
 	if(rc == 0){
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-		do_setresgid(0);
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 		do_setresgid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	}
 	return rc;
 }
@@ -3297,12 +3245,7 @@ SYSCALL_DECLARE(setfsgid)
 	request.number = __NR_setfsgid;
 	request.args[0] = fsgid;
 	newfsgid = do_syscall(&request, ihk_mc_get_processor_id());
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
-	do_setresgid((int)(newfsgid >> 32));
-	newfsgid &= (1UL << 32) - 1;
-#else /* POSTK_DEBUG_TEMP_FIX_45 */
 	do_setresgid();
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 	return newfsgid;
 }
 
