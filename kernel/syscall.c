@@ -9259,55 +9259,6 @@ static void do_mod_exit(int status){
 }
 #endif
 
-#ifdef ENABLE_PERF
-/* select counter type */
-SYSCALL_DECLARE(pmc_init)
-{
-    int counter = ihk_mc_syscall_arg0(ctx);
-
-    enum ihk_perfctr_type type = (enum ihk_perfctr_type)ihk_mc_syscall_arg1(ctx);
-    /* see ihk/manycore/generic/include/ihk/perfctr.h */
-
-    int mode = PERFCTR_USER_MODE;
-
-    return ihk_mc_perfctr_init(counter, type, mode);
-}
-
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-SYSCALL_DECLARE(pmc_start)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_start((int)counter);
-}
-#else
-SYSCALL_DECLARE(pmc_start)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_start(1 << counter);
-}
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
-
-#ifdef POSTK_DEBUG_TEMP_FIX_30
-SYSCALL_DECLARE(pmc_stop)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_stop((int)counter);
-}
-#else
-SYSCALL_DECLARE(pmc_stop)
-{
-    unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_stop(1 << counter);
-}
-#endif /*POSTK_DEBUG_TEMP_FIX_30*/
-
-SYSCALL_DECLARE(pmc_reset)
-{
-    int counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_reset(counter);
-}
-#endif /*ENABLE_PERF*/
-
 extern void save_uctx(void *, void *);
 
 /* TODO: use copy_from_user() */
