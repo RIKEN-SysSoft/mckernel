@@ -576,14 +576,18 @@ finalize_process(struct process *proc)
 	struct resource_set *resource_set = cpu_local_var(resource_set);
 	struct process *pid1 = resource_set->pid1;
 	int exit_status = proc->group_exit_status;
+	struct mcs_rwlock_node updatelock;
 
+	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
 	// Send signal to parent
 	if (proc->parent == pid1) {
 		proc->status = PS_ZOMBIE;
+		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		release_process(proc);
 	}
 	else {
 		proc->status = PS_ZOMBIE;
+		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 
 		dkprintf("terminate,wakeup\n");
 

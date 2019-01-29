@@ -26,14 +26,20 @@ org="`pwd`"
 	for i in {1..100}; do
 		sudo ./mck-stop.sh >> "$org/C1201T01.log" 2>&1
 		sudo ./mck-boot.sh >> "$org/C1201T01.log" 2>&1
-		./mck-mcexec.sh ./killit -np 8 -t 2000 - ./signalonfork \
-				-nosignal >> "$org/C1201T01.log" 2>&1
-		if [ "X$?" = X0 ]; then
-			echo -n .
-		else
-			echo
+		for j in {1..10}; do
+			./mck-mcexec.sh ./killit -np 8 -t 2000 - \
+				./signalonfork \ -nosignal >> \
+				"$org/C1201T01.log" 2>&1
+			if [ "X$?" = X0 ]; then
+				echo -n .
+			else
+				ng=1
+				break
+			fi
+		done
+		echo
+		if [ "X$ng" = X1 ]; then
 			echo C1201T01: NG see C1201T01.log
-			ng=1
 			break
 		fi
 	done
