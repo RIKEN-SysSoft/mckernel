@@ -3768,9 +3768,10 @@ perf_counter_alloc(struct thread *thread)
 {
 	int ret = -EINVAL;
 	int i = 0;
+	const int counters = ihk_mc_perf_get_num_counters();
 
 	// find avail generic counter
-	for (i = 0; i < NUM_PERF_COUNTERS; i++) {
+	for (i = 0; i < counters; i++) {
 		if(!(thread->pmc_alloc_map & (1 << i))) {
 			ret = i;
 			break;
