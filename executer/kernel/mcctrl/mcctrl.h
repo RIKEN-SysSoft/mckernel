@@ -576,4 +576,13 @@ struct mcctrl_ioctl_getrusage_desc {
 	size_t size_rusage;
 };
 
+struct host_thread {
+	struct list_head list;
+	struct mcos_handler_info *handler;
+	int     pid;
+	int     tid;
+	unsigned long usp;
+	unsigned long lfs;
+	unsigned long rfs;
+};
 #endif
