@@ -729,7 +729,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 				break;
 			}
 
-			ret = ihk_mc_perfctr_stop(1 << pcd->target_cntr);
+			ret = ihk_mc_perfctr_stop(1 << pcd->target_cntr, 0);
 			if (ret != 0) {
 				break;
 			}
@@ -742,7 +742,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 			break;
 			
 		case PERF_CTRL_DISABLE:
-			ret = ihk_mc_perfctr_stop(pcd->target_cntr_mask);
+			ret = ihk_mc_perfctr_stop(pcd->target_cntr_mask,
+					IHK_MC_PERFCTR_DISABLE_INTERRUPT);
 			break;
 
 		case PERF_CTRL_GET:
