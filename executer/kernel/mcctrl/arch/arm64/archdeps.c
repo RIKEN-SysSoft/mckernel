@@ -2,6 +2,8 @@
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <linux/kallsyms.h>
+#include <linux/slab.h>
+#include <linux/rwlock_types.h>
 #include <asm/vdso.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
@@ -15,6 +17,16 @@
 #define	dprintk(...)
 #endif
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
+
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { \
+		pr_info("%s: " msg ",tid=%d,refc=%d\n", \
+			__func__, tid, atomic_read(&ppd->refcount)); \
+	} while (0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while (0)
+#endif
 
 #define D(fmt, ...) printk("%s(%d) " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
@@ -317,3 +329,77 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc,
+			struct file *file)
+{
+	extern struct list_head host_threads;
+	extern rwlock_t host_thread_lock;
+	int rc = 0;
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	struct uti_save_fs_desc desc;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
+	struct trans_uctx klctx;
+	struct trans_uctx *__user rctx = NULL;
+	struct trans_uctx *__user lctx = NULL;
+
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		pr_err("%s: Error: copy_from_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+	rctx = desc.rctx;
+	lctx = desc.lctx;
+
+	klctx.cond = 0;
+	klctx.fregsize = 0;
+	klctx.regs = current_pt_regs()->user_regs;
+
+	if (copy_to_user(lctx, &klctx, sizeof(klctx))) {
+		pr_err("%s: Error: copy_to_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+	save_fs_ctx(lctx);
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+	thread->lfs = get_fs_ctx(lctx);
+	thread->rfs = get_fs_ctx(rctx);
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_add_tail(&thread->list, &host_threads);
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	if (copy_from_user(&current_pt_regs()->user_regs,
+			   &rctx->regs, sizeof(rctx->regs))) {
+		rc = -EFAULT;
+		goto out;
+	}
+	restore_tls(get_tls_ctx(rctx));
+
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+	 *  (1) MCEXEC_UP_CREATE_PPD sets to 1
+	 *  (2) mcexec_util_thread2() increments to 2
+	 *  (3) syscall hook detects exit/exit_group call
+	 *	and decrements to 1 via mcexec_terminate_thread()
+	 *  (4) mcexec calls exit_fd(), it calls release_handler(),
+	 *	it decrements to 0
+	 *
+	 *  KNOWN ISSUE:
+	 *	mcexec_terminate_thread() isn't called when mcexec is
+	 *	killed by signal so the refcount remains 1 when
+	 *	calling release_handler()
+	 */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	pr_ppd("get", task_pid_vnr(current), ppd);
+out:
+	return rc;
+}
