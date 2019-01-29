@@ -3959,7 +3959,7 @@ perf_stop(struct mc_perf_event *event)
 	}
 
 	if (counter_mask) {
-		ihk_mc_perfctr_stop(counter_mask);
+		ihk_mc_perfctr_stop(counter_mask, 0);
 		cpu_local_var(current)->proc->monitoring_event = NULL;
 		cpu_local_var(current)->proc->perf_status = PP_NONE;
 	}
@@ -9291,13 +9291,15 @@ SYSCALL_DECLARE(pmc_start)
 SYSCALL_DECLARE(pmc_stop)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_stop((int)counter);
+    return ihk_mc_perfctr_stop((int)counter,
+			       IHK_MC_PERFCTR_DISABLE_INTERRUPT);
 }
 #else
 SYSCALL_DECLARE(pmc_stop)
 {
     unsigned long counter = ihk_mc_syscall_arg0(ctx);
-    return ihk_mc_perfctr_stop(1 << counter);
+    return ihk_mc_perfctr_stop(1 << counter,
+			       IHK_MC_PERFCTR_DISABLE_INTERRUPT);
 }
 #endif /*POSTK_DEBUG_TEMP_FIX_30*/
 
