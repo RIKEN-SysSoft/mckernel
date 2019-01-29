@@ -3220,9 +3220,6 @@ static void do_migrate(void)
 			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
 		
 		v->flags |= CPU_FLAG_NEED_RESCHED;
-#ifdef POSTK_DEBUG_TEMP_FIX_57 /* migration wakeup IPI target fix. */
-		ihk_mc_interrupt_cpu(cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
-#endif /* POSTK_DEBUG_TEMP_FIX_57 */
 		waitq_wakeup(&req->wq);
 		double_rq_unlock(cur_v, v, irqstate);
 		continue;
