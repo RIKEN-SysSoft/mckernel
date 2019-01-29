@@ -168,12 +168,13 @@ static int
 linux_open(char *fname, int flag, int mode)
 {
 	ihk_mc_user_context_t ctx0;
-	int		fd;
+	int fd;
 
-	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) fname;
-	ihk_mc_syscall_arg1(&ctx0) = flag;
-	ihk_mc_syscall_arg2(&ctx0) = mode;
-	fd = syscall_generic_forwarding(__NR_open, &ctx0);
+	ihk_mc_syscall_arg0(&ctx0) = -100;		/* dirfd = AT_FDCWD */
+	ihk_mc_syscall_arg1(&ctx0) = (uintptr_t)fname;	/* pathname = fname */
+	ihk_mc_syscall_arg2(&ctx0) = flag;		/* flags = flag */
+	ihk_mc_syscall_arg3(&ctx0) = mode;		/* mode = mode */
+	fd = syscall_generic_forwarding(__NR_openat, &ctx0);
 	return fd;
 }
 
@@ -182,8 +183,10 @@ linux_unlink(char *fname)
 {
 	ihk_mc_user_context_t ctx0;
 
-	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) fname;
-	return syscall_generic_forwarding(__NR_unlink, &ctx0);
+	ihk_mc_syscall_arg0(&ctx0) = -100;		/* dirfd = AT_FDCWD */
+	ihk_mc_syscall_arg1(&ctx0) = (uintptr_t)fname;	/* pathname = fname */
+	ihk_mc_syscall_arg2(&ctx0) = 0;			/* flags = 0 */
+	return syscall_generic_forwarding(__NR_unlinkat, &ctx0);
 }
 
 static ssize_t
