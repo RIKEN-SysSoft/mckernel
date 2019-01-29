@@ -356,14 +356,11 @@ int gencore(struct thread *thread, void *regs,
 
 	dkprintf("now generate a core file image\n");
 
-	eh = kmalloc(sizeof(*eh), IHK_MC_AP_NOWAIT);
+	eh = kzalloc(sizeof(*eh), IHK_MC_AP_NOWAIT);
 	if (eh == NULL) {
 		dkprintf("could not alloc a elf header table.\n");
 		goto fail;
 	}
-#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */
-	memset(eh, 0, sizeof(*eh));
-#endif /* POSTK_DEBUG_TEMP_FIX_63 */
 
 	offset += sizeof(*eh);
 	fill_elf_header(eh, segs);
@@ -433,7 +430,7 @@ int gencore(struct thread *thread, void *regs,
 	}
 
 	/* coretable to send to host */
-	ct = kmalloc(sizeof(struct coretable) * (*chunks), IHK_MC_AP_NOWAIT);
+	ct = kzalloc(sizeof(struct coretable) * (*chunks), IHK_MC_AP_NOWAIT);
 	if (!ct) {
 		dkprintf("could not alloc a coretable.\n");
 		goto fail;
