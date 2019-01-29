@@ -64,13 +64,9 @@
 #include <sys/signalfd.h>
 #include <sys/mount.h>
 #include <include/generated/uapi/linux/version.h>
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 #ifndef __aarch64__
 #include <sys/user.h>
 #endif /* !__aarch64__ */
-#else /* POSTK_DEBUG_ARCH_DEP_35 */
-#include <sys/user.h>
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 #include <sys/prctl.h>
 #ifndef POSTK_DEBUG_ARCH_DEP_77 /* arch depend hide */
 #include <asm/prctl.h>
@@ -225,10 +221,8 @@ struct fork_sync_container {
 struct fork_sync_container *fork_sync_top;
 pthread_mutex_t fork_sync_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 unsigned long page_size;
 unsigned long page_mask;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 pid_t gettid(void)
 {
@@ -825,15 +819,9 @@ int transfer_image(int fd, struct program_load_desc *desc)
 
 	for (i = 0; i < desc->num_sections; i++) {
 		fp = desc->sections[i].fp;
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 		s = (desc->sections[i].vaddr) & page_mask;
 		e = (desc->sections[i].vaddr + desc->sections[i].len
 		     + page_size - 1) & page_mask;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-		s = (desc->sections[i].vaddr) & PAGE_MASK;
-		e = (desc->sections[i].vaddr + desc->sections[i].len
-		     + PAGE_SIZE - 1) & PAGE_MASK;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 		rpa = desc->sections[i].remote_pa;
 
 		if (fseek(fp, desc->sections[i].offset, SEEK_SET) != 0) {
@@ -849,29 +837,15 @@ int transfer_image(int fd, struct program_load_desc *desc)
 			memset(&pt, '\0', sizeof pt);
 			pt.rphys = rpa;
 			pt.userp = dma_buf;
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 			pt.size = page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-			pt.size = PAGE_SIZE;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			pt.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 			lr = 0;
 			
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 			memset(dma_buf, 0, page_size);
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-			memset(dma_buf, 0, PAGE_SIZE);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			if (s < desc->sections[i].vaddr) {
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 				l = desc->sections[i].vaddr 
 					& (page_size - 1);
 				lr = page_size - l;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-				l = desc->sections[i].vaddr 
-					& (PAGE_SIZE - 1);
-				lr = PAGE_SIZE - l;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 				if (lr > flen) {
 					lr = flen;
 				}
@@ -892,13 +866,8 @@ int transfer_image(int fd, struct program_load_desc *desc)
 				flen -= lr;
 			} 
 			else if (flen > 0) {
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 				if (flen > page_size) {
 					lr = page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-				if (flen > PAGE_SIZE) {
-					lr = PAGE_SIZE;
-#endif	/*POSTK_DEBUG_ARCH_DEP_35 */
 				} else {
 					lr = flen;
 				}
@@ -918,13 +887,8 @@ int transfer_image(int fd, struct program_load_desc *desc)
 				}
 				flen -= lr;
 			} 
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 			s += page_size;
 			rpa += page_size;
-#else	/* POSTK_DEBUG_ARCH_DEP_35 */
-			s += PAGE_SIZE;
-			rpa += PAGE_SIZE;
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 			
 			/* No more left to upload.. */
 			if (lr == 0 && flen == 0) break;
@@ -2103,10 +2067,8 @@ int main(int argc, char **argv)
 	__glob_argv = argv;
 #endif
 
-#ifdef POSTK_DEBUG_ARCH_DEP_35
 	page_size = sysconf(_SC_PAGESIZE);
 	page_mask = ~(page_size - 1);
-#endif	/* POSTK_DEBUG_ARCH_DEP_35 */
 
 	altroot = getenv("MCEXEC_ALT_ROOT");
 	if (!altroot) {
@@ -3033,7 +2995,7 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 	uti_desc->uti_clv = uti_clv;
 	
 	/* Initialize list of syscall arguments for syscall_intercept */
-	if (sizeof(struct syscall_struct) * 11 > PAGE_SIZE) {
+	if (sizeof(struct syscall_struct) * 11 > page_size) {
 		fprintf(stderr, "%s: ERROR: param is too large\n", __FUNCTION__);
 		rc = -ENOMEM;
 		goto out;
