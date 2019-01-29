@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "deb55614_ab9d936f",
+        "filename": "kernel/mem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2113,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-01-29T02:23:13Z",
+      "side": 0,
+      "message": "Would love to understand why that is a problem as well... Order in free list shouldn\u0027t matter all that much -- or rather, I think it actually makes more sense to keep it LIFO (most recently used is hot in cache and better to be reused), so unless it is justified I disagree.",
+      "revId": "ef010db46a5b9a62b2b2572f48e1d35dff3aad3c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
