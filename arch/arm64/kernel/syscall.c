@@ -2514,4 +2514,16 @@ time_t time(void) {
 	return (time_t)0;
 }
 
+extern void ptrace_syscall_event(struct thread *thread);
+void arch_ptrace_syscall_enter(struct thread *thread, long setret)
+{
+	ptrace_syscall_event(thread);
+}
+
+long arch_ptrace_syscall_exit(struct thread *thread, long setret)
+{
+	ptrace_syscall_event(thread);
+	return setret;
+}
+
 /*** End of File ***/

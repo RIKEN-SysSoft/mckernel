@@ -16,8 +16,8 @@ index eddd317..4267f8b 100644
 --- a/arch/arm64/kernel/syscall.c
 +++ b/arch/arm64/kernel/syscall.c
 @@ -2604,4 +2604,32 @@ long arch_ptrace_syscall_exit(struct thread *thread, long setret)
+ 	return setret;
  }
- #endif /* POSTK_DEBUG_ARCH_DEP_110 */
  
 +#define ADD_ADDR_VAL 0x400
 +SYSCALL_DECLARE(mem_destroy)
@@ -64,8 +64,8 @@ index 083046b..39dc31b 100644
 --- a/arch/x86_64/kernel/syscall.c
 +++ b/arch/x86_64/kernel/syscall.c
 @@ -2786,4 +2786,32 @@ long arch_ptrace_syscall_exit(struct thread *thread, long setret)
+ 	return ihk_mc_syscall_ret(ctx);
  }
- #endif /* POSTK_DEBUG_ARCH_DEP_110 */
  
 +#define ADD_ADDR_VAL 0x400
 +SYSCALL_DECLARE(mem_destroy)
