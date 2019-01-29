@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e9419604_7b21588f",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-01-29T07:56:46Z",
+      "side": 1,
+      "message": "hmm, how is it supposed to work if an application really relies on setfsuid to work?\nIf I understand the issue here, with our design, there is no guarantee that a mckernel thread doing:\n - setfsuid(x);\n - open(y);\n\nwill have the open() really happen in the mcexec thread that did the setfsuid......\n\nIt\u0027s not reasonable to match 1-1 mcexec threads vs. mckernel threads for performance reason so I think it\u0027s actually more reasonable to say we do not support setfsuid/setfsgid and not try to work around issues for them.\nHonestly, setfsuid/setfsgid have little to do with HPC, I think we should just say no.",
+      "revId": "efb7f24b173d8cde82de5b31ce48da4de4e06a72",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
