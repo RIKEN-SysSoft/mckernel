@@ -2105,17 +2105,10 @@ static void ___kmalloc_insert_chunk(struct list_head *free_list,
 	if (next_chunk) {
 		list_add_tail(&chunk->list, &next_chunk->list);
 	}
-#ifdef POSTK_DEBUG_TEMP_FIX_46 /* kmalloc free_list consolidate bug fix. */
 	/* Add tail */
 	else {
 		list_add_tail(&chunk->list, free_list);
 	}
-#else /* POSTK_DEBUG_TEMP_FIX_46 */
-	/* Add after the head */
-	else {
-		list_add(&chunk->list, free_list);
-	}
-#endif /* POSTK_DEBUG_TEMP_FIX_46 */
 
 	return;
 }
