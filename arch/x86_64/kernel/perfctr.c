@@ -318,7 +318,7 @@ int ihk_mc_perfctr_start(unsigned long counter_mask)
 	goto fn_exit;
 }
 
-int ihk_mc_perfctr_stop(unsigned long counter_mask)
+int ihk_mc_perfctr_stop(unsigned long counter_mask, int flags)
 {
 	int ret = 0;
 	unsigned long value;
