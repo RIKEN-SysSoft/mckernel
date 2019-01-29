@@ -725,7 +725,7 @@ do_pageout(char *fname, void *buf, size_t size, int flag)
 		return cc;
 	}
 	si->udata_buf = myalloc(si, UDATA_BUFSIZE);
-	si->swapfname = kmalloc(strlen(fname) + 1, IHK_MC_AP_NOWAIT);
+	si->swapfname = kmalloc(strlen_user(fname) + 1, IHK_MC_AP_NOWAIT);
 	if (si->swapfname == NULL) {
 		kfree(si);
 		ekprintf("do_pageout: Cannot allocate working memory in kmalloc\n");
