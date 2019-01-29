@@ -2398,10 +2398,10 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 
 extern void *get_user_sp(void);
 extern void set_user_sp(unsigned long);
-extern void restore_fs(unsigned long fs);
-extern void save_fs_ctx(void *);
-extern unsigned long get_fs_ctx(void *);
-extern unsigned long get_rsp_ctx(void *);
+extern void restore_tls(unsigned long addr);
+extern void save_tls_ctx(void __user *ctx);
+extern unsigned long get_tls_ctx(void __user *ctx);
+extern unsigned long get_rsp_ctx(void *ctx);
 
 long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 {
@@ -2465,9 +2465,9 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
 		if (arg)
-			restore_fs(thread->lfs);
+			restore_tls(thread->ltls);
 		else
-			restore_fs(thread->rfs);
+			restore_tls(thread->rtls);
 		goto out;
 	}
 	ret = -EINVAL;

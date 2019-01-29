@@ -582,7 +582,7 @@ struct host_thread {
 	int     pid;
 	int     tid;
 	unsigned long usp;
-	unsigned long lfs;
-	unsigned long rfs;
+	unsigned long ltls;
+	unsigned long rtls;
 };
 #endif

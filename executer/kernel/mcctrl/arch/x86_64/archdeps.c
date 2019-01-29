@@ -271,25 +271,35 @@ struct trans_uctx {
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	wrmsrl(MSR_FS_BASE, fs);
+	wrmsrl(MSR_FS_BASE, addr);
 }
 
 void
-save_fs_ctx(void *ctx)
+save_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	rdmsrl(MSR_FS_BASE, tctx->fs);
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return;
+	}
+	rdmsrl(MSR_FS_BASE, kctx.fs);
 }
 
 unsigned long
-get_fs_ctx(void *ctx)
+get_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	return tctx->fs;
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return 0;
+	}
+	return kctx.fs;
 }
 
 unsigned long
@@ -400,15 +410,15 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc,
 		goto out;
 	}
 
-	save_fs_ctx(desc.lctx);
+	save_tls_ctx(desc.lctx);
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
 	memset(thread, '\0', sizeof(struct host_thread));
 	thread->pid = task_tgid_vnr(current);
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
-	thread->lfs = get_fs_ctx(desc.lctx);
-	thread->rfs = get_fs_ctx(desc.lctx);
+	thread->ltls = get_tls_ctx(desc.lctx);
+	thread->rtls = get_tls_ctx(desc.lctx);
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
