@@ -1,6 +1,7 @@
 /* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
 #include <linux/version.h>
 #include <linux/kallsyms.h>
+#include <linux/uaccess.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
 
