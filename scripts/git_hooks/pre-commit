@@ -44,7 +44,7 @@ fi
 SUBMODULES=$(sed -ne 's/^.*path = //p' "${ROOT_DIR}/.gitmodules")
 
 # Finding the submodules that have been modified
-MOD_SUBMODULES=$(git diff --cached --name-only | grep -F "$SUBMODULES")
+MOD_SUBMODULES=$(git diff --cached --name-only | grep -E "^(${SUBMODULES//$'\n'/|})$")
 
 # If no modified submodules, exit with status code 0, else prompt the
 # user and exit accordingly
