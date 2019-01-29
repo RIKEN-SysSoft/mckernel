@@ -310,9 +310,7 @@ int gencore(struct thread *thread, void *regs,
 		dkprintf("could not alloc a elf header table.\n");
 		goto fail;
 	}
-#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */
 	memset(eh, 0, sizeof(*eh));
-#endif /* POSTK_DEBUG_TEMP_FIX_63 */
 
 	offset += sizeof(*eh);
 	fill_elf_header(eh, segs);
@@ -391,9 +389,7 @@ int gencore(struct thread *thread, void *regs,
 		dkprintf("could not alloc a coretable.\n");
 		goto fail;
 	}
-#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */
 	memset(ct, 0, sizeof(*ct));
-#endif /* POSTK_DEBUG_TEMP_FIX_63 */
 
 #ifdef POSTK_DEBUG_TEMP_FIX_39
 	ct[0].addr = virt_to_phys(eh);	/* ELF header */
