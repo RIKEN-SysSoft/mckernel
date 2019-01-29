@@ -498,3 +498,8 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsi
 
 	return ret;
 }
+
+int ihk_mc_perf_get_num_counters(void)
+{
+	return NUM_PERF_COUNTERS;
+}
