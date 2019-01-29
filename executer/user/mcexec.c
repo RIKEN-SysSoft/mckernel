@@ -4187,9 +4187,7 @@ return_execve2:
 			}
 			else{
 				ret = setfsuid(w.sr.args[0]);
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
 				ret |= (long)gettid() << 32;
-#endif /* POSTK_DEBUG_TEMP_FIX_45 */
 			}
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
@@ -4238,9 +4236,7 @@ return_execve2:
 
 		case __NR_setfsgid:
 			ret = setfsgid(w.sr.args[0]);
-#ifdef POSTK_DEBUG_TEMP_FIX_45 /* setfsgid()/setfsuid() mismatch fix. */
 			ret |= (long)gettid() << 32;
-#endif /*POSTK_DEBUG_TEMP_FIX_45 */
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 
