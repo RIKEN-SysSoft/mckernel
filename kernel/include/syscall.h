@@ -600,6 +600,10 @@ typedef struct uti_attr {
 	uint64_t flags; /* Representing location and behavior hints by bitmap */
 } uti_attr_t;
 
+struct thread;
+void arch_ptrace_syscall_enter(struct thread *thread, long setret);
+long arch_ptrace_syscall_exit(struct thread *thread, long setret);
+
 struct uti_ctx {
 	union {
 		char ctx[4096];
