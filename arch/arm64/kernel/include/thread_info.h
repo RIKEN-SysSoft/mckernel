@@ -1,14 +1,21 @@
-/* thread_info.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* thread_info.h COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #ifndef __HEADER_ARM64_COMMON_THREAD_INFO_H
 #define __HEADER_ARM64_COMMON_THREAD_INFO_H
 
-#define KERNEL_STACK_SIZE	32768	/* 8 page */
+#define MIN_KERNEL_STACK_SHIFT	15
+
+#include <arch-memory.h>
+
+#if (MIN_KERNEL_STACK_SHIFT < PAGE_SHIFT)
+#define KERNEL_STACK_SHIFT	PAGE_SHIFT
+#else
+#define KERNEL_STACK_SHIFT	MIN_KERNEL_STACK_SHIFT
+#endif
+
+#define KERNEL_STACK_SIZE	(UL(1) << KERNEL_STACK_SHIFT)
 #define THREAD_START_SP		KERNEL_STACK_SIZE - 16
 
 #ifndef __ASSEMBLY__
-
-#define ALIGN_UP(x, align)     ALIGN_DOWN((x) + (align) - 1, align)
-#define ALIGN_DOWN(x, align)   ((x) & ~((align) - 1))
 
 #include <process.h>
 #include <prctl.h>
@@ -53,8 +60,8 @@ struct thread_info {
 
 struct arm64_cpu_local_thread {
 	struct thread_info thread_info;
-	unsigned long paniced;		/* 136 */
-	uint64_t panic_regs[34];	/* 144 */
+	unsigned long paniced;
+	uint64_t panic_regs[34];
 };
 
 union arm64_cpu_local_variables {

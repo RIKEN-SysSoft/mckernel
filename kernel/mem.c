@@ -979,7 +979,6 @@ void coredump(struct thread *thread, void *regs)
 		return;
 	}
 
-#ifndef POSTK_DEBUG_ARCH_DEP_18
 	ret = gencore(thread, regs, &coretable, &chunks);
 	if (ret != 0) {
 		dkprintf("could not generate a core file image\n");
@@ -996,7 +995,6 @@ void coredump(struct thread *thread, void *regs)
 		kprintf("core dump failed.\n");
 	}
 	freecore(&coretable);
-#endif /* POSTK_DEBUG_ARCH_DEP_18 */
 }
 
 #ifndef POSTK_DEBUG_ARCH_DEP_8
@@ -1665,7 +1663,7 @@ void *ihk_mc_map_virtual(unsigned long phys, int npages,
 
 		flush_tlb_single((unsigned long)(p + (i << PAGE_SHIFT)));
 	}
-	barrier();
+	barrier();	/* Temporary fix for Thunder-X */
 	return (char *)p + offset;
 }
 

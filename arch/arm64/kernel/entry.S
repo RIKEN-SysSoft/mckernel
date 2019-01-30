@@ -77,11 +77,11 @@
 
 	.macro	kernel_exit, el, need_enable_step = 0
 	.if 	\el == 0
+	bl	check_need_resched		// or reschedule is needed.
 	mov	x0, #0
 	mov	x1, sp
 	mov	x2, #0
 	bl	check_signal			// check whether the signal is delivered
-	bl	check_need_resched		// or reschedule is needed.
 	mov	x0, #0
 	mov	x1, sp
 	mov	x2, #0
@@ -550,9 +550,7 @@ ENTRY(ret_from_fork)
 	blr	x19
 1:	get_thread_info tsk
 	bl	release_runq_lock
+	bl	utilthr_migrate
 	b	ret_to_user
 ENDPROC(ret_from_fork)
 
-/* TODO: skeleton for rusage */
-ENTRY(__freeze)
-ENDPROC(__freeze)

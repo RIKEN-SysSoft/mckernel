@@ -3,30 +3,29 @@
 
 #include <arch-memory.h>
 
-//#define DEBUG_RUSAGE
+#define DEBUG_RUSAGE
+
+#define IHK_OS_PGSIZE_4KB 0
+#define IHK_OS_PGSIZE_2MB 1
+#define IHK_OS_PGSIZE_1GB 2
 
 extern struct rusage_global *rusage;
-
-#define IHK_OS_PGSIZE_4KB  0
-#define IHK_OS_PGSIZE_16KB 1
-#define IHK_OS_PGSIZE_64KB 2
 
 static inline int rusage_pgsize_to_pgtype(size_t pgsize)
 {
 	int ret = IHK_OS_PGSIZE_4KB;
-	switch (pgsize) {
-	case __PTL1_SIZE:
+
+	if (pgsize == PTL1_SIZE) {
 		ret = IHK_OS_PGSIZE_4KB;
-		break;
-	case __PTL2_SIZE:
-		ret = IHK_OS_PGSIZE_16KB;
-		break;
-	case __PTL3_SIZE:
-		ret = IHK_OS_PGSIZE_64KB;
-		break;
-	default:
+	}
+	else if (pgsize == PTL2_SIZE) {
+		ret = IHK_OS_PGSIZE_2MB;
+	}
+	else if (pgsize == PTL3_SIZE) {
+		ret = IHK_OS_PGSIZE_1GB;
+	}
+	else {
 		kprintf("%s: Error: Unknown pgsize=%ld\n", __FUNCTION__, pgsize);
-		break;
 	}
 	return ret;
 }

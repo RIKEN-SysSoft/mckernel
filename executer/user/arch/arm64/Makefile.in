@@ -13,8 +13,8 @@ all: $(TARGET)
 ../../libmcexec.a: archdep.o arch_syscall.o
 	$(AR) cr ../../libmcexec.a archdep.o arch_syscall.o
 
-archdep.o: archdep.S
-	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<
+archdep.o: archdep.c archdep.S
+	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $^
 
 arch_syscall.o: arch_syscall.c
 	$(CC) -c -I${KDIR} $(CFLAGS) $(EXTRA_CFLAGS) -fPIE -pie -pthread $<

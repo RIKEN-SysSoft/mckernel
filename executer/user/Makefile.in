@@ -1,4 +1,4 @@
-# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2016
+# Makefile.in COPYRIGHT FUJITSU LIMITED 2015-2018
 CC=@CC@
 MCC=mpicc
 BINDIR=@BINDIR@
@@ -35,8 +35,20 @@ ifeq ($(WITH_SYSCALL_INTERCEPT),yes)
 endif
 
 ifeq ($(ARCH), arm64)
-CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
-CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+CFLAGS += $(foreach i, $(shell seq 6 120), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+CFLAGS += $(foreach i, $(shell seq 6 110), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+
+# get HOST-kernel memory settings
+HOST_DIR=@KDIR@
+HOST_CONFIG=$(HOST_DIR)/.config
+HOST_KERNEL_64K_PAGES=$(shell grep -E "^CONFIG_ARM64_64K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_64K_PAGES=||g')
+HOST_KERNEL_VA_BITS=$(shell grep -E "^CONFIG_ARM64_VA_BITS=" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_VA_BITS=||g')
+
+ifeq ($(HOST_KERNEL_64K_PAGES), y)
+CFLAGS += -DCONFIG_ARM64_64K_PAGES
+endif
+CFLAGS += -DCONFIG_ARM64_VA_BITS=$(HOST_KERNEL_VA_BITS)
+
 endif
 
 all: $(TARGET)

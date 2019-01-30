@@ -2,6 +2,8 @@
 # @ref.impl arch/arm64/kernel/vdso/Makefile
 # Building a vDSO image for AArch64.
 
+RMDIR=rmdir
+
 HOST_DIR=@KDIR@
 HOST_CONFIG=$(HOST_DIR)/.config
 HOST_KERNEL_CONFIG_ARM64_4K_PAGES=$(shell grep -E "^CONFIG_ARM64_4K_PAGES=y" $(HOST_CONFIG) | sed 's|CONFIG_ARM64_4K_PAGES=||g')
@@ -10,7 +12,6 @@ HOST_KERNEL_CONFIG_ARM64_64K_PAGES=$(shell grep -E "^CONFIG_ARM64_64K_PAGES=y" $
 
 VDSOSRC = @abs_srcdir@
 VDSOBUILD = @abs_builddir@
-INCDIR = $(VDSOSRC)/../include
 ECHO_SUFFIX = [VDSO]
 
 VDSOOBJS := gettimeofday.o
@@ -23,11 +24,12 @@ $(if $(VDSOSRC),,$(error IHK output directory is not specified))
 $(if $(TARGET),,$(error Target is not specified))
 
 #CFLAGS := -nostdinc -mlittle-endian -Wall -mabi=lp64 -Wa,-gdwarf-2
-CFLAGS := -nostdinc -mlittle-endian -Wall -Wa,-gdwarf-2
-CFLAGS += -D__KERNEL__ -I$(SRC)/include
-CFLAGS += -I$(SRC)/../lib/include -I$(INCDIR) -I$(IHKBASE)/smp/arm64/include
-CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
-CFLAGS += $(foreach i, $(shell seq 1 100), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
+CFLAGS += -nostdinc -mlittle-endian -Wall -Wa,-gdwarf-2
+CFLAGS += -I$(SRC)/include -I$(SRC)/../lib/include -I$(VDSOSRC)/../include
+CFLAGS += -I$(IHKBASE)/$(TARGETDIR)/include -Wno-unused-function -I$(IHKBASE)/../ikc/include -I$(IHKBASE)/../linux/include
+CFLAGS += -DIHK_OS_MANYCORE -D__KERNEL__
+CFLAGS += $(foreach i, $(shell seq 6 120), $(addprefix -DPOSTK_DEBUG_ARCH_DEP_, $(i)))
+CFLAGS += $(foreach i, $(shell seq 6 110), $(addprefix -DPOSTK_DEBUG_TEMP_FIX_, $(i)))
 
 LDFLAGS := -nostdinc -mlittle-endian -Wall -Wundef -Wstrict-prototypes
 LDFLAGS += -Wno-trigraphs -fno-strict-aliasing -fno-common
@@ -66,6 +68,7 @@ CFLAGS_lds += -DPAGE_SIZE=0x10000
 endif
 
 #load mckernel config (append CPPFLAGS)
+#include @abs_top_builddir@/../ihk/cokernel/Makefile.common
 include @abs_top_builddir@/../ihk/cokernel/$(TARGETDIR)/Makefile.predefines
 
 default: all
@@ -96,7 +99,9 @@ $(VDSOBUILD)/vdso.lds: $(VDSOSRC)/vdso.lds.S
 	$(lds_cmd)
 
 clean:
-	$(rm_cmd) $(DESTOBJS) $(DESTASMOBJS) $(VDSOBUILD)/Makefile.dep $(VDSOBUILD)/vdso.* -r $(VDSOBUILD)/../include
+	$(rm_cmd) -f $(DESTOBJS) $(DESTASMOBJS) $(VDSOBUILD)/Makefile.dep $(VDSOBUILD)/vdso.lds
+	$(rm_cmd) -f $(VDSOBUILD)/vdso.so* $(VDSOBUILD)/../include/vdso-offsets.h $(VDSOBUILD)/../include/vdso-so-path.h
+	$(rmdir_cmd) --ignore-fail-on-non-empty $(VDSOBUILD)/../include
 
 depend: $(VDSOBUILD)/Makefile.dep
 
@@ -121,6 +126,7 @@ cc_cmd = $(call echo_cmd,CC,$<)$(CC) $(CFLAGS) -c -o $@
 ld_cmd = $(call echo_cmd,LD,$@)$(CC) $(LDFLAGS) $^ -o $@
 dep_cmd = $(call echo_cmd,DEPEND,)$(CC) $(CFLAGS) -MM $1 > $@
 rm_cmd = $(call echo_cmd,CLEAN,)$(RM)
+rmdir_cmd = $(call echo_cmd,CLEAN,)$(RMDIR)
 objcopy_cmd = $(call echo_cmd,OBJCOPY,$<)$(OBJCOPY) $(OBJCOPYFLAGS) $< $@
 lds_cmd = $(call echo_cmd,LDS,$<)$(CC) $(CFLAGS_lds) -c -o $@ $<
 
