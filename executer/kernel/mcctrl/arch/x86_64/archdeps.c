@@ -7,7 +7,6 @@
 #include "../../../config.h"
 #include "../../mcctrl.h"
 
-#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 //#define SC_DEBUG
 
 #ifdef SC_DEBUG
@@ -15,7 +14,6 @@
 #else
 #define	dprintk(...)
 #endif
-#endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
 //#define DEBUG_PPD
 #ifdef DEBUG_PPD
@@ -310,7 +308,6 @@ get_rsp_ctx(void *ctx)
 	return tctx->rsp;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 		unsigned long *rpap, unsigned long *pgsizep)
 {
@@ -380,7 +377,6 @@ out:
 			error, rva, rpa, pgsize);
 	return error;
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
 #ifdef POSTK_DEBUG_ARCH_DEP_12
 #define PFN_WRITE_COMBINED _PAGE_PWT
