@@ -9,7 +9,6 @@ IHK_BASE=$(src)/../../../../ihk
 
 obj-m += mcctrl.o
 
-# POSTK_DEBUG_ARCH_DEP_83, arch depend translate_rva_to_rpa() move
 ccflags-y := -I$(IHK_BASE)/linux/include \
              -I$(IHK_BASE)/linux/include/ihk/arch/$(ARCH) \
              -I$(IHK_BASE)/ikc/include \
