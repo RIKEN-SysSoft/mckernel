@@ -115,10 +115,6 @@ struct pagealloc_track_entry {
 	ihk_spinlock_t addr_list_lock;
 };
 
-struct page_table {
-	pte_t entry[PT_ENTRIES];
-};
-
 struct ihk_dump_page {
 	unsigned long start;
 	unsigned long map_count;
