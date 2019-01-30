@@ -14,5 +14,8 @@ static inline bool pte_is_write_combined(pte_t pte)
 	return ((pte_val(pte) & PTE_ATTRINDX_MASK) == PFN_WRITE_COMBINED);
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
+
+#define ARMV8_IDX_COUNTER0	1
+#define ARCH_PERF_CONTER_START	ARMV8_IDX_COUNTER0
 #endif /* __HEADER_MCCTRL_ARM64_ARCHDEPS_H */
 #endif /* POSTK_DEBUG_ARCH_DEP_83 */
