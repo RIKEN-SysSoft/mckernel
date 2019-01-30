@@ -20,7 +20,7 @@
 
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);
-int ihk_mc_perfctr_fixed_init(int counter, int mode);
+static int ihk_mc_perfctr_fixed_init(int counter, int mode);
 
 //#define PERFCTR_DEBUG
 #ifdef PERFCTR_DEBUG
@@ -354,7 +354,7 @@ int ihk_mc_perfctr_stop(unsigned long counter_mask)
 }
 
 // init for fixed counter
-int ihk_mc_perfctr_fixed_init(int counter, int mode)
+static int ihk_mc_perfctr_fixed_init(int counter, int mode)
 {
 	unsigned long value = 0;
 	unsigned int  ctr_mask = 0xf;

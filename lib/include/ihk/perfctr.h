@@ -65,7 +65,6 @@ int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event);
 int ihk_mc_perfctr_start(unsigned long counter_mask);
 int ihk_mc_perfctr_stop(unsigned long counter_mask);
-int ihk_mc_perfctr_fixed_init(int counter, int mode);
 int ihk_mc_perfctr_reset(int counter);
 int ihk_mc_perfctr_set(int counter, long value);
 int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
