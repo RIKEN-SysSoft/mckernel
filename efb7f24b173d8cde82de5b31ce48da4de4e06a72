@@ -16,6 +16,24 @@
       "revId": "efb7f24b173d8cde82de5b31ce48da4de4e06a72",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "51cd99c5_7d373797",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-01-30T01:00:51Z",
+      "side": 1,
+      "message": "Okay, abandon this fix then.",
+      "parentUuid": "e9419604_7b21588f",
+      "revId": "efb7f24b173d8cde82de5b31ce48da4de4e06a72",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
