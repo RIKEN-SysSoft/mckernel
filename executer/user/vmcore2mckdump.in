@@ -14,12 +14,22 @@ if [ ! -f "$INFILE" ]; then
 	exit 1
 fi
 
+ARCH_NAME=@ARCH@
+if [ "X$ARCH_NAME" = "X" ]; then
+	echo "ARCH_NAME is empty."
+	exit 1
+fi
+
+if [ "$ARCH_NAME" = "x86_64" ]; then
+	ARCH_NAME=x86
+fi
+
 /usr/bin/expect -c "
-set timeout 60
+set timeout 300
 spawn /usr/bin/crash $VMLINUX $INFILE
 
 expect \"crash>\"
-send \"mod -s ihk_smp_x86 $INSTALLDIR/kmod/ihk-smp-x86.ko\n\"
+send \"mod -s ihk_smp_${ARCH_NAME} $INSTALLDIR/kmod/ihk-smp-${ARCH_NAME}.ko\n\"
 
 expect \"crash>\"
 send \"extend $INSTALLDIR/lib/ldump2mcdump.so\n\"
