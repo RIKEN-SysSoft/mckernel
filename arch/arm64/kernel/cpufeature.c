@@ -10,9 +10,7 @@
 #include <ptrace.h>
 #include <hwcap.h>
 
-#ifdef POSTK_DEBUG_ARCH_DEP_65
 unsigned long elf_hwcap;
-#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 
 /* @ref.impl arch/arm64/kernel/cpufeature.c */
 #define __ARM64_FTR_BITS(SIGNED, VISIBLE, STRICT, TYPE, SHIFT, WIDTH, SAFE_VAL) \
@@ -997,9 +995,7 @@ void setup_cpu_features(void)
 	setup_elf_hwcaps(arm64_elf_hwcaps);
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_65
 unsigned long arch_get_hwcap(void)
 {
 	return elf_hwcap;
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_65 */
