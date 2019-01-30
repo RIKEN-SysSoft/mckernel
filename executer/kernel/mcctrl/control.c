@@ -49,6 +49,7 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <uapi/linux/sched/types.h>
 #endif
+#include <archdeps.h>
 
 //#define DEBUG
 
@@ -2128,7 +2129,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 
 		perf_desc->ctrl_type = PERF_CTRL_SET;
 		perf_desc->err = 0;
-		perf_desc->target_cntr = i;
+		perf_desc->target_cntr = i + ARCH_PERF_COUNTER_START;
 		perf_desc->config = attr.config;
 		perf_desc->exclude_kernel = attr.exclude_kernel;
 		perf_desc->exclude_user = attr.exclude_user;
@@ -2188,7 +2189,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 
 		perf_desc->ctrl_type = PERF_CTRL_GET;
 		perf_desc->err = 0;
-		perf_desc->target_cntr = i;
+		perf_desc->target_cntr = i + ARCH_PERF_COUNTER_START;
 
 		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
 		isp.msg = SCD_MSG_PERF_CTRL;
@@ -2235,7 +2236,7 @@ long mcctrl_perf_enable(ihk_os_t os)
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		cntr_mask |= 1UL << i;
+		cntr_mask |= 1UL << (i + ARCH_PERF_COUNTER_START);
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
@@ -2288,7 +2289,7 @@ long mcctrl_perf_disable(ihk_os_t os)
 	int need_free;
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
-		cntr_mask |= 1UL << i;
+		cntr_mask |= 1UL << (i + ARCH_PERF_COUNTER_START);
 	}
 	perf_desc = kmalloc(sizeof(struct mcctrl_perf_ctrl_desc), GFP_KERNEL);
 	if (!perf_desc) {
