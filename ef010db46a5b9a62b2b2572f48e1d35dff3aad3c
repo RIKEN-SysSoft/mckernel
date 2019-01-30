@@ -16,6 +16,24 @@
       "revId": "ef010db46a5b9a62b2b2572f48e1d35dff3aad3c",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c9aa6bab_8c93c3e5",
+        "filename": "kernel/mem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2113,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-01-30T00:56:11Z",
+      "side": 0,
+      "message": "It looks like the order is expected by the merger.",
+      "parentUuid": "deb55614_ab9d936f",
+      "revId": "ef010db46a5b9a62b2b2572f48e1d35dff3aad3c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
