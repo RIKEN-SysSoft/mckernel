@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7ab86d71_ebbf7fd8",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: Single statement macros should not use a do {} while (0) loop\n+#define pr_ppd(msg, tid, ppd) do { \\\n+\t\tpr_info(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", \\\n+\t\t\t__func__, tid, atomic_read(\u0026ppd-\u003erefcount)); \\\n+\t} while (0)",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4316de3f_70573634",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 335,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern struct list_head host_threads;",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5a50ed9_c696f4b2",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 336,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern rwlock_t host_thread_lock;",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3a3533f_93d5f3c3",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: Single statement macros should not use a do {} while (0) loop\n+#define pr_ppd(msg, tid, ppd) do { \\\n+\t\tpr_info(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", \\\n+\t\t\t__func__, tid, atomic_read(\u0026ppd-\u003erefcount)); \\\n+\t} while (0)",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d94ed37e_399bfebd",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 386,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern struct list_head host_threads;",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aa75da00_659117fa",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 387,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern rwlock_t host_thread_lock;",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0cc79ca_864a99f6",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027ihk_os_t\u0027 should also have an identifier name\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *,",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc0df89b_ca29b9a2",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *,",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27f204b6_d7ea7549",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct uti_save_fs_desc __user *\u0027 should also have an identifier name\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *,",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "221300ec_282b8e31",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:48:38Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct file *\u0027 should also have an identifier name\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *,",
+      "revId": "704e95cc1c54ae5c32a57526f9b72ef7f6c38343",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
