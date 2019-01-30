@@ -31,9 +31,7 @@
 #include <sysreg.h>
 #include <cpufeature.h>
 #include <debug.h>
-#ifdef POSTK_DEBUG_ARCH_DEP_65
 #include <hwcap.h>
-#endif /* POSTK_DEBUG_ARCH_DEP_65 */
 
 //#define DEBUG_PRINT_CPU
 
