@@ -11,7 +11,7 @@ MCKERNEL_INCDIR=@MCKERNEL_INCDIR@
 MCKERNEL_LIBDIR=@MCKERNEL_LIBDIR@
 KDIR ?= @KDIR@
 ARCH=@ARCH@
-CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I@abs_builddir@/../../../ihk/linux/include
+CFLAGS=-Wall -O -I. -I$(VPATH)/arch/${ARCH} -I${IHKDIR} -I@abs_builddir@/../../../ihk/linux/include -I$(VPATH)/arch/${ARCH}/include
 LDFLAGS=@LDFLAGS@
 CPPFLAGS_SYSCALL_INTERCEPT=@CPPFLAGS_SYSCALL_INTERCEPT@
 LDFLAGS_SYSCALL_INTERCEPT=@LDFLAGS_SYSCALL_INTERCEPT@
@@ -47,7 +47,7 @@ mcexec: mcexec.c libmcexec.a
 # POSTK_DEBUG_ARCH_DEP_34, eclair arch depend separate.
 ifeq ($(ARCH), arm64)
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
-	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
+	$(CC) -I.. -I. -I./arch/$(ARCH)/include -I$(VPATH)/.. -I$(VPATH) $(CFLAGS) -o $@ $^ $(LIBS) -ldl -lz
 else
 eclair: eclair.c arch/$(ARCH)/arch-eclair.c
 	$(CC) -I.. -I$(VPATH) -I$(VPATH)/arch/$(ARCH)/include $(CFLAGS) -o $@ $^ $(LIBS)
