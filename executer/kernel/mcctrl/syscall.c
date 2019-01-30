@@ -49,9 +49,7 @@
 #include "../../../config.h"
 #include "mcctrl.h"
 #include <linux/version.h>
-#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 #include <archdeps.h>
-#endif /* POSTK_DEBUG_ARCH_DEP_83 */
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
@@ -211,80 +209,6 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 	return ptd;
 }
 #endif /* !POSTK_DEBUG_ARCH_DEP_56 */
-
-#ifndef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
-#if 1	/* x86 depend, host OS side */
-int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
-		unsigned long *rpap, unsigned long *pgsizep)
-{
-	unsigned long rpa;
-	int offsh;
-	int i;
-	int ix;
-	unsigned long phys;
-	unsigned long *pt;
-	int error;
-	unsigned long pgsize;
-
-	rpa = rpt;
-	offsh = 39;
-	pgsize = 0;
-	/* i = 0: PML4, 1: PDPT, 2: PDT, 3: PT */
-	for (i = 0; i < 4; ++i) {
-		ix = (rva >> offsh) & 0x1FF;
-		phys = ihk_device_map_memory(ihk_os_to_dev(os), rpa, PAGE_SIZE);
-		pt = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
-		dprintk("rpa %#lx offsh %d ix %#x phys %#lx pt %p pt[ix] %#lx\n",
-				rpa, offsh, ix, phys, pt, pt[ix]);
-
-#define	PTE_P	0x001
-		if (!(pt[ix] & PTE_P)) {
-			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			error = -EFAULT;
-			dprintk("Remote PTE is not present for 0x%lx (rpt: %lx) ?\n", rva, rpt);
-			goto out;
-		}
-
-#define	PTE_PS	0x080
-		if (pt[ix] & PTE_PS) {
-			pgsize = 1UL << offsh;
-			rpa = pt[ix] & ((1UL << 52) - 1) & ~(pgsize - 1);
-			rpa |= rva & (pgsize - 1);
-
-			/* For GB pages, just report regular 2MB page */
-			if (offsh == 30) {
-				pgsize = 1UL << 21;
-				dprintk("%s: GB page translated 0x%lx -> 0x%lx, pgsize: %lu\n",
-						__FUNCTION__, rva, rpa, pgsize);
-			}
-
-			ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-			ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-			error = 0;
-			goto found;
-		}
-
-		rpa = pt[ix] & ((1UL << 52) - 1) & ~((1UL << 12) - 1);
-		offsh -= 9;
-		ihk_device_unmap_virtual(ihk_os_to_dev(os), pt, PAGE_SIZE);
-		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
-	}
-	pgsize = 1UL << 12;
-	rpa |= rva & (pgsize - 1);
-
-found:
-	error = 0;
-	*rpap = rpa;
-	*pgsizep = pgsize;
-
-out:
-	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
-			error, rva, rpa, pgsize);
-	return error;
-}
-#endif
-#endif /* !POSTK_DEBUG_ARCH_DEP_83 */
 
 static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet,
 		struct syscall_response *res)
