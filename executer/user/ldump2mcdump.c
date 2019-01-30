@@ -2,6 +2,7 @@
 #include "../include/defs.h"      /* From the crash source top-level directory */
 #include <bfd.h>
 #include <pwd.h>
+#include <arch-ldump2mcdump.h>
 
 void ldump2mcdump_init(void);    /* constructor function */
 void ldump2mcdump_fini(void);    /* destructor function (optional) */
@@ -56,8 +57,6 @@ typedef struct dump_mem_chunks_s {
 #define DUMP_MEM_SYMBOL	"dump_page_set_addr"
 #define BOOTSTRAP_MEM_SYMBOL	"dump_bootstrap_mem_start"
 #define MCDUMP_DEFAULT_FILENAME	"mcdump"
-#define PAGE_SHIFT         12
-#define LARGE_PAGE_SHIFT   21
 #define LARGE_PAGE_SIZE    (1UL << LARGE_PAGE_SHIFT)
 #define LARGE_PAGE_MASK    (~((unsigned long)LARGE_PAGE_SIZE - 1))
 
