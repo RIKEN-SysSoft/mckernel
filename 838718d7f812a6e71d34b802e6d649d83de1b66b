@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b9749838_be702494",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                            ^",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6efa110d_65f49cdb",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b8f5cc7c_c19401ea",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                          ^",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a9682511_adcb6a2a",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static const unsigned long arch_rus_vm_flags \u003d VM_RESERVED | VM_MIXEDMAP | VM_EXEC;",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2de51510_e6ab7ea3",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static const unsigned long arch_rus_vm_flags \u003d VM_DONTDUMP | VM_MIXEDMAP | VM_EXEC;",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3fcda442_c1584508",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "36512213_b5cc17b6",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                            ^",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f353e11_87e53ffb",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/archdeps.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-30T09:44:10Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(3,7,0)\n                                          ^",
+      "revId": "838718d7f812a6e71d34b802e6d649d83de1b66b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
