@@ -1,5 +1,4 @@
 /* archdeps.h COPYRIGHT FUJITSU LIMITED 2017 */
-#ifdef POSTK_DEBUG_ARCH_DEP_83 /* arch depend translate_rva_to_rpa() move */
 #ifndef __HEADER_MCCTRL_X86_64_ARCHDEPS_H
 #define __HEADER_MCCTRL_X86_64_ARCHDEPS_H
 
@@ -15,4 +14,3 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 #endif /* __HEADER_MCCTRL_X86_64_ARCHDEPS_H */
-#endif /* POSTK_DEBUG_ARCH_DEP_83 */
