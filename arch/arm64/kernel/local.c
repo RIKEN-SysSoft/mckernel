@@ -1,4 +1,4 @@
-/* local.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* local.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <cpulocal.h>
 #include <ihk/atomic.h>
 #include <ihk/mm.h>
@@ -7,24 +7,31 @@
 #include <registers.h>
 #include <string.h>
 
-#define LOCALS_SPAN (8 * PAGE_SIZE)
-
 /* BSP initialized stack area */
 union arm64_cpu_local_variables init_thread_info __attribute__((aligned(KERNEL_STACK_SIZE)));
 
 /* BSP/AP idle stack pointer head */
 static union arm64_cpu_local_variables *locals;
-size_t arm64_cpu_local_variables_span = LOCALS_SPAN;	/* for debugger */
+size_t arm64_cpu_local_variables_span = KERNEL_STACK_SIZE; /* for debugger */
 
 /* allocate & initialize BSP/AP idle stack */
 void init_processors_local(int max_id)
 {
 	int i = 0;
-	const int sz = (max_id + 1) * KERNEL_STACK_SIZE;
 	union arm64_cpu_local_variables *tmp;
+	const int npages = ((max_id + 1) *
+			    (ALIGN_UP(KERNEL_STACK_SIZE, PAGE_SIZE) >>
+			     PAGE_SHIFT));
+
+	if (npages < 1) {
+		panic("idle kernel stack allocation failed.");
+	}
 
 	/* allocate one more for alignment */
-	locals = ihk_mc_alloc_pages(((sz + PAGE_SIZE - 1) / PAGE_SIZE), IHK_MC_AP_CRITICAL);
+	locals = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
+	if (locals == NULL) {
+		panic("idle kernel stack allocation failed.");
+	}
 	locals = (union arm64_cpu_local_variables *)ALIGN_UP((unsigned long)locals, KERNEL_STACK_SIZE);
 
 	/* clear struct process, struct process_vm, struct thread_info area */

@@ -379,13 +379,8 @@ struct coretable {		/* table entry for a core chunk */
 	unsigned long addr;	/* physical addr of the chunk */
 };
 
-#ifdef POSTK_DEBUG_TEMP_FIX_1
-void create_proc_procfs_files(int pid, int tid, int cpuid);
-void delete_proc_procfs_files(int pid, int tid);
-#else /* POSTK_DEBUG_TEMP_FIX_1 */
 void create_proc_procfs_files(int pid, int cpuid);
 void delete_proc_procfs_files(int pid);
-#endif /* POSTK_DEBUG_TEMP_FIX_1 */
 void create_os_procfs_files(void);
 void delete_os_procfs_files(void);
 

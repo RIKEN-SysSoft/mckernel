@@ -32,12 +32,13 @@
  * @ref.impl 
  * 	linux-linaro/arch/arm64/include/asm/futex.h:futex_atomic_op_inuser
  */
-static inline int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
+static inline int futex_atomic_op_inuser(int encoded_op,
+					 int __user *uaddr)
 {
 	int op = (encoded_op >> 28) & 7;
 	int cmp = (encoded_op >> 24) & 15;
-	int oparg = (encoded_op << 8) >> 20;
-	int cmparg = (encoded_op << 20) >> 20;
+	int oparg = (encoded_op & 0x00fff000) >> 12;
+	int cmparg = encoded_op & 0xfff;
 	int oldval = 0, ret, tmp;
 
 	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))

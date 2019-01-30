@@ -1,4 +1,4 @@
-/* head.S COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* head.S COPYRIGHT FUJITSU LIMITED 2015-2018 */
 
 #include <linkage.h>
 #include <ptrace.h>
@@ -11,8 +11,6 @@
 #include <arm-gic-v3.h>
 
 #define KERNEL_RAM_VADDR	MAP_KERNEL_START
-#define EARLY_ALLOC_VADDR	MAP_EARLY_ALLOC
-#define BOOT_PARAM_VADDR	MAP_BOOT_PARAM
 
 //#ifndef CONFIG_SMP
 //# define PTE_FLAGS	PTE_TYPE_PAGE | PTE_AF
@@ -50,16 +48,6 @@
 	add	\ttb0, \ttb0, \virt_to_phys
 	.endm
 
-#ifdef CONFIG_ARM64_64K_PAGES
-# define BLOCK_SHIFT	PAGE_SHIFT
-# define BLOCK_SIZE		PAGE_SIZE
-# define TABLE_SHIFT	PMD_SHIFT
-#else
-# define BLOCK_SHIFT	SECTION_SHIFT
-# define BLOCK_SIZE		SECTION_SIZE
-# define TABLE_SHIFT	PUD_SHIFT
-#endif
-
 #define KERNEL_START	KERNEL_RAM_VADDR
 #define KERNEL_END	_end
 
@@ -87,6 +75,7 @@
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE_SIZE      0x08
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE           (NR_CPUS * 8)
 #define TRAMPOLINE_DATA_DATA_RDISTS_PA_SIZE    (NR_CPUS * 8)
+#define TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE 0x08
 #define TRAMPOLINE_DATA_NR_PMU_AFFI_SIZE       0x04
 #define TRAMPOLINE_DATA_PMU_AFF_SIZE           (CONFIG_SMP_MAX_CORES * 4)
 
@@ -105,9 +94,9 @@
 	.globl	ihk_param_gic_percpu_offset, ihk_param_gic_version
 	.globl	ihk_param_lpj, ihk_param_hz, ihk_param_psci_method
 	.globl	ihk_param_cpu_logical_map, ihk_param_gic_rdist_base_pa
-	.globl	ihk_param_pmu_irq_affiniry, ihk_param_nr_pmu_irq_affiniry
+	.globl	ihk_param_pmu_irq_affi, ihk_param_nr_pmu_irq_affi
 	.globl	ihk_param_use_virt_timer, ihk_param_evtstrm_timer_rate
-	.globl	ihk_param_default_vl
+	.globl	ihk_param_retention_state_flag_pa, ihk_param_default_vl
 ihk_param_head:
 ihk_param_param_addr:
 	.quad	0
@@ -145,9 +134,11 @@ ihk_param_cpu_logical_map:
 	.skip	NR_CPUS * 8	/* array of the MPIDR and the core number */
 ihk_param_gic_rdist_base_pa:
 	.skip	NR_CPUS * 8	/* per-cpu re-distributer PA */
-ihk_param_pmu_irq_affiniry:
+ihk_param_retention_state_flag_pa:
+	.quad	0
+ihk_param_pmu_irq_affi:
 	.skip	CONFIG_SMP_MAX_CORES * 4	/* array of the pmu affinity list */
-ihk_param_nr_pmu_irq_affiniry:
+ihk_param_nr_pmu_irq_affi:
 	.word	0		/* number of pmu affinity list elements. */
 
 /* @ref.impl arch/arm64/include/asm/kvm_arm.h */
@@ -265,13 +256,17 @@ ENTRY(arch_start)
 	mov x16, #NR_CPUS /* calc next data */
 	lsl x16, x16, 3
 	add x0, x0, x16
-	/* nr_pmu_irq_affiniry */
+	/* retention_state_flag_pa */
+	ldr	x16, [x0], #TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE
+	adr	x15, ihk_param_retention_state_flag_pa
+	str	x16, [x15]
+	/* nr_pmu_irq_affi */
 	ldr	w16, [x0], #TRAMPOLINE_DATA_NR_PMU_AFFI_SIZE
-	adr	x15, ihk_param_nr_pmu_irq_affiniry
+	adr	x15, ihk_param_nr_pmu_irq_affi
 	str	w16, [x15]
-	/* pmu_irq_affiniry */
+	/* pmu_irq_affi */
 	mov x18, x0
-	adr	x15, ihk_param_pmu_irq_affiniry
+	adr	x15, ihk_param_pmu_irq_affi
 	b	2f
 1:	ldr	w17, [x18], #4
 	str	w17, [x15], #4
@@ -410,14 +405,17 @@ __create_page_tables:
 	 * Map the early_alloc_pages area, kernel_img next block
 	 */
 	ldr	x3, =KERNEL_END
-	add	x3, x3, x28				// __pa(KERNEL_END)
+	add	x3, x3, x28			// __pa(KERNEL_END)
 	add	x3, x3, #BLOCK_SIZE
-	sub x3, x3, #1
-	bic x3, x3, #(BLOCK_SIZE - 1)		// start PA calc.
-	ldr	x5, =EARLY_ALLOC_VADDR			// get start VA
-	mov x6, #1
-	lsl x6, x6, #(PAGE_SHIFT + MAP_EARLY_ALLOC_SHIFT)
+	sub	x3, x3, #1
+	bic	x3, x3, #(BLOCK_SIZE - 1)	// start PA calc.
+	ldr	x5, =KERNEL_END			// get start VA
+	add     x5, x5, #BLOCK_SIZE
+	sub	x5, x5, #1
+	bic	x5, x5, #(BLOCK_SIZE - 1)	// start VA calc.
+	mov	x6, #MAP_EARLY_ALLOC_SIZE
 	add	x6, x5, x6			// end VA calc
+	mov	x23, x6				// save end VA
 	sub	x6, x6, #1			// inclusive range
 	create_block_map x0, x7, x3, x5, x6
 
@@ -425,11 +423,13 @@ __create_page_tables:
 	 * Map the boot_param area
 	 */
 	adr	x3, ihk_param_param_addr
-	ldr	x3, [x3]				// get boot_param PA
-	ldr	x5, =BOOT_PARAM_VADDR			// get boot_param VA
-	mov x6, #1
-	lsl x6, x6, #MAP_BOOT_PARAM_SHIFT
-	add	x6, x5, x6			// end VA calc
+	ldr	x3, [x3]			// get boot_param PA
+	mov	x5, x23				// get start VA
+	add     x5, x5, #BLOCK_SIZE
+	sub	x5, x5, #1
+	bic	x5, x5, #(BLOCK_SIZE - 1)	// start VA calc
+	mov	x6, #MAP_BOOT_PARAM_SIZE
+	add	x6, x5, x6			// end VA calc.
 	sub	x6, x6, #1			// inclusive range
 	create_block_map x0, x7, x3, x5, x6
 

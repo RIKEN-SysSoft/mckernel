@@ -50,3 +50,6 @@ STATIC_ASSERT(sizeof(struct sigcontext) - offsetof(struct sigcontext, __reserved
 		ALIGN_UP(sizeof(struct _aarch64_ctx), 16) > sizeof(struct extra_context));
 STATIC_ASSERT(SVE_PT_FPSIMD_OFFSET == sizeof(struct user_sve_header));
 STATIC_ASSERT(SVE_PT_SVE_OFFSET == sizeof(struct user_sve_header));
+
+/* assert for struct arm64_cpu_local_thread member offset define */
+STATIC_ASSERT(offsetof(struct arm64_cpu_local_thread, panic_regs) == 160);

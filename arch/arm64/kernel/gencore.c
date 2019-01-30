@@ -19,6 +19,12 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
+/* Exclude reserved (mckernel's internal use), device file,
+ * hole created by mprotect
+ */
+#define GENCORE_RANGE_IS_INACCESSIBLE(range) \
+	    ((range->flag & (VR_RESERVED | VR_MEMTYPE_UC | VR_DONTDUMP)))
+
 /*
  * Generate a core file image, which consists of many chunks.
  * Returns an allocated table, an etnry of which is a pair of the address 
@@ -239,10 +245,10 @@ int gencore(struct thread *thread, void *regs,
 
 		dkprintf("start:%lx end:%lx flag:%lx objoff:%lx\n", 
 			 range->start, range->end, range->flag, range->objoff);
-		/* We omit reserved areas because they are only for
-		   mckernel's internal use. */		   
-		if (range->flag & VR_RESERVED)
+
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
+		}
 		/* We need a chunk for each page for a demand paging area.
 		   This can be optimized for spacial complexity but we would
 		   lose simplicity instead. */
@@ -331,8 +337,9 @@ int gencore(struct thread *thread, void *regs,
 		unsigned long flag = range->flag;
 		unsigned long size = range->end - range->start;
 
-		if (range->flag & VR_RESERVED)
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
+		}
 
 		ph[i].p_type = PT_LOAD;
 		ph[i].p_flags = ((flag & VR_PROT_READ) ? PF_R : 0)
@@ -374,8 +381,9 @@ int gencore(struct thread *thread, void *regs,
 
 		unsigned long phys;
 
-		if (range->flag & VR_RESERVED)
+		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
+		}
 		if (range->flag & VR_DEMAND_PAGING) {
 			/* Just an ad hoc kluge. */
 			unsigned long p, start, phys;

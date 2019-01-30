@@ -99,3 +99,26 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 
 	return total;
 }
+
+#ifdef POSTK_DEBUG_ARCH_DEP_34
+static uintptr_t virt_to_phys(uintptr_t va)
+{
+	extern uintptr_t kernel_base;
+
+	if (va >= MAP_KERNEL_START) {
+		return va - MAP_KERNEL_START + kernel_base;
+	}
+	else if (va >= LINUX_PAGE_OFFSET) {
+		return va - LINUX_PAGE_OFFSET;
+	}
+	else if (va >= MAP_FIXED_START) {
+		return va - MAP_FIXED_START;
+	}
+	else if (va >= MAP_ST_START) {
+		return va - MAP_ST_START;
+	}
+
+	return NOPHYS;
+} /* virt_to_phys() */
+#endif /* POSTK_DEBUG_ARCH_DEP_34 */
+

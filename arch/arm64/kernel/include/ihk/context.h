@@ -65,17 +65,17 @@ static inline void pt_regs_write_reg(struct pt_regs *regs, int r,
 }
 
 /* temp */
-#define ihk_mc_syscall_arg0(uc) (uc)->regs[0]
-#define ihk_mc_syscall_arg1(uc) (uc)->regs[1]
-#define ihk_mc_syscall_arg2(uc) (uc)->regs[2]
-#define ihk_mc_syscall_arg3(uc) (uc)->regs[3]
-#define ihk_mc_syscall_arg4(uc) (uc)->regs[4]
-#define ihk_mc_syscall_arg5(uc) (uc)->regs[5]
+#define ihk_mc_syscall_arg0(uc)		((uc)->regs[0])
+#define ihk_mc_syscall_arg1(uc)		((uc)->regs[1])
+#define ihk_mc_syscall_arg2(uc)		((uc)->regs[2])
+#define ihk_mc_syscall_arg3(uc)		((uc)->regs[3])
+#define ihk_mc_syscall_arg4(uc)		((uc)->regs[4])
+#define ihk_mc_syscall_arg5(uc)		((uc)->regs[5])
 
-#define ihk_mc_syscall_ret(uc)  (uc)->regs[0]
-#define ihk_mc_syscall_number(uc)  (uc)->regs[8]
+#define ihk_mc_syscall_ret(uc)		((uc)->regs[0])
+#define ihk_mc_syscall_number(uc)	((uc)->regs[8])
 
-#define ihk_mc_syscall_pc(uc)   (uc)->pc
-#define ihk_mc_syscall_sp(uc)   (uc)->sp
+#define ihk_mc_syscall_pc(uc)		((uc)->pc)
+#define ihk_mc_syscall_sp(uc)		((uc)->sp)
 
 #endif /* !__HEADER_ARM64_IHK_CONTEXT_H */

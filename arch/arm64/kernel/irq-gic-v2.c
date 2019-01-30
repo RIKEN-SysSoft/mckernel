@@ -1,13 +1,15 @@
-/* irq-gic-v2.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
-
+/* irq-gic-v2.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <ihk/cpu.h>
 #include <irq.h>
 #include <arm-gic-v2.h>
 #include <io.h>
 #include <arch/cpu.h>
 #include <memory.h>
+#include <affinity.h>
 #include <syscall.h>
 #include <debug.h>
+#include <arch-timer.h>
+#include <cls.h>
 
 // #define DEBUG_GICV2
 
@@ -52,16 +54,10 @@ static void arm64_raise_sgi_gicv2(unsigned int cpuid, unsigned int vector)
  * arm64_raise_spi_gicv2
  * @ref.impl nothing.
  */
-extern unsigned int ihk_ikc_irq_apicid;
 static void arm64_raise_spi_gicv2(unsigned int cpuid, unsigned int vector)
 {
 	uint64_t spi_reg_offset;
 	uint32_t spi_set_pending_bitpos;
-
-	if (cpuid != ihk_ikc_irq_apicid) {
-		ekprintf("SPI(irq#%d) cannot send other than the host.\n", vector);
-		return;
-	}
 
 	/**
 	 * calculates register offset and bit position corresponding to the numbers.
@@ -109,8 +105,9 @@ extern int interrupt_from_user(void *);
 void handle_interrupt_gicv2(struct pt_regs *regs)
 {
 	unsigned int irqstat, irqnr;
+	const int from_user = interrupt_from_user(regs);
 
-	set_cputime(interrupt_from_user(regs)? 1: 2);
+	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	do {
 		// get GICC_IAR.InterruptID
 		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
@@ -130,7 +127,13 @@ void handle_interrupt_gicv2(struct pt_regs *regs)
 		 */
 		break;
 	} while (1);
-	set_cputime(0);
+	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
+
+	/* for migration by IPI */
+	if (get_this_cpu_local_var()->flags & CPU_FLAG_NEED_MIGRATE) {
+		schedule();
+		check_signal(0, regs, 0);
+	}
 }
 
 void gic_dist_init_gicv2(unsigned long dist_base_pa, unsigned long size)
@@ -147,10 +150,6 @@ void gic_enable_gicv2(void)
 {
 	unsigned int enable_ppi_sgi = 0;
 
-	if (is_use_virt_timer()) {
-		enable_ppi_sgi |= GICD_ENABLE << get_virt_timer_intrid();
-	} else {
-		enable_ppi_sgi |= GICD_ENABLE << get_phys_timer_intrid();
-	}
+	enable_ppi_sgi |= GICD_ENABLE << get_timer_intrid();
 	writel_relaxed(enable_ppi_sgi, dist_base + GIC_DIST_ENABLE_SET);
 }

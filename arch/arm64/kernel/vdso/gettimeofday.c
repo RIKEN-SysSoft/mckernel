@@ -1,58 +1,25 @@
-/* gettimeofday.c COPYRIGHT FUJITSU LIMITED 2016 */
-
-#include <affinity.h>
-#include <arch-memory.h>
+/* gettimeofday.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <time.h>
+#include <memory.h>
+#include <affinity.h>
 #include <syscall.h>
 #include <registers.h>
 #include <ihk/atomic.h>
 
-extern int __kernel_gettimeofday(struct timeval *tv, void *tz);
-
-static inline void cpu_pause_for_vsyscall(void)
+#define UNUSED(x) ((void)(x))
+void vdso_gettimeofday_unused_funcs(void)
 {
-	asm volatile ("yield" ::: "memory");
-	return;
-}
-
-static inline void calculate_time_from_tsc(struct timespec *ts,
-					   struct tod_data_s *tod_data)
-{
-	long ver;
-	unsigned long current_tsc;
-	__time_t sec_delta;
-	long ns_delta;
-
-	for (;;) {
-		while ((ver = ihk_atomic64_read(&tod_data->version)) & 1) {
-			/* settimeofday() is in progress */
-			cpu_pause_for_vsyscall();
-		}
-		rmb();
-		*ts = tod_data->origin;
-		rmb();
-		if (ver == ihk_atomic64_read(&tod_data->version)) {
-			break;
-		}
-
-		/* settimeofday() has intervened */
-		cpu_pause_for_vsyscall();
-	}
-
-	current_tsc = rdtsc();
-	sec_delta = current_tsc / tod_data->clocks_per_sec;
-	ns_delta = NS_PER_SEC * (current_tsc % tod_data->clocks_per_sec)
-		/ tod_data->clocks_per_sec;
-	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
-
-	ts->tv_sec += sec_delta;
-	ts->tv_nsec += ns_delta;
-	if (ts->tv_nsec >= NS_PER_SEC) {
-		ts->tv_nsec -= NS_PER_SEC;
-		++ts->tv_sec;
-	}
-
-	return;
+	UNUSED(xgetbv);
+	UNUSED(xsetbv);
+	UNUSED(rdpmc);
+	UNUSED(rdmsr);
+	UNUSED(set_perfctl);
+	UNUSED(start_perfctr);
+	UNUSED(stop_perfctr);
+	UNUSED(clear_perfctl);
+	UNUSED(set_perfctr);
+	UNUSED(read_perfctr);
+	UNUSED(xos_is_tchip);
 }
 
 static inline struct tod_data_s *get_tod_data_addr(void)
@@ -82,7 +49,7 @@ int __kernel_gettimeofday(struct timeval *tv, void *tz)
 
 	/* DO it locally if supported */
 	if (!tz && tod_data->do_local) {
-		calculate_time_from_tsc(&ats, tod_data);
+		calculate_time_from_tsc(&ats);
 
 		tv->tv_sec = ats.tv_sec;
 		tv->tv_usec = ats.tv_nsec / 1000;
@@ -105,7 +72,6 @@ int __kernel_gettimeofday(struct timeval *tv, void *tz)
 	}
 	return (int)ret;
 }
-
 
 /*
  * The IDs of the various system clocks (for POSIX.1b interval timers):
@@ -146,7 +112,7 @@ int __kernel_clock_gettime(clockid_t clk_id, struct timespec *tp)
 
 	/* DO it locally if supported */
 	if (tod_data->do_local && clk_id == CLOCK_REALTIME) {
-		calculate_time_from_tsc(&ats, tod_data);
+		calculate_time_from_tsc(&ats);
 
 		tp->tv_sec = ats.tv_sec;
 		tp->tv_nsec = ats.tv_nsec;

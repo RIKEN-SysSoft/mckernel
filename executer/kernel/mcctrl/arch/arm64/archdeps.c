@@ -2,9 +2,11 @@
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <linux/kallsyms.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#ifdef POSTK_DEBUG_ARCH_DEP_96 /* build for linux4.16 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
 #include <linux/sched/task_stack.h>
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) */
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0) */
+#endif /* POSTK_DEBUG_ARCH_DEP_96 */
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
