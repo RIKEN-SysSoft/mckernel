@@ -499,6 +499,7 @@ static void fileobj_do_pageio(void *args0)
 #endif // PROFILE_ENABLE
 		}
 		else {
+			preempt_disable();
 			page->mode = PM_PAGEIO;
 			mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
 					&mcs_node);
@@ -515,6 +516,7 @@ static void fileobj_do_pageio(void *args0)
 
 			mcs_lock_lock_noirq(&obj->page_hash_locks[hash],
 					&mcs_node);
+			preempt_enable();
 			if (page->mode != PM_PAGEIO) {
 				kprintf("fileobj_do_pageio(%p,%lx,%lx):"
 						"invalid mode %x\n",
