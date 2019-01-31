@@ -2577,6 +2577,7 @@ release_process(struct process *proc)
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
 	free_thread_pages(proc->main_thread);
+	kfree(proc->desc);
 	kfree(proc);
 
 	/* no process left */
