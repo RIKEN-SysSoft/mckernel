@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4a933c12_6a7f6ae0",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-31T02:36:03Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ })$",
+      "revId": "6cf8747113aa050ab313cba14380dae474a74adf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a05f168_12c31022",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-31T02:36:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_THUNDERX\tMIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX)",
+      "revId": "6cf8747113aa050ab313cba14380dae474a74adf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ec28a7c_d05b2f24",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-31T02:36:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_THUNDERX_81XX MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX_81XX)",
+      "revId": "6cf8747113aa050ab313cba14380dae474a74adf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a21c7809_55e351a0",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-31T02:36:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_THUNDERX_83XX MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX_83XX)",
+      "revId": "6cf8747113aa050ab313cba14380dae474a74adf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98270b80_00f19e74",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-31T02:36:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_CAVIUM_THUNDERX2 MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX2)",
+      "revId": "6cf8747113aa050ab313cba14380dae474a74adf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "425d09d1_1eebc240",
+        "filename": "arch/arm64/kernel/include/cputype.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-31T02:36:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define MIDR_QCOM_FALKOR_V1 MIDR_CPU_MODEL(ARM_CPU_IMP_QCOM, QCOM_CPU_PART_FALKOR_V1)",
+      "revId": "6cf8747113aa050ab313cba14380dae474a74adf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a343e582_84b04cba",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1031,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-01-31T02:36:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tcase MIDR_CPU_MODEL(ARM_CPU_IMP_CAVIUM, CAVIUM_CPU_PART_THUNDERX2):",
+      "revId": "6cf8747113aa050ab313cba14380dae474a74adf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
