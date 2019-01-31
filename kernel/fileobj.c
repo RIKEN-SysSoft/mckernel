@@ -507,6 +507,7 @@ static void fileobj_do_pageio(void *args0)
 			ihk_mc_syscall_arg2(&ctx) = off;
 			ihk_mc_syscall_arg3(&ctx) = pgsize;
 			ihk_mc_syscall_arg4(&ctx) = page_to_phys(page);
+			ihk_mc_syscall_arg5(&ctx) = virt_to_phys(&page->mode);
 
 			dkprintf("%s: __NR_mmap for handle 0x%lx\n",
 					__FUNCTION__, obj->handle);
@@ -514,17 +515,10 @@ static void fileobj_do_pageio(void *args0)
 
 			mcs_lock_lock_noirq(&obj->page_hash_locks[hash],
 					&mcs_node);
-			if (page->mode != PM_PAGEIO) {
-				kprintf("fileobj_do_pageio(%p,%lx,%lx):"
-						"invalid mode %x\n",
-						obj, off, pgsize, page->mode);
-				panic("fileobj_do_pageio:invalid page mode");
-			}
 
 			if (ss == 0) {
 				dkprintf("fileobj_do_pageio(%p,%lx,%lx):EOF? %ld\n",
 						obj, off, pgsize, ss);
-				page->mode = PM_PAGEIO_EOF;
 				goto out;
 			}
 			else if (ss != pgsize) {
@@ -535,8 +529,6 @@ static void fileobj_do_pageio(void *args0)
 				goto out;
 			}
 		}
-
-		page->mode = PM_DONE_PAGEIO;
 	}
 out:
 	mcs_lock_unlock_noirq(&obj->page_hash_locks[hash],
