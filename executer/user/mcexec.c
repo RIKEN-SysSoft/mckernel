@@ -88,6 +88,7 @@
 #include "../include/qlmpi.h"
 #include <ihk/ihklib.h>
 #include <sys/epoll.h>
+#include <sys/xattr.h>
 #include "../../lib/include/list.h"
 
 //#define DEBUG
@@ -4351,6 +4352,48 @@ return_execve2:
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
 #endif /* __NR_access */
+		case __NR_getxattr:
+			ret = do_strncpy_from_user(fd, pathbuf,
+					(void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+
+			ret = getxattr(fn, (char *)w.sr.args[1],
+				       (void *)w.sr.args[2],
+				       (size_t)w.sr.args[3]);
+			SET_ERR(ret);
+			__dprintf("getxattr: path=%s, name=%s, ret=%ld\n", fn,
+				  (char *)w.sr.args[1], ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
+		case __NR_lgetxattr:
+			ret = do_strncpy_from_user(fd, pathbuf,
+					(void *)w.sr.args[0], PATH_MAX);
+			if (ret >= PATH_MAX) {
+				ret = -ENAMETOOLONG;
+			}
+			if (ret < 0) {
+				do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+				break;
+			}
+
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+
+			ret = lgetxattr(fn, (char *)w.sr.args[1],
+					(void *)w.sr.args[2],
+					(size_t)w.sr.args[3]);
+			SET_ERR(ret);
+			__dprintf("lgetxattr: path=%s, name=%s, ret=%ld\n", fn,
+				  (char *)w.sr.args[1], ret);
+			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+			break;
 #ifdef	__NR_getdents
 		case __NR_getdents:
 #endif
