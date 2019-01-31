@@ -1,4 +1,4 @@
-/* archdep.S COPYRIGHT FUJITSU LIMITED 2017 */
+/* archdep.S COPYRIGHT FUJITSU LIMITED 2017-2018 */
 /* TODO: skeleton for UTI */
 .global switch_ctx
 switch_ctx:

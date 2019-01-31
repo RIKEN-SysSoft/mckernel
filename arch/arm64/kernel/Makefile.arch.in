@@ -1,4 +1,4 @@
-# Makefile.arch COPYRIGHT FUJITSU LIMITED 2015-2017
+# Makefile.arch.in COPYRIGHT FUJITSU LIMITED 2015-2018
 VDSO_SRCDIR = $(SRC)/../arch/$(IHKARCH)/kernel/vdso
 VDSO_BUILDDIR = @abs_builddir@/vdso
 VDSO_SO_O = $(O)/vdso.so.o

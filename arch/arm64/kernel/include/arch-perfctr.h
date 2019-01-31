@@ -1,4 +1,4 @@
-/* arch-perfctr.h COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* arch-perfctr.h COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #ifndef __ARCH_PERFCTR_H__
 #define __ARCH_PERFCTR_H__
 

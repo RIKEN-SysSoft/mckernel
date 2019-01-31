@@ -1,4 +1,4 @@
-/* entry.S COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* entry.S COPYRIGHT FUJITSU LIMITED 2015-2018 */
 
 #include <linkage.h>
 #include <assembler.h>
