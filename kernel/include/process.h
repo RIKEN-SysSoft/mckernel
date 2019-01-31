@@ -577,6 +577,7 @@ struct process {
 #endif // PROFILE_ENABLE
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
+	struct program_load_desc *desc;
 };
 
 /*
