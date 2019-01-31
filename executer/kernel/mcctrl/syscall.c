@@ -2019,18 +2019,27 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 			end = vma->vm_end;
 		}
 		if (addr < end) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
-			zap_vma_ptes(vma, addr, end-addr);
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
 			error = zap_vma_ptes(vma, addr, end-addr);
 			if (error) {
-				mcctrl_zap_page_range(vma, addr, end-addr, NULL);
+				mcctrl_zap_page_range(vma, addr, end-addr,
+						      NULL);
 				error = 0;
 			}
 			if (ret == 0) {
 				ret = error;
 			}
-#endif
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0) */
+			if (addr < vma->vm_start ||
+			    addr + end-addr > vma->vm_end ||
+					!(vma->vm_flags & VM_PFNMAP)) {
+				mcctrl_zap_page_range(vma, addr, end-addr,
+						      NULL);
+			}
+			else {
+				zap_vma_ptes(vma, addr, end-addr);
+			}
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0) */
 		}
 		addr = end;
 	}
