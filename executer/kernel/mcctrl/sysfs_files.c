@@ -1,4 +1,4 @@
-// sysfs_files.c COPYRIGHT FUJITSU LIMITED 2016
+// sysfs_files.c COPYRIGHT FUJITSU LIMITED 2016-2018
 /**
  * \file sysfs_files.c
  *  License details are found in the file LICENSE.

@@ -1,4 +1,4 @@
-// mcctrl.h COPYRIGHT FUJITSU LIMITED 2016-2017
+// mcctrl.h COPYRIGHT FUJITSU LIMITED 2016-2018
 /**
  * \file mcctrl.h
  *  License details are found in the file LICENSE.

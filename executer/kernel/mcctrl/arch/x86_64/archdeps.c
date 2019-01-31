@@ -1,4 +1,4 @@
-/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
+/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <linux/version.h>
 #include <linux/kallsyms.h>
 #include <linux/uaccess.h>

@@ -1,4 +1,4 @@
-/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <cpulocal.h>
 #include <string.h>
 #include <kmalloc.h>

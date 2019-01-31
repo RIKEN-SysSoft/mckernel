@@ -1,4 +1,4 @@
-/* assert.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* assert.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 
 #include <process.h>
 #include <list.h>

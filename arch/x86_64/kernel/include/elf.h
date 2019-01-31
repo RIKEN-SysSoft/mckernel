@@ -1,3 +1,4 @@
+/* elf.h COPYRIGHT FUJITSU LIMITED 2018 */
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #ifndef __HEADER_X86_COMMON_ELF_H
 #define __HEADER_X86_COMMON_ELF_H

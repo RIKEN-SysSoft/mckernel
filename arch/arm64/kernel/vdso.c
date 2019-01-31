@@ -1,4 +1,4 @@
-/* vdso.c COPYRIGHT FUJITSU LIMITED 2016 */
+/* vdso.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 /* @ref.impl arch/arm64/kernel/vdso.c */
 
 #include <arch-memory.h>
