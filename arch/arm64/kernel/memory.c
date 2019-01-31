@@ -2580,6 +2580,8 @@ static pte_t *lookup_pte(translation_table_t* tt, uintptr_t virt, int pgshift,
 			pgshift = PTL3_CONT_SHIFT;
 		} else if (pgshift > PTL3_SHIFT) {
 			pgshift = PTL3_SHIFT;
+		} else {
+			ptep = NULL;
 		}
 		goto out;
 	}
