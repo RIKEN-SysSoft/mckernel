@@ -1,0 +1,170 @@
+===================
+Advance preparation
+===================
+1) install IHK/McKernel
+
+2) set up configuration file
+   $ cp <mckernel>/mck_test_config.sample ~/.mck_test_config
+   $ emacs ~/.mck_test_config
+   $ cat ~/.mck_test_config
+   # Config file for McKernel tests
+   : ${BIN:=/opt/ppos/bin}
+   : ${SBIN:=/opt/ppos/sbin}
+   : ${OSTEST:=}
+   : ${LTP:=}
+   : ${BOOTPARAM:=-c 4-7 -m 8192M -e anon_on_demand}
+   : ${MCKERNEL_VERSION:=1.5.0}
+
+3) compile test program
+    $ cd <mckernel>/test/contiguous_pte
+    $ patch -p1 < arm64_4KB_setting.patch (4KB granule only)
+    $ make
+
+==========
+How to run
+==========
+    $ cd <mckernel>/test/contiguous_pte
+    $ sh ./go_contiguous_pte_test.sh | tee result.log
+
+==========
+テストが確認する内容は以下の通り。
+
+[基本動作]
+ContiguousPTEの基本的な動作を確認する。
+
+#0: shmgetのflagにContiguousPTEのサイズが指定可能なこと。
+    サイズはSHM_HUGE_FIRST_CONT_BLOCKを指定する。
+
+　   * 64KiBページサイズにおいては、
+　 　　ARMv8.2-LPA環境の時のみ有効なテスト。
+       ARMv8.2-LPA環境では無いときは、
+　　 　TP実行結果がNGになることが期待動作となる。
+
+#1: shmgetのflagにContiguous PTEのサイズが指定可能なこと。
+    サイズはSHM_HUGE_SECOND_CONT_BLOCKを指定する。
+
+#2: shmgetのflagにContiguous PTEのサイズが指定可能なこと。
+    サイズはSHM_HUGE_THIRD_CONT_BLOCKを指定する。
+
+#3: mapのflagにContiguous PTEのサイズが指定可能なこと。
+    サイズはMAP_HUGE_FIRST_CONT_BLOCKを指定する。
+
+　   * 64KiBページサイズにおいては、
+　 　　ARMv8.2-LPA環境の時のみ有効なテスト。
+       ARMv8.2-LPA環境では無いときは、
+　　 　TP実行結果がNGになることが期待動作となる。
+
+#4: mmapのflagにContiguous PTEのサイズが指定可能なこと。
+    サイズはMAP_HUGE_SECOND_CONT_BLOCKを指定する。
+
+#5: mmapのflagにContiguous PTEのサイズが指定可能なこと。
+    サイズはSHM_HUGE_THIRD_CONT_BLOCKを指定する。
+
+#6: ContiguousPTEが割当てられたプロセスがfork可能なこと。
+
+#7: ページテーブルの登録状況が確認できない状況でも、
+    上位のページテーブルの状態をチェックして、
+    ContiguousPTEのサイズでメモリを割り当てること。
+
+#8: shmgetのTHPでContiguous PTEのメモリ確保が出来ること。
+
+    * shmgetは拡張THPが使えないのでNGとなる(Issue #1241)
+
+#9: mmaptのTHPでContiguous PTEのメモリ確保が出来ること。
+
+
+[メモリ割当て動作]
+フラグ指定のmmapでContiguous PTEが割当て動作を確認する。
+（mmapはmnumap,mremapのテストの初期化処理にてメモリ確保動作を確認）
+（shmgetはmadviseテストの初期化処理にてメモリ確保動作を確認）
+
+
+#100: 次の条件の下で、ContiguousPTEの割当が行えること。
+      対象テーブル: lv2、隣接PTE: 割り当て無し、端数: なし
+
+　　　* 対象ページテーブルのContiguousPTEページサイズよりも
+        大きな空きメモリが無い環境ではTPがSIGSEGVでNGになることが
+　　　　期待動作となる。
+
+#104: 次の条件の下で、ContiguousPTEの割当が行えないこと。
+      対象テーブル: lv3、隣接PTE: 割当てあり(head位置)、端数: なし
+
+#105: 次の条件の下で、ContiguousPTEの割当が行えないこと。
+　　　対象テーブル: lv3、隣接PTE: 割当てあり(tail位置)、端数: なし
+
+
+#106: 次の条件の下で、ContiguousPTEの割当が行えないこと。
+　　　ContiguousPTEのサイズでアラインされているVA/PAだが、
+　　　割当てページ数(メモリサイズ)が、ContiguousPTEの枚数に満たない。
+　　　対象テーブルはlv2。
+
+#107: 次の条件の下で、ContiguousPTEの割当が行えないこと。
+      ContiguousPTEのサイズでアラインされているVA/PAだが、
+      割当てページ数(メモリサイズ)が、ContiguousPTEの枚数に満たない。
+      対象テーブルはlv3。
+
+[munmapテスト]
+munmapでContiguous PTEでマップされた領域[a, b]に含まれるメモリ範囲[p ,q]をunmapした際に、
+対象領域と、その前後のPTEが期待通りになっているかを確認する。
+以下、＜開始アドレス、終了アドレス＞の形式で設定の組み合わせを示す。
+
+#200: <p - PAGE_SIZE, p + PAGE_SIZE>
+
+#201: <p + PAGE_SIZE, p + PAGE_SIZE>
+
+#202: <p - PAGE_SIZE, p - PAGE_SIZE>
+
+#203: <p + PAGE_SIZE, p>
+
+#204: <p, p>
+
+#205: <p - PAGE_SIZE, p>
+
+#206: <p, p + PAGE_SIZE>
+
+#207: <p + PAGE_SIZE, p - PAGE_SIZE>
+
+#208: <p, p - PAGE_SIZE>
+
+[mremapテスト]
+mremapでContiguous PTEでマップされた領域[a, b]に含まれるメモリ範囲[p ,q]をmremapした際に、
+対象領域と、その前後のPTEが期待通りになっているかを確認する。
+以下、＜開始アドレス、終了アドレス＞の形式で設定の組み合わせを示す。
+
+#300: <p - PAGE_SIZE, p + PAGE_SIZE>
+
+#301: <p + PAGE_SIZE, p + PAGE_SIZE>
+
+#302: <p - PAGE_SIZE, p - PAGE_SIZE>
+
+#303: <p + PAGE_SIZE, p>
+
+#304: <p, p>
+
+#305: <p - PAGE_SIZE, p>
+
+#306: <p, p + PAGE_SIZE>
+
+#307: <p + PAGE_SIZE, p - PAGE_SIZE>
+
+#308: <p, p - PAGE_SIZE>
+
+#309: <p, p>
+      移動先アドレスがContiguousPTEのサイズにアラインされないようにし、
+　　　ContiguousPTEが解除されることが#304と異なる。
+
+[madvise(MADV_REMOVE)テスト]
+madviseでContiguous PTEでマップした領域を無効化できることを確認する。
+ * MADV_REMOVEを使うプログラムを流すと
+　 McKはプログラムの連続実行が出来なくなり再起動が必要
+
+#400 Contiguous PTEを無効化できること
+
+#409 Contiguous PTEを中抜きするMADV_REMOVEができないこと
+　　 Contiguous PTEのhead PTEのアドレスを対象とする。
+
+#410 Contiguous PTEを中抜きするMADV_REMOVEができないこと
+　　 Contiguous PTEのtail PTEのアドレスを対象とする。
+
+--
+README COPYRIGHT FUJITSU LIMITED 2018

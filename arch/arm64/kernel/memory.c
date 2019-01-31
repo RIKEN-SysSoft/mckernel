@@ -2356,9 +2356,6 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	dkprintf("%s: %p,%lx,%lx,%d,%p\n",
 		 __func__, pt, start, end, free_physical, memobj);
 
-	dkprintf("%s: %p,%lx,%lx,%d,%p\n",
-			 __func__, pt, start, end, free_physical, memobj);
-
 	if ((start < vm->region.user_start)
 			|| (vm->region.user_end < end)
 			|| (end <= start)) {
@@ -3155,7 +3152,8 @@ static int move_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	attr = apte & ~PT_PHYSMASK;
 
 	error = ihk_mc_pt_set_range(pt, args->vm, (void *)dest,
-			(void *)(dest + pgsize), phys, attr, pgshift, args->range, 0);
+				    (void *)(dest + pgsize), phys, attr,
+				    pgshift, args->range, 0);
 	if (error) {
 		kprintf("move_one_page(%p,%p,%p %#lx,%p,%d):"
 				"set failed. %d\n",
@@ -3779,16 +3777,38 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_8 */
 
-void arch_adjust_allocate_page_size(uintptr_t fault_addr,
+void arch_adjust_allocate_page_size(struct page_table *pt,
+				    uintptr_t fault_addr,
 				    pte_t *ptep,
 				    void **pgaddrp,
 				    size_t *pgsizep)
 {
+	int level;
+
+	if (!pgsize_is_contiguous(*pgsizep)) {
+		return;
+	}
+
 	if (ptep == NULL) {
-		int level = pgsize_to_tbllv(*pgsizep);
-		*pgsizep = tbllv_to_pgsize(level);
-		*pgaddrp = (void *)__page_align(fault_addr, *pgsizep);
-	} else if (pte_is_null(ptep) && pgsize_is_contiguous(*pgsizep)) {
+		void *ptr = get_translation_table(pt);
+		int i;
+
+		// Check the entries of the upper page table.
+		// When PTE_NULL, do not change from the size of ContiguousPTE.
+		level = pgsize_to_tbllv(*pgsizep);
+		for (i = 4; i > 0; i--) {
+			ptr = ptl_offset(ptr, fault_addr, i);
+			if (ptl_null(ptr, i)) {
+				if (level < i) {
+					return;
+				}
+				ptep = ptr;
+				break;
+			}
+		}
+	}
+
+	if (pte_is_null(ptep)) {
 		struct memobj *obj;
 		uintptr_t zeropage = NOPHYS;
 		pte_t *head;
@@ -3803,7 +3823,6 @@ void arch_adjust_allocate_page_size(uintptr_t fault_addr,
 		tail = get_contiguous_tail(ptep, *pgsizep);
 		for (/*nop*/; head <= tail; head++) {
 			uintptr_t phys;
-			int level;
 
 			if (pte_is_null(head)) {
 				continue;

@@ -1,0 +1,13 @@
+diff --git a/test/contiguous_pte/src/arch/arm64/include/arch_test_mck.h b/test/contiguous_pte/src/arch/arm64/include/arch_test_mck.h
+index 9cc59e3..857f9bf 100644
+--- a/src/arch/arm64/include/arch_test_mck.h
++++ b/src/arch/arm64/include/arch_test_mck.h
+@@ -7,7 +7,7 @@
+ #define CONFIG_ARM64_PGTABLE_LEVELS 3
+ #define CONFIG_ARM64_VA_BITS        48
+ //#define CONFIG_ARM64_PGTABLE_LEVELS 4
+-#define CONFIG_ARM64_64K_PAGES    1
++//#define CONFIG_ARM64_64K_PAGES    1
+ #define VA_BITS                     CONFIG_ARM64_VA_BITS
+ 
+ /* auxv */

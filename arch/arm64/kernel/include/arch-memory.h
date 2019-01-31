@@ -781,12 +781,12 @@ static inline int page_is_contiguous_tail(pte_t *ptep, size_t pgsize)
 	return (ptr == ptep);
 }
 
-void arch_adjust_allocate_page_size(uintptr_t fault_addr,
+struct page_table;
+void arch_adjust_allocate_page_size(struct page_table *pt,
+				    uintptr_t fault_addr,
 				    pte_t *ptep,
 				    void **pgaddrp,
 				    size_t *pgsizep);
-
-struct page_table;
 void set_pte(pte_t *ppte, unsigned long phys, enum ihk_mc_pt_attribute attr);
 pte_t *get_pte(struct page_table *pt, void *virt, enum ihk_mc_pt_attribute attr);
 
