@@ -2608,6 +2608,11 @@ SYSCALL_DECLARE(execve)
 			((char *)thread) +
 			KERNEL_STACK_NR_PAGES * PAGE_SIZE, desc->entry, 0);
 
+	/* map_start / map_end is used to track memory area
+	 * to which the program is loaded
+	 */
+	vm->region.map_start = vm->region.map_end = LD_TASK_UNMAPPED_BASE;
+
 	/* Create virtual memory ranges and update args/envs */
 	if (prepare_process_ranges_args_envs(thread, desc, desc,
 				PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
