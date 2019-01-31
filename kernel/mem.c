@@ -1,4 +1,4 @@
-/* mem.c COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* mem.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 /**
  * \file mem.c
  *  License details are found in the file LICENSE.
