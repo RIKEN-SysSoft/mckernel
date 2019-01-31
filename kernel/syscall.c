@@ -5760,18 +5760,13 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 				struct syscall_request request IHK_DMA_ALIGN; 
 				struct timespec tv[2];
 				struct timespec *tv_now = tv;
-				request.number = n;
-				unsigned long __phys;                                          
 
 				if ((((unsigned long)tv) ^
 				    ((unsigned long)(tv + 1))) & PAGE_MASK)
 					tv_now = tv + 1;
-				if (ihk_mc_pt_virt_to_phys(cpu_local_var(current)->vm->address_space->page_table, 
-						(void *)tv_now, &__phys)) { 
-					return -EFAULT; 
-				}
 
-				request.args[0] = __phys;               
+				request.number = n;
+				request.args[0] = virt_to_phys(tv_now);
 				request.args[1] = (flags & FUTEX_CLOCK_REALTIME)?
 						      CLOCK_REALTIME: CLOCK_MONOTONIC;
 
@@ -9420,12 +9415,8 @@ int util_thread(struct uti_attr *arg)
 	}
 
  out:
-	if (rctx) {
-		kfree(rctx);
-	}
-	if (uti_clv) {
-		kfree(uti_clv);
-	}
+	kfree(rctx);
+	kfree(uti_clv);
 
 	return rc;
 }
