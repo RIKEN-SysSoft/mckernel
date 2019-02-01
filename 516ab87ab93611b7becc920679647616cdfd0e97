@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2b9721f4_4806651a",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:28:09Z",
+      "side": 1,
+      "message": "WARNING: \u0027separatly\u0027 may be misspelled - perhaps \u0027separately\u0027?\nwere probably changes I added separatly in other patches but just",
+      "revId": "516ab87ab93611b7becc920679647616cdfd0e97",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
