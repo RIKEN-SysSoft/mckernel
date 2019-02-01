@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "889f36ac_b7e018b6",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:16:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t// ihk_mc_perfctr_startが呼ばれるときには、",
+      "revId": "044ef1855f60eff9f48412f632d6180c13ba3155",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "401aeb0e_73708d7e",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 131,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:16:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t// init系関数が呼ばれるのでdisableにする。",
+      "revId": "044ef1855f60eff9f48412f632d6180c13ba3155",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ea93b66_34fb471a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9294,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:16:21Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    return ihk_mc_perfctr_stop((int)counter, 0);$",
+      "revId": "044ef1855f60eff9f48412f632d6180c13ba3155",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d132299d_b915ec55",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9300,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:16:21Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    return ihk_mc_perfctr_stop(1 \u003c\u003c counter, 0);$",
+      "revId": "044ef1855f60eff9f48412f632d6180c13ba3155",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
