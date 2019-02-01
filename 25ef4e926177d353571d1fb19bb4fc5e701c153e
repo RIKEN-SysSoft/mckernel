@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6c086430_fa79381c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T06:18:55Z",
+      "side": 1,
+      "message": "ERROR: Please use git commit description style \u0027commit \u003c12+ chars of sha1\u003e (\"\u003ctitle line\u003e\")\u0027 - ie: \u0027commit fatal: bad o (\"16ccb15511aa6bc64\")\u0027\n* Merge 53e436ae7db1ed457692dbe16ccb15511aa6bc64",
+      "revId": "25ef4e926177d353571d1fb19bb4fc5e701c153e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05214886_8d6419fa",
+        "filename": "arch/arm64/kernel/include/asm-offsets.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T06:18:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define S_FRAME_SIZE\t0x130\t/* sizeof(struct pt_regs) must be 16 byte align */",
+      "revId": "25ef4e926177d353571d1fb19bb4fc5e701c153e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cc28ff1c_8f0f71df",
+        "filename": "arch/arm64/kernel/include/asm-syscall.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T06:18:55Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define DECLARATOR(number, name)\t.equ __NR_##name, number",
+      "revId": "25ef4e926177d353571d1fb19bb4fc5e701c153e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0faf30c1_dd8d5359",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T06:18:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: cpu\u003d%d,runq_len\u003d%d,runq_reserved\u003d%d,min_cpu\u003d%d,uti_cpu\u003d%d\\n\",",
+      "revId": "25ef4e926177d353571d1fb19bb4fc5e701c153e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f7fa4dc4_8e8a1eed",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1508,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T06:18:55Z",
+      "side": 1,
+      "message": "WARNING: Too many leading tabs - consider code refactoring\n+\t\t\t\t\t\tif (sig !\u003d SIGCHLD \u0026\u0026",
+      "revId": "25ef4e926177d353571d1fb19bb4fc5e701c153e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
