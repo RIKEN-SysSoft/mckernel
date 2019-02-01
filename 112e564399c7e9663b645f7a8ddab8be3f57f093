@@ -19,6 +19,57 @@
     },
     {
       "key": {
+        "uuid": "5159a74c_f6da9657",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 1051,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-02-01T01:44:35Z",
+      "side": 1,
+      "message": "why is this not (cpu_set_t *), what\u0027s the merit of (void *) here?",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "48e48f3d_618e442a",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 2511,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-02-01T01:44:35Z",
+      "side": 1,
+      "message": "when you do mcexec -n large_N, there will be large_N processes doing the same stuff here, how about using shared memory for the topology information? probably not so important though, I am just being an asshole :D",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6c63287e_5f8662cb",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 3123,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-02-01T01:44:35Z",
+      "side": 1,
+      "message": "can this not lead to race conditions where you would miss an fd that is meant to be deleted?",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "0aa3ee2e_e76a7c9b",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 10
@@ -67,6 +118,23 @@
       "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1312e559_b98f7961",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 3465,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-02-01T01:44:35Z",
+      "side": 1,
+      "message": "ofd is not guaranteed to be on the list, is it? someone could call getdents on an invalid fd. should be double-checked here and return EBADF if invalid. for the same reason, ofd should be initialized to NULL?",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
