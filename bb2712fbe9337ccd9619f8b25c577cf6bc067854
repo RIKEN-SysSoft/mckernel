@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c3f1ab6c_771a7470",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:13:42Z",
+      "side": 1,
+      "message": "ERROR: Please use git commit description style \u0027commit \u003c12+ chars of sha1\u003e (\"\u003ctitle line\u003e\")\u0027 - ie: \u0027commit fatal: bad o (\"337118091b010658a\")\u0027\nOriginal commit: d246b93a3bced92d0ac2a4a337118091b010658a",
+      "revId": "bb2712fbe9337ccd9619f8b25c577cf6bc067854",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
