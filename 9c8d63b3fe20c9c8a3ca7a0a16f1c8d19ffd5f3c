@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "bf932517_6e69201b",
+        "filename": "kernel/host.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 216,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T06:56:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: ERROR: data section is too large (end addr: %lx)\\n\",",
+      "revId": "9c8d63b3fe20c9c8a3ca7a0a16f1c8d19ffd5f3c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
