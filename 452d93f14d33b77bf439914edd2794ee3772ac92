@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7cfcc532_ba8d6594",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:28:59Z",
+      "side": 1,
+      "message": "WARNING: Non-standard signature: Originally-by:\nOriginally-by: Kagawa Kodai \u003cfj1731iw@aa.jp.fujitsu.com\u003e",
+      "revId": "452d93f14d33b77bf439914edd2794ee3772ac92",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab130f16_df7daeec",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2022,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-01T04:28:59Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(4, 18, 0)",
+      "revId": "452d93f14d33b77bf439914edd2794ee3772ac92",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
