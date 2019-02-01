@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "db1bab22_15b4be93",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 287,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-02-01T01:21:37Z",
+      "side": 1,
+      "message": "let\u0027s use kmalloc here.",
+      "revId": "3b167cfec362f643f6f1c9c1ab340e8f289bfe39",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
