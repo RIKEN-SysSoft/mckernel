@@ -42,6 +42,6 @@ if [ $? == 0 ]; then
 	sudo ${MCK_DIR}/sbin/ihkosctl ${OS_IDX} kmsg
 	exit 0
 else
-        echo "Error: faild to mcexec"
+        echo "Error: failed to mcexec"
         exit 1
 fi
