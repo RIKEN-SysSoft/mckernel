@@ -61,13 +61,7 @@ inline uint64_t rdtsc_light(void)
 #define DIFFNSEC(end, start) ((end.tv_sec - start.tv_sec) * 1000000000UL + (end.tv_nsec - start.tv_nsec))
 #define TIMER_KIND CLOCK_MONOTONIC_RAW /* CLOCK_THREAD_CPUTIME_ID */
 
-/* Calculation emulation */
-void ndelay_init();
-void ndelay(long delay_nsec);
-void cdelay_init();
-void cdelay(long delay_cyc);
-
 /* CPU location */
-int print_cpu_last_executed_on();
+int print_cpu_last_executed_on(const char *name);
 
 #endif
