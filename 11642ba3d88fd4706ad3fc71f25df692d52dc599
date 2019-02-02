@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c040c411_ca8e4419",
+        "filename": "arch/arm64/kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 296,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-02T19:35:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */",
+      "revId": "11642ba3d88fd4706ad3fc71f25df692d52dc599",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "311e809d_ff9571fe",
+        "filename": "arch/x86_64/kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 364,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-02T19:35:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */",
+      "revId": "11642ba3d88fd4706ad3fc71f25df692d52dc599",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
