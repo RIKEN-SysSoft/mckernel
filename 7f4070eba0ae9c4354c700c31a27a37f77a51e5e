@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4feb5c1f_900e2af4",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-04T07:24:01Z",
+      "side": 1,
+      "message": "(order here does not matter as long as all the tags are in a single block)",
+      "revId": "7f4070eba0ae9c4354c700c31a27a37f77a51e5e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fb1e4b69_fc314a82",
+        "filename": "test/issues/1201/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-04T07:24:01Z",
+      "side": 1,
+      "message": "Why delete this file?",
+      "revId": "7f4070eba0ae9c4354c700c31a27a37f77a51e5e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
