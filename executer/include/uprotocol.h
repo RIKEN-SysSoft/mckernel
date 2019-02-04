@@ -38,7 +38,6 @@
 #define MCEXEC_UP_SEND_SIGNAL    0x30a02906
 #define MCEXEC_UP_GET_CPU        0x30a02907
 #define MCEXEC_UP_STRNCPY_FROM_USER 0x30a02908
-#define MCEXEC_UP_NEW_PROCESS	 0x30a02909
 #define MCEXEC_UP_GET_CRED	 0x30a0290a
 #define MCEXEC_UP_GET_CREDV	 0x30a0290b
 #define MCEXEC_UP_GET_NODES  0x30a0290c
@@ -228,10 +227,6 @@ struct signal_desc {
 	int tid;
 	int sig;
 	char info[128];
-};
-
-struct newprocess_desc {
-	int pid;
 };
 
 struct sys_mount_desc {
