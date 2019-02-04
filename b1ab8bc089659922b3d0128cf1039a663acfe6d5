@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "999bbba6_21d50da6",
+        "filename": "test/issues/1201+1257/C1201.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 140,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-04T06:10:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+fork09      0  TINFO  :  first file descriptor is 12 $",
+      "revId": "b1ab8bc089659922b3d0128cf1039a663acfe6d5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
