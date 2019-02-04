@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fcd906c0_57d6a098",
+        "filename": "lib/abort.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-04T07:17:15Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+void eventfd(int type);",
+      "revId": "eebdf80944ff6f199b996320b137a84e1ede4315",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "56150949_503d43df",
+        "filename": "lib/abort.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-04T07:17:15Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+void arch_print_stack(void);",
+      "revId": "eebdf80944ff6f199b996320b137a84e1ede4315",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b2e1724a_b346f74c",
+        "filename": "lib/abort.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-04T07:17:15Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+void arch_cpu_stop(void);",
+      "revId": "eebdf80944ff6f199b996320b137a84e1ede4315",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
