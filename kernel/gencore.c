@@ -1,4 +1,4 @@
-/* gencore.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* gencore.c COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #include <ihk/debug.h>
 #include <kmalloc.h>
@@ -184,8 +184,8 @@ void fill_auxv(struct note *head, struct thread *thread, void *regs)
 
 int get_note_size(void)
 {
-	return get_prstatus_size() + get_prpsinfo_size()
-		+ get_auxv_size();
+	return get_prstatus_size() + arch_get_thread_core_info_size()
+		+ get_prpsinfo_size() + get_auxv_size();
 }
 
 /**
@@ -200,8 +200,13 @@ void fill_note(void *note, struct thread *thread, void *regs)
 {
 	fill_prstatus(note, thread, regs);
 	note += get_prstatus_size();
+
+	arch_fill_thread_core_info(note, thread, regs);
+	note += arch_get_thread_core_info_size();
+
 	fill_prpsinfo(note, thread, regs);
 	note += get_prpsinfo_size();
+
 	fill_auxv(note, thread, regs);
 }
 

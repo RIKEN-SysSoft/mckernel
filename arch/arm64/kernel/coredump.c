@@ -1,8 +1,12 @@
-/* coredump.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* coredump.c COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #include <process.h>
 #include <elfcore.h>
 #include <string.h>
+#include <ptrace.h>
+#include <cls.h>
+
+#define	align32(x) ((((x) + 3) / 4) * 4)
 
 void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, void *regs0)
 {
@@ -30,6 +34,46 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 
 	/* copy unaligned prstatus addr */
 	memcpy(prstatus, &tmp_prstatus, sizeof(*prstatus));
+}
+
+int arch_get_thread_core_info_size(void)
+{
+	const struct user_regset_view *view = current_user_regset_view();
+	const struct user_regset *regset = find_regset(view, NT_ARM_SVE);
+
+	return sizeof(struct note) + align32(sizeof("LINUX"))
+		+ regset_size(cpu_local_var(current), regset);
+}
+
+void arch_fill_thread_core_info(struct note *head,
+				struct thread *thread, void *regs)
+{
+	const struct user_regset_view *view = current_user_regset_view();
+	const struct user_regset *regset = find_regset(view, NT_ARM_SVE);
+
+	/* pre saved registers */
+	save_fp_regs(thread);
+
+	if (regset->core_note_type && regset->get &&
+	    (!regset->active || regset->active(thread, regset))) {
+		int ret;
+		size_t size = regset_size(thread, regset);
+		void *namep;
+		void *descp;
+
+		namep = (void *) (head + 1);
+		descp = namep + align32(sizeof("LINUX"));
+
+		ret = regset->get(thread, regset, 0, size, descp, NULL);
+		if (ret) {
+			return;
+		}
+
+		head->namesz = sizeof("LINUX");
+		head->descsz = size;
+		head->type = NT_ARM_SVE;
+		memcpy(namep, "LINUX", sizeof("LINUX"));
+	}
 }
 
 #endif /* POSTK_DEBUG_ARCH_DEP_18 */

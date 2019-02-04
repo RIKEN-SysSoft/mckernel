@@ -1,4 +1,4 @@
-/* ptrace.h COPYRIGHT FUJITSU LIMITED 2015-2017 */
+/* ptrace.h COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #ifndef __HEADER_ARM64_COMMON_PTRACE_H
 #define __HEADER_ARM64_COMMON_PTRACE_H
 
@@ -46,6 +46,7 @@
 
 #ifndef __ASSEMBLY__
 
+#include <lwk/compiler.h>
 #include <ihk/types.h>
 
 struct user_hwdebug_state {
@@ -78,6 +79,70 @@ struct user_sve_header {
 	uint16_t __reserved;
 };
 
+enum aarch64_regset {
+	REGSET_GPR,
+	REGSET_FPR,
+	REGSET_TLS,
+	REGSET_HW_BREAK,
+	REGSET_HW_WATCH,
+	REGSET_SYSTEM_CALL,
+#ifdef CONFIG_ARM64_SVE
+	REGSET_SVE,
+#endif /* CONFIG_ARM64_SVE */
+};
+
+struct thread;
+struct user_regset;
+
+typedef int user_regset_active_fn(struct thread *target,
+				  const struct user_regset *regset);
+
+typedef long user_regset_get_fn(struct thread *target,
+				const struct user_regset *regset,
+				unsigned int pos, unsigned int count,
+				void *kbuf, void __user *ubuf);
+
+typedef long user_regset_set_fn(struct thread *target,
+				const struct user_regset *regset,
+				unsigned int pos, unsigned int count,
+				const void *kbuf, const void __user *ubuf);
+
+typedef int user_regset_writeback_fn(struct thread *target,
+				     const struct user_regset *regset,
+				     int immediate);
+
+typedef unsigned int user_regset_get_size_fn(struct thread *target,
+					     const struct user_regset *regset);
+
+struct user_regset {
+	user_regset_get_fn		*get;
+	user_regset_set_fn		*set;
+	user_regset_active_fn		*active;
+	user_regset_writeback_fn	*writeback;
+	user_regset_get_size_fn		*get_size;
+	unsigned int			n;
+	unsigned int			size;
+	unsigned int			align;
+	unsigned int			bias;
+	unsigned int			core_note_type;
+};
+
+struct user_regset_view {
+	const char *name;
+	const struct user_regset *regsets;
+	unsigned int n;
+	uint32_t e_flags;
+	uint16_t e_machine;
+	uint8_t ei_osabi;
+};
+
+extern const struct user_regset_view *current_user_regset_view(void);
+extern const struct user_regset *find_regset(
+		const struct user_regset_view *view,
+		unsigned int type);
+extern unsigned int regset_size(struct thread *target,
+		const struct user_regset *regset);
+
 /* Definitions for user_sve_header.flags: */
 #define SVE_PT_REGS_MASK	(1 << 0)
 
@@ -85,7 +150,7 @@ struct user_sve_header {
 #define SVE_PT_REGS_SVE		SVE_PT_REGS_MASK
 
 #define SVE_PT_VL_THREAD	PR_SVE_SET_VL_THREAD
-#define SVE_PT_VL_INHERIT	PR_SVE_SET_VL_INHERIT
+#define SVE_PT_VL_INHERIT	PR_SVE_VL_INHERIT
 #define SVE_PT_VL_ONEXEC	PR_SVE_SET_VL_ONEXEC
 
 /*
@@ -99,7 +164,9 @@ struct user_sve_header {
  */
 
 /* Offset from the start of struct user_sve_header to the register data */
-#define SVE_PT_REGS_OFFSET	((sizeof(struct sve_context) + 15) / 16 * 16)
+#define SVE_PT_REGS_OFFSET					\
+	((sizeof(struct sve_context) + (SVE_VQ_BYTES - 1))	\
+		/ SVE_VQ_BYTES * SVE_VQ_BYTES)
 
 /*
  * The register data content and layout depends on the value of the
@@ -174,8 +241,10 @@ struct user_sve_header {
 #define SVE_PT_SVE_FFR_OFFSET(vq) \
 	__SVE_SIG_TO_PT(SVE_SIG_FFR_OFFSET(vq))
 
-#define SVE_PT_SVE_FPSR_OFFSET(vq) \
-	((SVE_PT_SVE_FFR_OFFSET(vq) + SVE_PT_SVE_FFR_SIZE(vq) + 15) / 16 * 16)
+#define SVE_PT_SVE_FPSR_OFFSET(vq)				\
+	((SVE_PT_SVE_FFR_OFFSET(vq) + SVE_PT_SVE_FFR_SIZE(vq) + \
+			(SVE_VQ_BYTES - 1))			\
+		/ SVE_VQ_BYTES * SVE_VQ_BYTES)
 #define SVE_PT_SVE_FPCR_OFFSET(vq) \
 	(SVE_PT_SVE_FPSR_OFFSET(vq) + SVE_PT_SVE_FPSR_SIZE)
 
@@ -184,9 +253,10 @@ struct user_sve_header {
  * 128-bit boundary.
  */
 
-#define SVE_PT_SVE_SIZE(vq, flags)				\
-	((SVE_PT_SVE_FPCR_OFFSET(vq) + SVE_PT_SVE_FPCR_SIZE -	\
-		SVE_PT_SVE_OFFSET + 15) / 16 * 16)
+#define SVE_PT_SVE_SIZE(vq, flags)					\
+	((SVE_PT_SVE_FPCR_OFFSET(vq) + SVE_PT_SVE_FPCR_SIZE		\
+			- SVE_PT_SVE_OFFSET + (SVE_VQ_BYTES - 1))	\
+		/ SVE_VQ_BYTES * SVE_VQ_BYTES)
 
 #define SVE_PT_SIZE(vq, flags)						\
 	(((flags) & SVE_PT_REGS_MASK) == SVE_PT_REGS_SVE ?		\
