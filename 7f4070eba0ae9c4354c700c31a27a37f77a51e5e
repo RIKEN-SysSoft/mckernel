@@ -69,6 +69,24 @@
       "revId": "7f4070eba0ae9c4354c700c31a27a37f77a51e5e",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "25f362f9_c1828511",
+        "filename": "test/issues/1201/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-04T08:12:27Z",
+      "side": 1,
+      "message": "Ah, I didn\u0027t see the others were renames (R on gerrit, on the left) -- this is fine then. It was marked as deleted/added because the contents are too different to be considered a rename with minor changes like the other files.",
+      "parentUuid": "088e6c1a_7d746973",
+      "revId": "7f4070eba0ae9c4354c700c31a27a37f77a51e5e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
