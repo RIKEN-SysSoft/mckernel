@@ -36,6 +36,24 @@
     },
     {
       "key": {
+        "uuid": "c1fa36fc_6102e92c",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 1051,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-04T02:03:18Z",
+      "side": 1,
+      "message": "Having a \"trivial\" type (with size 1 so + isn\u0027t annoying) helps with variable-size cpu sets; this code will likely removed with the new upcall depending on what we ihk has (need to check compatibility between user and kernel cpu sets).",
+      "parentUuid": "5159a74c_f6da9657",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "48e48f3d_618e442a",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 10
@@ -47,6 +65,24 @@
       "writtenOn": "2019-02-01T01:44:35Z",
       "side": 1,
       "message": "when you do mcexec -n large_N, there will be large_N processes doing the same stuff here, how about using shared memory for the topology information? probably not so important though, I am just being an asshole :D",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "90831248_285b4914",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 2511,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-04T02:03:18Z",
+      "side": 1,
+      "message": "Let\u0027s fix this better through a new MCEXEC_UP_GET_NODES_TOPO or something instead, in another commit.",
+      "parentUuid": "48e48f3d_618e442a",
       "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
@@ -67,6 +103,24 @@
       "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e4a6edec_39385977",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 3123,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-04T02:03:18Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6c63287e_5f8662cb",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     },
     {
       "key": {
@@ -132,6 +186,24 @@
       "writtenOn": "2019-02-01T01:44:35Z",
       "side": 1,
       "message": "ofd is not guaranteed to be on the list, is it? someone could call getdents on an invalid fd. should be double-checked here and return EBADF if invalid. for the same reason, ofd should be initialized to NULL?",
+      "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "56488f53_571513d1",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 3465,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-04T02:03:18Z",
+      "side": 1,
+      "message": "this was correct, but refactored anyway.",
+      "parentUuid": "1312e559_b98f7961",
       "revId": "112e564399c7e9663b645f7a8ddab8be3f57f093",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
