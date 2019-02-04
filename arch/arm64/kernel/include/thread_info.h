@@ -1,4 +1,4 @@
-/* thread_info.h COPYRIGHT FUJITSU LIMITED 2015-2018 */
+/* thread_info.h COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #ifndef __HEADER_ARM64_COMMON_THREAD_INFO_H
 #define __HEADER_ARM64_COMMON_THREAD_INFO_H
 
@@ -46,9 +46,9 @@ struct thread_info {
 	int			cpu;		/* cpu */
 	struct cpu_context	cpu_context;	/* kernel_context */
 	void			*sve_state;	/* SVE registers, if any */
-	uint16_t		sve_vl;		/* SVE vector length */
-	uint16_t		sve_vl_onexec;	/* SVE vl after next exec */
-	uint16_t		sve_flags;	/* SVE related flags */
+	unsigned int		sve_vl;		/* SVE vector length */
+	unsigned int		sve_vl_onexec;	/* SVE vl after next exec */
+	unsigned long		sve_flags;	/* SVE related flags */
 	unsigned long		fault_address;	/* fault info */
 	unsigned long		fault_code;	/* ESR_EL1 value */
 };
@@ -56,7 +56,7 @@ struct thread_info {
 /* Flags for sve_flags (intentionally defined to match the prctl flags) */
 
 /* Inherit sve_vl and sve_flags across execve(): */
-#define THREAD_VL_INHERIT	PR_SVE_SET_VL_INHERIT
+#define THREAD_VL_INHERIT	PR_SVE_VL_INHERIT
 
 struct arm64_cpu_local_thread {
 	struct thread_info thread_info;

@@ -1,4 +1,4 @@
-/* ptrace.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
+/* ptrace.c COPYRIGHT FUJITSU LIMITED 2016-2019 */
 #include <errno.h>
 #include <debug-monitors.h>
 #include <hw_breakpoint.h>
@@ -12,6 +12,7 @@
 #include <string.h>
 #include <thread_info.h>
 #include <debug.h>
+#include <ptrace.h>
 
 //#define DEBUG_PRINT_SC
 
@@ -24,37 +25,6 @@
 
 extern void save_debugreg(unsigned long *debugreg);
 extern int interrupt_from_user(void *);
-
-enum aarch64_regset {
-	REGSET_GPR,
-	REGSET_FPR,
-	REGSET_TLS,
-	REGSET_HW_BREAK,
-	REGSET_HW_WATCH,
-	REGSET_SYSTEM_CALL,
-#ifdef CONFIG_ARM64_SVE
-	REGSET_SVE,
-#endif /* CONFIG_ARM64_SVE */
-};
-
-struct user_regset;
-typedef long user_regset_get_fn(struct thread *target,
-				const struct user_regset *regset,
-				unsigned int pos, unsigned int count,
-				void *kbuf, void __user *ubuf);
-
-typedef long user_regset_set_fn(struct thread *target,
-				const struct user_regset *regset,
-				unsigned int pos, unsigned int count,
-				const void *kbuf, const void __user *ubuf);
-
-struct user_regset {
-	user_regset_get_fn *get;
-	user_regset_set_fn *set;
-	unsigned int n;
-	unsigned int size;
-	unsigned int core_note_type;
-};
 
 long ptrace_read_user(struct thread *thread, long addr, unsigned long *value)
 {
@@ -271,6 +241,17 @@ static inline long copy_regset_from_user(struct thread *target,
 		return -EOPNOTSUPP;
 	}
 	return regset->set(target, regset, offset, size, NULL, data);
+}
+
+unsigned int regset_size(struct thread *target,
+			 const struct user_regset *regset)
+{
+	if (!regset->get_size) {
+		return regset->n * regset->size;
+	}
+	else {
+		return regset->get_size(target, regset);
+	}
 }
 
 /*
@@ -624,6 +605,48 @@ out:
 
 #ifdef CONFIG_ARM64_SVE
 
+static void sve_init_header_from_thread(struct user_sve_header *header,
+					struct thread *target)
+{
+	unsigned int vq;
+
+	memset(header, 0, sizeof(*header));
+
+	/* McKernel processes always enable SVE. */
+	header->flags = SVE_PT_REGS_SVE;
+
+	if (target->ctx.thread->sve_flags & SVE_PT_VL_INHERIT) {
+		header->flags |= SVE_PT_VL_INHERIT;
+	}
+
+	header->vl = target->ctx.thread->sve_vl;
+	vq = sve_vq_from_vl(header->vl);
+
+	header->max_vl = sve_max_vl;
+	header->size = SVE_PT_SIZE(vq, header->flags);
+	header->max_size = SVE_PT_SIZE(sve_vq_from_vl(header->max_vl),
+				       SVE_PT_REGS_SVE);
+}
+
+static unsigned int sve_size_from_header(struct user_sve_header const *header)
+{
+	return ALIGN(header->size, SVE_VQ_BYTES);
+}
+
+static unsigned int sve_get_size(struct thread *target,
+				 const struct user_regset *regset)
+{
+	struct user_sve_header header;
+
+	/* Instead of system_supports_sve() */
+	if (unlikely(!(elf_hwcap & HWCAP_SVE))) {
+		return 0;
+	}
+
+	sve_init_header_from_thread(&header, target);
+	return sve_size_from_header(&header);
+}
+
 /* read NT_ARM_SVE */
 static long sve_get(struct thread *target,
 		    const struct user_regset *regset,
@@ -646,22 +669,8 @@ static long sve_get(struct thread *target,
 	}
 
 	/* Header */
-	memset(&header, 0, sizeof(header));
-
-	header.vl = target->ctx.thread->sve_vl;
-
-	BUG_ON(!sve_vl_valid(header.vl));
+	sve_init_header_from_thread(&header, target);
 	vq = sve_vq_from_vl(header.vl);
-
-	BUG_ON(!sve_vl_valid(sve_max_vl));
-	header.max_vl = sve_max_vl;
-
-	/* McKernel processes always enable SVE. */
-	header.flags = SVE_PT_REGS_SVE;
-
-	header.size = SVE_PT_SIZE(vq, header.flags);
-	header.max_size = SVE_PT_SIZE(sve_vq_from_vl(header.max_vl),
-				      SVE_PT_REGS_SVE);
 
 	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &header,
 				  0, sizeof(header));
@@ -676,11 +685,9 @@ static long sve_get(struct thread *target,
 	 */
 
 	/* Otherwise: full SVE case */
+
 	start = SVE_PT_SVE_OFFSET;
 	end = SVE_PT_SVE_FFR_OFFSET(vq) + SVE_PT_SVE_FFR_SIZE(vq);
-
-	BUG_ON(end < start);
-	BUG_ON(end - start > sve_state_size(target));
 	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
 				  target->ctx.thread->sve_state,
 				  start, end);
@@ -690,24 +697,18 @@ static long sve_get(struct thread *target,
 
 	start = end;
 	end = SVE_PT_SVE_FPSR_OFFSET(vq);
-
-	BUG_ON(end < start);
 	ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
 				       start, end);
 	if (ret) {
 		goto out;
 	}
 
+	/*
+	 * Copy fpsr, and fpcr which must follow contiguously in
+	 * struct fpsimd_state:
+	 */
 	start = end;
 	end = SVE_PT_SVE_FPCR_OFFSET(vq) + SVE_PT_SVE_FPCR_SIZE;
-
-	BUG_ON((char *)(&target->fp_regs->fpcr + 1) <
-	       (char *)&target->fp_regs->fpsr);
-	BUG_ON(end < start);
-	BUG_ON((char *)(&target->fp_regs->fpcr + 1) -
-	       (char *)&target->fp_regs->fpsr !=
-	        end - start);
-
 	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
 				  &target->fp_regs->fpsr,
 				  start, end);
@@ -716,9 +717,7 @@ static long sve_get(struct thread *target,
 	}
 
 	start = end;
-	end = (SVE_PT_SIZE(SVE_VQ_MAX, SVE_PT_REGS_SVE) + 15) / 16 * 16;
-
-	BUG_ON(end < start);
+	end = sve_size_from_header(&header);
 	ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
 				       start, end);
 out:
@@ -762,13 +761,12 @@ static long sve_set(struct thread *target,
 	 * sve_set_vector_length(), which will also validate them for us:
 	 */
 	ret = sve_set_vector_length(target, header.vl,
-				    header.flags & ~SVE_PT_REGS_MASK);
+		((unsigned long)header.flags & ~SVE_PT_REGS_MASK) << 16);
 	if (ret) {
 		goto out;
 	}
 
 	/* Actual VL set may be less than the user asked for: */
-	BUG_ON(!sve_vl_valid(target->ctx.thread->sve_vl));
 	vq = sve_vq_from_vl(target->ctx.thread->sve_vl);
 
 	/* Registers: FPSIMD-only case */
@@ -779,11 +777,19 @@ static long sve_set(struct thread *target,
 	}
 
 	/* Otherwise: full SVE case */
+
+	/*
+	 * If setting a different VL from the requested VL and there is
+	 * register data, the data layout will be wrong: don't even
+	 * try to set the registers in this case.
+	 */
+	if (count && vq != sve_vq_from_vl(header.vl)) {
+		ret = -EIO;
+		goto out;
+	}
+
 	start = SVE_PT_SVE_OFFSET;
 	end = SVE_PT_SVE_FFR_OFFSET(vq) + SVE_PT_SVE_FFR_SIZE(vq);
-
-	BUG_ON(end < start);
-	BUG_ON(end - start > sve_state_size(target));
 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
 				 target->ctx.thread->sve_state,
 				 start, end);
@@ -793,27 +799,21 @@ static long sve_set(struct thread *target,
 
 	start = end;
 	end = SVE_PT_SVE_FPSR_OFFSET(vq);
-
-	BUG_ON(end < start);
 	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
 					start, end);
 	if (ret) {
 		goto out;
 	}
 
+	/*
+	 * Copy fpsr, and fpcr which must follow contiguously in
+	 * struct fpsimd_state:
+	 */
 	start = end;
 	end = SVE_PT_SVE_FPCR_OFFSET(vq) + SVE_PT_SVE_FPCR_SIZE;
-
-	BUG_ON((char *)(&target->fp_regs->fpcr + 1) <
-		(char *)&target->fp_regs->fpsr);
-	BUG_ON(end < start);
-	BUG_ON((char *)(&target->fp_regs->fpcr + 1) -
-		(char *)&target->fp_regs->fpsr !=
-		 end - start);
-
-	user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-			   &target->fp_regs->fpsr,
-			   start, end);
+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+				 &target->fp_regs->fpsr,
+				 start, end);
 out:
 	return ret;
 }
@@ -825,8 +825,9 @@ static const struct user_regset aarch64_regsets[] = {
 		.core_note_type = NT_PRSTATUS,
 		.n = sizeof(struct user_pt_regs) / sizeof(uint64_t),
 		.size = sizeof(uint64_t),
+		.align = sizeof(uint64_t),
 		.get = gpr_get,
-		.set = gpr_set
+		.set = gpr_set,
 	},
 	[REGSET_FPR] = {
 		.core_note_type = NT_PRFPREG,
@@ -836,56 +837,75 @@ static const struct user_regset aarch64_regsets[] = {
 		 * fpcr are 32-bits wide.
 		 */
 		.size = sizeof(uint32_t),
+		.align = sizeof(uint32_t),
 		.get = fpr_get,
-		.set = fpr_set
+		.set = fpr_set,
 	},
 	[REGSET_TLS] = {
 		.core_note_type = NT_ARM_TLS,
 		.n = 1,
 		.size = sizeof(void *),
+		.align = sizeof(void *),
 		.get = tls_get,
-		.set = tls_set
+		.set = tls_set,
 	},
 	[REGSET_HW_BREAK] = {
 		.core_note_type = NT_ARM_HW_BREAK,
 		.n = sizeof(struct user_hwdebug_state) / sizeof(uint32_t),
 		.size = sizeof(uint32_t),
+		.align = sizeof(uint32_t),
 		.get = hw_break_get,
-		.set = hw_break_set
+		.set = hw_break_set,
 	},
 	[REGSET_HW_WATCH] = {
 		.core_note_type = NT_ARM_HW_WATCH,
 		.n = sizeof(struct user_hwdebug_state) / sizeof(uint32_t),
 		.size = sizeof(uint32_t),
+		.align = sizeof(uint32_t),
 		.get = hw_break_get,
-		.set = hw_break_set
+		.set = hw_break_set,
 	},
 	[REGSET_SYSTEM_CALL] = {
 		.core_note_type = NT_ARM_SYSTEM_CALL,
 		.n = 1,
 		.size = sizeof(int),
+		.align = sizeof(int),
 		.get = system_call_get,
-		.set = system_call_set
+		.set = system_call_set,
 	},
 #ifdef CONFIG_ARM64_SVE
 	[REGSET_SVE] = { /* Scalable Vector Extension */
 		.core_note_type = NT_ARM_SVE,
-		.n = (SVE_PT_SIZE(SVE_VQ_MAX, SVE_PT_REGS_SVE) + 15) / 16,
-		.size = 16,
+		.n = (SVE_PT_SIZE(SVE_VQ_MAX, SVE_PT_REGS_SVE) +
+			(SVE_VQ_BYTES - 1)) / SVE_VQ_BYTES,
+		.size = SVE_VQ_BYTES,
+		.align = SVE_VQ_BYTES,
 		.get = sve_get,
-		.set = sve_set
+		.set = sve_set,
+		.get_size = sve_get_size,
 	},
 #endif /* CONFIG_ARM64_SVE */
 };
 
-static const struct user_regset *
-find_regset(const struct user_regset *regset, unsigned int type, int n)
+static const struct user_regset_view user_aarch64_view = {
+	.name = "aarch64", .e_machine = EM_AARCH64,
+	.regsets = aarch64_regsets,
+	.n = sizeof(aarch64_regsets) / sizeof(aarch64_regsets[0])
+};
+
+const struct user_regset_view *current_user_regset_view(void)
+{
+	return &user_aarch64_view;
+}
+
+const struct user_regset *find_regset(const struct user_regset_view *view,
+				      unsigned int type)
 {
 	int i = 0;
 
-	for (i = 0; i < n; i++) {
-		if (regset[i].core_note_type == type) {
-			return &regset[i];
+	for (i = 0; i < view->n; i++) {
+		if (view->regsets[i].core_note_type == type) {
+			return &view->regsets[i];
 		}
 	}
 	return NULL;
@@ -894,8 +914,8 @@ find_regset(const struct user_regset *regset, unsigned int type, int n)
 static long ptrace_regset(struct thread *thread, int req, long type, struct iovec *iov)
 {
 	long rc = -EINVAL;
-	const struct user_regset *regset = find_regset(aarch64_regsets, type,
-					sizeof(aarch64_regsets) / sizeof(aarch64_regsets[0]));
+	const struct user_regset *regset =
+		find_regset(&user_aarch64_view, type);
 
 	if (!regset) {
 		kprintf("%s: not supported type 0x%x\n", __FUNCTION__, type);

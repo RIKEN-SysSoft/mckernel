@@ -1,4 +1,4 @@
-/* elfcore.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
+/* elfcore.h COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #ifndef __HEADER_ELFCORE_H
 #define __HEADER_ELFCORE_H
 
@@ -109,5 +109,8 @@ struct note {
 /* functions */
 struct thread;
 extern void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, void *regs0);
+extern int arch_get_thread_core_info_size(void);
+extern void arch_fill_thread_core_info(struct note *head,
+		struct thread *thread, void *regs);
 
 #endif /* __HEADER_ELFCORE_H */
