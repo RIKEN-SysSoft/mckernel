@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "a1700b2e_fadefa2c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1015587
+      },
+      "writtenOn": "2019-02-04T08:07:08Z",
+      "side": 1,
+      "message": "I understand. Thank you.",
+      "parentUuid": "4feb5c1f_900e2af4",
+      "revId": "7f4070eba0ae9c4354c700c31a27a37f77a51e5e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "fb1e4b69_fc314a82",
         "filename": "test/issues/1201/README",
         "patchSetId": 3
@@ -30,6 +48,24 @@
       "writtenOn": "2019-02-04T07:24:01Z",
       "side": 1,
       "message": "Why delete this file?",
+      "revId": "7f4070eba0ae9c4354c700c31a27a37f77a51e5e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "088e6c1a_7d746973",
+        "filename": "test/issues/1201/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015587
+      },
+      "writtenOn": "2019-02-04T08:07:08Z",
+      "side": 1,
+      "message": "I did git mv test/issue/1201 test/issue/1201+1257. As a result, only the README file was created and deleted. Do you know why?",
+      "parentUuid": "fb1e4b69_fc314a82",
       "revId": "7f4070eba0ae9c4354c700c31a27a37f77a51e5e",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
