@@ -4,8 +4,9 @@
 #include <ihk/monitor.h>
 
 extern struct cpu_local_var *clv;
-extern void eventfd(int type);
-extern void arch_print_stack();
+void eventfd(int type);
+void arch_print_stack(void);
+void arch_cpu_stop(void);
 
 void panic(const char *msg)
 {
@@ -20,6 +21,9 @@ void panic(const char *msg)
 	kprintf("%s\n", msg);
 
 	arch_print_stack();
+
+	/* do not assume anything after this is executed */
+	arch_cpu_stop();
 
 	while (1) {
 		cpu_halt();

@@ -1551,7 +1551,8 @@ void arch_print_pre_interrupt_stack(const struct x86_basic_regs *regs) {
 	__print_stack(rbp, regs->rip);
 }
 
-void arch_print_stack() {
+void arch_print_stack(void)
+{
 	struct stack *rbp;
 
 	__kprintf("Approximative stack trace:\n");
@@ -1597,6 +1598,13 @@ return;
 	arch_print_pre_interrupt_stack(regs);
 
 	kprintf_unlock(irqflags);
+}
+
+void arch_cpu_stop(void)
+{
+	while (1) {
+		cpu_halt();
+	}
 }
 
 /*@
