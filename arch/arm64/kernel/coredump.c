@@ -1,5 +1,4 @@
 /* coredump.c COPYRIGHT FUJITSU LIMITED 2015-2016 */
-#ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #include <process.h>
 #include <elfcore.h>
 #include <string.h>
@@ -31,5 +30,3 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	/* copy unaligned prstatus addr */
 	memcpy(prstatus, &tmp_prstatus, sizeof(*prstatus));
 }
-
-#endif /* POSTK_DEBUG_ARCH_DEP_18 */

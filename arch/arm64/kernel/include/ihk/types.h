@@ -20,13 +20,11 @@ typedef uint64_t           size_t;
 typedef int64_t            ssize_t;
 typedef int64_t            off_t;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 typedef int32_t            key_t;
 typedef uint32_t           uid_t;
 typedef uint32_t           gid_t;
 typedef int64_t            time_t;
 typedef int32_t            pid_t;
-#endif /* POSTK_DEBUG_ARCH_DEP_18 */
 
 #endif /* __ASSEMBLY__ */
 
