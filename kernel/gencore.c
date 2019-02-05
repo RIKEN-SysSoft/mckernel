@@ -1,5 +1,4 @@
-/* gencore.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
-#ifndef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
+/* gencore.c COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #include <ihk/debug.h>
 #include <kmalloc.h>
 #include <cls.h>
@@ -7,7 +6,6 @@
 #include <process.h>
 #include <string.h>
 #include <elfcore.h>
-#include <debug.h>
 
 #define	align32(x) ((((x) + 3) / 4) * 4)
 #define	alignpage(x) ((((x) + (PAGE_SIZE) - 1) / (PAGE_SIZE)) * (PAGE_SIZE))
@@ -25,9 +23,8 @@
 #define GENCORE_RANGE_IS_INACCESSIBLE(range) \
 	    ((range->flag & (VR_RESERVED | VR_MEMTYPE_UC | VR_DONTDUMP)))
 
-/*
- * Generate a core file image, which consists of many chunks.
- * Returns an allocated table, an etnry of which is a pair of the address 
+/* Generate a core file image, which consists of many chunks.
+ * Returns an allocated table, an etnry of which is a pair of the address
  * of a chunk and its length.
  */
 
@@ -44,18 +41,14 @@ void fill_elf_header(Elf64_Ehdr *eh, int segs)
 	eh->e_ident[EI_MAG1] = 'E';
 	eh->e_ident[EI_MAG2] = 'L';
 	eh->e_ident[EI_MAG3] = 'F';
-	eh->e_ident[EI_CLASS] = ELFCLASS64;
-	eh->e_ident[EI_DATA] = ELFDATA2LSB;
+	eh->e_ident[EI_CLASS] = ELF_CLASS;
+	eh->e_ident[EI_DATA] = ELF_DATA;
 	eh->e_ident[EI_VERSION] = El_VERSION;
-	eh->e_ident[EI_OSABI] = ELFOSABI_NONE;
-	eh->e_ident[EI_ABIVERSION] = El_ABIVERSION_NONE;
+	eh->e_ident[EI_OSABI] = ELF_OSABI;
+	eh->e_ident[EI_ABIVERSION] = ELF_ABIVERSION;
 
 	eh->e_type = ET_CORE;
-#ifdef CONFIG_MIC
-	eh->e_machine = EM_K10M;
-#else
-	eh->e_machine = EM_X86_64;
-#endif
+	eh->e_machine = ELF_ARCH;
 	eh->e_version = EV_CURRENT;
 	eh->e_entry = 0;	/* Do we really need this? */
 	eh->e_phoff = 64;	/* fixed */
@@ -76,22 +69,9 @@ void fill_elf_header(Elf64_Ehdr *eh, int segs)
 
 int get_prstatus_size(void)
 {
-	return sizeof(struct note) + align32(sizeof("CORE")) 
+	return sizeof(struct note) + align32(sizeof("CORE"))
 		+ align32(sizeof(struct elf_prstatus64));
 }
-
-/**
- * \brief Fill a prstatus structure.
- *
- * \param head A pointer to a note structure.
- * \param thread A pointer to the current thread structure.
- * \param regs0 A pointer to a x86_regs structure.
- */
-
-void fill_prstatus(struct note *head, struct thread *thread, void *regs0)
-{
-/* TODO(pka_idle) */
-} 
 
 /**
  * \brief Return the size of the prpsinfo entry of the NOTE segment.
@@ -100,16 +80,38 @@ void fill_prstatus(struct note *head, struct thread *thread, void *regs0)
 
 int get_prpsinfo_size(void)
 {
-	return sizeof(struct note) + align32(sizeof("CORE")) 
+	return sizeof(struct note) + align32(sizeof("CORE"))
 		+ align32(sizeof(struct elf_prpsinfo64));
+}
+
+/**
+ * \brief Fill a prstatus structure.
+ *
+ * \param head A pointer to a note structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs0 A pointer to a ihk_mc_user_context_t structure.
+ */
+void fill_prstatus(struct note *head, struct thread *thread, void *regs0)
+{
+	void *name;
+	struct elf_prstatus64 *prstatus;
+
+	head->namesz = sizeof("CORE");
+	head->descsz = sizeof(struct elf_prstatus64);
+	head->type = NT_PRSTATUS;
+	name =  (void *) (head + 1);
+	memcpy(name, "CORE", sizeof("CORE"));
+	prstatus = (struct elf_prstatus64 *)(name + align32(sizeof("CORE")));
+
+	arch_fill_prstatus(prstatus, thread, regs0);
 }
 
 /**
  * \brief Fill a prpsinfo structure.
  *
  * \param head A pointer to a note structure.
- * \param thread A pointer to the current thread structure.
- * \param regs A pointer to a x86_regs structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a ihk_mc_user_context_t structure.
  */
 
 void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
@@ -127,20 +129,18 @@ void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
 	prpsinfo->pr_state = thread->status;
 	prpsinfo->pr_pid = thread->proc->pid;
 
-/*
-  We leave most of the fields unfilled.
-
-	char pr_sname;
-	char pr_zomb;
-	char pr_nice;
-	a8_uint64_t pr_flag;
-	unsigned int pr_uid;
-	unsigned int pr_gid;
-	int pr_ppid, pr_pgrp, pr_sid;
-	char pr_fname[16];
-	char pr_psargs[ELF_PRARGSZ];
-*/
-} 
+/* TODO: Fill the following fields:
+ *	char pr_sname;
+ *	char pr_zomb;
+ *	char pr_nice;
+ *	a8_uint64_t pr_flag;
+ *	unsigned int pr_uid;
+ *	unsigned int pr_gid;
+ *	int pr_ppid, pr_pgrp, pr_sid;
+ *	char pr_fname[16];
+ *	char pr_psargs[ELF_PRARGSZ];
+ */
+}
 
 /**
  * \brief Return the size of the AUXV entry of the NOTE segment.
@@ -149,7 +149,7 @@ void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
 
 int get_auxv_size(void)
 {
-	return sizeof(struct note) + align32(sizeof("CORE")) 
+	return sizeof(struct note) + align32(sizeof("CORE"))
 		+ sizeof(unsigned long) * AUXV_LEN;
 }
 
@@ -157,8 +157,8 @@ int get_auxv_size(void)
  * \brief Fill an AUXV structure.
  *
  * \param head A pointer to a note structure.
- * \param thread A pointer to the current thread structure.
- * \param regs A pointer to a x86_regs structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a ihk_mc_user_context_t structure.
  */
 
 void fill_auxv(struct note *head, struct thread *thread, void *regs)
@@ -172,8 +172,9 @@ void fill_auxv(struct note *head, struct thread *thread, void *regs)
 	name =  (void *) (head + 1);
 	memcpy(name, "CORE", sizeof("CORE"));
 	auxv = name + align32(sizeof("CORE"));
-	memcpy(auxv, thread->proc->saved_auxv, sizeof(unsigned long) * AUXV_LEN);
-} 
+	memcpy(auxv, thread->proc->saved_auxv,
+	       sizeof(unsigned long) * AUXV_LEN);
+}
 
 /**
  * \brief Return the size of the whole NOTE segment.
@@ -190,8 +191,8 @@ int get_note_size(void)
  * \brief Fill the NOTE segment.
  *
  * \param head A pointer to a note structure.
- * \param thread A pointer to the current thread structure.
- * \param regs A pointer to a x86_regs structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a ihk_mc_user_context_t structure.
  */
 
 void fill_note(void *note, struct thread *thread, void *regs)
@@ -206,23 +207,27 @@ void fill_note(void *note, struct thread *thread, void *regs)
 /**
  * \brief Generate an image of the core file.
  *
- * \param thread A pointer to the current thread structure.
- * \param regs A pointer to a x86_regs structure.
+ * \param proc A pointer to the current process structure.
+ * \param regs A pointer to a ihk_mc_user_context_t structure.
  * \param coretable(out) An array of core chunks.
  * \param chunks(out) Number of the entires of coretable.
  *
- * A core chunk is represented by a pair of a physical 
+ * A core chunk is represented by a pair of a physical
  * address of memory region and its size. If there are
- * no corresponding physical address for a VM area 
+ * no corresponding physical address for a VM area
  * (an unallocated demand-paging page, e.g.), the address
  * should be zero.
  */
 
-int gencore(struct thread *thread, void *regs, 
+int gencore(struct thread *thread, void *regs,
 	    struct coretable **coretable, int *chunks)
 {
 	struct coretable *ct = NULL;
+#ifdef POSTK_DEBUG_TEMP_FIX_39
+	Elf64_Ehdr *eh = NULL;
+#else
 	Elf64_Ehdr eh;
+#endif /*POSTK_DEBUG_TEMP_FIX_39*/
 	Elf64_Phdr *ph = NULL;
 	void *note = NULL;
 	struct vm_range *range, *next;
@@ -243,20 +248,22 @@ int gencore(struct thread *thread, void *regs,
 	while ((range = next)) {
 		next = next_process_memory_range(vm, range);
 
-		dkprintf("start:%lx end:%lx flag:%lx objoff:%lx\n", 
+		dkprintf("start:%lx end:%lx flag:%lx objoff:%lx\n",
 			 range->start, range->end, range->flag, range->objoff);
 
 		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
 		}
 		/* We need a chunk for each page for a demand paging area.
-		   This can be optimized for spacial complexity but we would
-		   lose simplicity instead. */
+		 * This can be optimized for spacial complexity but we would
+		 * lose simplicity instead.
+		 */
 		if (range->flag & VR_DEMAND_PAGING) {
 			unsigned long p, phys;
 			int prevzero = 0;
+
 			for (p = range->start; p < range->end; p += PAGE_SIZE) {
-				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table, 
+				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table,
 							    (void *)p, &phys) != 0) {
 					prevzero = 1;
 				} else {
@@ -278,18 +285,36 @@ int gencore(struct thread *thread, void *regs,
 	{
 		struct vm_regions region = thread->vm->region;
 
-		dkprintf("text:  %lx-%lx\n", region.text_start, region.text_end);
-		dkprintf("data:  %lx-%lx\n", region.data_start, region.data_end);
+		dkprintf("text:  %lx-%lx\n", region.text_start,
+			 region.text_end);
+		dkprintf("data:  %lx-%lx\n", region.data_start,
+			 region.data_end);
 		dkprintf("brk:   %lx-%lx\n", region.brk_start, region.brk_end);
 		dkprintf("map:   %lx-%lx\n", region.map_start, region.map_end);
-		dkprintf("stack: %lx-%lx\n", region.stack_start, region.stack_end);
-		dkprintf("user:  %lx-%lx\n\n", region.user_start, region.user_end);
+		dkprintf("stack: %lx-%lx\n", region.stack_start,
+			 region.stack_end);
+		dkprintf("user:  %lx-%lx\n\n", region.user_start,
+			 region.user_end);
 	}
 
 	dkprintf("now generate a core file image\n");
 
+#ifdef POSTK_DEBUG_TEMP_FIX_39
+	eh = kmalloc(sizeof(*eh), IHK_MC_AP_NOWAIT);
+	if (eh == NULL) {
+		dkprintf("could not alloc a elf header table.\n");
+		goto fail;
+	}
+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */
+	memset(eh, 0, sizeof(*eh));
+#endif /* POSTK_DEBUG_TEMP_FIX_63 */
+
+	offset += sizeof(*eh);
+	fill_elf_header(eh, segs);
+#else
 	offset += sizeof(eh);
 	fill_elf_header(&eh, segs);
+#endif /* POSTK_DEBUG_TEMP_FIX_39 */
 
 	/* program header table */
 	phsize = sizeof(Elf64_Phdr) * segs;
@@ -361,10 +386,19 @@ int gencore(struct thread *thread, void *regs,
 		dkprintf("could not alloc a coretable.\n");
 		goto fail;
 	}
+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */
+	memset(ct, 0, sizeof(*ct));
+#endif /* POSTK_DEBUG_TEMP_FIX_63 */
 
+#ifdef POSTK_DEBUG_TEMP_FIX_39
+	ct[0].addr = virt_to_phys(eh);	/* ELF header */
+	ct[0].len = 64;
+	dkprintf("coretable[0]: %lx@%lx(%lx)\n", ct[0].len, ct[0].addr, eh);
+#else
 	ct[0].addr = virt_to_phys(&eh);	/* ELF header */
-	ct[0].len = 64; 
+	ct[0].len = 64;
 	dkprintf("coretable[0]: %lx@%lx(%lx)\n", ct[0].len, ct[0].addr, &eh);
+#endif /* POSTK_DEBUG_TEMP_FIX_39 */
 
 	ct[1].addr = virt_to_phys(ph);	/* program header table */
 	ct[1].len = phsize;
@@ -384,22 +418,23 @@ int gencore(struct thread *thread, void *regs,
 		if (GENCORE_RANGE_IS_INACCESSIBLE(range)) {
 			continue;
 		}
+
 		if (range->flag & VR_DEMAND_PAGING) {
 			/* Just an ad hoc kluge. */
 			unsigned long p, start, phys;
 			int prevzero = 0;
 			unsigned long size = 0;
 
-			for (start = p = range->start; 
+			for (start = p = range->start;
 			     p < range->end; p += PAGE_SIZE) {
-				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table, 
+				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table,
 							    (void *)p, &phys) != 0) {
 					if (prevzero == 0) {
-						/* We begin a new chunk */
+						/* Start a new chunk */
 						size = PAGE_SIZE;
 						start = p;
 					} else {
-						/* We extend the previous chunk */
+						/* Extend the previous chunk */
 						size += PAGE_SIZE;
 					}
 					prevzero = 1;
@@ -408,15 +443,16 @@ int gencore(struct thread *thread, void *regs,
 						/* Flush out an empty chunk */
 						ct[i].addr = 0;
 						ct[i].len = size;
-						dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
-							 ct[i].len, ct[i].addr, start);
+						dkprintf("coretable[%d]: %lx@%lx(%lx)\n",
+							 i, ct[i].len,
+							 ct[i].addr, start);
 						i++;
 
 					}
 					ct[i].addr = phys;
 					ct[i].len = PAGE_SIZE;
-					dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
-						 ct[i].len, ct[i].addr, p);
+					dkprintf("coretable[%d]: %lx@%lx(%lx)\n",
+						 i, ct[i].len, ct[i].addr, p);
 					i++;
 					prevzero = 0;
 				}
@@ -425,17 +461,20 @@ int gencore(struct thread *thread, void *regs,
 				/* An empty chunk */
 				ct[i].addr = 0;
 				ct[i].len = size;
-				dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
-					 ct[i].len, ct[i].addr, start);
+				dkprintf("coretable[%d]: %lx@%lx(%lx)\n",
+					 i, ct[i].len, ct[i].addr, start);
 				i++;
-			}		
+			}
 		} else {
 			if ((thread->vm->region.user_start <= range->start) &&
 			    (range->end <= thread->vm->region.user_end)) {
-				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table, 
-							   (void *)range->start, &phys) != 0) {
-					dkprintf("could not convert user virtual address %lx"
-						 "to physical address", range->start);
+				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table,
+							   (void *)range->start,
+							   &phys) != 0) {
+					dkprintf("could not convert user "
+						 "virtual address %lx "
+						 "to physical address\n",
+						 range->start);
 					goto fail;
 				}
 			} else {
@@ -443,7 +482,7 @@ int gencore(struct thread *thread, void *regs,
 			}
 			ct[i].addr = phys;
 			ct[i].len = range->end - range->start;
-			dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i, 
+			dkprintf("coretable[%d]: %lx@%lx(%lx)\n", i,
 				 ct[i].len, ct[i].addr, range->start);
 			i++;
 		}
@@ -452,13 +491,10 @@ int gencore(struct thread *thread, void *regs,
 
 	return 0;
 
-	fail:
-	if (ct)
-		kfree(ct);
-	if (ph)
-		kfree(ph);
-	if (note)
-		kfree(note);
+fail:
+	kfree(ct);
+	kfree(ph);
+	kfree(note);
 	return -1;
 }
 
@@ -471,8 +507,11 @@ int gencore(struct thread *thread, void *regs,
 void freecore(struct coretable **coretable)
 {
 	struct coretable *ct = *coretable;
+
 	kfree(phys_to_virt(ct[2].addr));	/* NOTE segment */
 	kfree(phys_to_virt(ct[1].addr));	/* ph */
+#ifdef POSTK_DEBUG_TEMP_FIX_39
+	kfree(phys_to_virt(ct[0].addr));	/* eh */
+#endif /*POSTK_DEBUG_TEMP_FIX_39*/
 	kfree(*coretable);
 }
-#endif /* !POSTK_DEBUG_ARCH_DEP_18 */
