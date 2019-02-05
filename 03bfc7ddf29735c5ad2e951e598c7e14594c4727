@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6f57d936_630aa90d",
+        "filename": "arch/arm64/kernel/ptrace.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 893,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-05T06:14:28Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(aarch64_regsets)\n+\t.n \u003d sizeof(aarch64_regsets) / sizeof(aarch64_regsets[0])",
+      "revId": "03bfc7ddf29735c5ad2e951e598c7e14594c4727",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
