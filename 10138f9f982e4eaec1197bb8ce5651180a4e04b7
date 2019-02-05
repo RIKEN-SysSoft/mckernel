@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a4642364_69baee84",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1265,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-05T06:30:24Z",
+      "side": 1,
+      "message": "I\u0027d use strcmp here (e.g. also compare the final nul byte) for principle (not aware of any filesystem named procsomething but why not do an exact match)",
+      "revId": "10138f9f982e4eaec1197bb8ce5651180a4e04b7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
