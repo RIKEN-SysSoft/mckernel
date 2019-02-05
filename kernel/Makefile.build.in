@@ -7,15 +7,8 @@ OBJS = init.o mem.o debug.o mikc.o listeners.o ap.o syscall.o cls.o host.o
 OBJS += process.o copy.o waitq.o futex.o timer.o plist.o fileobj.o shmobj.o
 OBJS += zeroobj.o procfs.o devobj.o sysfs.o xpmem.o profile.o freeze.o
 OBJS += rbtree.o hugefileobj.o
-OBJS += pager.o
+OBJS += pager.o gencore.o
 DEPSRCS=$(wildcard $(SRC)/*.c)
-
-# OBJS added gencore.o
-ifeq ($(ARCH), arm64)
-OBJS += gencore.o
-# POSTK_DEBUG_ARCH_DEP_18 coredump arch separation, delete unnecessary code.
-#DEPSRCS += $(SRC)/../arch/arm64/kernel/gencore.c
-endif
 
 CFLAGS += -I$(SRC)/include -I@abs_builddir@/../ -I@abs_builddir@/include -D__KERNEL__  -g -fno-omit-frame-pointer -fno-inline -fno-inline-small-functions
 ifneq ($(ARCH), arm64)
@@ -76,10 +69,6 @@ $(IHKOBJ): FORCE
 
 %.o: $(SRC)/%.c
 	$(cc_cmd)
-
-# POSTK_DEBUG_ARCH_DEP_18 coredump arch separation, delete unnecessary code.
-#gencore.o: ../arch/arm64/kernel/gencore.c
-#	$(cc_cmd)
 
 FORCE:
 

@@ -1,5 +1,4 @@
 /* elf.h COPYRIGHT FUJITSU LIMITED 2018 */
-#ifdef POSTK_DEBUG_ARCH_DEP_18 /* coredump arch separation. */
 #ifndef __HEADER_X86_COMMON_ELF_H
 #define __HEADER_X86_COMMON_ELF_H
 
@@ -57,4 +56,3 @@ struct user_regs64_struct
 typedef elf_greg64_t elf_gregset64_t[ELF_NGREG64];
 
 #endif /* __HEADER_S64FX_COMMON_ELF_H */
-#endif /* !POSTK_DEBUG_ARCH_DEP_18 */

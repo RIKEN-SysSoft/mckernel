@@ -14,9 +14,6 @@ IHK_OBJS += memcpy.o memset.o
 IHK_OBJS += cpufeature.o
 
 IHK_OBJS += imp-sysreg.o
-
-# POSTK_DEBUG_ARCH_DEP_18 coredump arch separation.
-# IHK_OBJS added coredump.o
 IHK_OBJS += coredump.o
 
 $(VDSO_SO_O): $(VDSO_BUILDDIR)/vdso.so
