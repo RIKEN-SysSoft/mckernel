@@ -16,6 +16,24 @@
       "revId": "a038582c38daea1351cbec1d0dbae345dc633a75",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4e61f4dc_15856d09",
+        "filename": "kernel/host.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 184,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-06T08:09:01Z",
+      "side": 0,
+      "message": "i guess we need to initialize data_start to -1.",
+      "parentUuid": "d82127e6_eba15df6",
+      "revId": "a038582c38daea1351cbec1d0dbae345dc633a75",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
