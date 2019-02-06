@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d82127e6_eba15df6",
+        "filename": "kernel/host.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 184,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-06T04:53:03Z",
+      "side": 0,
+      "message": "What sets data_start with this patch? Won\u0027t it always be 0?\nThe final else block will bump data_end up appropriately but nothing will ever be smaller than 0, will it? Maybe add a vm-\u003eregion.data_start \u003d\u003d 0 check for initial pass? (assuming we don\u0027t let users map data at 0, I\u0027m not sure if base linux forbids it but stuff like grsec do so it\u0027s probably ok..)",
+      "revId": "a038582c38daea1351cbec1d0dbae345dc633a75",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
