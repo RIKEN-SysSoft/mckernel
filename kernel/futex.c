@@ -975,7 +975,7 @@ int futex_init(void)
 	 * implementation, the non functional ones will return
 	 * -ENOSYS.
 	 */
-	curval = cmpxchg_futex_value_locked(NULL, 0, 0);
+	curval = -EFAULT; //cmpxchg_futex_value_locked(NULL, 0, 0);
 	if (curval == -EFAULT) {
 		dkprintf("futex_cmpxchg_enabled = 1 ??\n");
 		futex_cmpxchg_enabled = 1;
