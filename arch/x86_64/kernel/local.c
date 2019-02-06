@@ -49,7 +49,7 @@ struct x86_cpu_local_variables *get_x86_cpu_local_variable(int id)
 		((char *)locals + (LOCALS_SPAN * id));
 }
 
-static void *get_x86_cpu_local_kstack(int id)
+void *get_x86_cpu_local_kstack(int id)
 {
 	return ((char *)locals + (LOCALS_SPAN * (id + 1)));
 }

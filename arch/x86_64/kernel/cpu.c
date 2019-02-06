@@ -825,10 +825,13 @@ void call_ap_func(void (*next_func)(void))
 	next_func();
 }
 
+struct page_table *get_init_page_table(void);
 void setup_x86_ap(void (*next_func)(void))
 {
 	unsigned long rsp;
 	cpu_disable_interrupt();
+
+	ihk_mc_load_page_table(get_init_page_table());
 
 	assign_processor_id();
 
@@ -1305,7 +1308,7 @@ void ihk_mc_set_page_fault_handler(void (*h)(void *, uint64_t, void *))
 }
 
 extern char trampoline_code_data[], trampoline_code_data_end[];
-struct page_table *get_init_page_table(void);
+struct page_table *get_boot_page_table(void);
 unsigned long get_transit_page_table(void);
 
 /* reusable, but not reentrant */
@@ -1329,9 +1332,10 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 	memcpy(p, trampoline_code_data, 
 	       trampoline_code_data_end - trampoline_code_data);
 
-	p[1] = (unsigned long)virt_to_phys(get_init_page_table());
+	p[1] = (unsigned long)virt_to_phys(get_boot_page_table());
 	p[2] = (unsigned long)setup_x86_ap;
 	p[3] = pc;
+	p[4] = (unsigned long)get_x86_cpu_local_kstack(cpuid);
 	p[6] = (unsigned long)get_transit_page_table();
 	if (!p[6]) {
 		p[6] = p[1];
