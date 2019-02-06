@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "882a4600_0a53877c",
+        "filename": "arch/arm64/kernel/include/arch_rusage.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-06T10:04:19Z",
+      "side": 1,
+      "message": "As said previously I don\u0027t like direct uses of such builtins. It\u0027s implemented in gcc/clang/icc ( https://godbolt.org/z/SULVrn ) so I don\u0027t really mind its use in itself, but please go through some helper e.g. pgsize_to_pgshift that could be a static inline in some other header.",
+      "revId": "105ddea477bef39d2fa536c351803fbf621d1063",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "5b745ad4_33904494",
         "filename": "executer/include/ihklib_rusage.h",
         "patchSetId": 4
