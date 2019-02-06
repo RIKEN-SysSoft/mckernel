@@ -108,6 +108,7 @@ struct page_table {
 };
 
 static struct page_table *init_pt;
+static struct page_table *boot_pt;
 static int init_pt_loaded = 0;
 static ihk_spinlock_t init_pt_lock;
 
@@ -2519,6 +2520,11 @@ struct page_table *get_init_page_table(void)
 	return init_pt;
 }
 
+struct page_table *get_boot_page_table(void)
+{
+	return boot_pt;
+}
+
 static unsigned long fixed_virt;
 static void init_fixed_area(struct page_table *pt)
 {
@@ -2695,9 +2701,17 @@ void init_page_table(void)
 	init_normal_area(init_pt);
 	init_linux_kernel_mapping(init_pt);
 	init_fixed_area(init_pt);
-	init_low_area(init_pt);
 	init_text_area(init_pt);
 	init_vsyscall_area(init_pt);
+
+	/* boot page table: needs zero mapping in order to execute the next
+	 * instruction that jumps into regular regions
+	 */
+	boot_pt = ihk_mc_alloc_pages(1, IHK_MC_AP_CRITICAL);
+	memcpy(boot_pt, init_pt, sizeof(*boot_pt));
+	init_low_area(boot_pt);
+	if (memcmp(init_pt, boot_pt, sizeof(*init_pt)) == 0)
+		panic("init low area for boot pt did not affect toplevel entry");
 
 	load_page_table(init_pt);
 	init_pt_loaded = 1;
