@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3523d2bc_9aa9fcd2",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 231,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tElf64_Phdr *ph \u003d NULL;\n \t           ^",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba820d9e_f250d3d8",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 266,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(thread-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e158e3b4_b75e2931",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 267,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t    (void *)p, \u0026phys) !\u003d 0) {",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cdd83611_b0578e49",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 308,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0fee75af_6b6ae691",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 389,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#ifdef POSTK_DEBUG_TEMP_FIX_63 /* Add core table and elf header initialization */",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aa5c4deb_e54dba86",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 430,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(thread-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04accc71_853ac0c7",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 431,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t    (void *)p, \u0026phys) !\u003d 0) {",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c9e4f739_1a04e2ef",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 446,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"coretable[%d]: %lx@%lx(%lx)\\n\",",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8992a462_a3c9d179",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 454,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"coretable[%d]: %lx@%lx(%lx)\\n\",",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2398af44_d56c884a",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 471,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-06T08:24:16Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(thread-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "6fc9ec1c92a83570aee71f78a6d430adf08ebfa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
