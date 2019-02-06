@@ -1558,7 +1558,7 @@ void
 unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 {
 	const uintptr_t address = (uintptr_t)fault_addr;
-	struct process_vm *vm = thread->vm;
+	struct process_vm *vm;
 	struct vm_range *range;
 	unsigned long irqflags;
 	unsigned long error = 0;
@@ -1573,6 +1573,11 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 			(error & PF_RSVD ? "was" : "wasn't"),
 			(error & PF_INSTR ? "was" : "wasn't"));
 
+	if (!thread)
+		goto skipvm;
+
+	vm = thread->vm;
+
 	range = lookup_process_memory_range(vm, address, address+1);
 	if (range) {
 		__kprintf("address is in range, flag: 0x%lx\n",
@@ -1582,6 +1587,7 @@ unhandled_page_fault(struct thread *thread, void *fault_addr, void *regs)
 		__kprintf("address is out of range! \n");
 	}
 
+skipvm:
 	kprintf_unlock(irqflags);
 
 	/* TODO */

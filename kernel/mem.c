@@ -1150,7 +1150,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	int error;
 #ifdef PROFILE_ENABLE
 	uint64_t t_s = 0;
-	if (thread->profile)
+	if (thread && thread->profile)
 		t_s = rdtsc();
 #endif // PROFILE_ENABLE
 
@@ -1163,7 +1163,7 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 
 	cpu_enable_interrupt();
 
-	if ((uintptr_t)fault_addr < PAGE_SIZE) {
+	if ((uintptr_t)fault_addr < PAGE_SIZE || !thread) {
 		error = -EINVAL;
 	} else {
 		error = page_fault_process_vm(thread->vm, fault_addr, reason);
@@ -1179,9 +1179,9 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			// no return
 		}
 
-		kprintf("%s fault VM failed for TID: %d, addr: 0x%lx, "
-				"reason: %d, error: %d\n", __FUNCTION__,
-				thread->tid, fault_addr, reason, error);
+		kprintf("%s fault VM failed for TID: %d, addr: 0x%lx, reason: %d, error: %d\n",
+			__func__, thread ? thread->tid : -1, fault_addr,
+			reason, error);
 		unhandled_page_fault(thread, fault_addr, regs);
 		preempt_enable();
 		memset(&info, '\0', sizeof info);
@@ -1192,12 +1192,14 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			set_signal(SIGBUS, regs, &info);
 		}
 		else {
-			struct process_vm *vm = thread->vm;
-			struct vm_range *range;
+			struct vm_range *range = NULL;
 
 			info.si_signo = SIGSEGV;
 			info.si_code = SEGV_MAPERR;
-			range = lookup_process_memory_range(vm, (uintptr_t)fault_addr, ((uintptr_t)fault_addr) + 1);
+			if (thread)
+				range = lookup_process_memory_range(thread->vm,
+						(uintptr_t)fault_addr,
+						((uintptr_t)fault_addr) + 1);
 			if (range)
 				info.si_code = SEGV_ACCERR;
 			info._sifields._sigfault.si_addr = fault_addr;
@@ -1219,7 +1221,7 @@ out:
 	set_cputime(interrupt_from_user(regs) ?
 		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 #ifdef PROFILE_ENABLE
-	if (thread->profile)
+	if (thread && thread->profile)
 		profile_event_add(PROFILE_page_fault, (rdtsc() - t_s));
 #endif // PROFILE_ENABLE
 	return;
