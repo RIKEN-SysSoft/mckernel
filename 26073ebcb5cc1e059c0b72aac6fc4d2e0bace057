@@ -16,6 +16,24 @@
       "revId": "26073ebcb5cc1e059c0b72aac6fc4d2e0bace057",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "239c6b0a_6bc6aed6",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1870,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-06T10:26:25Z",
+      "side": 1,
+      "message": "* we don\u0027t need to flush shmobj pages because it\u0027s not file-backed.\n* contiguous PTE support is done by 440619.\n* memobj could be NULL when calling ihk_mc_pt_clear_range() for range with memobj with pages.\nConsider it\u0027s for fail-safe because there\u0027s no such execution path right now (there was once during debugging shmobj).",
+      "parentUuid": "149a03d8_9fb77427",
+      "revId": "26073ebcb5cc1e059c0b72aac6fc4d2e0bace057",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
