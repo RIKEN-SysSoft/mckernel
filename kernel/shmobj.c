@@ -244,6 +244,7 @@ static void shmobj_destroy(struct shmobj *obj)
 		}
 		shmlock_users_unlock();
 	}
+
 	/* zap page_list */
 	npages = (size_t)1 << (obj->pgshift - PAGE_SHIFT);
 	for (;;) {
@@ -263,13 +264,13 @@ static void shmobj_destroy(struct shmobj *obj)
 		if (ihk_atomic_read(&page->count) != 1) {
 			kprintf("%s: WARNING: page count for phys 0x%lx is invalid\n",
 					__FUNCTION__, page->phys);
-		}
+		} else if (page_unmap(page)) {
+			/* Other call sites of page_unmap are:
+			 * (1) MADV_REMOVE --> ... --> ihk_mc_pt_free_range()
+			 * (2) do_munmap --> ... --> free_process_memory_range()
+			 * (3) terminate() --> ... --> free_process_memory_range()
+			 */
 
-		/* Other call sites of page_unmap are:
-		 * (1) MADV_REMOVE --> ... --> ihk_mc_pt_free_range()
-		 * (2) munmap --> ... --> free_process_memory_range()
-		 */
-		if (page_unmap(page)) {
 			size_t free_pgsize = 1UL << obj->pgshift;
 			size_t free_size = 1UL << obj->pgshift;
 
@@ -280,6 +281,7 @@ static void shmobj_destroy(struct shmobj *obj)
 			memory_stat_rss_sub(free_size, free_pgsize);
 			kfree(page);
 		}
+
 #if 0
 		dkprintf("shmobj_destroy(%p):"
 				"release page. %p %#lx %d %d",
@@ -415,7 +417,10 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 		memset(virt, 0, npages*PAGE_SIZE);
 		page->mode = PM_MAPPED;
 		page->offset = off;
+
+		/* Page contents should survive over unmap */
 		ihk_atomic_set(&page->count, 1);
+
 		ihk_atomic64_set(&page->mapped, 0);
 		page_list_insert(obj, page);
 		virt = NULL;
