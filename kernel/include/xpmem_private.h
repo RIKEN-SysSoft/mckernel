@@ -48,42 +48,6 @@
 
 #define offset_in_page(p)	((unsigned long)(p) & ~PAGE_MASK)
 
-#define min(x, y)	({                                              \
-	__typeof__(x) _min1 = (x);                                      \
-	__typeof__(y) _min2 = (y);                                      \
-	(void) (&_min1 == &_min2);                                      \
-	_min1 < _min2 ? _min1 : _min2;})
-
-#define max(x, y)	({                                              \
-	__typeof__(x) _max1 = (x);                                      \
-	__typeof__(y) _max2 = (y);                                      \
-	(void) (&_max1 == &_max2);                                      \
-	_max1 > _max2 ? _max1 : _max2;})
-
-#define MAX_ERRNO	4095
-
-#define IS_ERR_VALUE(x)	((x) >= (unsigned long)-MAX_ERRNO)
-
-static inline void * ERR_PTR(long error)
-{
-	return (void *)error;
-}
-
-static inline long PTR_ERR(const void *ptr)
-{
-	return (long)ptr;
-}
-
-static inline long IS_ERR(const void *ptr)
-{
-	return IS_ERR_VALUE((unsigned long)ptr);
-}
-
-static inline long IS_ERR_OR_NULL(const void *ptr)
-{
-	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
-}
-
 /*
  * Both the xpmem_segid_t and xpmem_apid_t are of type __s64 and designed
  * to be opaque to the user. Both consist of the same underlying fields.
