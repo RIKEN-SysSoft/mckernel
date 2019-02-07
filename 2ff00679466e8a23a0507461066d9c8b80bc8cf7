@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3f86d84d_f154177c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-07T00:57:14Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\n[dominique.martinet@cea.fr: Also add ULONG_MAX and friend macroes, used for data_min]",
+      "revId": "2ff00679466e8a23a0507461066d9c8b80bc8cf7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "84a2114e_523ff845",
+        "filename": "kernel/host.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-07T00:57:14Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: ERROR: data section is too large (end addr: %lx)\\n\",",
+      "revId": "2ff00679466e8a23a0507461066d9c8b80bc8cf7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
