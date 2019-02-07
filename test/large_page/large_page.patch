@@ -1,8 +1,8 @@
 diff --git arch/arm64/kernel/memory.c arch/arm64/kernel/memory.c
-index ceca343..5e6c137 100644
+index 2361c6f8..18c131eb 100644
 --- arch/arm64/kernel/memory.c
 +++ arch/arm64/kernel/memory.c
-@@ -2701,6 +2701,13 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
+@@ -2691,6 +2691,13 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
  	ptl1_set(ptep, pte);
  
  	error = 0;
@@ -15,10 +15,10 @@ index ceca343..5e6c137 100644
 +
  	// call memory_stat_rss_add() here because pgshift is resolved here
  	if (rusage_memory_stat_add(args->range, phys, PTL1_SIZE, PTL1_SIZE)) {
- 		dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL1_SIZE, PTL1_SIZE);
-@@ -2791,6 +2798,17 @@ retry:
- 
- 				ptl_set(ptep, phys | args->attr[level-1], level);
+ 		dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+@@ -2783,6 +2790,17 @@ retry:
+ 				ptl_set(ptep, phys | args->attr[level-1],
+ 					level);
  				error = 0;
 +
 +				if (args->attr[level-1] & PTE_CONT) {
@@ -35,10 +35,10 @@ index ceca343..5e6c137 100644
  					 "large page. %d %lx\n",
  					 base, start, end, level, error, *ptep);
 diff --git arch/x86_64/kernel/memory.c arch/x86_64/kernel/memory.c
-index 980d935..4fea4b0 100644
+index 751b892c..48d7f6b1 100644
 --- arch/x86_64/kernel/memory.c
 +++ arch/x86_64/kernel/memory.c
-@@ -2030,6 +2030,10 @@ retry:
+@@ -2034,6 +2034,10 @@ retry:
  			dkprintf("set_range_l2(%lx,%lx,%lx):"
  					"2MiB page. %d %lx\n",
  					base, start, end, error, *ptep);
@@ -49,7 +49,7 @@ index 980d935..4fea4b0 100644
  			// Call memory_stat_rss_add() here because pgshift is resolved here
  			if (rusage_memory_stat_add(args->range, phys, PTL2_SIZE, PTL2_SIZE)) {
  				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
-@@ -2119,6 +2123,9 @@ retry:
+@@ -2123,6 +2127,9 @@ retry:
  					"1GiB page. %d %lx\n",
  					base, start, end, error, *ptep);
  
@@ -60,10 +60,10 @@ index 980d935..4fea4b0 100644
  			if (rusage_memory_stat_add(args->range, phys, PTL3_SIZE, PTL3_SIZE)) {
  				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
 diff --git kernel/host.c kernel/host.c
-index 0de0a08..6fb906e 100644
+index 8ccac6ef..5d408eaa 100644
 --- kernel/host.c
 +++ kernel/host.c
-@@ -96,10 +96,34 @@ int prepare_process_ranges_args_envs(struct thread *thread,
+@@ -96,11 +96,35 @@ int prepare_process_ranges_args_envs(struct thread *thread,
  	unsigned long ap_flags;
  	enum ihk_mc_pt_attribute ptattr;
  	
@@ -79,6 +79,7 @@ index 0de0a08..6fb906e 100644
 +	
  	n = p->num_sections;
  
+ 	vm->region.data_start = ULONG_MAX;
  	aout_base = (pn->reloc)? vm->region.map_end: 0;
  	for (i = 0; i < n; i++) {
 +		if (stack_page_size > PAGE_SIZE &&
@@ -98,7 +99,7 @@ index 0de0a08..6fb906e 100644
  		ap_flags = 0;
  		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
  			interp_obase = pn->sections[i].vaddr;
-@@ -118,11 +142,22 @@ int prepare_process_ranges_args_envs(struct thread *thread,
+@@ -119,11 +143,22 @@ int prepare_process_ranges_args_envs(struct thread *thread,
  			pn->sections[i].vaddr += aout_base;
  			p->sections[i].vaddr = pn->sections[i].vaddr;
  		}
@@ -125,7 +126,7 @@ index 0de0a08..6fb906e 100644
  		flags = VR_NONE;
  		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
  		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-@@ -138,18 +173,37 @@ int prepare_process_ranges_args_envs(struct thread *thread,
+@@ -139,18 +174,37 @@ int prepare_process_ranges_args_envs(struct thread *thread,
  			flags |= VR_AP_USER;
  		}
  
@@ -173,9 +174,9 @@ index 0de0a08..6fb906e 100644
  		}
  
  		up = virt_to_phys(up_v);
-@@ -212,8 +266,19 @@ int prepare_process_ranges_args_envs(struct thread *thread,
- 		pn->at_entry += aout_base;
- 	}
+@@ -210,8 +264,19 @@ int prepare_process_ranges_args_envs(struct thread *thread,
+ 
+ 	vm->region.map_start = vm->region.map_end = TASK_UNMAPPED_BASE;
  
 +	unsigned long heap_page_size;
 +	unsigned long heap_page_mask;
@@ -192,10 +193,10 @@ index 0de0a08..6fb906e 100644
 -		(vm->region.data_end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
 +		(vm->region.data_end + heap_page_size - 1) & heap_page_mask;
  
- #if 0
- 	{
+ 	if (vm->region.brk_start >= vm->region.map_start) {
+ 		kprintf("%s: ERROR: data section is too large (end addr: %lx)\n",
 diff --git kernel/include/rusage_private.h kernel/include/rusage_private.h
-index 7da7728..14253b2 100644
+index cfa10faa..735a9eda 100644
 --- kernel/include/rusage_private.h
 +++ kernel/include/rusage_private.h
 @@ -12,7 +12,7 @@
@@ -208,11 +209,11 @@ index 7da7728..14253b2 100644
  #define RUSAGE_OOM_MARGIN (2 * 1024 * 1024) // 2MB
  
 diff --git kernel/process.c kernel/process.c
-index 32a8ef6..24f262a 100644
+index bcaf8a72..1dfc7562 100644
 --- kernel/process.c
 +++ kernel/process.c
-@@ -2030,6 +2030,12 @@ retry:
- #endif /* POSTK_DEBUG_TEMP_FIX_86 */
+@@ -2033,6 +2033,12 @@ retry:
+ 		}
  
  		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
 +
@@ -224,7 +225,7 @@ index 32a8ef6..24f262a 100644
  		error = ihk_mc_pt_set_pte(vm->address_space->page_table, ptep,
  		                          pgsize, phys, attr);
  		if (error) {
-@@ -2256,15 +2262,20 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+@@ -2260,10 +2266,15 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
  	int stack_populated_size = 0;
  	int stack_align_padding = 0;
  
@@ -235,92 +236,61 @@ index 32a8ef6..24f262a 100644
 +	unsigned long stack_page_p2align = stack_page_shift - PAGE_SHIFT;
 +
  	/* Create stack range */
- #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 -	end = STACK_TOP(&thread->vm->region) & USER_STACK_PAGE_MASK;
 -	minsz = (pn->stack_premap + USER_STACK_PREPAGE_SIZE - 1) &
 -		USER_STACK_PAGE_MASK;
 +	end = STACK_TOP(&thread->vm->region) & stack_page_mask;
 +	minsz = stack_page_size;
- #else /* POSTK_DEBUG_ARCH_DEP_104 */
--	end = STACK_TOP(&thread->vm->region) & LARGE_PAGE_MASK;
-+	end = STACK_TOP(&thread->vm->region) & stack_page_mask;
- 	minsz = (pn->stack_premap
--			+ LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-+			+ stack_page_size - 1) & stack_page_mask;
- #endif /* POSTK_DEBUG_ARCH_DEP_104 */
  	maxsz = (end - thread->vm->region.map_start) / 2;
  	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
-@@ -2275,9 +2286,9 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 	if (size > maxsz) {
+@@ -2272,13 +2283,14 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 	else if (size < minsz) {
  		size = minsz;
  	}
- #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 -	size = (size + USER_STACK_PREPAGE_SIZE - 1) & USER_STACK_PAGE_MASK;
 +	size = (size + stack_page_size - 1) & stack_page_mask;
- #else /* POSTK_DEBUG_ARCH_DEP_104 */
--	size = (size + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
-+	size = (size + stack_page_size - 1) & stack_page_mask;
- #endif /* POSTK_DEBUG_ARCH_DEP_104 */
++
  	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
  			__FUNCTION__,
-@@ -2285,9 +2296,9 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 			pn->stack_premap,
  			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
  			minsz, size);
- #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
 -	start = (end - size) & USER_STACK_PAGE_MASK;
 +	start = (end - size) & stack_page_mask;
- #else /* POSTK_DEBUG_ARCH_DEP_104 */
--	start = (end - size) & LARGE_PAGE_MASK;
-+	start = (end - size) & stack_page_mask;
- #endif /* POSTK_DEBUG_ARCH_DEP_104 */
  
  	/* Apply user allocation policy to stacks */
-@@ -2300,10 +2311,10 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 	/* TODO: make threshold kernel or mcexec argument */
+@@ -2289,9 +2301,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 			ap_flag ? "(IHK_MC_AP_USER)" : "");
  
- #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
  	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
--				USER_STACK_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag, start);
+-						USER_STACK_PAGE_P2ALIGN,
+-						IHK_MC_AP_NOWAIT | ap_flag,
+-						start);
 +				stack_page_p2align, IHK_MC_AP_NOWAIT | ap_flag, start);
- #else /* POSTK_DEBUG_ARCH_DEP_104 */
- 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
--				LARGE_PAGE_P2ALIGN, IHK_MC_AP_NOWAIT | ap_flag, start);
-+				stack_page_p2align, IHK_MC_AP_NOWAIT | ap_flag, start);
- #endif /* POSTK_DEBUG_ARCH_DEP_104 */
  
  	if (!stack) {
-@@ -2321,13 +2332,13 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 		kprintf("%s: error: couldn't allocate initial stack\n",
+@@ -2307,7 +2317,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
  #define	NOPHYS	((uintptr_t)-1)
- #ifdef POSTK_DEBUG_ARCH_DEP_104 /* user stack prepage size fix */
  	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
 -			vrflag, NULL, 0, USER_STACK_PAGE_SHIFT, &range)) != 0) {
 +			vrflag, NULL, 0, stack_page_shift, &range)) != 0) {
  		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
- 		return rc;
- 	}
- #else /* POSTK_DEBUG_ARCH_DEP_104 */
- 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
--					vrflag, NULL, 0, LARGE_PAGE_SHIFT, &range)) != 0) {
-+					vrflag, NULL, 0, stack_page_shift, &range)) != 0) {
- 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
  		kprintf("%s: error addding process memory range: %d\n", rc);
  		return rc;
-@@ -2340,14 +2351,14 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
- 								thread->vm, (void *)(end - minsz),
- 								(void *)end, virt_to_phys(stack),
- 								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
--								USER_STACK_PAGE_SHIFT, range, 0
-+								stack_page_shift, range, 0
- 								);
- #else /* POSTK_DEBUG_ARCH_DEP_104 */
- 	error = ihk_mc_pt_set_range(thread->vm->address_space->page_table,
- 								thread->vm, (void *)(end - minsz),
- 								(void *)end, virt_to_phys(stack),
- 								arch_vrflag_to_ptattr(vrflag, PF_POPULATE, NULL),
--								LARGE_PAGE_SHIFT, range, 0
-+								stack_page_shift, range, 0
- 								);
- #endif /* POSTK_DEBUG_ARCH_DEP_104 */
- 
-@@ -2464,14 +2475,15 @@ unsigned long extend_process_region(struct process_vm *vm,
+@@ -2319,7 +2329,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
+ 				    (void *)end, virt_to_phys(stack),
+ 				    arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
+ 							  NULL),
+-				    USER_STACK_PAGE_SHIFT, range, 0);
++				    stack_page_shift, range, 0);
+ 	if (error) {
+ 		kprintf("init_process_stack:"
+ 				"set range %lx-%lx %lx failed. %d\n",
+@@ -2432,14 +2442,15 @@ unsigned long extend_process_region(struct process_vm *vm,
  	void *p;
  	int rc;
  
@@ -344,31 +314,3 @@ index 32a8ef6..24f262a 100644
  
  	new_end_allocated = (address + (PAGE_SIZE - 1)) & PAGE_MASK;
  	if ((new_end_allocated - end_allocated) < vm->proc->heap_extension) {
-diff --git kernel/syscall.c kernel/syscall.c
-index 449c931..10a9039 100644
---- kernel/syscall.c
-+++ kernel/syscall.c
-@@ -5228,9 +5228,22 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
- 		return -ENOSPC;
- 	}
- 
--	pgshift = PAGE_SHIFT;
- 	if (shmflg & SHM_HUGETLB) {
- 		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
-+	} else {
-+		size_t pgsize;
-+
-+		if (size > PAGE_SIZE) {
-+			error = arch_get_smaller_page_size(NULL, size + 1, &pgsize, NULL);
-+			if (error) {
-+				ekprintf("%s: arch_get_smaller_page_size failed. %d\n", error);
-+				return error;
-+			}
-+			
-+			pgshift = 63 - __builtin_clzl(pgsize);;
-+		} else {
-+			pgshift = PAGE_SHIFT;
-+		}
- 	}
- 
- 	memset(&ads, 0, sizeof(ads));
