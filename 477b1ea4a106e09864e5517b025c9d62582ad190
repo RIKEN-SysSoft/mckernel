@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "dd4ee1e7_7424063a",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-08T05:29:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: pointer %#16lx of type %s is not aligned at %#lx\\n\",",
+      "revId": "477b1ea4a106e09864e5517b025c9d62582ad190",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7cb3470f_5e9ffc7e",
+        "filename": "kernel/ubsan.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 127,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-08T05:29:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: %s address %#16lx with insufficient space for an object of type %s\\n\",",
+      "revId": "477b1ea4a106e09864e5517b025c9d62582ad190",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
