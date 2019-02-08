@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "21d44cef_da8ed52c",
+        "filename": "kernel/shmobj.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 271,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-08T07:33:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t * (3) terminate() --\u003e ... --\u003e free_process_memory_range()",
+      "revId": "bed931fdcfc81ac46b1d42e3a79b3ca00395bde5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
