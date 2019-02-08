@@ -35,3 +35,8 @@
 
 /* Path of install directory for system binary */
 #cmakedefine SBINDIR "${SBINDIR}"
+
+/* for non-RHEL kernels */
+#ifndef RHEL_RELEASE_VERSION
+#define RHEL_RELEASE_VERSION(a,b) (((a) << 8) + (b))
+#endif
