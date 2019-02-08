@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "11a7ceab_8e89aa41",
+        "filename": "kernel/debug.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-08T05:30:18Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int snprintf(char *buf, size_t size, const char *fmt, ...);",
+      "revId": "000c4eda35f05b0e0fb06543f40e20d216cc2aee",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da7db685_e726cc51",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-08T05:30:18Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int snprintf(char *buf, size_t size, const char *fmt, ...);",
+      "revId": "000c4eda35f05b0e0fb06543f40e20d216cc2aee",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
