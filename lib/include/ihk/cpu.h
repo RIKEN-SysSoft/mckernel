@@ -103,6 +103,8 @@ void ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
 long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp);
 #endif /* POSTK_DEBUG_ARCH_DEP_42 */
 
+unsigned long ihk_mc_get_tsc_khz(void);
+
 enum ihk_mc_user_context_regtype {
 	IHK_UCR_STACK_POINTER = 1,
 	IHK_UCR_PROGRAM_COUNTER = 2,

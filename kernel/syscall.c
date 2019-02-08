@@ -5796,8 +5796,8 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 		else {
 			nsec_timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec);
 		}
-		timeout = nsec_timeout * 1000 / ihk_mc_get_ns_per_tsc();
-
+		timeout = nsec_timeout * ihk_mc_get_tsc_khz() * 1000L /
+			  NS_PER_SEC;
 		}
 		else{
 			if (op == FUTEX_WAIT_BITSET) { /* User passed absolute time */
