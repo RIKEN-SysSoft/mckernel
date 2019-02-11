@@ -19,6 +19,23 @@
     },
     {
       "key": {
+        "uuid": "b3a23ac8_c3d32149",
+        "filename": "Readme.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-11T11:39:45Z",
+      "side": 1,
+      "message": "I think we should push these files and link to the github tree, instead of relying on a 3rd party? or at least point to riken\u0027s website, does dropbox even allow image embedding?",
+      "revId": "7873a088ae6e55400c25ab8b00b0a336c3e382ee",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "8f1378a7_52d5525e",
         "filename": "Readme.md",
         "patchSetId": 1
@@ -87,6 +104,23 @@
     },
     {
       "key": {
+        "uuid": "fdb403e0_b7a9d7b2",
+        "filename": "Readme.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-11T11:39:45Z",
+      "side": 1,
+      "message": "CentOS 7.3+?",
+      "revId": "7873a088ae6e55400c25ab8b00b0a336c3e382ee",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "15ae6b6b_05fd4cad",
         "filename": "Readme.md",
         "patchSetId": 1
@@ -101,6 +135,23 @@
       "revId": "7873a088ae6e55400c25ab8b00b0a336c3e382ee",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3522e06a_a7897a54",
+        "filename": "Readme.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 193,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-11T11:39:45Z",
+      "side": 1,
+      "message": "GPLv2+ or BSD for ihk, apparently -- there is no LICENSE file for mckernel?\nGPL should specify which version",
+      "revId": "7873a088ae6e55400c25ab8b00b0a336c3e382ee",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
