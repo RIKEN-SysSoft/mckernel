@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "82a8b03a_abf8fcbd",
+        "filename": "LICENSE",
+        "patchSetId": 4
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-11T23:40:30Z",
+      "side": 1,
+      "message": "ERROR: Do not include the paragraph about writing to the Free Software Foundation\u0027s mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA$",
+      "revId": "73661b40e1e6deb566a7755b1de026e89c8cf15d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4177fba_7765c6f4",
+        "filename": "LICENSE",
+        "patchSetId": 4
+      },
+      "lineNbr": 253,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-11T23:40:30Z",
+      "side": 1,
+      "message": "ERROR: Do not include the paragraph about writing to the Free Software Foundation\u0027s mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n+Software Foundation, write to the Free Software Foundation; we sometimes$",
+      "revId": "73661b40e1e6deb566a7755b1de026e89c8cf15d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d92e7a91_19235b47",
+        "filename": "LICENSE",
+        "patchSetId": 4
+      },
+      "lineNbr": 307,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-11T23:40:30Z",
+      "side": 1,
+      "message": "ERROR: Do not include the paragraph about writing to the Free Software Foundation\u0027s mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n+    with this program; if not, write to the Free Software Foundation, Inc.,$",
+      "revId": "73661b40e1e6deb566a7755b1de026e89c8cf15d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf9f31e5_6ee7ba21",
+        "filename": "LICENSE",
+        "patchSetId": 4
+      },
+      "lineNbr": 308,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-11T23:40:30Z",
+      "side": 1,
+      "message": "ERROR: Do not include the paragraph about writing to the Free Software Foundation\u0027s mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.$",
+      "revId": "73661b40e1e6deb566a7755b1de026e89c8cf15d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
