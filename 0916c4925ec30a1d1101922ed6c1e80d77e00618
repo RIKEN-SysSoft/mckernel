@@ -16,6 +16,24 @@
       "revId": "0916c4925ec30a1d1101922ed6c1e80d77e00618",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7c415df7_d428129d",
+        "filename": "arch/x86_64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2711,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-11T11:50:07Z",
+      "side": 1,
+      "message": "We discussed this a bit with Takagi-san. We could copy the top level entry from init_pt and just init_low_area it, but if the first segment of init_pt was ever set for some reason (e.g. because something in the first gigabyte of virtual memory is ever mapped) then the init_low_area would modify both pt; that\u0027s going to be hell of a sneaky issue if it happens...\n\nI guess if I check that it\u0027d be ok, still not 100% future-proof but probably good enough at least",
+      "parentUuid": "31d38aaa_a7d0ecd5",
+      "revId": "0916c4925ec30a1d1101922ed6c1e80d77e00618",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
