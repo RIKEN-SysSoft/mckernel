@@ -34,6 +34,24 @@
       "revId": "0916c4925ec30a1d1101922ed6c1e80d77e00618",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cb0f09d8_5f0e526c",
+        "filename": "arch/x86_64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2711,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-02-11T11:56:06Z",
+      "side": 1,
+      "message": "The first entry is user-space so it should never be touched in init_pt!",
+      "parentUuid": "7c415df7_d428129d",
+      "revId": "0916c4925ec30a1d1101922ed6c1e80d77e00618",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
