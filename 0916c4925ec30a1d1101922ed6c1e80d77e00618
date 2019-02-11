@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "31d38aaa_a7d0ecd5",
+        "filename": "arch/x86_64/kernel/memory.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2711,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-02-11T11:31:04Z",
+      "side": 1,
+      "message": "instead of doing all these extra allocations above, we could just copy all top level entries from init_pt, they won\u0027t change anyway.",
+      "revId": "0916c4925ec30a1d1101922ed6c1e80d77e00618",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
