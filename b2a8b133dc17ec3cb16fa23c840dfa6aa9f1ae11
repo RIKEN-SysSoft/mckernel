@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6d1d9fbc_4be207cc",
+        "filename": "Readme.md",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-11T11:41:43Z",
+      "side": 1,
+      "message": "WARNING: \u0027followings\u0027 may be misspelled - perhaps \u0027following\u0027?\n+IHK/McKernel is a light-weight multi-kernel operating system designed for high-end supercomputing. It runs Linux and McKernel, a light-weight kernel (LWK), side-by-side inside compute nodes and aims at the followings:",
+      "revId": "b2a8b133dc17ec3cb16fa23c840dfa6aa9f1ae11",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
