@@ -1,0 +1,97 @@
+/* README COPYRIGHT FUJITSU LIMITED 2019 */
+
+SVEレジスタ拡張テストセットREADME
+
+(1) テストの実行方法
+	以下の手順でテストを実行する
+		1. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample
+		   ファイルを$HOMEにコピーし、適宜編集する
+
+		2. 必要に応じて、run.shのSVEGDB環境変数に利用するGDBのパスを記載する
+		   GDBの置き換えが必要な理由は「(4) 備考」を参照
+
+		3. make testを実行する
+
+
+(2) テスト項目詳細
+	TEST001 プロセス起動時のSVEレジスタを読み出す
+	TEST002 forkによる子プロセスへの引き継ぎ確認
+	TEST003 pthread_createによる子スレッドへの引き継ぎ確認
+	TEST004 execveを挟んだ場合のレジスタクリア確認
+	TEST005 シグナルハンドラ前後のレジスタ維持確認
+	TEST006 他コアへのマイグレート前後のレジスタ維持確認
+	TEST007 子プロセスで書き込んだ内容が親プロセスからptraceでGETREGSET出来るか
+	TEST008 親プロセスからptraceでSETREGSETした内容が子プロセスに反映されるか
+	TEST009 GETREGSETへのパラメタチェック(子項目7つ)
+	TEST010 SETREGSETへのパラメタチェック(子項目9つ)
+	TEST011 sigaltstackを使用した場合のシグナルハンドラ前後のレジスタ維持確認
+	TEST012 プロセスがSVE使用時、NT_PRFPREG(既存の浮動小数点レジスタ)の
+	        GETREGSETを実行して値が取得出来るか
+	TEST013 プロセスがSVE使用時、NT_PRFPREG(既存の浮動小数点レジスタ)の
+	        SETREGSETを実行して値が設定出来るか
+	TEST014 テスト番号8の子プロセス停止をbrk命令に変更したもの
+	TEST015 コンテキストスイッチおよび外部シグナルによる停止／再開時のレジスタ維持確認
+	TEST016 prctl(PR_SVE_GET_VL)でVLを取得し、期待通りか確認する
+	TEST017 prctl(PR_SVE_SET_VL)でVLを設定し、期待通りか確認する
+	TEST018 廃止(過去に存在したフラグのテスト)
+	TEST019 prctl(PR_SVE_SET_VL)へのパラメタチェック
+	TEST020 prctlでVLと同時に継承フラグを付与時、fork()によってVLが子プロセスに継承されることを確認する
+	TEST021 prctlでVLと同時に継承フラグを付与時、pthread_create()によってVLが子スレッドに継承されることを確認する
+	TEST022 prctlでVLと同時に継承フラグを付与時、execve()によってVLが実行先のa.outに継承されることを確認する
+	TEST023 シグナルハンドラ前後のVL設定維持確認
+	TEST024 他コアへのマイグレート前後のVL設定維持確認
+	TEST025 ptrace(GETREGSET + NT_ARM_SVE)を用いてVLを取得し、期待通りか確認する
+	TEST026 ptrace(SETREGSET + NT_ARM_SVE)を用いてVLを設定し、期待通りか確認する
+	TEST027 prctlでVLと同時に継承フラグを付与しない場合でも、fork()によってVLが子プロセスに継承されることを確認する
+	TEST028 prctlでVLと同時に継承フラグを付与しない場合でも、pthread_create()によってVLが子スレッドに継承されることを確認する
+	TEST029 prctlでVLと同時に継承フラグを付与しない場合、execve()によってVLが実行先のa.outに継承されず、
+	        デフォルトVLが使われることを確認する
+	TEST030 SVE使用時、ptrace(SETREGSET + NT_ARM_SVE + SVE_PT_REGS_FPSIMD)で
+	        FPSIMD(以前のバージョンのレジスタを表現する)構造体を用いてレジスタを設定し、期待通りか確認する
+	TEST031 SVE使用時、ptrace(SETREGSET + NT_ARM_SVE + SVE_PT_REGS_FPSIMD)で
+	        SVEレジスタ構造体を用いてレジスタを設定し、期待通りか確認する
+	TEST032 prctlでVLと同時にONEXECフラグを付与時、ただちには反映されず、
+	        fork()を行ってもVLが子プロセスに継承されない事を確認する
+	TEST033 prctlでVLと同時にONEXECフラグを付与時、ただちには反映されず、
+	        pthread_create()を行ってもVLが子スレッドに継承されない事を確認する
+	TEST034 prctlでVLと掃除にONEXECフラグを付与時、ただちには反映されず、execve()を行ったときにVLが反映される事を確認する
+	TEST035 SVE使用時、ptrace(SETREGSET + NT_ARM_SVE + SVE_PT_REGS_FPSIMD)で
+	        既存のSVEレジスタ退避領域を上書きしたとき、下位128bitにのみ設定が反映されることを確認する
+	TEST036 シグナルハンドラ内でVL変更及び変更後のSVEレジスタを使用した場合、SIGSEGVとなる事を確認する
+	TEST037 prctlでINHERITフラグ、ONEXECフラグの順に設定したとき、下記の動作になることを確認する
+	        現在のVL：INHERIT指定VL、継承するVL：ONEXEC指定VL、execve継承回数：初回のみ
+	TEST038 prctlでONEXECフラグ、INHERITフラグの順に設定したとき、下記の動作になることを確認する
+	        現在のVL：INHERIT指定VL、継承するVL：INHERIT指定VL、execve継承回数：設定変更まで有効
+	TEST039 prctlでONEXECフラグとINHERITフラグを同時に設定したとき、下記の動作になることを確認する
+	        現在のVL：変更しない、継承するVL：指定VL、execve継承回数：設定変更まで有効
+	TEST040 SVEレジスタ使用時にSIGSEGVを発生させ、corefileを生成する
+	        生成されたcorefileがGDBで解析が可能で、SVEレジスタの情報が閲覧出来る事を確認する
+	TEST041 SVEレジスタ対応版のGDBをMcKernel上で動作させ、SVEレジスタの情報がinfo registerで読み出せる事を確認する
+
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当のものである。
+
+	IHK
+		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
+		Author: Shiratori, Takehiro <fj0300es@aa.jp.fujitsu.com>
+		Date:   Tue Oct 16 16:25:33 2018 +0900
+
+	McKernel
+		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
+		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
+		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+
+(4) 備考
+	TEST040について、RHEL8-betaに含まれるGDBパッケージではSVEのcorefileを解析することは出来ない。
+	これは、libbfd側にSVEのcorefile解析の制御が含まれていないことが原因となっている。
+	下記URLのパッチファイルを適用することで解析が可能となる。
+	TEST040はパッチを適用したlibbfdを利用してテストを行った結果をログに記載している。
+
+	https://sourceware.org/ml/binutils/2018-06/msg00314.html
+
+
+以上。
