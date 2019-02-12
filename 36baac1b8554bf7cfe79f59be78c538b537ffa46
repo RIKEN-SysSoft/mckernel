@@ -2,6 +2,167 @@
   "comments": [
     {
       "key": {
+        "uuid": "c5ea0594_ef579c9a",
+        "filename": "test/sve/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "「外部シグナル」とはどういう意味でしょうか？",
+      "range": {
+        "startLine": 34,
+        "startChar": 0,
+        "endLine": 34,
+        "endChar": 46
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c90f45e5_f82bb672",
+        "filename": "test/sve/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "ptctlで複数execに渡って継承するよう指定したVL値が、子プロセス生成に渡って継承されていることを確認する、では？\nVLの継承については以下の3パターンあって、継承の回数と反映のタイミングが異なる、ということがわかるようにしてください。\nexecに渡っての継承：\n＊INHERITによる切り替え：指定したVL値は当該プロセスに直ちに反映される。\n＊ONEXECによる切り替え：指定したVL値の設定はexecまで後れる。また、反映は一度だけである。\nforkに渡っての継承：常に継承\npthread_createに渡っての継承：常に継承",
+      "range": {
+        "startLine": 39,
+        "startChar": 0,
+        "endLine": 39,
+        "endChar": 55
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "60e9459e_9d9cbd59",
+        "filename": "test/sve/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "prctlでexec時に設定するよう指定したVL\b値が、子プロセス生成時に反映されないことを確認する、では？",
+      "range": {
+        "startLine": 54,
+        "startChar": 0,
+        "endLine": 54,
+        "endChar": 60
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1fec5a5e_37436a8a",
+        "filename": "test/sve/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "prctlでexec時に設定するよう指定したVL\b値が、子スレッド生成時に反映されないことを確認する、では？",
+      "range": {
+        "startLine": 55,
+        "startChar": 0,
+        "endLine": 55,
+        "endChar": 70
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7cf8f311_57880d5b",
+        "filename": "test/sve/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "prctlでexec時に設定するよう指定したVL\b値が、最初のexecve()時に反映され、2回目以降のexecve()時には反映されないことを確認する、では？",
+      "range": {
+        "startLine": 56,
+        "startChar": 0,
+        "endLine": 56,
+        "endChar": 57
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c1037e52_c5923033",
+        "filename": "test/sve/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "誤字：継承",
+      "range": {
+        "startLine": 65,
+        "startChar": 0,
+        "endLine": 65,
+        "endChar": 52
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4ddb4a63_ac52e0bf",
+        "filename": "test/sve/exp/TEST040_vl16.exp.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "読み方を教えてください。また、VLはどこか教えてください。",
+      "range": {
+        "startLine": 1,
+        "startChar": 0,
+        "endLine": 1,
+        "endChar": 625
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c2074009_fe8761be",
         "filename": "test/sve/src/001.c",
         "patchSetId": 1
@@ -2824,6 +2985,29 @@
     },
     {
       "key": {
+        "uuid": "82bdc228_f837067c",
+        "filename": "test/sve/src/028.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "why setting only lower-128 bits?",
+      "range": {
+        "startLine": 37,
+        "startChar": 0,
+        "endLine": 37,
+        "endChar": 45
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c734c8ba_1128120f",
         "filename": "test/sve/src/028.c",
         "patchSetId": 1
@@ -3212,6 +3396,29 @@
       "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da340fb3_543ed8a9",
+        "filename": "test/sve/src/035.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T02:55:48Z",
+      "side": 1,
+      "message": "the value should be different from that the parent would set.",
+      "range": {
+        "startLine": 39,
+        "startChar": 0,
+        "endLine": 39,
+        "endChar": 31
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
