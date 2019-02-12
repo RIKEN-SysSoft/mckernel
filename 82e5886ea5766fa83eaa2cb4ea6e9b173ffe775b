@@ -1,0 +1,4424 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1103604e_b3ac1e83",
+        "filename": "test/sve/src/001.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d74a977e_8edf1312",
+        "filename": "test/sve/src/002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ca981c8_288fccef",
+        "filename": "test/sve/src/002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cd684f65_3efa6c13",
+        "filename": "test/sve/src/002.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dce17ae0_17ecd9e1",
+        "filename": "test/sve/src/003.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c2dc03c_6421ff6f",
+        "filename": "test/sve/src/004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6badee86_c50dc928",
+        "filename": "test/sve/src/004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: char * array declaration might be better as static const\n+\tchar *execve_args[] \u003d {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e096b3b6_bc71444a",
+        "filename": "test/sve/src/004.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"\u003d\u003d\u003d look at the contents of the register since run execve. \u003d\u003d\u003d\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f827254_df79fb1f",
+        "filename": "test/sve/src/005.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3540a14_8d6d8e07",
+        "filename": "test/sve/src/006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a244f985_79b46a61",
+        "filename": "test/sve/src/006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f0982aa5_4db2ac15",
+        "filename": "test/sve/src/006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25c59542_ddfc5b76",
+        "filename": "test/sve/src/006.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 184,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto close_out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65626463_12ed0c0c",
+        "filename": "test/sve/src/007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "53a7bd5d_d8b4f3ef",
+        "filename": "test/sve/src/007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d2883ab8_fa7c443d",
+        "filename": "test/sve/src/007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c00b8160_75584732",
+        "filename": "test/sve/src/007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be89cf4a_17ed7461",
+        "filename": "test/sve/src/007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(vq) user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af24e1a0_0b30abe3",
+        "filename": "test/sve/src/007.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8dc74ac8_cabbd3b0",
+        "filename": "test/sve/src/008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "acf21edc_574a3250",
+        "filename": "test/sve/src/008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db694b1b_1c39c5c2",
+        "filename": "test/sve/src/008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "12acd0c4_868ec17b",
+        "filename": "test/sve/src/008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(vq) user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04866455_b9e298bd",
+        "filename": "test/sve/src/008.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 137,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "16f8e79a_72b25892",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4985cd91_fa26b664",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "533152cd_22554b23",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "690c063b_65b7611a",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97131d6f_ad824354",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(vq) user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58513c78_bd5fd2ac",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif (rd_buf.header.vl !\u003d 0 || rd_buf.header.max_vl !\u003d 0 || rd_buf.header.flags !\u003d 0) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3312f910_4ea1019b",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 138,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"mismatch vl (exp(%d), value(%d))\\n\", vq * 16, rd_buf.header.vl);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07697e93_b04ea50f",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* case 5: iov_len is sizeof(struct user_sve_header) + sizeof(sve_regs_t) / 2 */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd46f60e_df2709e7",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"check 5: iov_len header + (registerarea size / 2) (16 byte align)\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d2e3d772_194fc671",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 156,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tmemset((char *)\u0026cmp_buf + align_half_regsz, 0, sizeof(sve_regs_t) - align_half_regsz);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bcc785d9_5cae4fc1",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 196,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tiov.iov_len \u003d ((SVE_PT_SIZE(SVE_VQ_MAX, SVE_PT_REGS_SVE) + 15) / 16 * 16) + 16;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "135f8d37_809e9a9a",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif (sve_compare(\u0026cmp_buf, l_rd_buf + sizeof(struct user_sve_header), vq)) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3963435e_9e834755",
+        "filename": "test/sve/src/009.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 253,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f99db03c_52c016ee",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9202c2c5_ace1ee94",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "449182bd_5195f272",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c03929d0_47db40e5",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 114,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tmemset((char *)\u0026cmp_buf + align_half_regsz, 0, sizeof(sve_regs_t) - align_half_regsz);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a7435b5e_01760712",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 178,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65624277_b48d49fc",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 179,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(vq) user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eee4f16e_be03897c",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 360,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tiov.iov_len \u003d ((SVE_PT_SIZE(SVE_VQ_MAX, SVE_PT_REGS_SVE) + 15) / 16 * 16) + 16;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8256c74d_628d7158",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 394,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* case 9: iov_len is sizeof(struct user_sve_header) + sizeof(sve_regs_t) / 2 */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3b1f009_6aaf9b46",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 395,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"check  9: iov_len header + (registerarea size / 2) (16 byte align)\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "37eb73d7_24864987",
+        "filename": "test/sve/src/010.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 490,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "797bea33_4c87fa11",
+        "filename": "test/sve/src/011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long used_stack_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "affc96fb_65d4f907",
+        "filename": "test/sve/src/011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15d3cfab_ad69a167",
+        "filename": "test/sve/src/011.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86debbb8_924bc8a5",
+        "filename": "test/sve/src/012.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f1b54098_e99ff73a",
+        "filename": "test/sve/src/012.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a1a660ba_3ba31f24",
+        "filename": "test/sve/src/012.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "164cf61c_772a7c8c",
+        "filename": "test/sve/src/012.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027\u003d\u0027 (ctx:VxW)\n+\tpid_t cpid\u003d 0;\n \t          ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "470c7136_390489c2",
+        "filename": "test/sve/src/012.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 132,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aea3c83c_3ef07469",
+        "filename": "test/sve/src/013.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e7510da7_33de7d62",
+        "filename": "test/sve/src/013.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8a5b9908_6d6e27f2",
+        "filename": "test/sve/src/013.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e03db17_5592397b",
+        "filename": "test/sve/src/014.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd3832eb_fd173b33",
+        "filename": "test/sve/src/014.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f629c16_760d2321",
+        "filename": "test/sve/src/014.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "73e1a90f_646bf3e8",
+        "filename": "test/sve/src/014.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(vq) user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e134e1d6_b10a2e4b",
+        "filename": "test/sve/src/014.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "39449fe7_fdbd93af",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* Context switch in the same core check and SIGSTOP -\u003e SIGCONT restart check.(need run on background \u0027\u0026\u0027) */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "503c3849_4c3d9cc6",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to NULL\n+static sem_t *sync_sem1 \u003d NULL;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c12f7e85_c17567e0",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to NULL\n+static sem_t *sync_sem2 \u003d NULL;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d57338ca_3380f146",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to NULL\n+static int *parent_core \u003d NULL;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f863a54_dc331531",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to NULL\n+static int *sync_flag \u003d NULL;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e123bd07_1c6fb7af",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to NULL\n+static int *child_count \u003d NULL;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ea7b6830_448050fa",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:WxV)\n+\tuint64_t a[cmp_reg] ,b[cmp_reg];\n \t                    ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "93d3d427_08739526",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxV)\n+\tuint64_t a[cmp_reg] ,b[cmp_reg];\n \t                    ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "509e795b_2a157c5e",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tprintf(\"[child] pid \u003d %d\\n\",pid);\n \t                           ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a686a3bc_7f3226ea",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027:\u0027 (ctx:ExV)\n+\t\t\t:\"r\"(a)\n \t\t\t^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2be8849b_0c913a10",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tfor(;;) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4fbea1fd_fb1ce4aa",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027:\u0027 (ctx:ExV)\n+\t\t\t\t:\"r\"(b)\n \t\t\t\t^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0154f417_6f119458",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\t\t\t\tprintf(\"[child] sve failed.a[%d]\u003d%lu,b[%d]\u003d%lu\\n\",i, a[i], i, b[i]);\n \t\t\t\t                                                 ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a91dae55_f56d714f",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tprintf(\"[child] sve failed.a[%d]\u003d%lu,b[%d]\u003d%lu\\n\",i, a[i], i, b[i]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d8995628_7acfba19",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\twhile(*sync_flag !\u003d PARENT_DONE) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "14514d9e_b9cd9c76",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tuint32x4_t vec_a,vec_b,vec_result;\n \t                ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "38cd7e5b_4fce7cb0",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tuint32x4_t vec_a,vec_b,vec_result;\n \t                      ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4910603d_9369daa9",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tuint32_t data1[4] __attribute__((aligned(128))),data2[4] __attribute__((aligned(128)))\u003d{1,2,3,4};\n \t                                                                                           ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ba63f3f_5b7bf4f9",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tuint32_t data1[4] __attribute__((aligned(128))),data2[4] __attribute__((aligned(128)))\u003d{1,2,3,4};",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1bc77e2f_6bab3f64",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tuint32_t data1[4] __attribute__((aligned(128))),data2[4] __attribute__((aligned(128)))\u003d{1,2,3,4};\n \t                                                                                             ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fcfbf95c_354ee1af",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: spaces required around that \u0027\u003d\u0027 (ctx:VxV)\n+\tuint32_t data1[4] __attribute__((aligned(128))),data2[4] __attribute__((aligned(128)))\u003d{1,2,3,4};\n \t                                                                                      ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "420dc9e7_63075b95",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\tuint32_t data1[4] __attribute__((aligned(128))),data2[4] __attribute__((aligned(128)))\u003d{1,2,3,4};",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc2d072b_422692f7",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tuint32_t data1[4] __attribute__((aligned(128))),data2[4] __attribute__((aligned(128)))\u003d{1,2,3,4};\n \t                                               ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24ef456a_9cb48220",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tuint32_t data1[4] __attribute__((aligned(128))),data2[4] __attribute__((aligned(128)))\u003d{1,2,3,4};\n \t                                                                                         ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b3f6c73_70bb7305",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tprintf(\"[parent] pid \u003d %d\\n\",pid);\n \t                            ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "081267a7_30273a3d",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\twhile(*sync_flag !\u003d CHILD_DONE) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e95ab720_53c3450a",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (16, 32)\n+\t\tif ( (vgetq_lane_u32(vec_result,0) !\u003d pid)\n[...]\n+\t\t\t\tprintf(\"error\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "732270b3_334e91b8",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space prohibited after that open parenthesis \u0027(\u0027\n+\t\tif ( (vgetq_lane_u32(vec_result,0) !\u003d pid)",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0bb5f365_0aea46cf",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\t\tif ( (vgetq_lane_u32(vec_result,0) !\u003d pid)\n \t\t                               ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7cada530_ded49e02",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\t\t\t|| (vgetq_lane_u32(vec_result,1) !\u003d pid)\n \t\t\t                             ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a02a2dd_2fa1a5ca",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\t\t\t|| (vgetq_lane_u32(vec_result,2) !\u003d pid)\n \t\t\t                             ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45082fe6_dd9bb43a",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 99,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\t\t\t|| (vgetq_lane_u32(vec_result,3) !\u003d pid)) {\n \t\t\t                             ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2fae3787_e1f7221a",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsync_sem1 \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4e528302_7be89427",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsync_sem2 \u003d (sem_t *)mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "32c9ee3d_b2425d06",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tparent_core \u003d (int *)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0f291dc_d7674381",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 125,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsync_flag \u003d (int *)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6476abae_b3f64516",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tchild_count \u003d (int *)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be57314e_e8b37f47",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 144,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\treturn -1;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "84576c34_8a7bfe0f",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 164,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"[child] before migrate prevcore %d, nowcore %d\\n\", old_mycore, new_mycore);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d095db70_f2938ac4",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tprintf(\"TP failed, not migrate child process.\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27271ed4_9c1dadd1",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 202,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"[parent] child process migrate/bind to core %d\\n\", *parent_core);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95b85d4e_383143b4",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"[parent] parent process bind to core %d\\n\", *parent_core);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74b83cf8_875a9c15",
+        "filename": "test/sve/src/017.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f29c2bc9_18742ec5",
+        "filename": "test/sve/src/017.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I} setting[] \u003d { $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "690e00f1_fee945dd",
+        "filename": "test/sve/src/017.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(setting)\n+\tfor (i \u003d 0; i \u003c sizeof(setting) / sizeof(setting[0]); i++) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b00ce8b4_00458a50",
+        "filename": "test/sve/src/017.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tread_sve(\u0026work_buf, (sve_vq_from_vl(setting[i].vl)), work_fpscr);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0db86805_1a552803",
+        "filename": "test/sve/src/017.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (sve_compare(setting[i].compare, \u0026work_buf, sve_vq_from_vl(setting[i].vl))) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a537ca9_b3da225b",
+        "filename": "test/sve/src/018.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static int sync \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b2990978_3a06d256",
+        "filename": "test/sve/src/018.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\twhile(!sync) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f6652f9_ec75f2a9",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tstruct params inval_vl[] \u003d { { INVALID_VL_1, 0 }, { INVALID_VL_2, 0 }, { INVALID_VL_3, 0 } };",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "39db925d_7a07efe5",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(unsup_vl)\n+\t\t{ \"unsupport VL\" , unsup_vl, sizeof(unsup_vl) / sizeof(unsup_vl[0]) },",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0118abee_73d4bc29",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that \u0027,\u0027 (ctx:WxW)\n+\t\t{ \"unsupport VL\" , unsup_vl, sizeof(unsup_vl) / sizeof(unsup_vl[0]) },\n \t\t                 ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64a8dafe_64aa33ae",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{ \"unsupport VL\" , unsup_vl, sizeof(unsup_vl) / sizeof(unsup_vl[0]) },",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e29b4cb7_5fedea4f",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{ \"invalid VL\",    inval_vl, sizeof(inval_vl) / sizeof(inval_vl[0]) },",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "692078bd_23b45171",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(inval_vl)\n+\t\t{ \"invalid VL\",    inval_vl, sizeof(inval_vl) / sizeof(inval_vl[0]) },",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1bc82030_866d455b",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(inval_fl)\n+\t\t{ \"invalid FLAGS\", inval_fl, sizeof(inval_fl) / sizeof(inval_fl[0]) }",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f1743af7_5bbfdce3",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{ \"invalid FLAGS\", inval_fl, sizeof(inval_fl) / sizeof(inval_fl[0]) }",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d228cb0b_d200543f",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(testcases)\n+\tfor (i \u003d 0; i \u003c sizeof(testcases) / sizeof(testcases[0]); i++) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6bc78f8a_790c3b67",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"check %d : %s setting.\\n\", i, testcases[i].pattern_string);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e8264266_da84e8d2",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfunc_ret \u003d set_and_compare_vl(testcases[i].param[j].vl | testcases[i].param[j].flags);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fae3927e_74b86e34",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: \u0027successed\u0027 may be misspelled - perhaps \u0027succeeded\u0027?\n+\t\t\t\tprintf(\"%s (%d, %d) setting successed.\\n\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ea94a9c_078805e9",
+        "filename": "test/sve/src/019.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\ttestcases[i].pattern_string, testcases[i].param[j].vl,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45e8b58f_7439704f",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "18178d44_9991c4c3",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "970bdec0_493aeb7a",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) c_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "53938c8e_a5b1c835",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) c_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d137fbc_950fd984",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: \u0027proces\u0027 may be misspelled - perhaps \u0027process\u0027?\n+\t\tprintf(\"parent-proces Dirty SVE-register setting failed.\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "292301ad_05e1b7fb",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15535399_c6c22b66",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tgen_test_sve_low_128(\u0026c_cmp_buf, vq, sve_vq_from_vl(gen_set_vl(vl)));",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d3d8e0e_98871c6c",
+        "filename": "test/sve/src/020.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (sve_compare(\u0026c_cmp_buf, \u0026c_rd_buf, sve_vq_from_vl(gen_set_vl(vl)))) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "79d3b6a7_12f27dcb",
+        "filename": "test/sve/src/021.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2a76c2cb_ce9bedb2",
+        "filename": "test/sve/src/022.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* Use execve() VL check if setting INHERIT flags. (execve target is #1 testcase) */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa8af751_04b17420",
+        "filename": "test/sve/src/022.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0844bf0e_91c4ef34",
+        "filename": "test/sve/src/022.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: char * array declaration might be better as static const\n+\tchar *execve_args[] \u003d {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43ae8d9c_a34f6de8",
+        "filename": "test/sve/src/022.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"\u003d\u003d\u003d look at the contents of the register since run execve. \u003d\u003d\u003d\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2b393140_5114c25b",
+        "filename": "test/sve/src/023.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c6c6864_3ca8516e",
+        "filename": "test/sve/src/023.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f0f9ee34_4b15d211",
+        "filename": "test/sve/src/024.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f06a73f_3efe1a33",
+        "filename": "test/sve/src/024.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "582c4cf2_00b3a76d",
+        "filename": "test/sve/src/024.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(set_vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1643c76a_c95bab64",
+        "filename": "test/sve/src/024.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 202,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto close_out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca972aa0_9143acc7",
+        "filename": "test/sve/src/025.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "57d12b91_d92e9bb6",
+        "filename": "test/sve/src/025.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b52f5e0_55b39a62",
+        "filename": "test/sve/src/025.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "67effe01_db0120b9",
+        "filename": "test/sve/src/025.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a18e0dbb_a59e0777",
+        "filename": "test/sve/src/025.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(vq) user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef29bf6d_08617033",
+        "filename": "test/sve/src/025.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 140,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2af6ed5b_b4d868c0",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cd989bd0_522c5d3f",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9bdcfd33_34a050bb",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tconst unsigned int bf_vq \u003d sve_vq_from_vl(vl);\t\t   /* before SETREGS VQ */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a7729509_44f12071",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tconst unsigned int af_vq \u003d sve_vq_from_vl(gen_set_vl(vl)); /* after  SETREGS VQ */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ad2264a9_d12e4c71",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(bf_vq) bf_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ddae296_66dc5a1a",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(af_vq) af_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2560a5fd_fe909485",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tconst unsigned int af_vq \u003d sve_vq_from_vl(gen_set_vl(vl)); /* after  SETREGS VQ */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2b6ac077_3a53ac39",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 75,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(af_vq) af_user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59248cc0_5a935ebd",
+        "filename": "test/sve/src/026.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 149,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a40b41a5_69438c06",
+        "filename": "test/sve/src/027.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27c21eab_5f838d6d",
+        "filename": "test/sve/src/027.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "53b26f05_1474840c",
+        "filename": "test/sve/src/027.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) c_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81234fb4_998aa817",
+        "filename": "test/sve/src/027.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) c_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ca5f1c7_2d22e2d8",
+        "filename": "test/sve/src/027.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e50953b5_521795ea",
+        "filename": "test/sve/src/027.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tgen_test_sve_low_128(\u0026c_cmp_buf, vq, sve_vq_from_vl(gen_set_vl(vl)));",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7b0d4577_aa7e5689",
+        "filename": "test/sve/src/027.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (sve_compare(\u0026c_cmp_buf, \u0026c_rd_buf, sve_vq_from_vl(gen_set_vl(vl)))) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3300885c_fb984c59",
+        "filename": "test/sve/src/028.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b14ed31_a02cc3e8",
+        "filename": "test/sve/src/029.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* Use execve() VL check if not setting INHERIT flags. (execve target is #1 testcase) */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ea1ab08_730bf2f4",
+        "filename": "test/sve/src/029.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b8317a97_4a095e45",
+        "filename": "test/sve/src/029.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: char * array declaration might be better as static const\n+\tchar *execve_args[] \u003d {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f18d839_5ff40946",
+        "filename": "test/sve/src/029.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"\u003d\u003d\u003d look at the contents of the register since run execve. \u003d\u003d\u003d\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1cabc235_542380c0",
+        "filename": "test/sve/src/030.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* When SVE is enable, ptrace(SETREGSET + NT_ARM_SVE + SVE_PT_REGS_FPSIMD), regs fpsimd struct check. */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c0813f9_59b865b3",
+        "filename": "test/sve/src/030.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "757924c3_b1adb546",
+        "filename": "test/sve/src/030.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10f874bf_82756cd0",
+        "filename": "test/sve/src/030.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf1d9b7d_f1865b27",
+        "filename": "test/sve/src/030.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 151,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e32cba0c_9524d0b8",
+        "filename": "test/sve/src/031.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* When SVE is enable, ptrace(SETREGSET + NT_ARM_SVE + SVE_PT_REGS_FPSIMD), regs sve struct check. */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c04e523_4c0f057a",
+        "filename": "test/sve/src/031.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd4e6ad2_5052b663",
+        "filename": "test/sve/src/031.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0db17cfb_7259a4d7",
+        "filename": "test/sve/src/031.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0b10542f_330b35e5",
+        "filename": "test/sve/src/031.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct user_fpsimd_sve_state(vq) user_sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "171276a0_25afcf26",
+        "filename": "test/sve/src/031.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 143,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92bd2f51_051a16fd",
+        "filename": "test/sve/src/032.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f626be04_a19fcb85",
+        "filename": "test/sve/src/032.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ac776b9_36beb413",
+        "filename": "test/sve/src/032.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3df2ad2_aa3af591",
+        "filename": "test/sve/src/033.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2cb83d0f_c70244e5",
+        "filename": "test/sve/src/035.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b1b993b4_99b197cf",
+        "filename": "test/sve/src/035.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long inst_addr \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a1448817_e1802903",
+        "filename": "test/sve/src/035.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e8f9c5a_1bf775ed",
+        "filename": "test/sve/src/035.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: break is not useful after a goto or return\n+\t\tgoto out;\n+\t\tbreak;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f217db23_67c42a55",
+        "filename": "test/sve/src/036.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* It becomes SIGSEGV when changing and using SVE-VL during signalhandler execution. */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9130782c_b3701cb3",
+        "filename": "test/sve/src/036.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static int segv_flag \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "badc1a76_4c92dfde",
+        "filename": "test/sve/src/036.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned int set_vl \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "38affc02_d776f9b2",
+        "filename": "test/sve/src/036.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static int sig_handler_ret \u003d 0;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e55e582_2ef087cc",
+        "filename": "test/sve/src/036.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "942d374c_3b3647bb",
+        "filename": "test/sve/src/036.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f30ec69b_a33249f5",
+        "filename": "test/sve/src/036.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttypedef struct fpsimd_sve_state(sve_vq_from_vl(gen_set_vl(vl))) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af2bb08a_2ec085c2",
+        "filename": "test/sve/src/037.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* Confirmation of execve() operation when VL is set in INHERIT-\u003eONEXEC order. */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "844edc36_2b615bc1",
+        "filename": "test/sve/src/038.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* Confirmation of execve() operation when VL is set in ONEXEC-\u003eINHERIT order. */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98a6c0d5_32a89875",
+        "filename": "test/sve/src/039.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* Confirmation of execve() operation when ONEXEC and INHERIT are set at the same time. */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f9190b4_609b46bf",
+        "filename": "test/sve/src/040.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e46d5b1e_29118f91",
+        "filename": "test/sve/src/common.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+#include \u003csys/types.h\u003e $",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8563de4_a6990106",
+        "filename": "test/sve/src/common.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tint TEST_NAME(num)(int tp_num, TEST_UI_ARG(arg1), TEST_UI_ARG(arg2), TEST_I_ARG(arg3), TEST_CHAR_PP_ARG(arg4))",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "42d3f2a8_6d353d31",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP# 4 */\t\"Use execve() takeover registers check. (execve target is #1 testcase)\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "562a8169_fdfd41cb",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#11 */\t\"Preservation check signalhsndler(use sigaltstack) before and after.\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09322459_9e7e0796",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#15 */\t\"Context switch in the same core check and SIGSTOP -\u003e SIGCONT restart check.(need run on background \u0027\u0026\u0027)\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5b17623_a75a4433",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#22 */\t\"Use execve() VL check if setting INHERIT flags. (execve target is #1 testcase)\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8587694a_0942dccc",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#29 */\t\"Use execve() VL check if not setting INHERIT flags. (execve target is #1 testcase)\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7054517a_638db169",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#30 */\t\"When SVE is enable, ptrace(SETREGSET + NT_ARM_SVE + SVE_PT_REGS_FPSIMD), regs fpsimd struct check.\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6ed9199_22ffd547",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#31 */\t\"When SVE is enable, ptrace(SETREGSET + NT_ARM_SVE + SVE_PT_REGS_FPSIMD), regs sve struct check.\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c1d324e9_1ec6bb4a",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#36 */\t\"It becomes SIGSEGV when changing and using SVE-VL during signalhandler execution.\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6fba1abf_5eb8f1b6",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#37 */\t\"Confirmation of execve() operation when VL is set in INHERIT-\u003eONEXEC order.\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ebd43e1_0027b031",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#38 */\t\"Confirmation of execve() operation when VL is set in ONEXEC-\u003eINHERIT order.\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4b62b237_a2a4ac93",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+/* TP#39 */\t\"Confirmation of execve() operation when ONEXEC and INHERIT are set at the same time.\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80986f66_25029049",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027char **\u0027 should also have an identifier name\n+\tint (*func)(int, unsigned int, unsigned int, int, char **);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dab4c482_2074f778",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027int\u0027 should also have an identifier name\n+\tint (*func)(int, unsigned int, unsigned int, int, char **);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "efeb1db0_939330e1",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027unsigned int\u0027 should also have an identifier name\n+\tint (*func)(int, unsigned int, unsigned int, int, char **);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b10c6cff_befb4fbd",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027unsigned int\u0027 should also have an identifier name\n+\tint (*func)(int, unsigned int, unsigned int, int, char **);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bca5c1e3_3a37535d",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027int\u0027 should also have an identifier name\n+\tint (*func)(int, unsigned int, unsigned int, int, char **);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "29fa417c_d5d3d63a",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: macros should not use a trailing semicolon\n+#define TEST_CASE_DEF(number)\t\\\n+\textern int test_##number(int, unsigned int, unsigned int, int, char **);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d4d4deee_562f4ef3",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(usage_messages)\n+\tint tp_count \u003d sizeof(usage_messages) / sizeof(usage_messages[0]) - 1;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c02c64d_a917fc51",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(usage_messages)\n+\tint usage_count \u003d sizeof(usage_messages) / sizeof(usage_messages[0]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a892120_23dc29d3",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(test_cases)\n+\tint tp_count \u003d sizeof(test_cases) / sizeof(test_cases[0]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "817ab5b4_62e5f390",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: \u0027invaid\u0027 may be misspelled - perhaps \u0027invalid\u0027?\n+\t\tprintf(\"TP number invaid.\\n\");",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "925b08e7_7e236618",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"Vector Length \u003d %d bytes (128 bit register * %d)\\n\", vl * 8, vq);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8fe79d84_99a2d7c4",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0x1111111111111111, 0x2222222222222222, 0x3333333333333333, 0x4444444444444444,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f270f6f4_e21fa505",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0x5555555555555555, 0x6666666666666666, 0x7777777777777777, 0x8888888888888888,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f6618937_a1c6a424",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0x9999999999999999, 0xaaaaaaaaaaaaaaaa, 0xbbbbbbbbbbbbbbbb, 0xcccccccccccccccc,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07ac0d15_47c0adc2",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0xdddddddddddddddd, 0xeeeeeeeeeeeeeeee, 0xffffffffffffffff, 0x1111111122222222,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ef3874c_7bd1283a",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0x2222222233333333, 0x3333333344444444, 0x4444444455555555, 0x5555555566666666,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55d9ce6e_5ab3683c",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0x6666666677777777, 0x7777777788888888, 0x99999999aaaaaaaa, 0xaaaaaaaabbbbbbbb,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1cef2707_599e1858",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0xbbbbbbbbcccccccc, 0xccccccccdddddddd, 0xddddddddeeeeeeee, 0xeeeeeeeeffffffff,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c13e60a8_19a97c2f",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0xffffffff11111111, 0x1111222233334444, 0x5555666677778888, 0x9999aaaabbbbcccc,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43d2539c_449a0754",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0xddddeeeeffff1111, 0xffffeeeeddddcccc, 0xbbbbaaaa99998888, 0x7777666655554444,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58fc2326_470332e2",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0x333322221111ffff, 0x1122334455667788, 0x99aabbccddeeff11, 0xffeeddccbbaa9988,",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "283532e3_feedc516",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t0x77665544332211ff, 0x123456789abcdef1, 0xfedcba987654321f, 0xcafecafecafecafe",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "249e2896_ff46ce85",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tswitch(vl) {",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8b514a36_ed2eba98",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tPR_SVE_GET_VL_LEN(vl_flags), PR_SVE_GET_VL_FLAGS(vl_flags));",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "342a564b_0633b520",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 143,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tstruct fpsimd_sve_state(vq) *svereg \u003d buf;\n \t                            ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8a787597_15ae6a51",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 145,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(sve_magic)\n+\tunsigned int sve_magic_num \u003d sizeof(sve_magic) / sizeof(sve_magic[0]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e36b64a_cc23f848",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\tint k \u003d i * vq * 2;\n+\t\t\tpzreg[k + j] \u003d sve_magic[(k + j) % sve_magic_num];",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58eb6b95_111aaf08",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsvereg-\u003epregs[i][j] \u003d (unsigned short)(sve_magic[(k + j) % sve_magic_num]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43e0b109_2727e738",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\tint k \u003d i * vq;\n+\t\t\tsvereg-\u003epregs[i][j] \u003d (unsigned short)(sve_magic[(k + j) % sve_magic_num]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9cbc0760_0f1ed6ee",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 173,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tstruct fpsimd_sve_state(af_vq) *svereg \u003d buf;\n \t                               ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e64ff584_c47452d3",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 198,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tstruct fpsimd_sve_state(vq) *svereg \u003d buf;\n \t                            ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2be8fd4_19b58622",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tstruct fpsimd_sve_state(vq) *svereg \u003d buf;\n \t                            ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c123e78c_6d1143a9",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9008a6d0_2ce60a40",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 211,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tstruct fpsimd_sve_state(vq) *svereg \u003d buf;\n \t                            ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe10100b_96734632",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c53cc2f_24c8656c",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "ERROR: need consistent spacing around \u0027*\u0027 (ctx:WxV)\n+\tconst struct fpsimd_sve_state(vq) *svereg \u003d buf;\n \t                                  ^",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07b1faa7_fea5ee3d",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 254,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f389c144_86f96a37",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 262,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "01178fd2_8344880b",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 303,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+\ttypedef struct fpsimd_sve_state(vq) sve_regs_t;",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "633cada0_c9368c35",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 313,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"Compare Failed, z%2d exp 0x%016lx val 0x%016lx\\n\",",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bac19c20_3610185a",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 333,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"q%2d: 0x%016lx 0x%016lx\\n\", i / 2, exp[i], exp[i + 1]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "33c96cba_75f997ce",
+        "filename": "test/sve/src/sve.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 340,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"q%2d: 0x%016lx 0x%016lx\\n\", i / 2, tgt[i], tgt[i + 1]);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5aa9b1e_ca544986",
+        "filename": "test/sve/src/sve.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern void gen_test_sve_low_128(void *buf, unsigned int bf_vq, unsigned int af_vq);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f71440e_1cc72204",
+        "filename": "test/sve/src/sve.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern int fpsimd_compare(const struct user_fpsimd_state *expect, const struct user_fpsimd_state *target, size_t n);",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a54b0f35_03b0c47c",
+        "filename": "test/sve/src/sve.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define PR_SVE_GET_VL_FLAGS(ret)\t((ret) \u0026 ~PR_SVE_VL_LEN_MASK)\t/* sve_flags */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a53b79d3_0663d246",
+        "filename": "test/sve/src/sve.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T10:10:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+# define PR_SVE_GET_VL_LEN(ret)\t\t((ret) \u0026 PR_SVE_VL_LEN_MASK)\t/* vector length */",
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
