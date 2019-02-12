@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c62f76a9_27d31a7c",
+        "filename": "cmake/README",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-12T02:42:57Z",
+      "side": 1,
+      "message": "I\u0027ll move the main building to the README.md now we have one -- what do you want to do about the cross compilation blob? I feel it belongs to a different file, but we don\u0027t really have a place to put this kind of documentation as of now",
+      "revId": "711dcb6698627b1c9e86f2404ee79275ad1b4ca2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
