@@ -235,6 +235,30 @@
     },
     {
       "key": {
+        "uuid": "f44705c5_5cbb6435",
+        "filename": "test/sve/exp/TEST040_vl16.exp.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-12T04:52:20Z",
+      "side": 1,
+      "message": "ログ中のvgがdoubleのway数を表す。なお、vector granuleという意味。",
+      "parentUuid": "91663148_423f7c11",
+      "range": {
+        "startLine": 1,
+        "startChar": 0,
+        "endLine": 1,
+        "endChar": 625
+      },
+      "revId": "36baac1b8554bf7cfe79f59be78c538b537ffa46",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "c2074009_fe8761be",
         "filename": "test/sve/src/001.c",
         "patchSetId": 1
