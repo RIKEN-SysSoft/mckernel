@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7bad805c_49806bee",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 9305,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T05:17:46Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    return ihk_mc_perfctr_stop((int)counter,$",
+      "revId": "5e6ff648b892376664b7fd91f303820e7c23f49a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d51ddf50_54b042f2",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 9312,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-12T05:17:46Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    return ihk_mc_perfctr_stop(1 \u003c\u003c counter,$",
+      "revId": "5e6ff648b892376664b7fd91f303820e7c23f49a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
