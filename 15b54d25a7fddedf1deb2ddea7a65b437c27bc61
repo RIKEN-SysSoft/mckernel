@@ -19,6 +19,23 @@
     },
     {
       "key": {
+        "uuid": "87b2e786_3fe99771",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1563,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-13T07:21:53Z",
+      "side": 1,
+      "message": "lapic_timer_enabled is unrelated?",
+      "revId": "15b54d25a7fddedf1deb2ddea7a65b437c27bc61",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "0402632c_34a6448f",
         "filename": "kernel/mem.c",
         "patchSetId": 5
