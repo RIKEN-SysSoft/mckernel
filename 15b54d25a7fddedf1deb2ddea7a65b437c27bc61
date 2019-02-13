@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9884ae7a_5eb3fab3",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:46:36Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long is_use_virt_timer(void);",
+      "revId": "15b54d25a7fddedf1deb2ddea7a65b437c27bc61",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0402632c_34a6448f",
+        "filename": "kernel/mem.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:46:36Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);",
+      "revId": "15b54d25a7fddedf1deb2ddea7a65b437c27bc61",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
