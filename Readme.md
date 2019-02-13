@@ -1,4 +1,4 @@
-![McKernel Logo](https://www.dropbox.com/s/jonof8kotcans4o/mckernel-logo.png?dl=1)
+![McKernel Logo](https://www.sys.r-ccs.riken.jp/members_files/bgerofi/mckernel-logo.png)
 -------------------------
 
 IHK/McKernel is a light-weight multi-kernel operating system designed for high-end supercomputing. It runs Linux and McKernel, a light-weight kernel (LWK), side-by-side inside compute nodes and aims at the following:
@@ -36,7 +36,7 @@ A hybrid approach recognized recently by the system software community is to run
 At the heart of the stack is a low-level software infrastructure called Interface for Heterogeneous Kernels (IHK). IHK is a general framework that provides capabilities for partitioning resources in a many-core environment (e.g.,CPU cores and physical memory) and it enables management of lightweight kernels. IHK can allocate and release host resources dynamically and no reboot of the host machine is required when altering configuration. IHK also provides a low-level inter-kernel messaging infrastructure, called the Inter-Kernel Communication (IKC) layer. An architectural overview of the main system components is shown below.
 
 
-![arch](https://www.dropbox.com/s/tromq71wgqj9r8d/mckernel.png?dl=1)
+![arch](https://www.sys.r-ccs.riken.jp/members_files/bgerofi/mckernel.png)
 
 
 McKernel is a lightweight kernel written from scratch. It is designed for HPC and is booted from IHK. McKernel retains a binary compatible ABI with Linux, however, it implements only a small set of performance sensitive system calls and the rest are offloaded to Linux. Specifically, McKernel has its own memory management, it supports processes and multi-threading with a simple round-robin cooperative (tick-less) scheduler, and it implements signaling. It also allows inter-process memory mappings and it provides interfaces to hardware performance counters.
