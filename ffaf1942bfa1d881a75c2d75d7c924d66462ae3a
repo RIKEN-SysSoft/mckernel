@@ -1,0 +1,293 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0f1b0836_e4f577dd",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1582,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+arch_unhandled_page_fault_prologue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs)",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08e2aad2_36dac55d",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1585,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c8a2602_8c5c500c",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1588,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+arch_unhandled_page_fault_epilogue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs)",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c7e4d60_0e1000d1",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1087,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+void arch_unhandled_page_fault_prologue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs)",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ad1ea61_6a64e119",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1093,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e3969cb_3c87dffb",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1095,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+void arch_unhandled_page_fault_epilogue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs)",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b7aaa4ba_cce7bd61",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void arch_unhandled_page_fault_prologue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs);",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ae8d6d50_0094e03b",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern void arch_unhandled_page_fault_prologue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs);",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d8ed3fc_4b75a71f",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern void arch_unhandled_page_fault_epilogue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs);",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87542ebb_63e9288b",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void arch_unhandled_page_fault_epilogue(struct thread *thread, void *fault_addr, uint64_t reason, void *regs);",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6d96fef_95b3a778",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f16afbf2_5f916c34",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1149,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static void unhandled_page_fault(struct thread *thread, void *fault_addr, uint64_t reason, void *regs)",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92120b11_a3ca5dc0",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1162,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(reason \u0026 PF_PROT ? \"protection fault\" : \"no page found\"),",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "156e5fe4_71005d54",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1172,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "ERROR: \"(foo*)\" should be \"(foo *)\"\n+\t\tihk_mc_pt_print_pte(vm-\u003eaddress_space-\u003epage_table, (void*)address);",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00919a5c_1d0ee104",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1172,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_mc_pt_print_pte(vm-\u003eaddress_space-\u003epage_table, (void*)address);",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2b0d7e03_376a5bf2",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1174,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: unnecessary whitespace before a quoted newline\n+\t\t__kprintf(\"address is out of range! \\n\");",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9977ee65_49378545",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1198,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-13T06:20:18Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "ffaf1942bfa1d881a75c2d75d7c924d66462ae3a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
