@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "b253fe94_068eddf5",
+        "filename": "arch/arm64/kernel/include/arch_rusage.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-14T04:23:42Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "882a4600_0a53877c",
+      "revId": "105ddea477bef39d2fa536c351803fbf621d1063",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "5b745ad4_33904494",
         "filename": "executer/include/ihklib_rusage.h",
         "patchSetId": 4
@@ -33,6 +51,24 @@
       "revId": "105ddea477bef39d2fa536c351803fbf621d1063",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "23d440a9_df64857b",
+        "filename": "executer/include/ihklib_rusage.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-14T04:23:42Z",
+      "side": 1,
+      "message": "I\u0027ll use IHK_OS_PGSIZE_COUNT.",
+      "parentUuid": "5b745ad4_33904494",
+      "revId": "105ddea477bef39d2fa536c351803fbf621d1063",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
