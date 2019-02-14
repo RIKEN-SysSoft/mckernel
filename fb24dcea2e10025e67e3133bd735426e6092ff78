@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "aa4a7d9c_681fbf7a",
+        "filename": "kernel/mem.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-14T07:27:44Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int ihk_mc_pt_print_pte(struct page_table *pt, void *virt);",
+      "revId": "fb24dcea2e10025e67e3133bd735426e6092ff78",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
