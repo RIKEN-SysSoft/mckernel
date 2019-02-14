@@ -42,7 +42,6 @@ int arch_symbols_init(void)
 }
 
 
-#ifdef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 1
 struct vdso {
 	long busy;
@@ -53,7 +52,6 @@ struct vdso {
 	long lbase;
 	long offset_sigtramp;
 };
-#endif /*POSTK_DEBUG_ARCH_DEP_52*/
 
 unsigned long
 reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, unsigned long end);

@@ -7107,45 +7107,6 @@ SYSCALL_DECLARE(get_cpu_id)
 	return ihk_mc_get_processor_id();
 }
 
-void calculate_time_from_tsc(struct timespec *ts)
-{
-	long ver;
-	unsigned long current_tsc;
-	time_t sec_delta;
-	long ns_delta;
-
-	for (;;) {
-		while ((ver = ihk_atomic64_read(&tod_data.version)) & 1) {
-			/* settimeofday() is in progress */
-			cpu_pause();
-		}
-		rmb();
-		*ts = tod_data.origin;
-		rmb();
-		if (ver == ihk_atomic64_read(&tod_data.version)) {
-			break;
-		}
-
-		/* settimeofday() has intervened */
-		cpu_pause();
-	}
-
-	current_tsc = rdtsc();
-	sec_delta = current_tsc / tod_data.clocks_per_sec;
-	ns_delta = NS_PER_SEC * (current_tsc % tod_data.clocks_per_sec)
-		/ tod_data.clocks_per_sec;
-	/* calc. of ns_delta overflows if clocks_per_sec exceeds 18.44 GHz */
-
-	ts->tv_sec += sec_delta;
-	ts->tv_nsec += ns_delta;
-	if (ts->tv_nsec >= NS_PER_SEC) {
-		ts->tv_nsec -= NS_PER_SEC;
-		++ts->tv_sec;
-	}
-
-	return;
-}
-
 SYSCALL_DECLARE(setitimer)
 {
 	int which = (int)ihk_mc_syscall_arg0(ctx);

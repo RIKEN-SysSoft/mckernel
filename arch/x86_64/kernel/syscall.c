@@ -64,7 +64,6 @@ uintptr_t debug_constants[] = {
 	-1,
 };
 
-#ifdef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2
 struct vdso {
 	long busy;
@@ -80,8 +79,24 @@ struct vdso {
 	long hpet_phys;
 	void *pvti_virt;
 	long pvti_phys;
+	void *vgtod_virt;
 };
-#endif /*POSTK_DEBUG_ARCH_DEP_52*/
+
+struct vsyscall_gtod_data {
+	int seq;
+
+	struct {
+		int vclock_mode;
+		unsigned long cycle_last;
+		unsigned long mask;
+		unsigned int mult;
+		unsigned int shift;
+	} clock;
+
+	/* open coded 'struct timespec' */
+	time_t wall_time_sec;
+	unsigned long wall_time_snsec;
+};
 
 static struct vdso vdso;
 static size_t container_size = 0;
@@ -2811,4 +2826,37 @@ time_t time(void) {
 	return ret;
 }
 
+void calculate_time_from_tsc(struct timespec *ts)
+{
+	unsigned long seq;
+	unsigned long seq2;
+	unsigned long ns;
+	unsigned long delta;
+	struct vsyscall_gtod_data *gtod = vdso.vgtod_virt;
+
+	do {
+		for (;;) {
+			seq = ACCESS_ONCE(gtod->seq);
+			if (unlikely(seq & 1)) {
+				cpu_pause();
+				continue;
+			}
+			break;
+		}
+		rmb(); /* fetch sequence before time */
+		ts->tv_sec = gtod->wall_time_sec;
+		ns = gtod->wall_time_snsec;
+		delta = rdtsc() - gtod->clock.cycle_last;
+		ns += delta * gtod->clock.mult;
+		ns >>= gtod->clock.shift;
+		seq2 = ACCESS_ONCE(gtod->seq);
+		rmb(); /* fetch time before checking sequence */
+	} while (seq != seq2);
+	ts->tv_nsec = ns;
+
+	if (ts->tv_nsec >= NS_PER_SEC) {
+		ts->tv_nsec -= NS_PER_SEC;
+		++ts->tv_sec;
+	}
+}
 /*** End of File ***/

@@ -2,8 +2,12 @@
 #include <linux/version.h>
 #include <linux/kallsyms.h>
 #include <linux/uaccess.h>
+#include <asm/vsyscall.h>
+#include <asm/vgtod.h>
 #include "../../../config.h"
 #include "../../mcctrl.h"
+
+#define gtod (&VVAR(vsyscall_gtod_data))
 
 //#define SC_DEBUG
 
@@ -54,7 +58,6 @@ int arch_symbols_init(void)
 }
 
 
-#ifdef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 2
 struct vdso {
 	long busy;
@@ -70,8 +73,8 @@ struct vdso {
 	long hpet_phys;
 	void *pvti_virt;
 	long pvti_phys;
+	void *vgtod_virt;
 };
-#endif /*POSTK_DEBUG_ARCH_DEP_52*/
 
 unsigned long
 reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, unsigned long end);
@@ -207,6 +210,7 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 #endif
 	}
 
+	vdso->vgtod_virt = (void *)gtod;
 out:
 	wmb();
 	vdso->busy = 0;
