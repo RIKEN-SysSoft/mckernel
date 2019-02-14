@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2570b47d_dc16990e",
+        "filename": "kernel/include/rusage.h",
+        "patchSetId": 7
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-14T08:27:44Z",
+      "side": 1,
+      "message": "This is tricky, because this rusage.h is included from both linux (which doesn\u0027t have arch_rusage, but includes ihklib_rusage) and mckernel.\n\nWorse than being a problem of style, this allows different definitions of IHK_MAX_NUM_PGSIZES on both sides leading to runtime problems with a successful build (like now); x86\u0027s arch_rusage and ihklib rusage don\u0027t agree on the count. The ihklib rusage really needs to be the same arch-dependent enum... Or could we just define all of the possible values in both case and get rid of this somehow?",
+      "revId": "dc27277fd323c365c58824f6c75bdd032a2590dc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
