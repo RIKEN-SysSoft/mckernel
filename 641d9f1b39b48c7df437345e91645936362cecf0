@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0920c732_2d9193d6",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2145,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-14T07:29:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%lx-,%s: memory_stat_rss_sub(),phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "641d9f1b39b48c7df437345e91645936362cecf0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd2a9633_e80a89dd",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2238,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-14T07:29:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{walk_pte_l1, clear_range_l1, PTL2_SIZE, PTL2_CONT_SIZE}, /*PTL2*/",
+      "revId": "641d9f1b39b48c7df437345e91645936362cecf0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81c89d69_ac5b6e83",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2239,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-14T07:29:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{walk_pte_l2, clear_range_l2, PTL3_SIZE, PTL3_CONT_SIZE}, /*PTL3*/",
+      "revId": "641d9f1b39b48c7df437345e91645936362cecf0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec9217ba_053f62dd",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2240,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-14T07:29:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t{walk_pte_l3, clear_range_l3, PTL4_SIZE, PTL4_CONT_SIZE}, /*PTL4*/",
+      "revId": "641d9f1b39b48c7df437345e91645936362cecf0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
