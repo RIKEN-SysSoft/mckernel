@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1f1d236d_9d942e8d",
+        "filename": "kernel/shmobj.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 275,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-14T07:28:47Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%lx-,%s: calling memory_stat_rss_sub(),phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "022e04b62b150fcdf615e4e8e1f2e99ad968a692",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a2de56f_e47d8f56",
+        "filename": "kernel/shmobj.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 466,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-14T07:28:47Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%lx-,%s: calling memory_stat_rss_sub(),phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "022e04b62b150fcdf615e4e8e1f2e99ad968a692",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
