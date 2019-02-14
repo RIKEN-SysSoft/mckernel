@@ -10,7 +10,7 @@ IHK/McKernel is a light-weight multi-kernel operating system designed for high-e
 
 ## Contents
 
-- [Background] (#background)
+- [Background](#background-and-motivation)
 - [Architectural Overview](#architectural-overview)
 - [Installation](#installation)
 - [The Team](#the-team)
