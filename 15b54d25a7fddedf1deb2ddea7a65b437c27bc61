@@ -36,6 +36,24 @@
     },
     {
       "key": {
+        "uuid": "05fed2b7_b7414342",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1563,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-14T02:23:29Z",
+      "side": 1,
+      "message": "You\u0027re right. It\u0027s included by mistake when cherry-picking the original change onto development.",
+      "parentUuid": "87b2e786_3fe99771",
+      "revId": "15b54d25a7fddedf1deb2ddea7a65b437c27bc61",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "0402632c_34a6448f",
         "filename": "kernel/mem.c",
         "patchSetId": 5
