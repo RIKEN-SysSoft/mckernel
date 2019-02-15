@@ -34,6 +34,24 @@
       "revId": "8c5d977d09af972deae699809630ccd51c0bb4de",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "466682c4_3e005c04",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-15T09:03:18Z",
+      "side": 1,
+      "message": "Later versions of linux use a new struct vgtod_ts instead of the open coded one:\n\n  struct vgtod_ts {\n          u64             sec;\n          u64             nsec;\n  };\n\nour timespec struct is compatible as well, but I guess we should keep this code as close to linux\u0027s as possible so I\u0027ll go with whatever. Please do not remove the comment if you keep the open coded version though.",
+      "parentUuid": "e4f0a7e4_3edfc15f",
+      "revId": "8c5d977d09af972deae699809630ccd51c0bb4de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
