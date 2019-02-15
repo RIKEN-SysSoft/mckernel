@@ -16,6 +16,24 @@
       "revId": "8c5d977d09af972deae699809630ccd51c0bb4de",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e4f0a7e4_3edfc15f",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1015587
+      },
+      "writtenOn": "2019-02-15T08:55:21Z",
+      "side": 1,
+      "message": "This comment is from Linux, so it was not my will. I would like to delete comments.",
+      "parentUuid": "d6dee943_227fe502",
+      "revId": "8c5d977d09af972deae699809630ccd51c0bb4de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
