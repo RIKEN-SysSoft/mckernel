@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "610a98bb_44bd2dd7",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 2436,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void restore_tls(unsigned long addr);",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "178cbe4a_b6a7ef3b",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 2437,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void save_tls_ctx(void __user *ctx);",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d1b26c10_18977429",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 2438,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long get_tls_ctx(void __user *ctx);",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2a0b5c7b_37cbad4f",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 2439,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long get_rsp_ctx(void *ctx);",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6dc92e82_75dc60a2",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 2483,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+long mcexec_uti_save_tls(ihk_os_t os, struct uti_save_tls_desc __user *udesc, struct file *file)",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "290e44bc_e799a70f",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 3270,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\treturn mcexec_uti_save_tls(os, (struct uti_save_tls_desc *)arg, file);",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d246d595_be2a6eb3",
+        "filename": "executer/user/archdep.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern int switch_ctx(int fd, unsigned long cmd, struct uti_save_tls_desc *desc, void *lctx, void *rctx);",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ed2dabf_f1ee03e3",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 2961,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:28:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((rc \u003d switch_ctx(fd, MCEXEC_UP_UTI_SAVE_FS, \u0026save_tls_desc, uti_desc-\u003elctx, uti_desc-\u003erctx))",
+      "revId": "1057f7ca35e3e0e18ce08ff99d451402f8b832aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
