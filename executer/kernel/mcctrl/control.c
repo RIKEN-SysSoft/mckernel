@@ -320,17 +320,6 @@ struct mcos_handler_info;
 static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
-/* Info of Linux counterpart of migrated-to-Linux thread */
-struct host_thread {
-	struct list_head list;
-	struct mcos_handler_info *handler;
-	int     pid;
-	int     tid;
-	unsigned long usp;
-	unsigned long lfs;
-	unsigned long rfs;
-};
-
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 {
 	struct mcos_handler_info *info;
@@ -2508,9 +2497,14 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, stru
 		goto out;
 	}
 
-	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
 		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
 		rc = -EFAULT;
+		goto out;
+	}
+
+	rc = arch_mcexec_uti_save_fs(&desc);
+	if (rc < 0) {
 		goto out;
 	}
 

@@ -121,12 +121,6 @@ enum mcctrl_os_cpu_operation {
 	MCCTRL_OS_CPU_MAX_OP
 };
 
-/* Used to wake-up a Linux thread futex_wait()-ing */
-struct uti_futex_resp {
-	int done;
-	wait_queue_head_t wq;
-};
-
 struct ikc_scd_packet {
 	struct ihk_ikc_packet_header header;
 	int msg;
@@ -577,4 +571,24 @@ struct mcctrl_ioctl_getrusage_desc {
 	size_t size_rusage;
 };
 
+/* uti */
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *desc,
+			struct file *file);
+long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc);
+
+struct host_thread {
+	struct list_head list;
+	struct mcos_handler_info *handler;
+	int     pid;
+	int     tid;
+	unsigned long usp;
+	unsigned long lfs;
+	unsigned long rfs;
+};
+
+/* Used to wake-up a Linux thread futex_wait()-ing */
+struct uti_futex_resp {
+	int done;
+	wait_queue_head_t wq;
+};
 #endif
