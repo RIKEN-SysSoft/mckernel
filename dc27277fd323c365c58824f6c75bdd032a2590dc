@@ -16,6 +16,24 @@
       "revId": "dc27277fd323c365c58824f6c75bdd032a2590dc",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2d532830_e4403900",
+        "filename": "kernel/include/rusage.h",
+        "patchSetId": 7
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-15T10:16:58Z",
+      "side": 1,
+      "message": "I think the second option is better.",
+      "parentUuid": "2570b47d_dc16990e",
+      "revId": "dc27277fd323c365c58824f6c75bdd032a2590dc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
