@@ -147,14 +147,13 @@ out:
 void *
 get_user_sp(void)
 {
-	/* TODO; skeleton for UTI */
-	return NULL;
+	return (void *)current_pt_regs()->sp;
 }
 
 void
 set_user_sp(void *usp)
 {
-	/* TODO; skeleton for UTI */
+	current_pt_regs()->sp = (unsigned long)usp;
 }
 
 struct trans_uctx {
@@ -165,22 +164,44 @@ struct trans_uctx {
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	/* TODO; skeleton for UTI */
+	const unsigned long tpidrro = 0;
+
+	asm volatile(
+	"	msr	tpidr_el0, %0\n"
+	"	msr	tpidrro_el0, %1"
+	: : "r" (addr), "r" (tpidrro));
 }
 
 void
-save_fs_ctx(void *ctx)
+save_tls_ctx(void __user *ctx)
 {
-	/* TODO; skeleton for UTI */
+	struct trans_uctx __user *tctx = ctx;
+	unsigned long baseaddr;
+
+	asm volatile(
+	"	mrs	%0, tpidr_el0"
+	: "=r" (baseaddr));
+
+	if (copy_to_user(&tctx->tls_baseaddr, &baseaddr,
+			 sizeof(tctx->tls_baseaddr))) {
+		pr_err("%s: copy_to_user failed.\n", __func__);
+		return;
+	}
 }
 
 unsigned long
-get_fs_ctx(void *ctx)
+get_tls_ctx(void __user *ctx)
 {
-	/* TODO; skeleton for UTI */
-	return 0;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
+
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return 0;
+	}
+	return kctx.tls_baseaddr;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
@@ -291,7 +312,7 @@ out:
 	return error;
 }
 
-long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc)
+long arch_mcexec_uti_save_tls(struct uti_save_tls_desc *desc)
 {
 	int rc = 0;
 	struct trans_uctx *__user rctx = NULL;
@@ -315,7 +336,7 @@ long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc)
 		rc = -EFAULT;
 		goto out;
 	}
-	restore_fs(get_fs_ctx(rctx));
+	restore_tls(get_tls_ctx(rctx));
 
 out:
 	return rc;

@@ -572,9 +572,9 @@ struct mcctrl_ioctl_getrusage_desc {
 };
 
 /* uti */
-long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *desc,
+long mcexec_uti_save_tls(ihk_os_t os, struct uti_save_tls_desc __user *desc,
 			struct file *file);
-long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc);
+long arch_mcexec_uti_save_tls(struct uti_save_tls_desc *desc);
 
 struct host_thread {
 	struct list_head list;
@@ -582,8 +582,8 @@ struct host_thread {
 	int     pid;
 	int     tid;
 	unsigned long usp;
-	unsigned long lfs;
-	unsigned long rfs;
+	unsigned long ltls;
+	unsigned long rtls;
 };
 
 /* Used to wake-up a Linux thread futex_wait()-ing */
