@@ -257,25 +257,35 @@ struct trans_uctx {
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	wrmsrl(MSR_FS_BASE, fs);
+	wrmsrl(MSR_FS_BASE, addr);
 }
 
 void
-save_fs_ctx(void *ctx)
+save_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	rdmsrl(MSR_FS_BASE, tctx->fs);
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return;
+	}
+	rdmsrl(MSR_FS_BASE, kctx.fs);
 }
 
 unsigned long
-get_fs_ctx(void *ctx)
+get_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	return tctx->fs;
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return 0;
+	}
+	return kctx.fs;
 }
 
 unsigned long
@@ -364,7 +374,7 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
-long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc)
+long arch_mcexec_uti_save_tls(struct uti_save_tls_desc *desc)
 {
 	return 0;
 }

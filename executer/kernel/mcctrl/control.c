@@ -2433,10 +2433,10 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 
 extern void *get_user_sp(void);
 extern void set_user_sp(unsigned long);
-extern void restore_fs(unsigned long fs);
-extern void save_fs_ctx(void *);
-extern unsigned long get_fs_ctx(void *);
-extern unsigned long get_rsp_ctx(void *);
+extern void restore_tls(unsigned long addr);
+extern void save_tls_ctx(void __user *ctx);
+extern unsigned long get_tls_ctx(void __user *ctx);
+extern unsigned long get_rsp_ctx(void *ctx);
 
 long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 {
@@ -2480,14 +2480,14 @@ long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 	return rc;
 }
 
-long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
+long mcexec_uti_save_tls(ihk_os_t os, struct uti_save_tls_desc __user *udesc, struct file *file)
 {
 	int rc = 0;
 	void *usp = get_user_sp();
 	struct mcos_handler_info *info;
 	struct host_thread *thread;
 	unsigned long flags;
-	struct uti_save_fs_desc desc;
+	struct uti_save_tls_desc desc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcctrl_per_proc_data *ppd;
 
@@ -2497,26 +2497,26 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, stru
 		goto out;
 	}
 
-	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_tls_desc))) {
 		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
 		rc = -EFAULT;
 		goto out;
 	}
 
-	rc = arch_mcexec_uti_save_fs(&desc);
+	rc = arch_mcexec_uti_save_tls(&desc);
 	if (rc < 0) {
 		goto out;
 	}
 
-	save_fs_ctx(desc.lctx);
+	save_tls_ctx(desc.lctx);
 	info = ihk_os_get_mcos_private_data(file);
 	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
 	memset(thread, '\0', sizeof(struct host_thread));
 	thread->pid = task_tgid_vnr(current);
 	thread->tid = task_pid_vnr(current);
 	thread->usp = (unsigned long)usp;
-	thread->lfs = get_fs_ctx(desc.lctx);
-	thread->rfs = get_fs_ctx(desc.rctx);
+	thread->ltls = get_tls_ctx(desc.lctx);
+	thread->rtls = get_tls_ctx(desc.rctx);
 	thread->handler = info;
 
 	write_lock_irqsave(&host_thread_lock, flags);
@@ -2562,9 +2562,9 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
 		if (arg)
-			restore_fs(thread->lfs);
+			restore_tls(thread->ltls);
 		else
-			restore_fs(thread->rfs);
+			restore_tls(thread->rtls);
 		goto out;
 	}
 	ret = -EINVAL;
@@ -3267,7 +3267,7 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 		return mcexec_uti_get_ctx(os, (struct uti_get_ctx_desc *)arg);
 
 	case MCEXEC_UP_UTI_SAVE_FS:
-		return mcexec_uti_save_fs(os, (struct uti_save_fs_desc *)arg, file);
+		return mcexec_uti_save_tls(os, (struct uti_save_tls_desc *)arg, file);
 
 	case MCEXEC_UP_SIG_THREAD:
 		return mcexec_sig_thread(os, arg, file);

@@ -1,7 +1,12 @@
-/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016 */
+/* archdeps.c COPYRIGHT FUJITSU LIMITED 2016-2018 */
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <linux/kallsyms.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#include <linux/sched/task_stack.h>
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) */
+#include <linux/ptrace.h>
+#include <linux/uaccess.h>
 #include <asm/vdso.h>
 #include "config.h"
 #include "../../mcctrl.h"
@@ -142,59 +147,61 @@ out:
 void *
 get_user_sp(void)
 {
-	/* TODO; skeleton for UTI */
-	return NULL;
+	return (void *)current_pt_regs()->sp;
 }
 
 void
 set_user_sp(void *usp)
 {
-	/* TODO; skeleton for UTI */
+	current_pt_regs()->sp = (unsigned long)usp;
 }
 
-/* TODO; skeleton for UTI */
 struct trans_uctx {
 	volatile int cond;
 	int fregsize;
-
-	unsigned long rax;
-	unsigned long rbx;
-	unsigned long rcx;
-	unsigned long rdx;
-	unsigned long rsi;
-	unsigned long rdi;
-	unsigned long rbp;
-	unsigned long r8;
-	unsigned long r9;
-	unsigned long r10;
-	unsigned long r11;
-	unsigned long r12;
-	unsigned long r13;
-	unsigned long r14;
-	unsigned long r15;
-	unsigned long rflags;
-	unsigned long rip;
-	unsigned long rsp;
-	unsigned long fs;
+	struct user_pt_regs regs;
+	unsigned long tls_baseaddr;
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	/* TODO; skeleton for UTI */
+	const unsigned long tpidrro = 0;
+
+	asm volatile(
+	"	msr	tpidr_el0, %0\n"
+	"	msr	tpidrro_el0, %1"
+	: : "r" (addr), "r" (tpidrro));
 }
 
 void
-save_fs_ctx(void *ctx)
+save_tls_ctx(void __user *ctx)
 {
-	/* TODO; skeleton for UTI */
+	struct trans_uctx __user *tctx = ctx;
+	unsigned long baseaddr;
+
+	asm volatile(
+	"	mrs	%0, tpidr_el0"
+	: "=r" (baseaddr));
+
+	if (copy_to_user(&tctx->tls_baseaddr, &baseaddr,
+			 sizeof(tctx->tls_baseaddr))) {
+		pr_err("%s: copy_to_user failed.\n", __func__);
+		return;
+	}
 }
 
 unsigned long
-get_fs_ctx(void *ctx)
+get_tls_ctx(void __user *ctx)
 {
-	/* TODO; skeleton for UTI */
-	return 0;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
+
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_err("%s: copy_from_user failed.\n", __func__);
+		return 0;
+	}
+	return kctx.tls_baseaddr;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
@@ -305,7 +312,7 @@ out:
 	return error;
 }
 
-long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc)
+long arch_mcexec_uti_save_tls(struct uti_save_tls_desc *desc)
 {
 	int rc = 0;
 	struct trans_uctx *__user rctx = NULL;

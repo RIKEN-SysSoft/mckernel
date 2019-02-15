@@ -2878,7 +2878,7 @@ static void kill_thread(unsigned long tid, int sig,
 static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, int remote_tid, unsigned long pattr, unsigned long uti_clv, unsigned long _uti_desc)
 {
 	struct uti_get_ctx_desc get_ctx_desc;
-	struct uti_save_fs_desc save_fs_desc;
+	struct uti_save_tls_desc save_tls_desc;
 	int rc = 0;
 
 	struct thread_data_s *tp;
@@ -2955,10 +2955,10 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 	uti_desc->start_syscall_intercept = 1;
 
 	/* Save remote and local FS and then contex-switch */
-	save_fs_desc.rctx = uti_desc->rctx;
-	save_fs_desc.lctx = uti_desc->lctx;
+	save_tls_desc.rctx = uti_desc->rctx;
+	save_tls_desc.lctx = uti_desc->lctx;
 
-	if ((rc = switch_ctx(fd, MCEXEC_UP_UTI_SAVE_FS, &save_fs_desc, uti_desc->lctx, uti_desc->rctx))
+	if ((rc = switch_ctx(fd, MCEXEC_UP_UTI_SAVE_FS, &save_tls_desc, uti_desc->lctx, uti_desc->rctx))
 	    < 0) {
 		fprintf(stderr, "%s: ERROR switch_ctx failed (%d)\n", __FUNCTION__, rc);
 		goto out;
