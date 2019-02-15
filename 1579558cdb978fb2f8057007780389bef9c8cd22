@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "6ebf6a19_8ef6de3c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 5
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-15T08:30:39Z",
+      "side": 1,
+      "message": "Takagi-san, please advise on this point.\nThat aside should be OK (well, top commit needs testing, but it should not make a difference on x86; arm wasn\u0027t working before so isn\u0027t as strict)",
+      "revId": "1579558cdb978fb2f8057007780389bef9c8cd22",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "6ff57c2b_c4b11514",
         "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
         "patchSetId": 5
