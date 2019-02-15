@@ -304,3 +304,33 @@ out:
 			error, rva, rpa, pgsize);
 	return error;
 }
+
+long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc)
+{
+	int rc = 0;
+	struct trans_uctx *__user rctx = NULL;
+	struct trans_uctx *__user lctx = NULL;
+	struct trans_uctx klctx = {
+		.regs = current_pt_regs()->user_regs,
+	};
+
+	rctx = desc->rctx;
+	lctx = desc->lctx;
+
+	if (copy_to_user(lctx, &klctx, sizeof(klctx))) {
+		pr_err("%s: Error: copy_to_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	if (copy_from_user(&current_pt_regs()->user_regs,
+			   &rctx->regs, sizeof(rctx->regs))) {
+		pr_err("%s: Error: copy_from_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+	restore_tls(get_tls_ctx(rctx));
+
+out:
+	return rc;
+}

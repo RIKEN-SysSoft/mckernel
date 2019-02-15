@@ -364,3 +364,7 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+long arch_mcexec_uti_save_fs(struct uti_save_fs_desc *desc)
+{
+	return 0;
+}
