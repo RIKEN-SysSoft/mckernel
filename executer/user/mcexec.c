@@ -1472,45 +1472,6 @@ int init_worker_threads(int fd)
 	return 0;
 }
 
-#ifdef ENABLE_MCOVERLAYFS
-#define READ_BUFSIZE 1024
-static int find_mount_prefix(char *prefix)
-{
-	FILE *fp;
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t read;
-	char proc_path[PATH_MAX];
-	int ret = 0;
-
-	snprintf(proc_path, sizeof(proc_path), "/proc/%d/mounts", getpid());
-
-	fp = fopen(proc_path, "r");
-	if (fp == NULL) {
-		return -1;
-	}
-
-	while ((read = getline(&line, &len, fp)) != -1) {
-		if (strlen(line) < strlen(prefix))
-			continue;
-
-		if (!strncmp(line, prefix, strlen(prefix))) {
-			ret = 1;
-			break;
-		}
-	}
-
-	free(line);
-
-	return ret;
-}
-
-static int isunshare(void)
-{
-	return find_mount_prefix("mcoverlay /proc ");
-}
-#endif // ENABLE_MCOVERLAYFS
-
 #define MCK_RLIMIT_AS	0
 #define MCK_RLIMIT_CORE	1
 #define MCK_RLIMIT_CPU	2
@@ -1848,7 +1809,7 @@ static struct option mcexec_options[] = {
 	{ NULL, 0, NULL, 0, },
 };
 
-#ifdef ENABLE_MCOVERLAYFS
+#ifdef MCEXEC_BIND_MOUNT
 /* bind-mount files under <root>/<prefix> over <prefix> recursively */
 void bind_mount_recursive(const char *root, char *prefix)
 {
@@ -1924,7 +1885,7 @@ void bind_mount_recursive(const char *root, char *prefix)
 
 	closedir(dir);
 }
-#endif
+#endif // MCEXEC_BIND_MOUNT
 
 static void
 join_all_threads()
@@ -2266,11 +2227,7 @@ int main(int argc, char **argv)
 	envs_len = flatten_strings(NULL, environ, &envs);
 #endif /* ADD_ENVS_OPTION */
 
-#ifdef ENABLE_MCOVERLAYFS
-	__dprintf("mcoverlay enable\n");
-	char mcos_procdir[PATH_MAX];
-	char mcos_sysdir[PATH_MAX];
-
+#ifdef MCEXEC_BIND_MOUNT
 	error = isunshare();
 	if (error == 0) {
 		struct sys_unshare_desc unshare_desc;
@@ -2301,87 +2258,11 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
-		/*
-		 * Umount cgroup filesystems that may expose invalid NUMA
-		 * information
-		 */
-		if (find_mount_prefix("cgroup /sys/fs/cgroup/cpu,cpuacct")) {
-			umount_desc.dir_name = "/sys/fs/cgroup/cpu,cpuacct";
-
-			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
-						(unsigned long)&umount_desc) != 0) {
-				fprintf(stderr,
-						"WARNING: Failed to umount cgroup/cpu,cpuacct. (%s)\n",
-						strerror(errno));
-			}
-		}
-		else if (find_mount_prefix("cgroup /sys/fs/cgroup/cpu")) {
-			umount_desc.dir_name = "/sys/fs/cgroup/cpu";
-
-			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
-						(unsigned long)&umount_desc) != 0) {
-				fprintf(stderr,
-						"WARNING: Failed to umount cgroup/cpu. (%s)\n",
-						strerror(errno));
-			}
-		}
-
-		if (find_mount_prefix("cgroup /sys/fs/cgroup/cpuset")) {
-			umount_desc.dir_name = "/sys/fs/cgroup/cpuset";
-
-			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
-						(unsigned long)&umount_desc) != 0) {
-				fprintf(stderr,
-						"WARNING: Failed to umount cgroup/cpuset. (%s)\n",
-						strerror(errno));
-			}
-		}
-
-		if (find_mount_prefix("cgroup /sys/fs/cgroup/memory")) {
-			umount_desc.dir_name = "/sys/fs/cgroup/memory/";
-
-			if (ioctl(fd, MCEXEC_UP_SYS_UMOUNT,
-						(unsigned long)&umount_desc) != 0) {
-				fprintf(stderr,
-						"WARNING: Failed to umount cgroup/memory. (%s)\n",
-						strerror(errno));
-			}
-		}
-
-		sprintf(mcos_procdir, "/tmp/mcos/mcos%d_proc", mcosid);
-		mount_desc.dev_name = mcos_procdir;
-		mount_desc.dir_name = "/proc";
-		mount_desc.type = NULL;
-		mount_desc.flags = MS_BIND;
-		mount_desc.data = NULL;
-		if (ioctl(fd, MCEXEC_UP_SYS_MOUNT, 
-			(unsigned long)&mount_desc) != 0) {
-			fprintf(stderr, "Error: Failed to mount /proc. (%s)\n", 
-				strerror(errno));
-			return 1;
-		}
-
-		sprintf(mcos_sysdir, "/tmp/mcos/mcos%d_sys", mcosid);
-		mount_desc.dev_name = mcos_sysdir;
-		mount_desc.dir_name = "/sys";
-		mount_desc.type = NULL;
-		mount_desc.flags = MS_BIND;
-		mount_desc.data = NULL;
-		if (ioctl(fd, MCEXEC_UP_SYS_MOUNT, 
-			(unsigned long)&mount_desc) != 0) {
-			fprintf(stderr, "Error: Failed to mount /sys. (%s)\n", 
-				strerror(errno));
-			return 1;
-		}
-
-		bind_mount_recursive(ROOTFSDIR, "");
-
+		// bind_mount_recursive(<root>, <prefix>);
 	} else if (error == -1) {
 		return 1;
 	}
-#else
-	__dprintf("mcoverlay disable\n");
-#endif // ENABLE_MCOVERLAYFS
+#endif // MCEXEC_BIND_MOUNT
 
 	if ((ret = load_elf_desc_shebang(argv[optind], &desc,
 					 &shebang_argv, 1 /* execvp */))) {
@@ -4089,23 +3970,6 @@ return_execve1:
 
 					ret = 0;
 return_execve2:					
-#ifdef ENABLE_MCOVERLAYFS
-				{
-					struct sys_mount_desc mount_desc;
-
-					mount_desc.dev_name = NULL;
-					mount_desc.dir_name = "/proc";
-					mount_desc.type = NULL;
-					mount_desc.flags = MS_REMOUNT;
-					mount_desc.data = NULL;
-					if (ioctl(fd, MCEXEC_UP_SYS_MOUNT,
-								(unsigned long)&mount_desc) != 0) {
-						fprintf(stderr,
-								"WARNING: failed to remount /proc (%s)\n",
-								strerror(errno));
-					}
-				}
-#endif
 					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 					break;
 
