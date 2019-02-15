@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "02a46193_bb36b259",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 240,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:40:29Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t   Note that mcexec_terminate_thread() and returning EINTR would compete. */",
+      "revId": "898ad36a80b25c701a74ae1914996c93c4fb3099",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "757013c3_6a574f3b",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 240,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:40:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t   Note that mcexec_terminate_thread() and returning EINTR would compete. */",
+      "revId": "898ad36a80b25c701a74ae1914996c93c4fb3099",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e0b8140_59ba4014",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 501,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:40:29Z",
+      "side": 1,
+      "message": "WARNING: Possible unnecessary \u0027out of memory\u0027 message\n+\tif (!desc) {\n+\t\tpr_warn(\"WARNING: coudln\u0027t alloc remote page fault wait desc, retrying..\\n\");",
+      "revId": "898ad36a80b25c701a74ae1914996c93c4fb3099",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "abe33217_634d5259",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 573,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:40:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: INFO: no per-process structure for pid %d (tid %d), trying to use pid %d\\n\",",
+      "revId": "898ad36a80b25c701a74ae1914996c93c4fb3099",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "de099a3a_10ab74ba",
+        "filename": "kernel/host.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 674,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-15T08:40:29Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t * caller may be utilizing it already */",
+      "revId": "898ad36a80b25c701a74ae1914996c93c4fb3099",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
