@@ -6,8 +6,9 @@
 /* version number */
 #define MCKERNEL_VERSION "${MCKERNEL_VERSION}"
 
-/* whether mcoverlayfs is enabled */
-#cmakedefine ENABLE_MCOVERLAYFS 1
+/* enable the required code for mcexec to be able to use bind mount
+ * there is no config option as its use is discouraged */
+// #define MCEXEC_BIND_MOUNT 1
 
 /* whether memdump feature is enabled */
 #cmakedefine ENABLE_MEMDUMP 1

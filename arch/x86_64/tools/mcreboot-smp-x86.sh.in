@@ -20,7 +20,6 @@ SBINDIR="${prefix}/sbin"
 ETCDIR=@ETCDIR@
 KMODDIR="@KMODDIR@"
 KERNDIR="@MCKERNELDIR@"
-ENABLE_MCOVERLAYFS="@ENABLE_MCOVERLAYFS@"
 MCK_BUILDID=@BUILDID@
 
 mem="512M@0"
@@ -137,36 +136,6 @@ error_exit() {
 		    fi
 		fi
 		;&
-	mcos_sys_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-			umount /tmp/mcos/mcos0_sys
-		fi
-		;&
-	mcos_proc_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-			umount /tmp/mcos/mcos0_proc
-		fi
-		;&
-	mcoverlayfs_loaded)
-		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-			rmmod mcoverlay 2>/dev/null
-		fi
-		;&
-	linux_proc_bind_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-			umount /tmp/mcos/linux_proc
-		fi
-		;&
-	tmp_mcos_mounted)
-		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-			umount /tmp/mcos
-		fi
-		;&
-	tmp_mcos_created)
-		if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-			rm -rf /tmp/mcos
-		fi
-		;&
 	os_created)
 		# Destroy all LWK instances
 		if ls /dev/mcos* 1>/dev/null 2>&1; then
@@ -252,15 +221,6 @@ if [ "$cpus" == "" ]; then
 		echo "error: no available CPUs on NUMA node 0?" >&2
 		exit 1
 	fi
-fi
-
-# Remove mcoverlay if loaded
-if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-    ${SBINDIR}/mcoverlay-destroy.sh
-    ret=$?
-    if [ $ret -ne 0 ]; then
-	error_exit "initial"
-    fi
 fi
 
 # Stop irqbalance
@@ -461,15 +421,6 @@ if ! chown ${chown_option} /dev/mcd* /dev/mcos*; then
 	echo "warning: failed to chown device files" >&2
 fi
 
-# Overlay /proc, /sys with McKernel specific contents
-if [ "$ENABLE_MCOVERLAYFS" == "ON" ]; then
-    ${SBINDIR}/mcoverlay-create.sh
-    ret=$?
-    if [ $ret -ne 0 ]; then
-	error_exit "os_created"
-    fi
-fi
-
 # Start irqbalance with CPUs and IRQ for McKernel banned
 if [ "${irqbalance_used}" == "yes" ]; then
     banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
@@ -480,12 +431,12 @@ if [ "${irqbalance_used}" == "yes" ]; then
 
 	if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
 		echo "error: linking irqbalance_mck" >&2
-		error_exit "mcos_sys_mounted"
+		error_exit "os_created"
 	fi
 
     if ! systemctl start irqbalance_mck.service 2>/dev/null ; then
 		echo "error: starting irqbalance_mck" >&2
-		error_exit "mcos_sys_mounted"
+		error_exit "os_created"
 	fi
 #    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
