@@ -526,24 +526,6 @@ void reply_get_cpu_mapping(long req_pa);
 void free_topology_info(ihk_os_t os);
 
 /* archdep.c */
-#ifndef POSTK_DEBUG_ARCH_DEP_52
-#define VDSO_MAXPAGES 2
-struct vdso {
-	long busy;
-	int vdso_npages;
-	char vvar_is_global;
-	char hpet_is_global;
-	char pvti_is_global;
-	char padding;
-	long vdso_physlist[VDSO_MAXPAGES];
-	void *vvar_virt;
-	long vvar_phys;
-	void *hpet_virt;
-	long hpet_phys;
-	void *pvti_virt;
-	long pvti_phys;
-};
-#endif /*POSTK_DEBUG_ARCH_DEP_52*/
 
 int reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp,
 		unsigned long *endp);

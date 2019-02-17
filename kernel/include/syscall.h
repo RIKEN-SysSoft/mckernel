@@ -498,25 +498,6 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			  void *_linux_printk,
 			  void *_linux_clock_gettime);
 
-#ifndef POSTK_DEBUG_ARCH_DEP_52
-#define VDSO_MAXPAGES 2
-struct vdso {
-	long busy;
-	int vdso_npages;
-	char vvar_is_global;
-	char hpet_is_global;
-	char pvti_is_global;
-	char padding;
-	long vdso_physlist[VDSO_MAXPAGES];
-	void *vvar_virt;
-	long vvar_phys;
-	void *hpet_virt;
-	long hpet_phys;
-	void *pvti_virt;
-	long pvti_phys;
-};
-#endif /*POSTK_DEBUG_ARCH_DEP_52*/
-
 struct cpu_mapping {
 	int cpu_number;
 	int hw_id;
