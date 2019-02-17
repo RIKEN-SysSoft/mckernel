@@ -170,7 +170,8 @@ static void parse_kargs(void)
 	}
 }
 
-extern void ihk_mc_get_boot_time(unsigned long *tv_sec, unsigned long *tv_nsec);
+extern void ihk_mc_get_boot_time(unsigned long *tv_sec, unsigned long *tv_nsec,
+				 unsigned long *tsc);
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 
 static void time_init(void)
@@ -179,7 +180,7 @@ static void time_init(void)
 	unsigned long ns_per_kclock;
 	unsigned long tsc;
 
-	ihk_mc_get_boot_time(&tv_sec, &tv_nsec);
+	ihk_mc_get_boot_time(&tv_sec, &tv_nsec, &tsc);
 	ns_per_kclock = ihk_mc_get_ns_per_tsc();
 
 	tod_data.origin.tv_sec = tv_sec;
@@ -188,7 +189,6 @@ static void time_init(void)
 	if (ns_per_kclock) {
 		tod_data.clocks_per_sec = (1000L * NS_PER_SEC) / ns_per_kclock;
 
-		tsc = rdtsc();
 		tod_data.origin.tv_sec -= tsc / tod_data.clocks_per_sec;
 		tod_data.origin.tv_nsec -= NS_PER_SEC * (tsc % tod_data.clocks_per_sec)
 			/ tod_data.clocks_per_sec;

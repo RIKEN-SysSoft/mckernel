@@ -1,0 +1,248 @@
+Script started on Thu Feb 14 13:01:04 2019
+bash-4.2$ make test
+gcc -o C1186 C1186.c
+sh ./C1186.sh
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154224us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154556us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154355us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154266us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154555us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154176us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154357us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154358us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154256us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154558us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154367us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154355us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154553us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154557us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154358us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154363us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154360us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154558us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154165us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154266us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 187528us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154360us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154269us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154357us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154164us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154555us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154354us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154179us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154557us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154157us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154265us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154355us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154163us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154559us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154359us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154338us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154157us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154263us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154422us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154361us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154155us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154170us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154359us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154456us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154355us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154559us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154362us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154063us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154554us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154356us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154555us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154256us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154355us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154356us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154174us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154363us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154263us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154554us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154359us, expected 100010us
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 154154us, expected 100010us
+*** C1186T01: OK
+*** C1186T02: test start
+1550120419.311221475
+1550120419.311231835 10360
+1550120419.311233201 1366
+*** C1186T02: OK
+gettimeofday01    1  TPASS  :  gettimeofday(2) set the errno EFAULT correctly
+*** C1186T03: gettimeofday01 OK (1)
+gettimeofday02    0  TINFO  :  checking if gettimeofday is monotonous, takes 30s
+gettimeofday02    1  TPASS  :  gettimeofday monotonous in 30 seconds
+*** C1186T04: gettimeofday02 OK (1)
+time01      1  TPASS  :  time(0) returned 1550120449
+*** C1186T05: time01 OK (1)
+time02      1  TPASS  :  time() returned value 1550120449, stored value 1550120449 are same
+*** C1186T06: time02 OK (1)
+clock_nanosleep01    0  TINFO  :  (case00) START
+clock_nanosleep01    0  TINFO  :  check sleep time: (min:480) < 500 < (max:520) (msec)
+clock_nanosleep01    0  TINFO  :  remain time: 1 4216909
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+clock_nanosleep01    0  TINFO  :  (case00) END => OK
+clock_nanosleep01    0  TINFO  :  (case01) START
+clock_nanosleep01    0  TINFO  :  check sleep time: (min:480) < 500 < (max:520) (msec)
+clock_nanosleep01    0  TINFO  :  remain time: 1 4216909
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+clock_nanosleep01    0  TINFO  :  (case01) END => OK
+clock_nanosleep01    0  TINFO  :  (case02) START
+clock_nanosleep01    0  TINFO  :  remain time: 1 4216909
+EXPECT: return value(ret)=22 errno=0 (Success)
+RESULT: return value(ret)=22 errno=0 (Success)
+clock_nanosleep01    0  TINFO  :  (case02) END => OK
+clock_nanosleep01    0  TINFO  :  (case03) START
+clock_nanosleep01    0  TINFO  :  remain time: 1 4216909
+EXPECT: return value(ret)=22 errno=0 (Success)
+RESULT: return value(ret)=22 errno=0 (Success)
+clock_nanosleep01    0  TINFO  :  (case03) END => OK
+clock_nanosleep01    0  TINFO  :  (case04) START
+clock_nanosleep01    0  TINFO  :  remain time: 1 4216909
+EXPECT: return value(ret)=22 errno=0 (Success)
+RESULT: return value(ret)=22 errno=0 (Success)
+clock_nanosleep01    0  TINFO  :  (case04) END => OK
+clock_nanosleep01    0  TINFO  :  (case05) START
+clock_nanosleep01    0  TINFO  :  remain time: 9 498905577
+EXPECT: return value(ret)=4 errno=0 (Success)
+RESULT: return value(ret)=4 errno=0 (Success)
+clock_nanosleep01    0  TINFO  :  (case05) END => OK
+clock_nanosleep01    1  TPASS  :  clock_nanosleep call succeeded
+*** C1186T07: clock_nanosleep01 OK (1)
+clock_nanosleep2_01    0  TINFO  :  Iteration = 0
+clock_nanosleep2_01    0  TINFO  :  Iteration = 1
+clock_nanosleep2_01    0  TINFO  :  Iteration = 2
+clock_nanosleep2_01    0  TINFO  :  Iteration = 3
+clock_nanosleep2_01    0  TINFO  :  Iteration = 4
+clock_nanosleep2_01    0  TINFO  :  Iteration = 5
+clock_nanosleep2_01    0  TINFO  :  Iteration = 6
+clock_nanosleep2_01    0  TINFO  :  Iteration = 7
+clock_nanosleep2_01    0  TINFO  :  Iteration = 8
+clock_nanosleep2_01    0  TINFO  :  Iteration = 9
+clock_nanosleep2_01    0  TINFO  :  Iteration = 10
+clock_nanosleep2_01    0  TINFO  :  Iteration = 11
+clock_nanosleep2_01    0  TINFO  :  Iteration = 12
+clock_nanosleep2_01    0  TINFO  :  Iteration = 13
+clock_nanosleep2_01    0  TINFO  :  Iteration = 14
+clock_nanosleep2_01    0  TINFO  :  Iteration = 15
+clock_nanosleep2_01    0  TINFO  :  Iteration = 16
+clock_nanosleep2_01    0  TINFO  :  Iteration = 17
+clock_nanosleep2_01    0  TINFO  :  Iteration = 18
+clock_nanosleep2_01    0  TINFO  :  Iteration = 19
+clock_nanosleep2_01    0  TINFO  :  Iteration = 20
+clock_nanosleep2_01    0  TINFO  :  Iteration = 21
+clock_nanosleep2_01    0  TINFO  :  Iteration = 22
+clock_nanosleep2_01    0  TINFO  :  Iteration = 23
+clock_nanosleep2_01    0  TINFO  :  Iteration = 24
+clock_nanosleep2_01    0  TINFO  :  Iteration = 25
+clock_nanosleep2_01    0  TINFO  :  Iteration = 26
+clock_nanosleep2_01    0  TINFO  :  Iteration = 27
+clock_nanosleep2_01    0  TINFO  :  Iteration = 28
+clock_nanosleep2_01    0  TINFO  :  Iteration = 29
+clock_nanosleep2_01    0  TINFO  :  Iteration = 30
+clock_nanosleep2_01    0  TINFO  :  Iteration = 31
+clock_nanosleep2_01    0  TINFO  :  Iteration = 32
+clock_nanosleep2_01    0  TINFO  :  Iteration = 33
+clock_nanosleep2_01    0  TINFO  :  Iteration = 34
+clock_nanosleep2_01    0  TINFO  :  Iteration = 35
+clock_nanosleep2_01    0  TINFO  :  Iteration = 36
+clock_nanosleep2_01    0  TINFO  :  Iteration = 37
+clock_nanosleep2_01    0  TINFO  :  Iteration = 38
+clock_nanosleep2_01    0  TINFO  :  Iteration = 39
+clock_nanosleep2_01    0  TINFO  :  Iteration = 40
+clock_nanosleep2_01    0  TINFO  :  Iteration = 41
+clock_nanosleep2_01    0  TINFO  :  Iteration = 42
+clock_nanosleep2_01    0  TINFO  :  Iteration = 43
+clock_nanosleep2_01    0  TINFO  :  Iteration = 44
+clock_nanosleep2_01    0  TINFO  :  Iteration = 45
+clock_nanosleep2_01    0  TINFO  :  Iteration = 46
+clock_nanosleep2_01    0  TINFO  :  Iteration = 47
+clock_nanosleep2_01    0  TINFO  :  Iteration = 48
+clock_nanosleep2_01    0  TINFO  :  Iteration = 49
+clock_nanosleep2_01    0  TINFO  :  Iteration = 50
+clock_nanosleep2_01    1  TPASS  :  clock_nanosleep2() passed
+*** C1186T08: clock_nanosleep2_01 OK (1)
+sigtimedwait01    0  TINFO  :  0x401be0, 10
+sigtimedwait01    1  TPASS  :  Test passed
+sigtimedwait01    0  TINFO  :  0x401be0, 10
+sigtimedwait01    2  TPASS  :  Test passed
+sigtimedwait01    0  TINFO  :  0x401be0, 10
+sigtimedwait01    3  TPASS  :  Test passed
+sigtimedwait01    3  TPASS  :  sigwaitinfo restored the original mask
+sigtimedwait01    0  TINFO  :  0x401be0, 10
+sigtimedwait01    4  TPASS  :  Test passed
+sigtimedwait01    0  TINFO  :  0x401be0, 10
+sigtimedwait01    5  TPASS  :  Test passed
+sigtimedwait01    5  TPASS  :  sigwaitinfo restored the original mask
+sigtimedwait01    0  TINFO  :  0x401be0, 10
+sigtimedwait01    6  TPASS  :  Test passed
+sigtimedwait01    0  TINFO  :  0x401be0, 10
+sigtimedwait01    7  TBROK  :  tst_sig.c:233: unexpected signal SIGSEGV(11) received (pid = 1534).
+sigtimedwait01    8  TBROK  :  tst_sig.c:233: Remaining cases broken
+*** C1186T09: sigtimedwait01 OK (8)
+bash-4.2$ exit
+exit
+
+Script done on Thu Feb 14 14:02:24 2019
