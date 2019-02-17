@@ -23,7 +23,6 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-#ifdef POSTK_DEBUG_ARCH_DEP_52
 #define VDSO_MAXPAGES 1
 struct vdso {
 	long busy;
@@ -34,7 +33,6 @@ struct vdso {
 	long lbase;
 	long offset_sigtramp;
 };
-#endif /*POSTK_DEBUG_ARCH_DEP_52*/
 
 extern char vdso_start, vdso_end;
 static struct vdso vdso;
