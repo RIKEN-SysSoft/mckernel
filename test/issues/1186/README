@@ -1,0 +1,30 @@
+【Issue#1186 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+C1186T01 futex_wait_bitset02 を 1 分間隔で 60 回実行し、全て PASS することを
+	 確認する。
+
+2. 時計の妥当性確認
+C1186T02 VDSOのclock_gettimeとシステムコールのclock_gettimeを交互に呼び出し、
+         時刻経過の妥当性を確認する。
+
+3. LTP を用いて既存処理に影響しないことを確認
+   時刻関連処理を変更したため、関連するシステムコールのテストを選定した。
+C1186T03 gettimeofday01 が PASS すること
+C1186T04 gettimeofday02 が PASS すること
+C1186T05 time01 が PASS すること
+C1186T06 time02 が PASS すること
+C1186T07 clock_nanosleep01 が PASS すること
+C1186T08 clock_nanosleep2_01 が PASS すること
+C1186T09 sigtimedwait01 が PASS すること
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel を ビルドした際に生成される
+mck_test_config.sample ファイルを $HOME に コピーし、適宜編集すること。
+
+□ 実行結果
+C1186.txt 参照。
+すべての項目をPASSしていることを確認。
