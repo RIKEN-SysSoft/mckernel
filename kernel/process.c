@@ -2813,6 +2813,7 @@ void destroy_thread(struct thread *thread)
 	if (thread->fp_regs) {
 		release_fp_regs(thread);
 	}
+	kfree(thread->coredump_regs);
 
 	release_sigcommon(thread->sigcommon);
 

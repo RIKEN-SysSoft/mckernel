@@ -91,7 +91,7 @@ int get_prpsinfo_size(void)
  * \param proc A pointer to the current process structure.
  * \param regs0 A pointer to a ihk_mc_user_context_t structure.
  */
-void fill_prstatus(struct note *head, struct thread *thread, void *regs0)
+void fill_prstatus(struct note *head, struct thread *thread)
 {
 	void *name;
 	struct elf_prstatus64 *prstatus;
@@ -103,7 +103,7 @@ void fill_prstatus(struct note *head, struct thread *thread, void *regs0)
 	memcpy(name, "CORE", sizeof("CORE"));
 	prstatus = (struct elf_prstatus64 *)(name + align32(sizeof("CORE")));
 
-	arch_fill_prstatus(prstatus, thread, regs0);
+	arch_fill_prstatus(prstatus, thread, thread->coredump_regs);
 }
 
 /**
@@ -114,7 +114,7 @@ void fill_prstatus(struct note *head, struct thread *thread, void *regs0)
  * \param regs A pointer to a ihk_mc_user_context_t structure.
  */
 
-void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
+void fill_prpsinfo(struct note *head, struct process *proc, char *cmdline)
 {
 	void *name;
 	struct elf_prpsinfo64 *prpsinfo;
@@ -126,8 +126,10 @@ void fill_prpsinfo(struct note *head, struct thread *thread, void *regs)
 	memcpy(name, "CORE", sizeof("CORE"));
 	prpsinfo = (struct elf_prpsinfo64 *)(name + align32(sizeof("CORE")));
 
-	prpsinfo->pr_state = thread->status;
-	prpsinfo->pr_pid = thread->proc->pid;
+	prpsinfo->pr_state = proc->status;
+	prpsinfo->pr_pid = proc->pid;
+
+	memcpy(prpsinfo->pr_fname, cmdline, 16);
 
 /* TODO: Fill the following fields:
  *	char pr_sname;
@@ -161,7 +163,7 @@ int get_auxv_size(void)
  * \param regs A pointer to a ihk_mc_user_context_t structure.
  */
 
-void fill_auxv(struct note *head, struct thread *thread, void *regs)
+void fill_auxv(struct note *head, struct process *proc)
 {
 	void *name;
 	void *auxv;
@@ -172,7 +174,7 @@ void fill_auxv(struct note *head, struct thread *thread, void *regs)
 	name =  (void *) (head + 1);
 	memcpy(name, "CORE", sizeof("CORE"));
 	auxv = name + align32(sizeof("CORE"));
-	memcpy(auxv, thread->proc->saved_auxv,
+	memcpy(auxv, proc->saved_auxv,
 	       sizeof(unsigned long) * AUXV_LEN);
 }
 
@@ -181,10 +183,25 @@ void fill_auxv(struct note *head, struct thread *thread, void *regs)
  *
  */
 
-int get_note_size(void)
+int get_note_size(struct process *proc)
 {
-	return get_prstatus_size() + arch_get_thread_core_info_size()
-		+ get_prpsinfo_size() + get_auxv_size();
+	int note = 0;
+	struct thread *thread_iter;
+	struct mcs_rwlock_node lock;
+
+	mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
+	list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
+		note += get_prstatus_size();
+		note += arch_get_thread_core_info_size();
+		if (thread_iter->tid == proc->pid) {
+			note += get_prpsinfo_size();
+			note += get_auxv_size();
+		}
+	}
+	mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+
+
+	return note;
 }
 
 /**
@@ -195,18 +212,48 @@ int get_note_size(void)
  * \param regs A pointer to a ihk_mc_user_context_t structure.
  */
 
-void fill_note(void *note, struct thread *thread, void *regs)
+void fill_note(void *note, struct process *proc, char *cmdline)
 {
-	fill_prstatus(note, thread, regs);
-	note += get_prstatus_size();
+	struct thread *thread_iter;
+	struct mcs_rwlock_node lock;
 
-	arch_fill_thread_core_info(note, thread, regs);
-	note += arch_get_thread_core_info_size();
+	mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
+	list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
+		fill_prstatus(note, thread_iter);
+		note += get_prstatus_size();
 
-	fill_prpsinfo(note, thread, regs);
-	note += get_prpsinfo_size();
+		arch_fill_thread_core_info(note, thread_iter,
+					   thread_iter->coredump_regs);
+		note += arch_get_thread_core_info_size();
 
-	fill_auxv(note, thread, regs);
+		if (thread_iter->tid == proc->pid) {
+			fill_prpsinfo(note, proc, cmdline);
+			note += get_prpsinfo_size();
+
+#if 0
+			fill_siginfo(note, proc);
+			note += get_siginfo_size();
+#endif
+
+			fill_auxv(note, proc);
+			note += get_auxv_size();
+
+#if 0
+			fill_file(note, proc);
+			note += get_file_size();
+#endif
+		}
+
+#if 0
+		fill_fpregset(note, thread);
+		note += get_fpregset_size();
+
+		fill_x86_xstate(note, thread);
+		note += get_x86_xstate_size();
+#endif
+	}
+	mcs_rwlock_reader_unlock_noirq(&proc->threads_lock, &lock);
+
 }
 
 /**
@@ -224,15 +271,16 @@ void fill_note(void *note, struct thread *thread, void *regs)
  * should be zero.
  */
 
-int gencore(struct thread *thread, void *regs,
-	    struct coretable **coretable, int *chunks)
+int gencore(struct process *proc, struct coretable **coretable, int *chunks,
+	    char *cmdline)
 {
+	int error = 0;
 	struct coretable *ct = NULL;
 	Elf64_Ehdr *eh = NULL;
 	Elf64_Phdr *ph = NULL;
 	void *note = NULL;
 	struct vm_range *range, *next;
-	struct process_vm *vm = thread->vm;
+	struct process_vm *vm = proc->vm;
 	int segs = 1;	/* the first one is for NOTE */
 	int notesize, phsize, alignednotesize;
 	unsigned int offset = 0;
@@ -241,8 +289,9 @@ int gencore(struct thread *thread, void *regs,
 	*chunks = 3; /* Elf header , header table and NOTE segment */
 
 	if (vm == NULL) {
-		dkprintf("no vm found.\n");
-		return -1;
+		kprintf("%s: ERROR: vm not found\n", __func__);
+		error = -EINVAL;
+		goto fail;
 	}
 
 	next = lookup_process_memory_range(vm, 0, -1);
@@ -264,7 +313,7 @@ int gencore(struct thread *thread, void *regs,
 			int prevzero = 0;
 
 			for (p = range->start; p < range->end; p += PAGE_SIZE) {
-				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table,
+				if (ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
 							    (void *)p, &phys) != 0) {
 					prevzero = 1;
 				} else {
@@ -284,7 +333,7 @@ int gencore(struct thread *thread, void *regs,
 	dkprintf("we have %d segs and %d chunks.\n\n", segs, *chunks);
 
 	{
-		struct vm_regions region = thread->vm->region;
+		struct vm_regions region = vm->region;
 
 		dkprintf("text:  %lx-%lx\n", region.text_start,
 			 region.text_end);
@@ -303,6 +352,7 @@ int gencore(struct thread *thread, void *regs,
 	eh = kmalloc(sizeof(*eh), IHK_MC_AP_NOWAIT);
 	if (eh == NULL) {
 		dkprintf("could not alloc a elf header table.\n");
+		error = -ENOMEM;
 		goto fail;
 	}
 	memset(eh, 0, sizeof(*eh));
@@ -314,7 +364,8 @@ int gencore(struct thread *thread, void *regs,
 	phsize = sizeof(Elf64_Phdr) * segs;
 	ph = kmalloc(phsize, IHK_MC_AP_NOWAIT);
 	if (ph == NULL) {
-		dkprintf("could not alloc a program header table.\n");
+		kprintf("%s: ERROR: allocating program header\n", __func__);
+		error = -ENOMEM;
 		goto fail;
 	}
 	memset(ph, 0, phsize);
@@ -325,15 +376,16 @@ int gencore(struct thread *thread, void *regs,
 	 * To align the next segment page-sized, we prepare a padded
 	 * region for our NOTE segment.
 	 */
-	notesize = get_note_size();
+	notesize = get_note_size(proc);
 	alignednotesize = alignpage(notesize + offset) - offset;
 	note = kmalloc(alignednotesize, IHK_MC_AP_NOWAIT);
 	if (note == NULL) {
-		dkprintf("could not alloc NOTE for core.\n");
+		kprintf("%s: ERROR: allocating NOTE\n", __func__);
+		error = -ENOMEM;
 		goto fail;
 	}
 	memset(note, 0, alignednotesize);
-	fill_note(note, thread, regs);
+	fill_note(note, proc, cmdline);
 
 	/* prgram header for NOTE segment is exceptional */
 	ph[0].p_type = PT_NOTE;
@@ -377,10 +429,11 @@ int gencore(struct thread *thread, void *regs,
 	/* coretable to send to host */
 	ct = kmalloc(sizeof(struct coretable) * (*chunks), IHK_MC_AP_NOWAIT);
 	if (!ct) {
-		dkprintf("could not alloc a coretable.\n");
+		kprintf("%s: ERROR: allocating coretable\n", __func__);
+		error = -ENOMEM;
 		goto fail;
 	}
-	memset(ct, 0, sizeof(*ct));
+	memset(ct, 0, sizeof(struct coretable) * (*chunks));
 
 	ct[0].addr = virt_to_phys(eh);	/* ELF header */
 	ct[0].len = 64;
@@ -406,6 +459,7 @@ int gencore(struct thread *thread, void *regs,
 		}
 
 		if (range->flag & VR_DEMAND_PAGING) {
+
 			/* Just an ad hoc kluge. */
 			unsigned long p, start, phys;
 			int prevzero = 0;
@@ -413,7 +467,7 @@ int gencore(struct thread *thread, void *regs,
 
 			for (start = p = range->start;
 			     p < range->end; p += PAGE_SIZE) {
-				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table,
+				if (ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
 							    (void *)p, &phys) != 0) {
 					if (prevzero == 0) {
 						/* Start a new chunk */
@@ -452,16 +506,20 @@ int gencore(struct thread *thread, void *regs,
 				i++;
 			}
 		} else {
-			if ((thread->vm->region.user_start <= range->start) &&
-			    (range->end <= thread->vm->region.user_end)) {
-				if (ihk_mc_pt_virt_to_phys(thread->vm->address_space->page_table,
-							   (void *)range->start,
-							   &phys) != 0) {
-					dkprintf("could not convert user "
-						 "virtual address %lx "
-						 "to physical address\n",
-						 range->start);
-					goto fail;
+			if ((vm->region.user_start <= range->start) &&
+			    (range->end <= vm->region.user_end)) {
+				error = ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
+							       (void *)range->start,
+							       &phys);
+				if (error) {
+					if (error != -EFAULT) {
+						kprintf("%s: error: ihk_mc_pt_virt_to_phys for %lx failed (%d)\n",
+							__func__, range->start,
+							error);
+						goto fail;
+					}
+					/* VR_PROT_NONE range */
+					phys = 0;
 				}
 			} else {
 				phys = virt_to_phys((void *)range->start);
@@ -475,13 +533,14 @@ int gencore(struct thread *thread, void *regs,
 	}
 	*coretable = ct;
 
-	return 0;
+	return error;
 
 fail:
+	kfree(eh);
 	kfree(ct);
 	kfree(ph);
 	kfree(note);
-	return -1;
+	return error;
 }
 
 /**

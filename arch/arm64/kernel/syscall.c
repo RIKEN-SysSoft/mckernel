@@ -656,7 +656,7 @@ void set_single_step(struct thread *thread)
 	set_regs_spsr_ss(thread->uctx);
 }
 
-extern void coredump(struct thread *thread, void *regs);
+extern int coredump(struct thread *thread, void *regs, int sig);
 
 static int
 isrestart(int syscallno, unsigned long rc, int sig, int restart)
@@ -1095,6 +1095,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	int restart = 0;
+	int ret;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 	dkprintf("do_signal(): tid=%d, pid=%d, sig=%d\n", thread->tid, proc->pid, sig);
@@ -1289,9 +1290,31 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		case SIGXCPU:
 		case SIGXFSZ:
 		core:
-			dkprintf("do_signal,default,core,sig=%d\n", sig);
-			coredump(thread, regs);
-			coredumped = 0x80;
+			thread->coredump_regs =
+				kmalloc(sizeof(struct pt_regs),
+					IHK_MC_AP_NOWAIT);
+			if (!thread->coredump_regs) {
+				kprintf("%s: Out of memory\n", __func__);
+				goto skip;
+			}
+			memcpy(thread->coredump_regs, regs,
+			       sizeof(struct pt_regs));
+
+			ret = coredump(thread, regs, sig);
+			switch (ret) {
+			case -EBUSY:
+				kprintf("%s: INFO: coredump not performed, try ulimit -c <non-zero>\n",
+					__func__);
+				break;
+			case 0:
+				coredumped = 0x80;
+				break;
+			default:
+				kprintf("%s: ERROR: coredump failed (%d)\n",
+					__func__, ret);
+				break;
+			}
+skip:
 			terminate(0, sig | coredumped);
 			break;
 		case SIGCHLD:
@@ -1869,7 +1892,7 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 	}
 
 	if ((__sigmask(sig) & thread->sigmask.__val[0])) {
-		coredump(thread, regs0);
+		coredump(thread, regs0, sig);
 		terminate(0, sig | 0x80);
 	}
 	do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
