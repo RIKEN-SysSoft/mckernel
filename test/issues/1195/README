@@ -1,0 +1,26 @@
+【Issue#1195 動作確認】
+□ テスト内容
+Issue#1195 で報告されている現象はopenat()実行時に第1引数で
+指定されたfdの指すディレクトリをmcexecが展開しようとする際に
+発生するものであった。
+当該処理は、mcexecでoverlayfsの代わりにsoftware overlayを利用する修正により
+実行されなくなっており、Issue#1195の現象は解消されているはずである。
+
+本テストでは、Issue#1195で報告された再現手順で現象が発生しないことを確認する。
+
+テスト内容は以下の通りである。
+1. Issue指摘事項の再現確認
+CT001:
+	LTPのnftw01 および、nftw6401 がPASSすることを確認する
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。
