@@ -573,6 +573,7 @@ struct process {
 #endif // PROFILE_ENABLE
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
+	int coredump_barrier_count, coredump_barrier_count2;
 };
 
 /*
@@ -721,6 +722,11 @@ struct thread {
 	// for performance counter
 	unsigned long pmc_alloc_map;
 	unsigned long extra_reg_alloc_map;
+
+	/* coredump */
+	void *coredump_regs;
+	struct waitq coredump_wq;
+	int coredump_status;
 };
 
 #define VM_RANGE_CACHE_SIZE	4
