@@ -2713,6 +2713,10 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
         return -EINVAL;
 	}
 
+	if (oldproc->coredump_barrier_count) {
+		return -EINVAL;
+	}
+
 	/* N-th creation put the new on Linux CPU. It's turned off when zero is 
 	   set to uti_thread_rank. */
 	if (oldproc->uti_thread_rank) {
