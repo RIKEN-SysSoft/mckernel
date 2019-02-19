@@ -505,6 +505,8 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			  void *_linux_wait_event,
 			  void *_linux_printk,
 			  void *_linux_clock_gettime);
+unsigned long do_kill(struct thread *thread, int pid, int tid,
+			int sig, siginfo_t *info, int ptracecont);
 
 struct cpu_mapping {
 	int cpu_number;
@@ -621,5 +623,10 @@ struct move_pages_smp_req {
 extern long (*linux_wait_event)(void *_resp, unsigned long nsec_timeout);
 extern int (*linux_printk)(const char *fmt, ...);
 extern int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
+
+/* coredump */
+#define COREDUMP_RUNNING          0
+#define COREDUMP_DESCHEDULED      1
+#define COREDUMP_TO_BE_WOKEN      2
 
 #endif

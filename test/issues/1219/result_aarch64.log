@@ -1,0 +1,256 @@
+SEGV in sub thread!!
+pthread_create done!! Let's join!!!!
+Terminate by signal 11
+./C1219.sh: line 21: 19924 Segmentation fault      (core dumped) ${MCEXEC} ./segv_in_sub
+[ OK ] core for McKernel process found
+*** C1219T01 start *******************************
+** Check number of threads
+$1 = "TESTOUT_START  result of (gdb) info threads"
+  Id   Target Id         Frame
+* 1    LWP 19924         0x000008000000d590 in _dl_fixup () from /lib/ld-linux-aarch64.so.1
+  2    LWP 19940         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  3    LWP 19939         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  4    LWP 19938         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  5    LWP 19937         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  6    LWP 19936         0x0000000000400808 in thread_fn_dump (arg=0x0) at segv_in_sub.c:20
+*** C1219T01 PASSED ******************************
+
+*** C1219T02 start *******************************
+** Check backtrace
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x000008000000d590 in _dl_fixup () from /lib/ld-linux-aarch64.so.1
+#1  0x00000800000132d8 in _dl_runtime_resolve () from /lib/ld-linux-aarch64.so.1
+#2  0x0000000000400938 in main () at segv_in_sub.c:50
+*** C1219T02 PASSED ******************************
+
+*** C1219T03 start *******************************
+** Check info register
+$1 = "TESTOUT_START  result of (gdb) info register"
+x0             0x80000031170       8796093223280
+x1             0x400360            4195168
+x2             0x100000002a60      17592186055264
+x3             0x7                 7
+x4             0x3                 3
+x5             0x4003d8            4195288
+x6             0x18                24
+x7             0x6420657461657263  7214878153572184675
+x8             0x40                64
+x9             0x6e696f6a20732774  7956012718328326004
+x10            0x616572635f646165  7018141365454528869
+x11            0x21656e6f64206574  2406451000599668084
+x12            0x20732774654c2021  2338256012404596769
+x13            0x212121216e696f6a  2387225704953114474
+x14            0x23                35
+x15            0x1                 1
+x16            0x41fff8            4325368
+x17            0x80000013294       8796093100692
+x18            0x10f               271
+x19            0x400968            4196712
+x20            0x420028            4325416
+x21            0x4006d0            4196048
+x22            0x0                 0
+x23            0x0                 0
+x24            0x0                 0
+x25            0x0                 0
+x26            0x0                 0
+x27            0x0                 0
+x28            0x0                 0
+x29            0x3ffffffffb40      70368744176448
+x30            0x800000132d8       8796093100760
+sp             0x3ffffffffb40      0x3ffffffffb40
+pc             0x8000000d590       0x8000000d590 <_dl_fixup+120>
+cpsr           0x40000000          [ EL=0 Z ]
+fpsr           <unavailable>
+fpcr           <unavailable>
+*** C1219T03 PASSED ******************************
+
+*** C1219T04 start *******************************
+** Check switching thread
+$1 = "TESTOUT_START  result of (gdb) thread 6"
+[Switching to thread 6 (LWP 19936)]
+#0  0x0000000000400808 in thread_fn_dump (arg=0x0) at segv_in_sub.c:20
+20              *ptr = 0xdead;
+*** C1219T04 PASSED ******************************
+
+*** C1219T05 start *******************************
+** Check backtrace after switching thread
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x0000000000400808 in thread_fn_dump (arg=0x0) at segv_in_sub.c:20
+#1  0x000010000000b7f8 in start_thread () from /usr/lib64/libpthread.so.0
+#2  0x0000000000000000 in ?? ()
+Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+*** C1219T05 PASSED ******************************
+
+*** C1219T06 start *******************************
+** Check info register after switching thread
+$1 = "TESTOUT_START  result of (gdb) info register"
+x0             0x0                 0
+x1             0xdead              57005
+x2             0x1000032001e0      17592238473696
+x3             0x10101011          269488145
+x4             0x1000031ff9d0      17592238471632
+x5             0x1000130fe9c1      17592505854401
+x6             0x38                56
+x7             0x0                 0
+x8             0x63                99
+x9             0x0                 0
+x10            0x10000000b658      17592186091096
+x11            0x3d0f00            4001536
+x12            0x1000032001e0      17592238473696
+x13            0x80000030000       8796093218816
+x14            0x0                 0
+x15            0x1                 1
+x16            0x100000034028      17592186257448
+x17            0x10000006b9c0      17592186485184
+x18            0x10f               271
+x19            0x1000032001e0      17592238473696
+x20            0x3ffffffffc20      70368744176672
+x21            0x3ffffffffc1e      70368744176670
+x22            0x3ffffffffc1f      70368744176671
+x23            0x4007f4            4196340
+x24            0x1000032001e0      17592238473696
+x25            0x1000              4096
+x26            0x100000034000      17592186257408
+x27            0x3ffffffffc20      70368744176672
+x28            0x1000032001e0      17592238473696
+x29            0x1000031ff9d0      17592238471632
+x30            0x10000000b7f8      17592186091512
+sp             0x1000031ff9b0      0x1000031ff9b0
+pc             0x400808            0x400808 <thread_fn_dump+20>
+cpsr           0x20000000          [ EL=0 C ]
+fpsr           <unavailable>
+fpcr           <unavailable>
+*** C1219T06 PASSED ******************************
+
+rm: cannot remove './core.*': No such file or directory
+SEGV in main thread!!
+Terminate by signal 11
+./C1219.sh: line 145: 19994 Segmentation fault      (core dumped) ${MCEXEC} ./segv_in_main
+[ OK ] core for McKernel process found
+*** C1219T07 start *******************************
+** Check number of threads
+$1 = "TESTOUT_START  result of (gdb) info threads"
+  Id   Target Id         Frame
+* 1    LWP 19994         0x00000000004008a8 in main () at segv_in_sub.c:38
+  2    LWP 20010         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  3    LWP 20009         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  4    LWP 20008         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  5    LWP 20007         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+  6    LWP 20006         0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+*** C1219T07 PASSED ******************************
+
+*** C1219T08 start *******************************
+** Check backtrace
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x00000000004008a8 in main () at segv_in_sub.c:38
+*** C1219T08 PASSED ******************************
+
+*** C1219T09 start *******************************
+** Check info register
+$1 = "TESTOUT_START  result of (gdb) info register"
+x0             0x0                 0
+x1             0xdead              57005
+x2             0x0                 0
+x3             0x1000032008e0      17592238475488
+x4             0x0                 0
+x5             0x1000032008e0      17592238475488
+x6             0x1000032002b0      17592238473904
+x7             0x0                 0
+x8             0xdc                220
+x9             0x0                 0
+x10            0x10000000b658      17592186091096
+x11            0x3d0f00            4001536
+x12            0x1000032001e0      17592238473696
+x13            0x80000030000       8796093218816
+x14            0x0                 0
+x15            0x1                 1
+x16            0x100000034228      17592186257960
+x17            0x10000010a490      17592187135120
+x18            0x10f               271
+x19            0x400908            4196616
+x20            0x0                 0
+x21            0x4006d0            4196048
+x22            0x0                 0
+x23            0x0                 0
+x24            0x0                 0
+x25            0x0                 0
+x26            0x0                 0
+x27            0x0                 0
+x28            0x0                 0
+x29            0x3ffffffffc60      70368744176736
+x30            0x40083c            4196412
+sp             0x3ffffffffc60      0x3ffffffffc60
+pc             0x4008a8            0x4008a8 <main+144>
+cpsr           0x20000000          [ EL=0 C ]
+fpsr           <unavailable>
+fpcr           <unavailable>
+*** C1219T09 PASSED ******************************
+
+*** C1219T10 start *******************************
+** Check switching thread
+$1 = "TESTOUT_START  result of (gdb) thread 6"
+[Switching to thread 6 (LWP 20006)]
+#0  0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+*** C1219T10 PASSED ******************************
+
+*** C1219T11 start *******************************
+** Check backtrace after switching thread
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x00001000000dc610 in nanosleep () from /usr/lib64/libc.so.6
+#1  0x0000000000000000 in ?? ()
+Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+*** C1219T11 PASSED ******************************
+
+*** C1219T12 start *******************************
+** Check info register after switching thread
+$1 = "TESTOUT_START  result of (gdb) info register"
+x0             0xfffffffffffffffc  -4
+x1             0x1000031ff998      17592238471576
+x2             0x0                 0
+x3             0x0                 0
+x4             0x1000032002e8      17592238473960
+x5             0x1000032008e0      17592238475488
+x6             0x1000032000e0      17592238473440
+x7             0x0                 0
+x8             0x65                101
+x9             0x0                 0
+x10            0x10000000b658      17592186091096
+x11            0x3d0f00            4001536
+x12            0x1000032001e0      17592238473696
+x13            0x80000030000       8796093218816
+x14            0x0                 0
+x15            0x1                 1
+x16            0x420010            4325392
+x17            0x1000000dc468      17592186946664
+x18            0x10f               271
+x19            0x1000031ff998      17592238471576
+x20            0x1000031ff998      17592238471576
+x21            0x1000032008e0      17592238475488
+x22            0x0                 0
+x23            0x4007d4            4196308
+x24            0x1000032001e0      17592238473696
+x25            0x1000              4096
+x26            0x100000034000      17592186257408
+x27            0x3ffffffffc20      70368744176672
+x28            0x1000032001e0      17592238473696
+x29            0x1000031ff940      17592238471488
+x30            0x1000000dc5fc      17592186947068
+sp             0x1000031ff940      0x1000031ff940
+pc             0x1000000dc610      0x1000000dc610 <nanosleep+96>
+cpsr           0x80000000          [ EL=0 N ]
+fpsr           <unavailable>
+fpcr           <unavailable>
+*** C1219T12 PASSED ******************************
+
+rm: cannot remove './core.*': No such file or directory
+SEGV after join!!
+pthread_create done!! Let's join!!!!
+Terminate by signal 11
+./C1219.sh: line 268: 20066 Segmentation fault      (core dumped) ${MCEXEC} ./segv_after_join
+[ OK ] core for McKernel process found
+*** C1219T13 start *******************************
+** Check number of threads
+$1 = "TESTOUT_START  result of (gdb) info threads"
+  Id   Target Id         Frame
+* 1    LWP 20066         0x00000000004008ec in main () at segv_in_sub.c:43
+*** C1219T13 PASSED ******************************
