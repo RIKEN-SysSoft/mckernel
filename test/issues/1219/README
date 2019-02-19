@@ -1,0 +1,80 @@
+【Issue#1219 動作確認】
+□ テスト内容
+1. 複数スレッドを持つコアダンプファイルのgdb操作の確認
+◆5個のサブスレッドを作成し、サブスレッド中でSEGVが
+　発生した際のコアダンプファイルについて、以下を確認
+
+C1219T01: スレッド数の確認
+	gdbで下記の操作を実行し、6個のスレッドが表示されることを確認
+	(gdb) info threads
+
+C1219T02: 初期スレッドのbacktraceの確認
+	gdbで下記の操作を実行し、backtraceの結果が表示されることを確認
+	(gdb) backtrace
+
+C1219T03: 初期スレッドのレジスタ情報の確認
+	gdbで下記の操作を実行し、レジスタの情報が表示されることを確認
+	(gdb) info register
+
+C1219T04: スレッド切り替えの確認
+	gdbで下記の操作を実行し、スレッドの切り替わることを確認
+	(gdb) thread 6
+
+C1219T05: スレッド切り替え後のbacktraceの確認
+	gdbで下記の操作を実行し、backtraceの結果が表示されることを確認
+	(gdb) thread 6
+	(gdb) backtrace
+
+C1219T06: スレッド切り替え後のレジスタ情報の確認
+	gdbで下記の操作を実行し、レジスタの情報が表示されることを確認
+	(gdb) thread 6
+	(gdb) info register
+
+◆5個のサブスレッドを作成し、メインスレッド中でSEGVが
+　発生した際のコアダンプファイルについて、以下を確認
+
+C1219T07: スレッド数の確認
+	gdbで下記の操作を実行し、6個のスレッドが表示されることを確認
+	(gdb) info threads
+
+C1219T08: 初期スレッドのbacktraceの確認
+	gdbで下記の操作を実行し、backtraceの結果が表示されることを確認
+	(gdb) backtrace
+
+C1219T09: 初期スレッドのレジスタ情報の確認
+	gdbで下記の操作を実行し、レジスタの情報が表示されることを確認
+	(gdb) info register
+
+C1219T10: スレッド切り替えの確認
+	gdbで下記の操作を実行し、スレッドの切り替わることを確認
+	(gdb) thread 6
+
+C1219T11: スレッド切り替え後のbacktraceの確認
+	gdbで下記の操作を実行し、backtraceの結果が表示されることを確認
+	(gdb) thread 6
+	(gdb) backtrace
+
+C1219T12: スレッド切り替え後のレジスタ情報の確認
+	gdbで下記の操作を実行し、レジスタの情報が表示されることを確認
+	(gdb) thread 6
+	(gdb) info register
+
+◆5個のサブスレッドを作成し、すべてのサブスレッドが終了した後に
+　メインスレッドでSEGVが発生した際のコアダンプファイルについて、以下を確認
+
+C1219T13: スレッド数の確認
+	gdbで下記の操作を実行し、1個のスレッドが表示されることを確認
+	(gdb) info threads
+
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

@@ -18,8 +18,6 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	short int pr_cursig;
 	a8_uint64_t pr_sigpend;
 	a8_uint64_t pr_sighold;
-	pid_t pr_pid;
-	pid_t pr_ppid;
 	pid_t pr_pgrp;
 	pid_t pr_sid;
 	struct prstatus64_timeval pr_utime;
@@ -27,6 +25,11 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	struct prstatus64_timeval pr_cutime;
 	struct prstatus64_timeval pr_cstime;
  */
+
+	prstatus->pr_pid = thread->tid;
+	if (thread->proc->parent) {
+		prstatus->pr_ppid = thread->proc->parent->pid;
+	}
 
 	prstatus->pr_reg[0] = _r15;
 	prstatus->pr_reg[1] = _r14;
