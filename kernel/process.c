@@ -128,6 +128,7 @@ init_process(struct process *proc, struct process *parent)
 	INIT_LIST_HEAD(&proc->ptraced_children_list);
 	mcs_rwlock_init(&proc->threads_lock);
 	mcs_rwlock_init(&proc->children_lock);
+	mcs_rwlock_init(&proc->coredump_lock);
 	ihk_mc_spinlock_init(&proc->mckfd_lock);
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
@@ -2846,6 +2847,7 @@ void destroy_thread(struct thread *thread)
 	if (thread->fp_regs) {
 		release_fp_regs(thread);
 	}
+	kfree(thread->coredump_regs);
 
 	release_sigcommon(thread->sigcommon);
 

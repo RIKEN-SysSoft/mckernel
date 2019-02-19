@@ -1,0 +1,206 @@
+SEGV in sub thread!!
+pthread_create done!! Let's join!!!!
+Terminate by signal 11
+./C1219.sh: line 21: 30749 Segmentation fault      (core dumped) ${MCEXEC} ./segv_in_sub
+[ OK ] core for McKernel process found
+*** C1219T01 start *******************************
+** Check number of threads
+$1 = "TESTOUT_START  result of (gdb) info threads"
+  Id   Target Id         Frame
+  6    Thread 0x2aaaae200700 (LWP 30775) 0x000000000040079e in thread_fn_dump (arg=0x0) at segv_in_sub.c:20
+  5    Thread 0x2aaaad800700 (LWP 30776) 0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+  4    Thread 0x2aaaace00700 (LWP 30777) 0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+  3    Thread 0x2aaaac400700 (LWP 30778) 0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+  2    Thread 0x2aaaaba00700 (LWP 30779) 0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+* 1    Thread 0x2aaaab003b80 (LWP 30749) 0x00002aaaaaa22f97 in pthread_join () from /lib64/libpthread.so.0
+*** C1219T01 PASSED ******************************
+
+*** C1219T02 start *******************************
+** Check backtrace
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x00002aaaaaa22f97 in pthread_join () from /lib64/libpthread.so.0
+#1  0x000000000040088f in main () at segv_in_sub.c:50
+*** C1219T02 PASSED ******************************
+
+*** C1219T03 start *******************************
+** Check info register
+$1 = "TESTOUT_START  result of (gdb) info register"
+rax            0xca     202
+rbx            0x2aaaaba00700   46912512198400
+rcx            0x2aaaaaa22f97   46912495562647
+rdx            0x783b   30779
+rsi            0x0      0
+rdi            0x2aaaaba009d0   46912512199120
+rbp            0x2aaaab003b80   0x2aaaab003b80
+rsp            0x547ffffffb70   0x547ffffffb70
+r8             0x0      0
+r9             0x654c202121656e6f       7299244422727036527
+r10            0x0      0
+r11            0x246    582
+r12            0xffff88041af2f020       -131923763335136
+r13            0xffff88041af82000       -131923762995200
+r14            0xfffffffffe8551d0       -24817200
+r15            0xfffffffffe849810       -24864752
+rip            0x2aaaaaa22f97   0x2aaaaaa22f97 <pthread_join+167>
+eflags         0x246    [ PF ZF IF ]
+cs             0x33     51
+ss             0x3b     59
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+*** C1219T03 PASSED ******************************
+
+*** C1219T04 start *******************************
+** Check switching thread
+$1 = "TESTOUT_START  result of (gdb) thread 6"
+[Switching to thread 6 (Thread 0x2aaaae200700 (LWP 30775))]
+#0  0x000000000040079e in thread_fn_dump (arg=0x0) at segv_in_sub.c:20
+20              *ptr = 0xdead;
+*** C1219T04 PASSED ******************************
+
+*** C1219T05 start *******************************
+** Check backtrace after switching thread
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x000000000040079e in thread_fn_dump (arg=0x0) at segv_in_sub.c:20
+#1  0x00002aaaaaa21e25 in start_thread () from /lib64/libpthread.so.0
+#2  0x00002aaaaad34bad in clone () from /lib64/libc.so.6
+*** C1219T05 PASSED ******************************
+
+*** C1219T06 start *******************************
+** Check info register after switching thread
+$1 = "TESTOUT_START  result of (gdb) info register"
+rax            0x0      0
+rbx            0x0      0
+rcx            0x2aaaaaa21dc4   46912495558084
+rdx            0x55557c1fde620000       6148957342561075200
+rsi            0x0      0
+rdi            0x0      0
+rbp            0x2aaaae1fff10   0x2aaaae1fff10
+rsp            0x2aaaae1fff10   0x2aaaae1fff10
+r8             0x2aaaae200700   46912554141440
+r9             0x2aaaae200700   46912554141440
+r10            0x2aaaae2009d0   46912554142160
+r11            0x202    514
+r12            0xffff88041af2f020       -131923763335136
+r13            0xffff88041b362000       -131923758931968
+r14            0xfffffffffe8551d0       -24817200
+r15            0xfffffffffe849810       -24864752
+rip            0x40079e 0x40079e <thread_fn_dump+20>
+eflags         0x10246  [ PF ZF IF RF ]
+cs             0x33     51
+ss             0x3b     59
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+*** C1219T06 PASSED ******************************
+
+SEGV in main thread!!
+Terminate by signal 11
+./C1219.sh: line 145: 30826 Segmentation fault      (core dumped) ${MCEXEC} ./segv_in_main
+[ OK ] core for McKernel process found
+*** C1219T07 start *******************************
+** Check number of threads
+$1 = "TESTOUT_START  result of (gdb) info threads"
+  Id   Target Id         Frame
+  6    LWP 30852         0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+  5    LWP 30853         0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+  4    LWP 30854         0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+  3    LWP 30855         0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+  2    LWP 30856         0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+* 1    LWP 30826         0x0000000000400814 in main () at segv_in_sub.c:38
+*** C1219T07 PASSED ******************************
+
+*** C1219T08 start *******************************
+** Check backtrace
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x0000000000400814 in main () at segv_in_sub.c:38
+*** C1219T08 PASSED ******************************
+
+*** C1219T09 start *******************************
+** Check info register
+$1 = "TESTOUT_START  result of (gdb) info register"
+rax            0x0      0
+rbx            0x0      0
+rcx            0x0      0
+rdx            0x4      4
+rsi            0x2aaaae1fffb0   46912554139568
+rdi            0x3d0f00 4001536
+rbp            0x547ffffffc20   0x547ffffffc20
+rsp            0x547ffffffbc0   0x547ffffffbc0
+r8             0x2aaaae200700   46912554141440
+r9             0x2aaaae200700   46912554141440
+r10            0x2aaaae2009d0   46912554142160
+r11            0x202    514
+r12            0xffff88041afe0620       -131923762608608
+r13            0xffff88041b38c000       -131923758759936
+r14            0xfffffffffe8551d0       -24817200
+r15            0xfffffffffe849810       -24864752
+rip            0x400814 0x400814 <main+110>
+eflags         0x10202  [ IF RF ]
+cs             0x33     51
+ss             0x3b     59
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+*** C1219T09 PASSED ******************************
+
+*** C1219T10 start *******************************
+** Check switching thread
+$1 = "TESTOUT_START  result of (gdb) thread 6"
+[Switching to thread 6 (LWP 30852)]
+#0  0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+*** C1219T10 PASSED ******************************
+
+*** C1219T11 start *******************************
+** Check backtrace after switching thread
+$1 = "TESTOUT_START  result of (gdb) backtrace"
+#0  0x00002aaaaacfb56d in nanosleep () from /lib64/libc.so.6
+#1  0x00002aaaaacfb404 in sleep () from /lib64/libc.so.6
+#2  0x0000000000400788 in thread_fn_nop (arg=0x0) at segv_in_sub.c:14
+#3  0x00002aaaaaa21e25 in start_thread () from /lib64/libpthread.so.0
+#4  0x00002aaaaad34bad in clone () from /lib64/libc.so.6
+*** C1219T11 PASSED ******************************
+
+*** C1219T12 start *******************************
+** Check info register after switching thread
+$1 = "TESTOUT_START  result of (gdb) info register"
+rax            0x23     35
+rbx            0x2aaaae1ffd30   46912554138928
+rcx            0x2aaaaacfb56d   46912498546029
+rdx            0x0      0
+rsi            0x2aaaae1ffd20   46912554138912
+rdi            0x2aaaae1ffd20   46912554138912
+rbp            0xffffffff       0xffffffff
+rsp            0x2aaaae1ffd10   0x2aaaae1ffd10
+r8             0x2aaaae1ffe30   46912554139184
+r9             0x2aaaae1ffc70   46912554138736
+r10            0x8      8
+r11            0x293    659
+r12            0xffff88041afe0620       -131923762608608
+r13            0xffff88041bd08000       -131923748814848
+r14            0xfffffffffe8551d0       -24817200
+r15            0xfffffffffe849810       -24864752
+rip            0x2aaaaacfb56d   0x2aaaaacfb56d <nanosleep+45>
+eflags         0x293    [ CF AF SF IF ]
+cs             0x33     51
+ss             0x3b     59
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+*** C1219T12 PASSED ******************************
+
+SEGV after join!!
+pthread_create done!! Let's join!!!!
+Terminate by signal 11
+./C1219.sh: line 268: 30903 Segmentation fault      (core dumped) ${MCEXEC} ./segv_after_join
+[ OK ] core for McKernel process found
+*** C1219T13 start *******************************
+** Check number of threads
+$1 = "TESTOUT_START  result of (gdb) info threads"
+  Id   Target Id         Frame
+* 1    LWP 30903         0x0000000000400848 in main () at segv_in_sub.c:43
+*** C1219T13 PASSED ******************************
