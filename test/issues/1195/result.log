@@ -1,0 +1,73 @@
+*** CT001 start *******************************
+Error: Failed to open /dev/mcos0.
+ERROR: opening /dev/mcos0
+fork(): error with child process after fork
+nftw01      1  TPASS  :  Test block 0
+nftw01      2  TPASS  :  Test block 1
+nftw01      3  TPASS  :  Test block 2
+nftw01      4  TPASS  :  Test block 3
+nftw01      5  TPASS  :  Test block 4
+nftw01      6  TPASS  :  Test block 5
+nftw01      7  TPASS  :  Test block 6
+nftw01      8  TPASS  :  Test block 7
+nftw01      9  TPASS  :  Test block 8
+nftw01     10  TPASS  :  Test block 9
+nftw01     11  TPASS  :  Test block 10
+nftw01     12  TPASS  :  Test block 11
+nftw01     13  TPASS  :  Test block 12
+nftw01     14  TPASS  :  Test block 13
+nftw01     15  TPASS  :  Test block 14
+nftw01     16  TPASS  :  Test block 15
+nftw01     17  TPASS  :  Test block 16
+nftw01     18  TPASS  :  Test block 17
+nftw01     19  TPASS  :  Test block 18
+nftw01     20  TPASS  :  Test block 19
+nftw01     21  TPASS  :  Test block 20
+nftw01     22  TPASS  :  Test block 21
+nftw01     23  TPASS  :  Test block 22
+nftw01     24  TPASS  :  Test block 23
+nftw01     25  TPASS  :  Test block 24
+nftw01     26  TPASS  :  Test block 25
+nftw01     27  TPASS  :  Test block 26
+nftw01     28  TPASS  :  Test block 27
+nftw01     29  TPASS  :  Test block 28
+nftw01     30  TPASS  :  Test block 29
+nftw01     31  TPASS  :  Test passed
+*** CT001: PASSED (ok:31, ng:0)
+
+*** CT002 start *******************************
+Error: Failed to open /dev/mcos0.
+ERROR: opening /dev/mcos0
+fork(): error with child process after fork
+nftw6401    1  TPASS  :  Test block 0
+nftw6401    2  TPASS  :  Test block 1
+nftw6401    3  TPASS  :  Test block 2
+nftw6401    4  TPASS  :  Test block 3
+nftw6401    5  TPASS  :  Test block 4
+nftw6401    6  TPASS  :  Test block 5
+nftw6401    7  TPASS  :  Test block 6
+nftw6401    8  TPASS  :  Test block 7
+nftw6401    9  TPASS  :  Test block 8
+nftw6401   10  TPASS  :  Test block 9
+nftw6401   11  TPASS  :  Test block 10
+nftw6401   12  TPASS  :  Test block 11
+nftw6401   13  TPASS  :  Test block 12
+nftw6401   14  TPASS  :  Test block 13
+nftw6401   15  TPASS  :  Test block 14
+nftw6401   16  TPASS  :  Test block 15
+nftw6401   17  TPASS  :  Test block 16
+nftw6401   18  TPASS  :  Test block 17
+nftw6401   19  TPASS  :  Test block 18
+nftw6401   20  TPASS  :  Test block 19
+nftw6401   21  TPASS  :  Test block 20
+nftw6401   22  TPASS  :  Test block 21
+nftw6401   23  TPASS  :  Test block 22
+nftw6401   24  TPASS  :  Test block 23
+nftw6401   25  TPASS  :  Test block 24
+nftw6401   26  TPASS  :  Test block 25
+nftw6401   27  TPASS  :  Test block 26
+nftw6401   28  TPASS  :  Test block 27
+nftw6401   29  TPASS  :  Test block 28
+nftw6401   30  TPASS  :  Test block 29
+nftw6401   31  TPASS  :  Test passed
+*** CT002: PASSED (ok:31, ng:0)
