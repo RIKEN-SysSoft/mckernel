@@ -624,4 +624,9 @@ extern long (*linux_wait_event)(void *_resp, unsigned long nsec_timeout);
 extern int (*linux_printk)(const char *fmt, ...);
 extern int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 
+/* coredump */
+#define COREDUMP_RUNNING          0
+#define COREDUMP_DESCHEDULED      1
+#define COREDUMP_TO_BE_WOKEN      2
+
 #endif
