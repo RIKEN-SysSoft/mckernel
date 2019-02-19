@@ -126,10 +126,18 @@ extern unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 SYSCALL_DECLARE(clone)
 {
+	struct process *proc = cpu_local_var(current)->proc;
+	struct mcs_rwlock_node_irqsave lock_dump;
+	unsigned long ret;
+
+	/* mutex coredump */
+	mcs_rwlock_reader_lock(&proc->coredump_lock, &lock_dump);
+
 	if ((int)ihk_mc_syscall_arg0(ctx) & CLONE_VFORK) {
-		return do_fork(CLONE_VFORK|SIGCHLD, 0, 0, 0, 0, ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
+		ret = do_fork(CLONE_VFORK|SIGCHLD, 0, 0, 0, 0,
+				ihk_mc_syscall_pc(ctx), ihk_mc_syscall_sp(ctx));
 	} else {
-		return do_fork((int)ihk_mc_syscall_arg0(ctx),	/* clone_flags */
+		ret = do_fork((int)ihk_mc_syscall_arg0(ctx), /* clone_flags */
 			       ihk_mc_syscall_arg1(ctx),	/* newsp */
 			       ihk_mc_syscall_arg2(ctx),	/* parent_tidptr */
 			       ihk_mc_syscall_arg4(ctx),	/* child_tidptr (swap arg3) */
@@ -137,6 +145,9 @@ SYSCALL_DECLARE(clone)
 			       ihk_mc_syscall_pc(ctx),		/* curpc */
 			       ihk_mc_syscall_sp(ctx));		/* cursp */
 	}
+	mcs_rwlock_reader_unlock(&proc->coredump_lock, &lock_dump);
+
+	return ret;
 }
 
 SYSCALL_DECLARE(rt_sigaction)
@@ -656,7 +667,7 @@ void set_single_step(struct thread *thread)
 	set_regs_spsr_ss(thread->uctx);
 }
 
-extern void coredump(struct thread *thread, void *regs);
+extern int coredump(struct thread *thread, void *regs, int sig);
 
 static int
 isrestart(int syscallno, unsigned long rc, int sig, int restart)
@@ -1095,6 +1106,7 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
 	int restart = 0;
+	int ret;
 
 	for(w = pending->sigmask.__val[0], sig = 0; w; sig++, w >>= 1);
 	dkprintf("do_signal(): tid=%d, pid=%d, sig=%d\n", thread->tid, proc->pid, sig);
@@ -1289,9 +1301,31 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 		case SIGXCPU:
 		case SIGXFSZ:
 		core:
-			dkprintf("do_signal,default,core,sig=%d\n", sig);
-			coredump(thread, regs);
-			coredumped = 0x80;
+			thread->coredump_regs =
+				kmalloc(sizeof(struct pt_regs),
+					IHK_MC_AP_NOWAIT);
+			if (!thread->coredump_regs) {
+				kprintf("%s: Out of memory\n", __func__);
+				goto skip;
+			}
+			memcpy(thread->coredump_regs, regs,
+			       sizeof(struct pt_regs));
+
+			ret = coredump(thread, regs, sig);
+			switch (ret) {
+			case -EBUSY:
+				kprintf("%s: INFO: coredump not performed, try ulimit -c <non-zero>\n",
+					__func__);
+				break;
+			case 0:
+				coredumped = 0x80;
+				break;
+			default:
+				kprintf("%s: ERROR: coredump failed (%d)\n",
+					__func__, ret);
+				break;
+			}
+skip:
 			terminate(0, sig | coredumped);
 			break;
 		case SIGCHLD:
@@ -1869,7 +1903,7 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 	}
 
 	if ((__sigmask(sig) & thread->sigmask.__val[0])) {
-		coredump(thread, regs0);
+		coredump(thread, regs0, sig);
 		terminate(0, sig | 0x80);
 	}
 	do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);

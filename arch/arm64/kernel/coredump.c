@@ -19,8 +19,6 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	short int pr_cursig;
 	a8_uint64_t pr_sigpend;
 	a8_uint64_t pr_sighold;
-	pid_t pr_pid;
-	pid_t pr_ppid;
 	pid_t pr_pgrp;
 	pid_t pr_sid;
 	struct prstatus64_timeval pr_utime;
@@ -28,12 +26,18 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	struct prstatus64_timeval pr_cutime;
 	struct prstatus64_timeval pr_cstime;
  */
+
 	/* copy x0-30, sp, pc, pstate */
 	memcpy(&tmp_prstatus.pr_reg, &regs->user_regs, sizeof(tmp_prstatus.pr_reg));
 	tmp_prstatus.pr_fpvalid = 0;	/* We assume no fp */
 
 	/* copy unaligned prstatus addr */
 	memcpy(prstatus, &tmp_prstatus, sizeof(*prstatus));
+
+	prstatus->pr_pid = thread->tid;
+	if (thread->proc->parent) {
+		prstatus->pr_ppid = thread->proc->parent->pid;
+	}
 }
 
 int arch_get_thread_core_info_size(void)

@@ -13,6 +13,8 @@ old_timestamp
 CMakeFiles
 CMakeCache.txt
 Makefile
+!test/*/*/Makefile
+!test/*/*/*.cmd
 Kbuild
 cmake_install.cmake
 config.h
