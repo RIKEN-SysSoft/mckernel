@@ -2768,8 +2768,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 		return -EFAULT;
 	}
 
-	/* debug */
-	if (0 && param.number == __NR_futex) {
+	if (param.number == __NR_futex) {
 		struct uti_futex_resp resp = {
 			.done = 0
 		};
