@@ -84,6 +84,29 @@
       "revId": "306e58b0fdf78d9a9fc9b7fc349dca669d57ed4d",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "208771f1_699ff0b5",
+        "filename": "test/issues/1113/README",
+        "patchSetId": 4
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-20T01:57:07Z",
+      "side": 1,
+      "message": "could you run them on arm?",
+      "range": {
+        "startLine": 52,
+        "startChar": 0,
+        "endLine": 52,
+        "endChar": 36
+      },
+      "revId": "306e58b0fdf78d9a9fc9b7fc349dca669d57ed4d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
