@@ -1,0 +1,219 @@
+as -mcpu=all src/sve_asm.S -o  obj/sve_asm.o
+cc -g -O0 -Wall -I. -Isrc -o obj/sve.o -c  src/sve.c \
+	-DTEST_NUMBER=obj/sve.o
+cc -g -O0 -Wall -I. -Isrc -o obj/025.o -c  src/025.c \
+	-DTEST_NUMBER=025
+cc -g -O0 -Wall -I. -Isrc -o obj/021.o -c  src/021.c \
+	-DTEST_NUMBER=021
+cc -g -O0 -Wall -I. -Isrc -o obj/016.o -c  src/016.c \
+	-DTEST_NUMBER=016
+cc -g -O0 -Wall -I. -Isrc -o obj/012.o -c  src/012.c \
+	-DTEST_NUMBER=012
+cc -g -O0 -Wall -I. -Isrc -o obj/009.o -c  src/009.c \
+	-DTEST_NUMBER=009
+cc -g -O0 -Wall -I. -Isrc -o obj/033.o -c  src/033.c \
+	-DTEST_NUMBER=033
+cc -g -O0 -Wall -I. -Isrc -o obj/024.o -c  src/024.c \
+	-DTEST_NUMBER=024
+cc -g -O0 -Wall -I. -Isrc -o obj/010.o -c  src/010.c \
+	-DTEST_NUMBER=010
+cc -g -O0 -Wall -I. -Isrc -o obj/001.o -c  src/001.c \
+	-DTEST_NUMBER=001
+cc -g -O0 -Wall -I. -Isrc -o obj/036.o -c  src/036.c \
+	-DTEST_NUMBER=036
+cc -g -O0 -Wall -I. -Isrc -o obj/022.o -c  src/022.c \
+	-DTEST_NUMBER=022
+cc -g -O0 -Wall -I. -Isrc -o obj/038.o -c  src/038.c \
+	-DTEST_NUMBER=038
+cc -g -O0 -Wall -I. -Isrc -o obj/028.o -c  src/028.c \
+	-DTEST_NUMBER=028
+cc -g -O0 -Wall -I. -Isrc -o obj/015.o -c  src/015.c \
+	-DTEST_NUMBER=015
+cc -g -O0 -Wall -I. -Isrc -o obj/039.o -c  src/039.c \
+	-DTEST_NUMBER=039
+cc -g -O0 -Wall -I. -Isrc -o obj/029.o -c  src/029.c \
+	-DTEST_NUMBER=029
+cc -g -O0 -Wall -I. -Isrc -o obj/002.o -c  src/002.c \
+	-DTEST_NUMBER=002
+cc -g -O0 -Wall -I. -Isrc -o obj/007.o -c  src/007.c \
+	-DTEST_NUMBER=007
+cc -g -O0 -Wall -I. -Isrc -o obj/020.o -c  src/020.c \
+	-DTEST_NUMBER=020
+cc -g -O0 -Wall -I. -Isrc -o obj/014.o -c  src/014.c \
+	-DTEST_NUMBER=014
+cc -g -O0 -Wall -I. -Isrc -o obj/013.o -c  src/013.c \
+	-DTEST_NUMBER=013
+cc -g -O0 -Wall -I. -Isrc -o obj/031.o -c  src/031.c \
+	-DTEST_NUMBER=031
+cc -g -O0 -Wall -I. -Isrc -o obj/008.o -c  src/008.c \
+	-DTEST_NUMBER=008
+cc -g -O0 -Wall -I. -Isrc -o obj/017.o -c  src/017.c \
+	-DTEST_NUMBER=017
+cc -g -O0 -Wall -I. -Isrc -o obj/037.o -c  src/037.c \
+	-DTEST_NUMBER=037
+cc -g -O0 -Wall -I. -Isrc -o obj/main.o -c  src/main.c \
+	-DTEST_NUMBER=obj/main.o
+cc -g -O0 -Wall -I. -Isrc -o obj/035.o -c  src/035.c \
+	-DTEST_NUMBER=035
+cc -g -O0 -Wall -I. -Isrc -o obj/023.o -c  src/023.c \
+	-DTEST_NUMBER=023
+cc -g -O0 -Wall -I. -Isrc -o obj/032.o -c  src/032.c \
+	-DTEST_NUMBER=032
+cc -g -O0 -Wall -I. -Isrc -o obj/018.o -c  src/018.c \
+	-DTEST_NUMBER=018
+cc -g -O0 -Wall -I. -Isrc -o obj/011.o -c  src/011.c \
+	-DTEST_NUMBER=011
+cc -g -O0 -Wall -I. -Isrc -o obj/026.o -c  src/026.c \
+	-DTEST_NUMBER=026
+cc -g -O0 -Wall -I. -Isrc -o obj/006.o -c  src/006.c \
+	-DTEST_NUMBER=006
+cc -g -O0 -Wall -I. -Isrc -o obj/common.o -c  src/common.c \
+	-DTEST_NUMBER=obj/common.o
+cc -g -O0 -Wall -I. -Isrc -o obj/003.o -c  src/003.c \
+	-DTEST_NUMBER=003
+cc -g -O0 -Wall -I. -Isrc -o obj/030.o -c  src/030.c \
+	-DTEST_NUMBER=030
+cc -g -O0 -Wall -I. -Isrc -o obj/027.o -c  src/027.c \
+	-DTEST_NUMBER=027
+cc -g -O0 -Wall -I. -Isrc -o obj/004.o -c  src/004.c \
+	-DTEST_NUMBER=004
+cc -g -O0 -Wall -I. -Isrc -o obj/019.o -c  src/019.c \
+	-DTEST_NUMBER=019
+cc -g -O0 -Wall -I. -Isrc -o obj/040.o -c  src/040.c \
+	-DTEST_NUMBER=040
+cc -g -O0 -Wall -I. -Isrc -o obj/034.o -c  src/034.c \
+	-DTEST_NUMBER=034
+cc -g -O0 -Wall -I. -Isrc -o obj/005.o -c  src/005.c \
+	-DTEST_NUMBER=005
+cc -g -O0 -Wall obj/sve_asm.o obj/sve.o obj/025.o obj/021.o obj/016.o obj/012.o obj/009.o obj/033.o obj/024.o obj/010.o obj/001.o obj/036.o obj/022.o obj/038.o obj/028.o obj/015.o obj/039.o obj/029.o obj/002.o obj/007.o obj/020.o obj/014.o obj/013.o obj/031.o obj/008.o obj/017.o obj/037.o obj/main.o obj/035.o obj/023.o obj/032.o obj/018.o obj/011.o obj/026.o obj/006.o obj/common.o obj/003.o obj/030.o obj/027.o obj/004.o obj/019.o obj/040.o obj/034.o obj/005.o -lpthread -o sve_test
+./run.sh
+Default VL is 64 byte test.
+mcstop+release.sh ... done
+mcreboot.sh -c 12-23 -m 3G@4 -q 60 ... done
+TEST001: OK.
+TEST002: OK.
+TEST003: OK.
+TEST004: OK.
+TEST005: OK.
+TEST006: OK.
+TEST007: OK.
+TEST008: OK.
+TEST009: OK.
+TEST010: OK.
+TEST011: OK.
+TEST012: OK.
+TEST013: OK.
+TEST014: OK.
+TEST015: OK.
+TEST016: OK.
+TEST017: OK.
+TEST019: OK.
+TEST020: OK.
+TEST021: OK.
+TEST022: OK.
+TEST023: OK.
+TEST024: OK.
+TEST025: OK.
+TEST026: OK.
+TEST027: OK.
+TEST028: OK.
+TEST029: OK.
+TEST030: OK.
+TEST031: OK.
+TEST032: OK.
+TEST033: OK.
+TEST034: OK.
+TEST035: OK.
+TEST036: OK.
+TEST037: OK.
+TEST038: OK.
+TEST039: OK.
+TEST040: OK.
+TEST041: OK.
+Default VL is 32 byte test.
+mcstop+release.sh ... done
+mcreboot.sh -c 12-23 -m 3G@4 -q 60 ... done
+TEST001: OK.
+TEST002: OK.
+TEST003: OK.
+TEST004: OK.
+TEST005: OK.
+TEST006: OK.
+TEST007: OK.
+TEST008: OK.
+TEST009: OK.
+TEST010: OK.
+TEST011: OK.
+TEST012: OK.
+TEST013: OK.
+TEST014: OK.
+TEST015: OK.
+TEST016: OK.
+TEST017: OK.
+TEST019: OK.
+TEST020: OK.
+TEST021: OK.
+TEST022: OK.
+TEST023: OK.
+TEST024: OK.
+TEST025: OK.
+TEST026: OK.
+TEST027: OK.
+TEST028: OK.
+TEST029: OK.
+TEST030: OK.
+TEST031: OK.
+TEST032: OK.
+TEST033: OK.
+TEST034: OK.
+TEST035: OK.
+TEST036: OK.
+TEST037: OK.
+TEST038: OK.
+TEST039: OK.
+TEST040: OK.
+TEST041: OK.
+Default VL is 16 byte test.
+mcstop+release.sh ... done
+mcreboot.sh -c 12-23 -m 3G@4 -q 60 ... done
+TEST001: OK.
+TEST002: OK.
+TEST003: OK.
+TEST004: OK.
+TEST005: OK.
+TEST006: OK.
+TEST007: OK.
+TEST008: OK.
+TEST009: OK.
+TEST010: OK.
+TEST011: OK.
+TEST012: OK.
+TEST013: OK.
+TEST014: OK.
+TEST015: OK.
+TEST016: OK.
+TEST017: OK.
+TEST019: OK.
+TEST020: OK.
+TEST021: OK.
+TEST022: OK.
+TEST023: OK.
+TEST024: OK.
+TEST025: OK.
+TEST026: OK.
+TEST027: OK.
+TEST028: OK.
+TEST029: OK.
+TEST030: OK.
+TEST031: OK.
+TEST032: OK.
+TEST033: OK.
+TEST034: OK.
+TEST035: OK.
+TEST036: OK.
+TEST037: OK.
+TEST038: OK.
+TEST039: OK.
+TEST040: OK.
+TEST041: OK.
+mcstop+release.sh ... done
