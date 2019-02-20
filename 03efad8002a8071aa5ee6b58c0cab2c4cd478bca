@@ -16,6 +16,52 @@
       "revId": "03efad8002a8071aa5ee6b58c0cab2c4cd478bca",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61cc2664_9d76d8d7",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 203,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-20T05:07:36Z",
+      "side": 1,
+      "message": "x86用の空関数を追加してください。",
+      "range": {
+        "startLine": 203,
+        "startChar": 1,
+        "endLine": 203,
+        "endChar": 27
+      },
+      "revId": "03efad8002a8071aa5ee6b58c0cab2c4cd478bca",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "61c63a64_71be6159",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-20T05:07:36Z",
+      "side": 1,
+      "message": "x86用のゼロを返す関数を追加してください。",
+      "range": {
+        "startLine": 204,
+        "startChar": 9,
+        "endLine": 204,
+        "endChar": 39
+      },
+      "revId": "03efad8002a8071aa5ee6b58c0cab2c4cd478bca",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
