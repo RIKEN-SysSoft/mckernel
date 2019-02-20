@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3ef2ee2e_d2d36e11",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-20T11:58:11Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\tuint32_t data1[4] __attribute__((aligned(128)));",
+      "revId": "2be0f97af31adfacac913c16713fb61d6e2b2eac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d6a7c81d_42308230",
+        "filename": "test/sve/src/015.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-20T11:58:11Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+\tuint32_t data2[4] __attribute__((aligned(128))) \u003d {1, 2, 3, 4};",
+      "revId": "2be0f97af31adfacac913c16713fb61d6e2b2eac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "160c3c14_02fc57c8",
+        "filename": "test/sve/src/common.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-20T11:58:11Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(x)\n+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))",
+      "revId": "2be0f97af31adfacac913c16713fb61d6e2b2eac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9f72a42_62a04e7e",
+        "filename": "test/sve/src/main.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-20T11:58:11Z",
+      "side": 1,
+      "message": "WARNING: macros should not use a trailing semicolon\n+#define TEST_CASE_DEF(number)\t\\\n+\textern int test_##number(int, unsigned int, unsigned int, int, char **);",
+      "revId": "2be0f97af31adfacac913c16713fb61d6e2b2eac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
