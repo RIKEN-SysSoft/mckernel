@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "375771b0_6d8da074",
+        "filename": "test/sve/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-02-20T03:29:36Z",
+      "side": 1,
+      "message": "誤字：掃除→同時\n修正：最初のexecve()を行ったときに",
+      "range": {
+        "startLine": 58,
+        "startChar": 0,
+        "endLine": 58,
+        "endChar": 75
+      },
+      "revId": "82e5886ea5766fa83eaa2cb4ea6e9b173ffe775b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1103604e_b3ac1e83",
         "filename": "test/sve/src/001.c",
         "patchSetId": 2
