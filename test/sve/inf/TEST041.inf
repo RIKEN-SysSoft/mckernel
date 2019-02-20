@@ -1,0 +1,86 @@
+# TEST041.inf COPYRIGHT FUJITSU LIMITED 2019
+
+# set logging filename
+set logging file ./TEST041.log
+
+# log overwrite
+set logging overwrite on
+
+# log redirect
+set logging redirect on
+
+# disable the "Type <return> to continue, or q <return> to quit"
+set height 0
+
+# set breakpoint
+b 040.c:23
+
+# run
+r 40
+
+# set logging on
+set logging on
+
+# show Z registers
+i r z0
+i r z1
+i r z2
+i r z3
+i r z4
+i r z5
+i r z6
+i r z7
+i r z8
+i r z9
+i r z10
+i r z11
+i r z12
+i r z13
+i r z14
+i r z15
+i r z16
+i r z17
+i r z18
+i r z19
+i r z20
+i r z21
+i r z22
+i r z23
+i r z24
+i r z25
+i r z26
+i r z27
+i r z28
+i r z29
+i r z30
+i r z31
+
+# show P registers
+i r p0
+i r p1
+i r p2
+i r p3
+i r p4
+i r p5
+i r p6
+i r p7
+i r p8
+i r p9
+i r p10
+i r p11
+i r p12
+i r p13
+i r p14
+i r p15
+
+# show vg(VL)
+i r vg
+
+# show fpsr/fpcr
+i r fpsr
+i r fpcr
+
+# set logging on
+set logging off
+
+quit
