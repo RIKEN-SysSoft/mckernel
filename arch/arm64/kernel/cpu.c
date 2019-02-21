@@ -951,7 +951,7 @@ void ihk_mc_boot_cpu(int cpuid, unsigned long pc)
 		setup_cpu_features();
 	}
 
-	init_sve_vl();
+	sve_setup();
 }
 
 /* for ihk_mc_init_context() */
@@ -1001,9 +1001,10 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 		const int lcpuid = ihk_mc_get_processor_id();
 		const unsigned long syscallno = current_pt_regs()->syscallno;
 #ifdef CONFIG_ARM64_SVE
-		const uint16_t orig_sve_vl = current_thread_info()->sve_vl;
-		const uint16_t orig_sve_vl_onexec = current_thread_info()->sve_vl_onexec;
-		const uint16_t orig_sve_flags = current_thread_info()->sve_flags;
+		struct thread_info *ti = current_thread_info();
+		const unsigned int orig_sve_vl = ti->sve_vl;
+		const unsigned int orig_sve_vl_onexec = ti->sve_vl_onexec;
+		const unsigned long orig_sve_flags = ti->sve_flags;
 #endif /* CONFIG_ARM64_SVE */
 
 		/* get kernel stack address */
