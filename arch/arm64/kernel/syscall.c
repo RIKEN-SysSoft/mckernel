@@ -1,4 +1,4 @@
-/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #include <cpulocal.h>
 #include <string.h>
 #include <kmalloc.h>
@@ -178,11 +178,10 @@ SYSCALL_DECLARE(prctl)
 
 	switch (option) {
 	case PR_SVE_SET_VL:
-		error = SVE_SET_VL(cpu_local_var(current),
-				ihk_mc_syscall_arg1(ctx), ihk_mc_syscall_arg2(ctx));
+		error = SVE_SET_VL(ihk_mc_syscall_arg1(ctx));
 		break;
 	case PR_SVE_GET_VL:
-		error = SVE_GET_VL(cpu_local_var(current));
+		error = SVE_GET_VL();
 		break;
 	case PR_SET_THP_DISABLE:
 		if (arg3 || arg4 || arg5) {

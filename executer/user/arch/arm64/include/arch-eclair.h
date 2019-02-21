@@ -1,4 +1,4 @@
-/* arch-eclair.h COPYRIGHT FUJITSU LIMITED 2016-2018 */
+/* arch-eclair.h COPYRIGHT FUJITSU LIMITED 2016-2019 */
 #ifndef HEADER_USER_ARM64_ECLAIR_H
 #define HEADER_USER_ARM64_ECLAIR_H
 
@@ -50,7 +50,7 @@
 
 #define ARCH_REGS	34
 
-#define PANIC_REGS_OFFSET	160
+#define PANIC_REGS_OFFSET	168
 
 struct arch_kregs {
 	unsigned long x19, x20, x21, x22, x23;

@@ -1,4 +1,4 @@
-/* signal.h COPYRIGHT FUJITSU LIMITED 2015-2018 */
+/* signal.h COPYRIGHT FUJITSU LIMITED 2015-2019 */
 #ifndef __HEADER_ARM64_COMMON_SIGNAL_H
 #define __HEADER_ARM64_COMMON_SIGNAL_H
 
@@ -298,6 +298,7 @@ struct extra_context {
 	struct _aarch64_ctx head;
 	void *data;	/* 16-byte aligned pointer to the extra space */
 	uint32_t size;	/* size in bytes of the extra space */
+	uint32_t __reserved[3];
 };
 
 #define SVE_MAGIC	0x53564501
@@ -318,19 +319,25 @@ struct sve_context {
  * The SVE architecture leaves space for future expansion of the
  * vector length beyond its initial architectural limit of 2048 bits
  * (16 quadwords).
+ *
+ * See linux/Documentation/arm64/sve.txt for a description of the VL/VQ
+ * terminology.
  */
-#define SVE_VQ_MIN	1
-#define SVE_VQ_MAX	0x200
+#define SVE_VQ_BYTES	16	/* number of bytes per quadword */
 
-#define SVE_VL_MIN	(SVE_VQ_MIN * 0x10)
-#define SVE_VL_MAX	(SVE_VQ_MAX * 0x10)
+#define SVE_VQ_MIN	1
+#define SVE_VQ_MAX	512
+
+#define SVE_VL_MIN	(SVE_VQ_MIN * SVE_VQ_BYTES)
+#define SVE_VL_MAX	(SVE_VQ_MAX * SVE_VQ_BYTES)
 
 #define SVE_NUM_ZREGS	32
 #define SVE_NUM_PREGS	16
 
 #define sve_vl_valid(vl) \
-	((vl) % 0x10 == 0 && (vl) >= SVE_VL_MIN && (vl) <= SVE_VL_MAX)
-#define sve_vq_from_vl(vl)	((vl) / 0x10)
+	((vl) % SVE_VQ_BYTES == 0 && (vl) >= SVE_VL_MIN && (vl) <= SVE_VL_MAX)
+#define sve_vq_from_vl(vl)	((vl) / SVE_VQ_BYTES)
+#define sve_vl_from_vq(vq)	((vq) * SVE_VQ_BYTES)
 
 /*
  * The total size of meaningful data in the SVE context in bytes,
@@ -365,11 +372,13 @@ struct sve_context {
  * Additional data might be appended in the future.
  */
 
-#define SVE_SIG_ZREG_SIZE(vq)	((uint32_t)(vq) * 16)
-#define SVE_SIG_PREG_SIZE(vq)	((uint32_t)(vq) * 2)
+#define SVE_SIG_ZREG_SIZE(vq)	((uint32_t)(vq) * SVE_VQ_BYTES)
+#define SVE_SIG_PREG_SIZE(vq)	((uint32_t)(vq) * (SVE_VQ_BYTES / 8))
 #define SVE_SIG_FFR_SIZE(vq)	SVE_SIG_PREG_SIZE(vq)
 
-#define SVE_SIG_REGS_OFFSET	((sizeof(struct sve_context) + 15) / 16 * 16)
+#define SVE_SIG_REGS_OFFSET					\
+	((sizeof(struct sve_context) + (SVE_VQ_BYTES - 1))	\
+		/ SVE_VQ_BYTES * SVE_VQ_BYTES)
 
 #define SVE_SIG_ZREGS_OFFSET	SVE_SIG_REGS_OFFSET
 #define SVE_SIG_ZREG_OFFSET(vq, n) \

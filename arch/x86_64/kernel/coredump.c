@@ -1,4 +1,4 @@
-/* coredump.c COPYRIGHT FUJITSU LIMITED 2018 */
+/* coredump.c COPYRIGHT FUJITSU LIMITED 2018-2019 */
 #include <process.h>
 #include <elfcore.h>
 
@@ -54,4 +54,14 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	/* There is no ds, es, fs and gs. */
 
 	prstatus->pr_fpvalid = 0;	/* We assume no fp */
+}
+
+void arch_fill_thread_core_info(struct note *head,
+				struct thread *thread, void *regs)
+{
+}
+
+int arch_get_thread_core_info_size(void)
+{
+	return 0;
 }

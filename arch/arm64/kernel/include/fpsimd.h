@@ -1,4 +1,4 @@
-/* fpsimd.h COPYRIGHT FUJITSU LIMITED 2016-2017 */
+/* fpsimd.h COPYRIGHT FUJITSU LIMITED 2016-2019 */
 #ifndef __HEADER_ARM64_COMMON_FPSIMD_H
 #define __HEADER_ARM64_COMMON_FPSIMD_H
 
@@ -46,12 +46,15 @@ extern void sve_alloc(struct thread *thread);
 extern void sve_save_state(void *state, unsigned int *pfpsr);
 extern void sve_load_state(void const *state, unsigned int const *pfpsr, unsigned long vq_minus_1);
 extern unsigned int sve_get_vl(void);
-extern int sve_set_thread_vl(struct thread *thread, const unsigned long vector_length, const unsigned long flags);
-extern int sve_get_thread_vl(const struct thread *thread);
+extern int sve_set_thread_vl(unsigned long arg);
+extern int sve_get_thread_vl(void);
 extern int sve_set_vector_length(struct thread *thread, unsigned long vl, unsigned long flags);
 
-#define SVE_SET_VL(thread, vector_length, flags)	sve_set_thread_vl(thread, vector_length, flags)
-#define SVE_GET_VL(thread)				sve_get_thread_vl(thread)
+#define SVE_SET_VL(arg)	sve_set_thread_vl(arg)
+#define SVE_GET_VL()	sve_get_thread_vl()
+
+/* Maximum VL that SVE VL-agnostic software can transparently support */
+#define SVE_VL_ARCH_MAX 0x100
 
 #else /* CONFIG_ARM64_SVE */
 
@@ -80,12 +83,12 @@ static int sve_set_vector_length(struct thread *thread, unsigned long vl, unsign
 }
 
 /* for prctl syscall */
-#define SVE_SET_VL(a,b,c)	(-EINVAL)
-#define SVE_GET_VL(a)		(-EINVAL)
+#define SVE_SET_VL(a)	(-EINVAL)
+#define SVE_GET_VL()	(-EINVAL)
 
 #endif /* CONFIG_ARM64_SVE */
 
-extern void init_sve_vl(void);
+extern void sve_setup(void);
 extern void fpsimd_save_state(struct fpsimd_state *state);
 extern void fpsimd_load_state(struct fpsimd_state *state);
 extern void thread_fpsimd_save(struct thread *thread);
