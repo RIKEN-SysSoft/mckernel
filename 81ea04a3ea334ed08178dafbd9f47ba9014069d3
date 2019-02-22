@@ -84,6 +84,23 @@
       "revId": "81ea04a3ea334ed08178dafbd9f47ba9014069d3",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62f29749_50e95cec",
+        "filename": "test/issues/1113/repeat.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-22T08:34:15Z",
+      "side": 1,
+      "message": "make this line \"$@\" - with the quotes - please. That will basically run exactly what was after the script with proper argument splitting and everything so e.g. `repeat.sh mcexec something` works.\n\n$1 might work if someone does `repeat.sh \"mcexec something\"` but it makes splitting difficult",
+      "revId": "81ea04a3ea334ed08178dafbd9f47ba9014069d3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
