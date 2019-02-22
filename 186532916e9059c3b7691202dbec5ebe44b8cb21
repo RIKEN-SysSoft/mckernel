@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4f531385_b71a8356",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 10
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-22T04:27:57Z",
+      "side": 1,
+      "message": "probably need to add %{_includedir}/ihk/ihk_rusage.h",
+      "revId": "186532916e9059c3b7691202dbec5ebe44b8cb21",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
