@@ -644,6 +644,7 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 	int error;
 	intptr_t src_phys;
 	struct page *src_page;
+	unsigned long src_lphys;
 	void *src_kvirt;
 	size_t pgsize = (size_t)1 << pgshift;
 	int npages;
@@ -651,6 +652,7 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 	intptr_t phys;
 	int pgalign = pgshift - PAGE_SHIFT;
 	enum ihk_mc_pt_attribute attr;
+	int is_mckernel;
 
 	if (!pte_is_present(src_ptep)) {
 		error = 0;
@@ -659,7 +661,6 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 
 	src_phys = pte_get_phys(src_ptep);
 	src_page = phys_to_page(src_phys);
-	src_kvirt = phys_to_virt(src_phys);
 
 	if (src_page && page_is_in_memobj(src_page)) {
 		error = 0;
@@ -698,10 +699,24 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 		phys = virt_to_phys(virt);
 		dkprintf("copy_user_pte(): phys page allocated\n");
 
+		attr = arch_vrflag_to_ptattr(args->new_vrflag, PF_POPULATE,
+					     NULL);
+
+		is_mckernel = is_mckernel_memory(src_phys, src_phys + pgsize);
+		if (is_mckernel) {
+			src_kvirt = phys_to_virt(src_phys);
+		} else {
+			src_lphys = ihk_mc_map_memory(NULL, src_phys, pgsize);
+			src_kvirt = ihk_mc_map_virtual(src_lphys, 1, attr);
+		}
+
 		memcpy(virt, src_kvirt, pgsize);
 		dkprintf("copy_user_pte(): memcpy OK\n");
 
-		attr = arch_vrflag_to_ptattr(args->new_vrflag, PF_POPULATE, NULL);
+		if (!is_mckernel) {
+			ihk_mc_unmap_virtual(src_kvirt, 1);
+			ihk_mc_unmap_memory(NULL, src_lphys, pgsize);
+		}
 	}
 
 	error = ihk_mc_pt_set_range(args->new_vm->address_space->page_table,

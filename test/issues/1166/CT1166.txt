@@ -1,19 +1,55 @@
-Script started on Mon Jan  7 16:10:54 2019
-[sira@localhost 1166]$ make test
 sh ./CT1166.sh
 mcstop+release.sh ... done
-mcreboot.sh -c 1-3 -m 1G ... done
+mcreboot.sh -s -c 1-3 -m 1G ... done
 CT1166 START
 CT1166T01: OK open(/dev/fb0)
 CT1166T02: OK mmap(MAP_PRIVATE)
-CT1166T03: OK store private fb0
-CT1166T04: OK load private fb0
+CT1166T03: OK store to parent fb0
+CT1166T04: OK load from parent fb0
 CT1166T05: OK fork
-CT1166T06: OK store private fb0 by child
-CT1166T07: OK load private fb0 by child
-CT1166T08: OK private fb0 do not updated
-CT1166 all tests are OK
-[sira@localhost 1166]$ exit
-exit
-
-Script done on Mon Jan  7 16:11:05 2019
+CT1166T06: OK store to child fb0
+CT1166T07: OK load from child fb0
+CT1166T08: OK parent fb0 isn't modified
+fork01      1  TPASS  :  fork() returned 111237
+fork01      2  TPASS  :  child pid and fork() return agree: 111237
+*** CT116609: fork01 OK (2)
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  Inside child
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+*** CT116610: fork02 OK (1)
+fork03      0  TINFO  :  process id in parent of child from fork : 111287
+fork03      1  TPASS  :  test 1 PASSED
+*** CT116611: fork03 OK (1)
+fork04      1  TPASS  :  Env var TERM unchanged after fork(): xterm
+fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
+fork04      3  TPASS  :  Env var TESTPROG unchanged after fork(): FRKTCS04
+*** CT116612: fork04 OK (3)
+fork07      0  TINFO  :  Forking 100 children
+fork07      0  TINFO  :  Forked all 100 children, now collecting
+fork07      0  TINFO  :  Collected all 100 children
+fork07      1  TPASS  :  100/100 children read correctly from an inheritted fd
+*** CT116613: fork07 OK (1)
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  parent forksval: 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      1  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  second child got char: b
+fork08      1  TPASS  :  Test passed in childnumber 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      2  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      3  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  Number of processes forked is 2
+*** CT116614: fork08 OK (4)
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 8 
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      0  TINFO  :  Child opened new file #1023
+fork09      1  TPASS  :  test 1 PASSED
+*** CT116615: fork09 OK (1)
+fork10      0  TINFO  :  fork child A
+fork10      1  TPASS  :  test 1 PASSED
+*** CT116616: fork10 OK (1)
+fork11      1  TPASS  :  fork test passed, 100 processes
+*** CT116617: fork11 OK (1)

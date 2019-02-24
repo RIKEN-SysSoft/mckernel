@@ -39,14 +39,14 @@ main(int argc, char **argv)
 	close(fd);
 
 	p2[0] = 50;
-	printf("CT1166T03: OK store private fb0\n");
+	printf("CT1166T03: OK store to parent fb0\n");
 	ok++;
 	if (p2[0] == 50) {
-		printf("CT1166T04: OK load private fb0\n");
+		printf("CT1166T04: OK load from parent fb0\n");
 		ok++;
 	}
 	else {
-		printf("CT1166T04: NG load private fb0\n");
+		printf("CT1166T04: NG load from parent fb0\n");
 		ng++;
 	}
 
@@ -63,14 +63,14 @@ main(int argc, char **argv)
 		ok++;
 
 		p2[0] = 10;
-		printf("CT1166T06: OK store private fb0 by child\n");
+		printf("CT1166T06: OK store to child fb0\n");
 		ok++;
 		if (p2[0] == 10) {
-			printf("CT1166T07: OK load private fb0 by child\n");
+			printf("CT1166T07: OK load from child fb0\n");
 			ok++;
 		}
 		else {
-			printf("CT1166T07: NG load private fb0 by child\n");
+			printf("CT1166T07: NG load from child fb0\n");
 			ng++;
 		}
 		exit(0);
@@ -80,18 +80,12 @@ main(int argc, char **argv)
 		;
 
 	if (p2[0] == 50) {
-		printf("CT1166T08: OK private fb0 do not updated\n");
+		printf("CT1166T08: OK parent fb0 isn't modified\n");
 		ok++;
 	}
 	else {
-		printf("CT1166T08: NG private fb0 updated %d\n", p2[0]);
+		printf("CT1166T08: NG private fb0 is modified (%d)\n", p2[0]);
 		ng++;
-	}
-	if (ng == 0) {
-		printf("CT1166 all tests are OK\n");
-	}
-	else {
-		printf("CT1166 OK=%d NG=%d\n", ok, ng);
 	}
 	exit(0);
 }
