@@ -17,9 +17,17 @@ CT003:
 CT004:
 	hugetlbfsが利用できることを確認
 
-2. 既存のprctl機能に影響がないことをLTPを用いて確認
-CT005: ltp-prctl01
-CT006: ltp-prctl02
+2. LTP を用いて既存処理に影響しないことを確認
+   ユーザメモリ領域複製処理を変更したため、fork のテストを選定した。
+C1201T02 fork01 が PASS すること
+C1201T03 fork02 が PASS すること
+C1201T04 fork03 が PASS すること
+C1201T05 fork04 が PASS すること
+C1201T06 fork07 が PASS すること
+C1201T07 fork08 が PASS すること
+C1201T08 fork09 が PASS すること
+C1201T09 fork10 が PASS すること
+C1201T10 fork11 が PASS すること
 
 □ 実行手順
 (1) cd <mckernel> && patch -p0 < <mckernel>/test/issues/1181/large_page.patch
