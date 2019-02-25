@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d2085e73_44146c61",
+        "filename": "test/issues/1166/CT1166.txt",
+        "patchSetId": 3
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-25T07:48:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+fork09      0  TINFO  :  first file descriptor is 8 $",
+      "revId": "8f822ebf219eb93fda5cf4792dd96a0c7b6dac1a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
