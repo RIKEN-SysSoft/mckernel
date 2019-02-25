@@ -1,7 +1,4 @@
 *** CT001 start *******************************
-Error: Failed to open /dev/mcos0.
-ERROR: opening /dev/mcos0
-fork(): error with child process after fork
 nftw01      1  TPASS  :  Test block 0
 nftw01      2  TPASS  :  Test block 1
 nftw01      3  TPASS  :  Test block 2
@@ -36,9 +33,6 @@ nftw01     31  TPASS  :  Test passed
 *** CT001: PASSED (ok:31, ng:0)
 
 *** CT002 start *******************************
-Error: Failed to open /dev/mcos0.
-ERROR: opening /dev/mcos0
-fork(): error with child process after fork
 nftw6401    1  TPASS  :  Test block 0
 nftw6401    2  TPASS  :  Test block 1
 nftw6401    3  TPASS  :  Test block 2
