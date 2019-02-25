@@ -5,6 +5,9 @@ USEOSTEST=0
 
 . ../../common.sh
 
+# for fork after setuid()
+chmod 666 /dev/mcos0
+
 tid=001
 echo "*** CT$tid start *******************************"
 sudo ${MCEXEC} ${LTPBIN}/nftw01 2>&1 | tee ./CT${tid}.txt

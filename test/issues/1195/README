@@ -24,3 +24,10 @@ $HOMEにコピーし、適宜編集する
 □ 実行結果
 result.log 参照。
 すべての項目をPASSしていることを確認。
+
+なお、以下のようなメッセージが出力されることがあるが、これは本件とは無
+関係な不具合により、テスト用ディレクトリの削除に失敗するためである。こ
+の失敗はテスト結果に影響を与えないため、無視して構わない。
+
+main_loop: Error: open_exec() fails for /home/centos/project/src/ltp/install/testcases/bin/nftw01: -1 (fd: 3)
+fork(): error with child process after fork
