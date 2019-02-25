@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "5476cfe7_13c0eb16",
+        "filename": "kernel/fileobj.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 502,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-25T10:36:44Z",
+      "side": 1,
+      "message": "hmm, that\u0027s a bit aggressive considering that syscall_generic_forwarding will basically spend a few ms sleeping...\nAlso doesn\u0027t explain why we\u0027re not seeing the problem when there is no oversubscribe - basically the problem would be another thread on the same core coming in the loop above while the syscall is being forwarded and never coming back here to get out of PM_PAGEIO? It\u0027s weird that timesharing doesn\u0027t make it come back here, but if it\u0027s really this I might want to look further to what problems schedule() were causing on my VM...",
+      "revId": "b934142f8f853b55a7b92d50b16a204055f2c093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "0ecd36de_92b7b8d3",
         "filename": "kernel/host.c",
         "patchSetId": 6
@@ -16,6 +33,23 @@
       "revId": "b934142f8f853b55a7b92d50b16a204055f2c093",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "669644a9_6c75cba3",
+        "filename": "test/issues/1113/C1113.sh",
+        "patchSetId": 6
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-02-25T10:36:44Z",
+      "side": 1,
+      "message": "since you\u0027re counting the ok, I\u0027d check ok is 300 here as well.\nIf mcexec failed for some reason but didn\u0027t hang it wouldn\u0027t print a NG message, but we\u0027d be missing some OK message",
+      "revId": "b934142f8f853b55a7b92d50b16a204055f2c093",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
