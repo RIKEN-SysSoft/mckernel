@@ -5,6 +5,8 @@
 
 #include <sysreg.h>
 
+#define MPIDR_HWID_BITMASK	0xff00ffffffUL
+
 #define MPIDR_LEVEL_BITS_SHIFT	3
 #define MPIDR_LEVEL_BITS	(1 << MPIDR_LEVEL_BITS_SHIFT)
 #define MPIDR_LEVEL_MASK	((1 << MPIDR_LEVEL_BITS) - 1)
@@ -103,6 +105,11 @@
 static unsigned int read_cpuid_id(void)
 {
 	return read_cpuid(MIDR_EL1);
+}
+
+static uint64_t read_cpuid_mpidr(void)
+{
+	return read_cpuid(MPIDR_EL1);
 }
 
 #endif /* !__ASSEMBLY__ */

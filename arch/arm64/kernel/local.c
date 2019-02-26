@@ -6,6 +6,10 @@
 #include <ihk/debug.h>
 #include <registers.h>
 #include <string.h>
+#include <bitmap.h>
+#include <cputype.h>
+
+#define HWID_BITS NR_CPUS
 
 /* BSP initialized stack area */
 union arm64_cpu_local_variables init_thread_info __attribute__((aligned(KERNEL_STACK_SIZE)));
@@ -13,6 +17,20 @@ union arm64_cpu_local_variables init_thread_info __attribute__((aligned(KERNEL_S
 /* BSP/AP idle stack pointer head */
 static union arm64_cpu_local_variables *locals;
 size_t arm64_cpu_local_variables_span = KERNEL_STACK_SIZE; /* for debugger */
+DECLARE_BITMAP(hwid_bitmap, HWID_BITS);
+int hwid_bitmap_inited;
+
+void create_hwid_bitmap(void)
+{
+	int i = 0;
+	struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
+
+	bitmap_zero(hwid_bitmap, HWID_BITS);
+	for (i = 0; i < cpu_info->ncpus; i++) {
+		bitmap_set(hwid_bitmap, cpu_info->hw_ids[i], 1);
+	}
+	hwid_bitmap_inited = 1;
+}
 
 /* allocate & initialize BSP/AP idle stack */
 void init_processors_local(int max_id)
@@ -39,6 +57,9 @@ void init_processors_local(int max_id)
 		memset(tmp, 0, sizeof(struct thread_info));
 	}
 	kprintf("locals = %p\n", locals);
+
+	/* create hwid bitmap for ihk_mc_get_processor_id() */
+	create_hwid_bitmap();
 }
 
 /* get id (logical processor id) local variable address */
@@ -85,7 +106,22 @@ void assign_processor_id(void)
 /* get current logical processor id */
 int ihk_mc_get_processor_id(void)
 {
-	return current_thread_info()->cpu;
+	int id = current_thread_info()->cpu;
+
+	if (hwid_bitmap_inited) {
+		const uint64_t mpidr = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+
+		/* check on bitmaparea */
+		if (mpidr >= HWID_BITS) {
+			panic("HWID_BITS larger equal mpidr hwid detected.");
+		}
+
+		/* check on McK */
+		if (!test_bit(mpidr, hwid_bitmap)) {
+			id = -1;
+		}
+	}
+	return id;
 }
 
 /* get current physical processor id (not equal AFFINITY !!) */
