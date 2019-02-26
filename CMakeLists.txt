@@ -41,14 +41,16 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
 	set(BUILD_TARGET "smp-arm64" CACHE STRING "Build target: smp-x86 | smp-arm64")
 endif()
+
+foreach(i RANGE 1 120)
+	add_definitions(-DPOSTK_DEBUG_ARCH_DEP_${i} -DPOSTK_DEBUG_TEMP_FIX_${i})
+	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DPOSTK_DEBUG_ARCH_DEP_${i} -DPOSTK_DEBUG_TEMP_FIX_${i}")
+endforeach()
+
 if (BUILD_TARGET STREQUAL "smp-x86")
 	set(ARCH "x86_64")
 elseif (BUILD_TARGET STREQUAL "smp-arm64")
 	set(ARCH "arm64")
-	foreach(i RANGE 1 120)
-		add_definitions(-DPOSTK_DEBUG_ARCH_DEP_${i} -DPOSTK_DEBUG_TEMP_FIX_${i})
-		set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DPOSTK_DEBUG_ARCH_DEP_${i} -DPOSTK_DEBUG_TEMP_FIX_${i}")
-	endforeach()
 
 	execute_process(COMMAND awk -F= "$1 == \"CONFIG_ARM64_64K_PAGES\" { print $2; exit; }" "${KERNEL_DIR}/.config"
 			OUTPUT_VARIABLE CONFIG_ARM64_64K_PAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
