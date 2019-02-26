@@ -3335,10 +3335,10 @@ unsigned long virt_to_phys(void *v)
 {
 	unsigned long va = (unsigned long)v;
 
-	if (MAP_KERNEL_START <= va) {
-		return va - MAP_KERNEL_START + arm64_kernel_phys_base;
+	if (va >= MAP_ST_START) {
+		return va - MAP_ST_START;
 	}
-	return va - MAP_ST_START;
+	return va - MAP_KERNEL_START + arm64_kernel_phys_base;
 }
 
 void *phys_to_virt(unsigned long p)
