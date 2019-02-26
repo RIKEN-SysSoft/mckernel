@@ -34,7 +34,7 @@ void panic(const char *);
  */
 /* early alloc area address */
 /* START:_end, SIZE:512 pages */
-#define MAP_EARLY_ALLOC_SHIFT	9
+#define MAP_EARLY_ALLOC_SHIFT	5
 #define MAP_EARLY_ALLOC_SIZE	(UL(1) << (PAGE_SHIFT + MAP_EARLY_ALLOC_SHIFT))
 
 #ifndef __ASSEMBLY__
@@ -55,7 +55,10 @@ extern char _end[];
 # define MAP_BOOT_PARAM_END	(MAP_BOOT_PARAM + MAP_BOOT_PARAM_SIZE)
 #endif /* !__ASSEMBLY__ */
 
-#if (VA_BITS == 39 && GRANULE_SIZE == _SZ4KB)
+/*
+ * MAP_KERNEL_START is HOST MODULES_END - 8MiB
+ */
+#if (VA_BITS == 39 && GRANULE_SIZE == _SZ4KB) /* ARM64_MEMORY_LAYOUT=1 */
 #
 # define LD_TASK_UNMAPPED_BASE	UL(0x0000000400000000)
 # define TASK_UNMAPPED_BASE	UL(0x0000000800000000)
@@ -64,9 +67,9 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffffffbffbdfd000)
 # define MAP_ST_START		UL(0xffffffc000000000)
-# define MAP_KERNEL_START	UL(0xffffffffff800000)
+# define MAP_KERNEL_START	UL(0xffffff8007800000)
 #
-#elif (VA_BITS == 42 && GRANULE_SIZE == _SZ64KB)
+#elif (VA_BITS == 42 && GRANULE_SIZE == _SZ64KB) /* ARM64_MEMORY_LAYOUT=3 */
 #
 # define LD_TASK_UNMAPPED_BASE	UL(0x0000002000000000)
 # define TASK_UNMAPPED_BASE	UL(0x0000004000000000)
@@ -75,9 +78,9 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xfffffdfffbdd0000)
 # define MAP_ST_START		UL(0xfffffe0000000000)
-# define MAP_KERNEL_START	UL(0xffffffffe0000000)
+# define MAP_KERNEL_START	UL(0xfffffc0007800000)
 #
-#elif (VA_BITS == 48 && GRANULE_SIZE == _SZ4KB)
+#elif (VA_BITS == 48 && GRANULE_SIZE == _SZ4KB) /* ARM64_MEMORY_LAYOUT=2 */
 #
 # define LD_TASK_UNMAPPED_BASE	UL(0x0000080000000000)
 # define TASK_UNMAPPED_BASE	UL(0x0000100000000000)
@@ -86,9 +89,9 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffff7ffffbdfd000)
 # define MAP_ST_START		UL(0xffff800000000000)
-# define MAP_KERNEL_START	UL(0xffffffffff800000)
+# define MAP_KERNEL_START	UL(0xffff000007800000)
 #
-#elif (VA_BITS == 48 && GRANULE_SIZE == _SZ64KB)
+#elif (VA_BITS == 48 && GRANULE_SIZE == _SZ64KB) /* ARM64_MEMORY_LAYOUT=4 */
 #
 # define LD_TASK_UNMAPPED_BASE	UL(0x0000080000000000)
 # define TASK_UNMAPPED_BASE	UL(0x0000100000000000)
@@ -97,7 +100,7 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffff7ffffbdd0000)
 # define MAP_ST_START		UL(0xffff800000000000)
-# define MAP_KERNEL_START	UL(0xffffffffe0000000)
+# define MAP_KERNEL_START	UL(0xffff000007800000)
 #
 #else
 # error address space is not defined.
