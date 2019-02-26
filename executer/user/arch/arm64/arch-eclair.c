@@ -55,13 +55,14 @@ uintptr_t virt_to_phys(uintptr_t va)
 {
 	extern uintptr_t kernel_base;
 
+	if (va >= MAP_ST) {
+		return (va - MAP_ST);
+	}
+
 	if (va >= MAP_KERNEL) {
 		return (va - MAP_KERNEL + kernel_base);
 	}
 
-	if (va >= MAP_ST) {
-		return (va - MAP_ST);
-	}
 	return NOPHYS;
 } /* virt_to_phys() */
 #endif /* POSTK_DEBUG_ARCH_DEP_34 */
