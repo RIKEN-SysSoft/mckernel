@@ -6,7 +6,7 @@ PHDRS
 }
 SECTIONS
 {
-	. = 0xffffffffe0000000; /* KERNEL_START */
+	. = 0xffff000007800000; /* KERNEL_START */
 	_head = .;
 
 	.text : {
