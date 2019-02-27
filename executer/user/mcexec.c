@@ -1744,7 +1744,6 @@ unsigned long atobytes(char *string)
 }
 
 static struct option mcexec_options[] = {
-#ifdef POSTK_DEBUG_ARCH_DEP_53
 #ifndef __aarch64__
 	{
 		.name =		"disable-vdso",
@@ -1759,7 +1758,6 @@ static struct option mcexec_options[] = {
 		.val =		1,
 	},
 #endif /*__aarch64__*/
-#endif /*POSTK_DEBUG_ARCH_DEP_53*/
 	{
 		.name =		"profile",
 		.has_arg =	no_argument,
