@@ -12,7 +12,6 @@
  */
 
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <ihk/lock.h>
 #include <ihk/mm.h>
 #include <ihk/types.h>
@@ -27,7 +26,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <rusage_private.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <mman.h>
 
 //#define DEBUG_PRINT_FILEOBJ

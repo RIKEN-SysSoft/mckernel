@@ -12,12 +12,11 @@
 #include <march.h>
 #include <errno.h>
 #include <cls.h>
-#include <ihk/debug.h>
 #include <ihk/cpu.h>
 #include <registers.h>
 #include <mc_perf_event.h>
 #include <config.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);

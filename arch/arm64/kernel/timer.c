@@ -8,7 +8,7 @@
 #include <cputype.h>
 #include <irq.h>
 #include <arch-timer.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_TIMER
 

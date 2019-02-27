@@ -11,7 +11,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <bitmap.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 #define EXPORT_SYMBOL(x)
 

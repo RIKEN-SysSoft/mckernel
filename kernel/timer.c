@@ -14,7 +14,6 @@
 #include <ihk/cpu.h>
 #include <cpulocal.h>
 #include <ihk/mm.h>
-#include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <errno.h>
 #include <cls.h>
@@ -32,7 +31,7 @@
 #include <futex.h>
 #include <bitops.h>
 #include <timer.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_TIMER
 

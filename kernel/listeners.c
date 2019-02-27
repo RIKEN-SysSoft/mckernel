@@ -15,11 +15,10 @@
 #include <kmsg.h>
 #include <ihk/cpu.h>
 #include <ihk/mm.h>
-#include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <ikc/master.h>
 #include <arch/cpu.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_LISTENERS
 

@@ -26,7 +26,6 @@
 #include <errno.h>
 #include <kmalloc.h>
 #include <cls.h>
-#include <ihk/debug.h>
 #include <page.h>
 #include <cpulocal.h>
 #include <auxvec.h>
@@ -36,7 +35,7 @@
 #include <xpmem.h>
 #include <rusage_private.h>
 #include <ihk/monitor.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_PROCESS
 

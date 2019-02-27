@@ -23,7 +23,6 @@
 #include <kmalloc.h>
 #include <string.h>
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <ihk/lock.h>
 #include <ihk/mm.h>
 #include <ihk/page_alloc.h>
@@ -44,7 +43,7 @@
 #include <process.h>
 #include <limits.h>
 #include <sysfs.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_MEM
 

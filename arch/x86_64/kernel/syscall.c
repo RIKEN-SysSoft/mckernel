@@ -16,7 +16,6 @@
  */
 
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <cls.h>
 #include <cpulocal.h>
 #include <syscall.h>
@@ -32,7 +31,7 @@
 #include <page.h>
 #include <limits.h>
 #include <syscall.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 void terminate_mcexec(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);

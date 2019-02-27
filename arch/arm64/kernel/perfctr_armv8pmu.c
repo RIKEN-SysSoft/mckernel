@@ -4,7 +4,6 @@
 #include <ihk/perfctr.h>
 #include <errno.h>
 #include <ihk/debug.h>
-#include <debug.h>
 #include <sysreg.h>
 #include <virt.h>
 #include <bitops.h>
