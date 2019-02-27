@@ -33,3 +33,8 @@ executer/user/libmcexec.a
 executer/user/libldump2mcdump.so
 executer/user/eclair
 tools/mcstat/mcstat
+/_CPack_Packages
+/CPackSourceConfig.cmake
+CPackConfig.cmake
+/build
+mckernel-*.tar.gz
