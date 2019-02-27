@@ -78,6 +78,10 @@ endif(ENABLE_WERROR)
 	# the native build system do these checks, if possible at all...
 	add_custom_command(OUTPUT kmod_always_rebuild COMMAND touch kmod_always_rebuild)
 
+	if (NOT EXISTS "${KERNEL_DIR}/Makefile")
+		message(FATAL_ERROR "${KERNEL_DIR} does not contain a Makefile and is probably missing. install kernel development package or set the KERNEL_DIR variable")
+	endif()
+
 	add_custom_command(
 		OUTPUT "${MODULE_NAME}.ko"
 			"Module.symvers"
