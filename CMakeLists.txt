@@ -17,7 +17,6 @@ endif()
 include(GNUInstallDirs)
 include(CMakeParseArguments)
 include(Kbuild)
-include(Ksym)
 include(CheckCCompilerFlag)
 
 set(CFLAGS_WARNINGS "-Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function")
@@ -105,23 +104,6 @@ list(GET LINUX_VERSION 1 LINUX_VERSION_MINOR)
 list(GET LINUX_VERSION 2 LINUX_VERSION_PATCH)
 list(GET LINUX_VERSION 3 LINUX_VERSION_RELEASE)
 math(EXPR LINUX_VERSION_CODE "${LINUX_VERSION_MAJOR} * 65536 + ${LINUX_VERSION_MINOR} * 256 + ${LINUX_VERSION_PATCH}")
-
-ksym(sys_mount PREFIX MCCTRL_)
-ksym(sys_umount PREFIX MCCTRL_)
-ksym(sys_unshare PREFIX MCCTRL_)
-ksym(zap_page_range PREFIX MCCTRL_)
-ksym(vdso_image_64 PREFIX MCCTRL_)
-ksym(vdso_start PREFIX MCCTRL_)
-ksym(vdso_end PREFIX MCCTRL_)
-ksym(vdso_pages PREFIX MCCTRL_)
-ksym(__vvar_page PREFIX MCCTRL_)
-ksym(hpet_address PREFIX MCCTRL_)
-# POSTK_DEBUG_ARCH_DEP_50, add:find kernel symbol.
-ksym(vdso_spec PREFIX MCCTRL_)
-ksym(hv_clock PREFIX MCCTRL_)
-ksym(sys_readlink PREFIX MCCTRL_)
-ksym(walk_page_range PREFIX MCCTRL_)
-
 
 # compat with various install paths
 set(MCKERNEL_LIBDIR ${CMAKE_INSTALL_FULL_LIBDIR})
