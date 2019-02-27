@@ -119,12 +119,10 @@ init_process(struct process *proc, struct process *parent)
 		       sizeof(proc->cpu_set));
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_63 /* struct process member initialize add */
 	INIT_LIST_HEAD(&proc->hash_list);
 	INIT_LIST_HEAD(&proc->siblings_list);
 	INIT_LIST_HEAD(&proc->ptraced_siblings_list);
 	mcs_rwlock_init(&proc->update_lock);
-#endif /* POSTK_DEBUG_ARCH_DEP_63 */
 	INIT_LIST_HEAD(&proc->report_threads_list);
 	INIT_LIST_HEAD(&proc->threads_list);
 	INIT_LIST_HEAD(&proc->children_list);
