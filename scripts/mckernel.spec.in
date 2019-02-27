@@ -2,13 +2,14 @@
 # cmake /path/to/mckernel && make dist
 # rpmbuild -ta mckernel-@MCKERNEL_VERSION@.tar.gz
 #
-# for cross compilation also pass the following to rpmbuild:
+# for cross compilation also pass at least the following to rpmbuild:
 # --target aarch64 -D 'kernel_version <target kernel>'
-# you will need to install the target's kernel-devel package (rpm -i --ignorearch)
-# and have your environment setup as per cmake/README.cross_compilation
+# you will need to setup your your environment as per
+# cmake/README.cross_compilation
 
 
-%{!?kernel_version: %define kernel_version @UNAME_R@}
+%{!?kernel_version: %global kernel_version @UNAME_R@}
+%{!?kernel_dir: %global kernel_dir /usr/src/kernels/%{kernel_version}}
 %define krequires %(echo %{kernel_version} | sed "s/.%{_target_cpu}$//")
 %define ktag %(echo %{krequires} | tr '-' '_' | sed -e 's/\.el[0-9]*$//' | sed -e 's/\.\([a-zA-Z]\)/_\1/')
 
@@ -19,9 +20,6 @@ Summary: IHK/McKernel
 License: GPLv2
 Source0: mckernel-%{version}.tar.gz
 
-BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel
-BuildRequires: %kernel_module_package_buildreqs = %{krequires}
-
 # kernel_module_package macro does not handle cross build...
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
 %define cross_compile 1
@@ -29,6 +27,9 @@ Requires: kernel = %{krequires}
 Requires(post):   /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
 %else
+BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel
+BuildRequires: %kernel_module_package_buildreqs = %{krequires}
+
 %kernel_module_package %{?kmod_flavors}
 %endif
 
@@ -40,9 +41,9 @@ Interface for Heterogeneous Kernels and McKernel.
 
 %build
 %if 0%{?cross_compile}
-%{!?toolchain_file: %define toolchain_file cmake/cross-aarch64.cmake}
-%{!?build_target: %define build_target smp-arm64}
-%{!?cmake_libdir: %define cmake_libdir /usr/lib64}
+%{!?toolchain_file: %global toolchain_file cmake/cross-aarch64.cmake}
+%{!?build_target: %global build_target smp-arm64}
+%{!?cmake_libdir: %global cmake_libdir /usr/lib64}
 %endif
 
 # We need to remove ld flags like relro for the final mckernel.img link, as well as remove cflags for mckernel
@@ -51,10 +52,10 @@ Interface for Heterogeneous Kernels and McKernel.
 %define optflags -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic
 
 %cmake -DCMAKE_BUILD_TYPE=Release \
-        %{?kernel_version:-DUNAME_R=%{kernel_version}} \
-	%{?kernel_version:-DKERNEL_DIR=/usr/src/kernels/%{kernel_version}} \
+	-DUNAME_R=%{kernel_version} \
+	-DKERNEL_DIR=%{kernel_dir} \
 	%{?cmake_libdir:-DCMAKE_INSTALL_LIBDIR=%{cmake_libdir}} \
-        %{?build_target:-DBUILD_TARGET=%{build_target}} \
+	%{?build_target:-DBUILD_TARGET=%{build_target}} \
 	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
 	.
 %make_build
