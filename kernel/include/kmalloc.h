@@ -15,7 +15,7 @@
 
 #include "ihk/mm.h"
 #include "cls.h"
-#include "debug.h"
+#include <ihk/debug.h>
 
 #define kmalloc(size, flag) ({\
 void *r = _kmalloc(size, flag, __FILE__, __LINE__);\

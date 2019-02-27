@@ -11,32 +11,16 @@
  * HISTORY:
  */
 
-#if 0
-#include <ihk/cpu.h>
-#endif
-#include <ihk/debug.h>
 #include <ihk/lock.h>
-#if 0
-#include <ihk/mm.h>
-#include <ihk/types.h>
-#include <cls.h>
-#include <errno.h>
-#endif
 #include <kmalloc.h>
-#if 0
-#include <kmsg.h>
-#endif
 #include <memobj.h>
-#if 0
-#include <memory.h>
-#endif
 #include <page.h>	/* for allocate_pages() */
 #include <pager.h>
 #include <string.h>
 #include <syscall.h>
 #include <process.h>
 #include <rusage_private.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_DEVOBJ
 

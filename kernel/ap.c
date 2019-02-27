@@ -21,7 +21,6 @@
 #include <kmsg.h>
 #include <ihk/cpu.h>
 #include <ihk/mm.h>
-#include <ihk/debug.h>
 #include <process.h>
 #include <init.h>
 #include <march.h>
@@ -29,7 +28,7 @@
 #include <time.h>
 #include <syscall.h>
 #include <rusage_private.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_AP
 

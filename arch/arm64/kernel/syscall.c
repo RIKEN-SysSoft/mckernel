@@ -15,7 +15,7 @@
 #include <limits.h>
 #include <uio.h>
 #include <syscall.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 void terminate_mcexec(int, int);
 extern void ptrace_report_signal(struct thread *thread, int sig);

@@ -16,7 +16,6 @@
  */
 
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <ihk/mm.h>
 #include <types.h>
 #include <errno.h>
@@ -32,7 +31,7 @@
 #include <prctl.h>
 #include <page.h>
 #include <kmalloc.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 #define LAPIC_ID            0x020
 #define LAPIC_TIMER         0x320
