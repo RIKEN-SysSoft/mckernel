@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e06a4bb3_c3274f72",
+        "filename": "lib/include/ihk/debug.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-02-27T05:37:11Z",
+      "side": 1,
+      "message": "WARNING: Avoid crashing the kernel - try using WARN_ON \u0026 recovery code rather than BUG() or BUG_ON()\n+#define BUG_ON(condition) do {                         \\",
+      "revId": "1dd59932f8f3b7f9d32d3344b0d0c8e97813f8f9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
