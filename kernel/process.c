@@ -2380,11 +2380,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	p[s_ind--] = AT_PHENT;
 	p[s_ind--] = pn->at_phdr;  /* AT_PHDR */
 	p[s_ind--] = AT_PHDR;
-#ifdef POSTK_DEBUG_ARCH_DEP_50
 	p[s_ind--] = PAGE_SIZE; /* AT_PAGESZ */
-#else
-	p[s_ind--] = 4096; /* AT_PAGESZ */
-#endif /* POSTK_DEBUG_ARCH_DEP_50 */
 	p[s_ind--] = AT_PAGESZ;
 	p[s_ind--] = pn->at_clktck; /* AT_CLKTCK */
 	p[s_ind--] = AT_CLKTCK;
