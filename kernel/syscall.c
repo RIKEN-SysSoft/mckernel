@@ -7424,9 +7424,7 @@ SYSCALL_DECLARE(nanosleep)
 				ret = -EINTR;
 				break;
 			}
-#ifdef POSTK_DEBUG_ARCH_DEP_43
 			cpu_pause();
-#endif
 		}
 
 		if ((ret == -EINTR) && rem) {
