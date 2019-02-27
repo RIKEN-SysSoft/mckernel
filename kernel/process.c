@@ -2014,7 +2014,6 @@ retry:
 			page = phys_to_page(phys);
 		}
 	}
-#ifdef POSTK_DEBUG_ARCH_DEP_21
 	else if (!(range->flag & VR_PRIVATE)) { /*VR_SHARED*/
 		if (!(attr & PTATTR_DIRTY)) {
 			if (!(range->flag & VR_STACK)) {
@@ -2022,7 +2021,6 @@ retry:
 			}
 		}
 	}
-#endif /*POSTK_DEBUG_ARCH_DEP_21*/
 
 	/*****/
 	if (ptep && !pgsize_is_contiguous(pgsize)) {
