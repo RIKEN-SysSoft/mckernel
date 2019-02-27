@@ -187,7 +187,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mcreboot.1"
 
 configure_file(scripts/mckernel.spec.in scripts/mckernel.spec @ONLY)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${MCKERNEL_VERSION}")
-set(CPACK_SOURCE_IGNORE_FILES "/.git$")
+set(CPACK_SOURCE_IGNORE_FILES "/.git/;/build;/CMakeCache.txt$;/CMakeFiles$;/Makefile$")
 set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${IHK_FULL_SOURCE_DIR};/ihk;${CMAKE_BINARY_DIR}/scripts;/scripts")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 include(CPack)
