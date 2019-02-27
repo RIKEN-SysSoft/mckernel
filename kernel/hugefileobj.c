@@ -3,7 +3,7 @@
 #include <kmsg.h>
 #include <kmalloc.h>
 #include <string.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 #if DEBUG_HUGEFILEOBJ
 #undef DDEBUG_DEFAULT

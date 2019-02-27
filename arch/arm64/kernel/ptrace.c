@@ -11,8 +11,8 @@
 #include <hwcap.h>
 #include <string.h>
 #include <thread_info.h>
-#include <debug.h>
 #include <ptrace.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_SC
 

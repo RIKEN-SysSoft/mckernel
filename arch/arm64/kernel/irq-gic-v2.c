@@ -7,7 +7,7 @@
 #include <memory.h>
 #include <affinity.h>
 #include <syscall.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <arch-timer.h>
 #include <cls.h>
 

@@ -14,7 +14,6 @@
 #include <ihk/cpu.h>
 #include <cpulocal.h>
 #include <ihk/mm.h>
-#include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <errno.h>
 #include <cls.h>
@@ -22,7 +21,7 @@
 #include <kmalloc.h>
 #include <process.h>
 #include <swapfmt.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 #define O_RDONLY	00000000
 #define O_WRONLY	00000001

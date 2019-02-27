@@ -28,7 +28,6 @@
 #include <ihk/cpu.h>
 #include <cpulocal.h>
 #include <ihk/mm.h>
-#include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <errno.h>
 #include <cls.h>
@@ -59,7 +58,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <profile.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include "../executer/include/uti.h"
 
 /* Headers taken from kitten LWK */

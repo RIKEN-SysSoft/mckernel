@@ -18,10 +18,9 @@
 #include <psci.h>
 #include <errno.h>
 #include <ihk/types.h>
-#include <ihk/debug.h>
 #include <compiler.h>
 #include <lwk/compiler.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_PSCI
 

@@ -2,7 +2,6 @@
 #include <cputype.h>
 #include <irqflags.h>
 #include <ihk/context.h>
-#include <ihk/debug.h>
 #include <signal.h>
 #include <errno.h>
 #include <debug-monitors.h>

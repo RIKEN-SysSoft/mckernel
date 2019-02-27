@@ -23,7 +23,7 @@
 #include <sysfs.h>
 #include <sysfs_msg.h>
 #include <vsprintf.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 static size_t sysfs_data_bufsize;
 static void *sysfs_data_buf;

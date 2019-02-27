@@ -17,7 +17,6 @@
 #include <ihk/cpu.h>
 #include <cpulocal.h>
 #include <ihk/mm.h>
-#include <ihk/debug.h>
 #include <ihk/ikc.h>
 #include <errno.h>
 #include <cls.h>
@@ -39,7 +38,7 @@
 #include <limits.h>
 #include <march.h>
 #include <process.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 extern char *syscall_name[];
 
