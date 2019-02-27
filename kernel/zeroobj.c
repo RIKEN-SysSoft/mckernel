@@ -11,7 +11,6 @@
  */
 
 #include <ihk/atomic.h>
-#include <ihk/debug.h>
 #include <ihk/lock.h>
 #include <ihk/mm.h>
 #include <errno.h>
@@ -21,7 +20,7 @@
 #include <memory.h>
 #include <page.h>
 #include <string.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 struct zeroobj {
 	struct memobj		memobj;		/* must be first */

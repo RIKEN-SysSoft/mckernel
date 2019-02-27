@@ -4,6 +4,7 @@
 #define __ASM_TRAP_H
 
 #include <types.h>
+#include <arch-lock.h>
 
 struct pt_regs;
 

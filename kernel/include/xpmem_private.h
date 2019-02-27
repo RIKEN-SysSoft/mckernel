@@ -26,7 +26,7 @@
 
 #include <mc_xpmem.h>
 #include <xpmem.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 #define XPMEM_CURRENT_VERSION           0x00026003
 

@@ -6,7 +6,7 @@
 #include <cputype.h>
 #include <process.h>
 #include <syscall.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <arch-timer.h>
 #include <cls.h>
 

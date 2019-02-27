@@ -23,7 +23,6 @@
 #include <kmalloc.h>
 #include <ihk/cpu.h>
 #include <ihk/mm.h>
-#include <ihk/debug.h>
 #include <ihk/dma.h>
 #include <ihk/perfctr.h>
 #include <process.h>
@@ -32,7 +31,7 @@
 #include <syscall.h>
 #include <sysfs.h>
 #include <ihk/monitor.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <rusage.h>
 
 //#define IOCTL_FUNC_EXTENSION

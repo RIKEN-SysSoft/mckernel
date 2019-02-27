@@ -1,6 +1,5 @@
 /* memory.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <ihk/mm.h>
 #include <types.h>
 #include <memory.h>
@@ -14,7 +13,7 @@
 #include <context.h>
 #include <kmalloc.h>
 #include <vdso.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <rusage_private.h>
 #include <cputype.h>
 

@@ -9,7 +9,7 @@
 #include <prctl.h>
 #include <cpufeature.h>
 #include <kmalloc.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <process.h>
 #include <bitmap.h>
 

@@ -1,6 +1,5 @@
 /* cpu.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <ihk/mm.h>
 #include <types.h>
 #include <errno.h>
@@ -30,7 +29,7 @@
 #include <debug-monitors.h>
 #include <sysreg.h>
 #include <cpufeature.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <hwcap.h>
 #include <virt.h>
 

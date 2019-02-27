@@ -11,7 +11,6 @@
  */
 
 #include <ihk/atomic.h>
-#include <ihk/debug.h>
 #include <ihk/lock.h>
 #include <ihk/mm.h>
 #include <errno.h>
@@ -23,7 +22,7 @@
 #include <shm.h>
 #include <string.h>
 #include <rusage_private.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 
 static LIST_HEAD(shmobj_list_head);

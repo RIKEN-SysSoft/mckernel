@@ -70,7 +70,7 @@
 #include <cls.h>
 #include <kmsg.h>
 #include <timer.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <syscall.h>
 
 //#define DEBUG_PRINT_FUTEX

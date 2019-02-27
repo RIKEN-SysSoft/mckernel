@@ -11,10 +11,9 @@
 #include <process.h>
 #include <string.h>
 #include <syscall.h>
-#include <ihk/debug.h>
 #include <ikc/queue.h>
 #include <vdso.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG_PRINT_VDSO
 

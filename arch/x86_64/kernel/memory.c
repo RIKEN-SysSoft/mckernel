@@ -14,7 +14,6 @@
  */
 
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <ihk/mm.h>
 #include <types.h>
 #include <memory.h>
@@ -26,7 +25,7 @@
 #include <cls.h>
 #include <kmalloc.h>
 #include <rusage_private.h>
-#include <debug.h>
+#include <ihk/debug.h>
 
 //#define DEBUG
 

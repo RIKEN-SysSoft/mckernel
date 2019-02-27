@@ -13,13 +13,13 @@
 #include <stdarg.h>
 #include <string.h>
 #include <kmsg.h>
+#include <ihk/ihk_debug.h>
 #include <ihk/cpu.h>
-#include <ihk/debug.h>
 #include <ihk/lock.h>
 #include <ihk/monitor.h>
 #include <errno.h>
 #include <sysfs.h>
-#include <debug.h>
+#include <ihk/debug.h>
 #include <limits.h>
 
 struct ihk_kmsg_buf *kmsg_buf;
