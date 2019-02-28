@@ -50,7 +50,6 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	return total;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 uintptr_t virt_to_phys(uintptr_t va)
 {
 	extern uintptr_t kernel_base;
@@ -64,5 +63,4 @@ uintptr_t virt_to_phys(uintptr_t va)
 	}
 	return NOPHYS;
 } /* virt_to_phys() */
-#endif /* POSTK_DEBUG_ARCH_DEP_34 */
 

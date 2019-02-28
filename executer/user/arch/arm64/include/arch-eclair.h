@@ -58,8 +58,6 @@ struct arch_kregs {
 	unsigned long fp, sp, pc;
 };
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 uintptr_t virt_to_phys(uintptr_t va);
-#endif /* POSTK_DEBUG_ARCH_DEP_34 */
 
 #endif	/* HEADER_USER_ARM64_ECLAIR_H */

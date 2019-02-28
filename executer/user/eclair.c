@@ -57,11 +57,7 @@ struct thread_info {
 	int idle;
 	uintptr_t process;
 	uintptr_t clv;
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 	uintptr_t arch_clv;
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-	uintptr_t x86_clv;
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 }; /* struct thread_info */
 
 static struct options opt;
@@ -73,17 +69,10 @@ static dump_mem_chunks_t *mem_chunks;
 static int num_processors = -1;
 static asymbol **symtab = NULL;
 static ssize_t nsyms;
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 uintptr_t kernel_base;
-#else /* POSTK_DEBUG_ARCH_DEP_34 */
-static uintptr_t kernel_base;
-#endif /* POSTK_DEBUG_ARCH_DEP_34 */
 static struct thread_info *tihead = NULL;
 static struct thread_info **titailp = &tihead;
 static struct thread_info *curr_thread = NULL;
-#ifndef POSTK_DEBUG_ARCH_DEP_34
-static uintptr_t ihk_mc_switch_context = -1;
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 uintptr_t lookup_symbol(char *name) {
 	int i;
@@ -96,27 +85,6 @@ uintptr_t lookup_symbol(char *name) {
 #define NOSYMBOL ((uintptr_t)-1)
 	return NOSYMBOL;
 } /* lookup_symbol() */
-
-#ifndef POSTK_DEBUG_ARCH_DEP_34
-#define NOPHYS ((uintptr_t)-1)
-
-static uintptr_t virt_to_phys(uintptr_t va) {
-	if (va >= MAP_KERNEL_START) {
-		return va - MAP_KERNEL_START + kernel_base;
-	}
-	else if (va >= LINUX_PAGE_OFFSET) {
-		return va - LINUX_PAGE_OFFSET;
-	}
-	else if (va >= MAP_FIXED_START) {
-		return va - MAP_FIXED_START;
-	}
-	else if (va >= MAP_ST_START) {
-		return va - MAP_ST_START;
-	}
-
-	return NOPHYS;
-} /* virt_to_phys() */
-#endif /* !POSTK_DEBUG_ARCH_DEP_34 */
 
 static int read_physmem(uintptr_t pa, void *buf, size_t size) {
 	off_t off;
@@ -302,17 +270,9 @@ static int setup_threads(void) {
 		return 1;
 	}
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 	error = read_symbol_64(ARCH_CLV_SPAN, &locals_span);
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-	error = read_symbol_64("x86_cpu_local_variables_span", &locals_span);
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 	if (error) {
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 		locals_span = sysconf(_SC_PAGESIZE);
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-		locals_span = 4096;
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 	}
 	if (0) printf("locals 0x%lx span 0x%lx\n", locals, locals_span);
 
@@ -321,11 +281,6 @@ static int setup_threads(void) {
 		perror("clv");
 		return 1;
 	}
-
-#ifndef POSTK_DEBUG_ARCH_DEP_34
-	ihk_mc_switch_context = lookup_symbol("ihk_mc_switch_context");
-	if (0) printf("ihk_mc_switch_context: %lx\n", ihk_mc_switch_context);
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 	for (cpu = 0; cpu < num_processors; ++cpu) {
 		uintptr_t v;
@@ -396,11 +351,7 @@ static int setup_threads(void) {
 			ti->process = thread;
 			ti->idle = 0;
 			ti->clv = v;
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 			ti->arch_clv = locals + locals_span*cpu;
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-			ti->x86_clv = locals + locals_span*cpu;
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 			*titailp = ti;
 			titailp = &ti->next;
@@ -476,11 +427,7 @@ static int setup_threads(void) {
 			ti->process = thread;
 			ti->idle = 1;
 			ti->clv = v;
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 			ti->arch_clv = locals + locals_span*cpu;
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-			ti->x86_clv = locals + locals_span*cpu;
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 			*titailp = ti;
 			titailp = &ti->next;
@@ -534,11 +481,7 @@ static int setup_threads(void) {
 			ti->process = current;
 			ti->idle = 1;
 			ti->clv = v;
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 			ti->arch_clv = locals + locals_span*cpu;
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-			ti->x86_clv = locals + locals_span*cpu;
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 			*titailp = ti;
 			titailp = &ti->next;
@@ -560,11 +503,7 @@ static int setup_symbols(char *fname) {
 	ssize_t needs;
 	bfd_boolean ok;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 	symbfd = bfd_openr(fname, NULL);
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-	symbfd = bfd_openr(fname, "elf64-x86-64");
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 
 	if (!symbfd) {
 		bfd_perror("bfd_openr");
@@ -611,11 +550,7 @@ static int setup_dump(char *fname) {
 	char physmem_name[PHYSMEM_NAME_SIZE];
 	int i;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 	dumpbfd = bfd_fopen(opt.dump_path, NULL, "r", -1);
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-	dumpbfd = bfd_fopen(opt.dump_path, "elf64-x86-64", "r", -1);
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 	if (!dumpbfd) {
 		bfd_perror("bfd_fopen");
 		return 1;
@@ -773,17 +708,10 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			rbp += sprintf(rbp, "1");
 		}
 		else if (!strncmp(p, "qXfer:features:read:target.xml:", 31)) {
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 			char *str =
 				"<target version=\"1.0\">"
 				"<architecture>"ARCH"</architecture>"
 				"</target>";
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-			char *str =
-				"<target version=\"1.0\">"
-				"<architecture>i386:x86-64</architecture>"
-				"</target>";
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 			rbp += sprintf(rbp, "l");
 			if (0)
 			rbp += print_hex(rbp, res_size, str);
@@ -810,21 +738,12 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			}
 			else {
 				int error;
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 				uintptr_t regs[ARCH_REGS];
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-				uintptr_t regs[21];
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 				uint8_t *pu8;
 				int i;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 				error = read_mem(curr_thread->arch_clv+PANIC_REGS_OFFSET,
 						&regs, sizeof(regs));
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-				error = read_mem(curr_thread->x86_clv+240,
-						&regs, sizeof(regs));
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 				if (error) {
 					perror("read_mem");
 					break;
@@ -871,17 +790,10 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			rbp += sprintf(rbp, "T0;tnotrun:0");
 		}
 		else if (!strncmp(p, "qXfer:memory-map:read::", 23)) {
-#ifdef POSTK_DEBUG_ARCH_DEP_34
 			char *str =
 				"<memory-map>"
 				"<memory type=\"rom\" start=\""MAP_KERNEL_TEXT"\" length=\"0x27000\"/>"
 				"</memory-map>";
-#else	/* POSTK_DEBUG_ARCH_DEP_34 */
-			char *str =
-				"<memory-map>"
-				"<memory type=\"rom\" start=\"0xffffffff80001000\" length=\"0x27000\"/>"
-				"</memory-map>";
-#endif	/* POSTK_DEBUG_ARCH_DEP_34 */
 			rbp += sprintf(rbp, "l");
 			if (0)
 			rbp += print_hex(rbp, res_size, str);
