@@ -4,6 +4,8 @@ if(ARCH STREQUAL "x86_64")
 	set(ARCH_C_FLAGS "-mno-red-zone -mcmodel=kernel")
 endif()
 
+set(MCEXEC_PATH "${CMAKE_INSTALL_FULL_BINDIR}/mcexec" CACHE STRING "mcexec path for binfmt")
+
 kmod(mcctrl
 	C_FLAGS
 		-I${IHK_FULL_SOURCE_DIR}/linux/include
@@ -16,7 +18,7 @@ kmod(mcctrl
 		-I${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/include
 		-I${PROJECT_BINARY_DIR}
 		-I${PROJECT_SOURCE_DIR}/kernel/include
-		-DMCEXEC_PATH=\\"${CMAKE_INSTALL_FULL_BINDIR}/mcexec\\"
+		-DMCEXEC_PATH=\\"${MCEXEC_PATH}\\"
 		${ARCH_C_FLAGS}
 	SOURCES
 		driver.c control.c ikc.c syscall.c procfs.c binfmt_mcexec.c

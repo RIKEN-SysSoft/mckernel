@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <pthread.h>
@@ -20,12 +21,11 @@
 #include "../include/qlmpi.h"
 #include "../include/md5.h"
 
-#define MCEXEC "mcexec"
 #define QL_PIPE_PATH "/tmp/"
 #define QL_PIPE_IN_EXTENTION ".in"
 #define QL_PIPE_OUT_EXTENTION ".out"
-#define QL_SERVER_EXECUTION SBINDIR "/ql_server"
-#define QL_TALKER_EXECUTION SBINDIR "/ql_talker"
+char *bindir;
+char *mcexec_path;
 
 extern char **environ;
 
@@ -279,7 +279,7 @@ term_server()
 {
 	char buf[1024];
 
-	sprintf(buf,"ssh %s %s %c %s %s %s", target_host, QL_TALKER_EXECUTION,
+	sprintf(buf,"ssh %s %s/ql_talker %c %s %s %s", target_host, bindir,
 	        QL_RET_FINAL, "-n", ql_name ,ql_sock_file);
 	system(buf);
 }
@@ -702,6 +702,28 @@ int main(int argc, char *argv[])
 	int f_flg = 0;
 #endif
 
+	rc = readlink("/proc/self/exe", bindir, PATH_MAX);
+	if (rc >= PATH_MAX) {
+		fprintf(stderr, "/proc/self/exe path too long\n");
+		exit(1);
+	}
+	bindir[rc] = 0;
+
+	ptr = strrchr(bindir, '/');
+	if (!ptr) {
+		fprintf(stderr, "invalid executable path: %s\n", bindir);
+		exit(1);
+	} else if (ptr == bindir) {
+		bindir[1] = 0;
+	} else {
+		ptr = 0;
+	}
+
+	if (snprintf(mcexec_path, PATH_MAX, "%s/mcexec", bindir) >= PATH_MAX) {
+		fprintf(stderr, "mcexec path to long\n");
+		exit(1);
+	}
+
 	for (a = environ, n = 0; *a; a++, n++);
 	for (a = argv; *a; a++) {
 		if (!strcmp(*a, "-genv") ||
@@ -898,7 +920,7 @@ int main(int argc, char *argv[])
 #endif
 
 #ifndef QL_MPIEXEC_FINALIZE
-	sprintf(tmp, "ssh %s ""%s %s %s""", target_host, QL_SERVER_EXECUTION ,ql_sock_path ,ql_file);
+	sprintf(tmp, "ssh %s ""%s/ql_server %s %s""", target_host, bindir ,ql_sock_path ,ql_file);
 
 #ifdef QL_DEBUG
 	printf(" system   %s\n", tmp);
@@ -965,7 +987,7 @@ int main(int argc, char *argv[])
 			for (a = mpi_opt_top, b = args + 1; a != usr_opt_top;
 			     a++)
 				*(b++) = *a;
-			*(b++) = BINDIR "/mcexec";
+			*(b++) = mcexec_path;
 			for (; *a; a++)
 				*(b++) = *a;
 			*b = NULL;
@@ -1029,21 +1051,21 @@ int main(int argc, char *argv[])
 		exit(1);
 
 #ifdef QL_MPIEXEC_FINALIZE
-	sprintf(tmp,"ssh %s %s %c %s %s %s",
-	        target_host, QL_TALKER_EXECUTION, QL_RET_RESUME, "-n", ql_name , ql_sock_file);
+	sprintf(tmp,"ssh %s %s/ql_talker %c %s %s %s",
+	        target_host, bindir, QL_RET_RESUME, "-n", ql_name , ql_sock_file);
 	rc = system(tmp);
 	write(wfd, "F", 1);
 #else
 	if (f_flg == 1) {
-		sprintf(tmp,"ssh %s %s %c %c %s %s",
-		        target_host, QL_TALKER_EXECUTION, QL_COM_CONN,
+		sprintf(tmp,"ssh %s %s/ql_talker %c %c %s %s",
+		        target_host, bindir, QL_COM_CONN,
 		        QL_EXEC_END, ql_name ,ql_sock_file);
 		rc = system(tmp);
 		/* send N and recv E */
 	}
 	else{
-		sprintf(tmp,"ssh %s %s %c %c %s %s",
-		        target_host, QL_TALKER_EXECUTION, QL_RET_RESUME,
+		sprintf(tmp,"ssh %s %s/ql_talker %c %c %s %s",
+		        target_host, bindir, QL_RET_RESUME,
 		        QL_EXEC_END, ql_name , ql_sock_file);
 		rc = system(tmp);
 		/* send R and recv E */
