@@ -16,7 +16,7 @@
 #include <getopt.h>
 #include <errno.h>
 
-#include <ihklib.h>
+#include <ihk/ihklib.h>
 #include <ihk/ihk_host_user.h>
 #include <ihk/ihk_rusage.h>	// ihk_os_rusage is defined here
 
