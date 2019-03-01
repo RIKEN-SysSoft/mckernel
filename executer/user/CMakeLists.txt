@@ -57,7 +57,7 @@ if (ENABLE_QLMPI)
 endif()
 
 if (ENABLE_UTI)
-	add_library(mck_syscall_intercept SHARED arch/${ARCH}/archdep_c.c)
+	add_library(mck_syscall_intercept SHARED syscall_intercept.c arch/${ARCH}/archdep_c.c)
 	target_link_libraries(mck_syscall_intercept ${LIBSYSCALL_INTERCEPT})
 	set_target_properties(mck_syscall_intercept PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
