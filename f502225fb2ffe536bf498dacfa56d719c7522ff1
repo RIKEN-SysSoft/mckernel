@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "291abe24_79134b15",
+        "filename": "arch/arm64/kernel/local.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-01T08:11:19Z",
+      "side": 1,
+      "message": "read_cpuid_mpidr() for cpu#7 on apollo returned 0x81000700, when masked 0x700 -- this is missing a shift\n\nThis not failing on VMs means that it\u0027s not working there either, probably... We\u0027re lucky the test is reversed, this could well have worked by mistake :/",
+      "revId": "f502225fb2ffe536bf498dacfa56d719c7522ff1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "802ce10c_31707bd5",
+        "filename": "arch/arm64/kernel/local.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-01T08:11:19Z",
+      "side": 1,
+      "message": "HWID_BITS is too big (0x700 is 1792 and didn\u0027t fail), can\u0027t we get the actual number of cores at runtime somehow to have an easier cap",
+      "revId": "f502225fb2ffe536bf498dacfa56d719c7522ff1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "76236e34_816a1d74",
+        "filename": "arch/arm64/kernel/local.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-01T08:11:19Z",
+      "side": 1,
+      "message": "this (at least) need to check if the return value was \u003c 0 before accessing the array...",
+      "revId": "f502225fb2ffe536bf498dacfa56d719c7522ff1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
