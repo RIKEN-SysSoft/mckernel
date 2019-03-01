@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "429f3636_56865921",
+        "filename": "executer/user/arch/arm64/archdep_c.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-01T06:51:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+long uti_syscall6(long syscall_number, long arg0, long arg1, long arg2, long arg3, long arg4, long arg5)",
+      "revId": "abeac88206695c3f6150f0c7e42411589dcfb63f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c832dae_3f8baa9b",
+        "filename": "executer/user/arch/arm64/archdep_c.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-01T06:51:52Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tlong ret;\n+\tasm volatile(",
+      "revId": "abeac88206695c3f6150f0c7e42411589dcfb63f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ffcac78_9b162670",
+        "filename": "executer/user/arch/arm64/archdep_c.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-01T06:51:52Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tlong ret;\n+\tasm volatile(",
+      "revId": "abeac88206695c3f6150f0c7e42411589dcfb63f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "17e74c5d_faa8203f",
+        "filename": "executer/user/arch/arm64/archdep_c.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-01T06:51:52Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tlong ret;\n+\tasm volatile(",
+      "revId": "abeac88206695c3f6150f0c7e42411589dcfb63f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c66abf05_4eaa04b4",
+        "filename": "executer/user/arch/arm64/archdep_c.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-01T06:51:52Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tlong ret;\n+\tasm volatile(",
+      "revId": "abeac88206695c3f6150f0c7e42411589dcfb63f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
