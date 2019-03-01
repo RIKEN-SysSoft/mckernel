@@ -104,8 +104,12 @@ hook(long syscall_number,
 		uti_syscall3(__NR_ioctl, uti_desc.fd, MCEXEC_UP_TERMINATE_THREAD, (long)&term_desc);
 		return 1;
 	case __NR_clone:
+#ifdef __NR_fork
 	case __NR_fork:
+#endif /* __NR_fork */
+#ifdef __NR_vfork
 	case __NR_vfork:
+#endif /* __NR_vfork */
 	case __NR_execve:
 		*result = -ENOSYS;
 		return 0;
