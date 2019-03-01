@@ -1975,7 +1975,7 @@ opendev()
 }
 
 #define LD_PRELOAD_PREPARE(name) do { \
-		sprintf(elembuf, "%s%s/" name, nelem > 0 ? ":" : "", MCKERNEL_LIBDIR); \
+		sprintf(elembuf, "%s%s/" name, nelem > 0 ? ":" : "", libdir); \
 	} while (0)
 
 #define LD_PRELOAD_APPEND do {	\
@@ -1988,6 +1988,57 @@ opendev()
 		nelem++; \
 	} while (0)
 
+static ssize_t find_libdir(char *libdir, size_t len)
+{
+	FILE *filep;
+	ssize_t rc;
+	size_t linelen = 0;
+	char *line = NULL;
+	char *ihklib, *slash;
+
+	filep = fopen("/proc/self/maps", "r");
+	if (!filep) {
+		rc = -errno;
+		fprintf(stderr, "could not open /proc/self/maps: %d\n", -rc);
+		return rc;
+	}
+
+	while ((rc = getline(&line, &linelen, filep)) > 0) {
+		ihklib = strstr(line, "libihk.so");
+		if (ihklib)
+			break;
+	}
+	if (!ihklib) {
+		fprintf(stderr, "mcexec does not have libihk.so loaded?\n");
+		rc = -ENOENT;
+		goto out;
+	}
+
+	slash = strchr(line, '/');
+	if (!slash) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	/* leave / iff root of filesystem */
+	if (slash + 1 != ihklib)
+		ihklib--;
+
+	*ihklib = 0;
+
+	rc = snprintf(libdir, len, "%s", slash);
+
+	if (rc > len) {
+		rc = -ERANGE;
+		goto out;
+	}
+
+out:
+	fclose(filep);
+	free(line);
+	return rc;
+}
+
 static void ld_preload_init()
 {
 	char envbuf[PATH_MAX];
@@ -1995,6 +2046,12 @@ static void ld_preload_init()
 	size_t remainder = PATH_MAX;
 	int nelem = 0;
 	char elembuf[PATH_MAX];
+	char libdir[PATH_MAX];
+
+	if (find_libdir(libdir, sizeof(libdir)) < 0) {
+		fprintf(stderr, "warning: did not set LD_PRELOAD\n");
+		return;
+	}
 
 	memset(envbuf, 0, PATH_MAX);
 

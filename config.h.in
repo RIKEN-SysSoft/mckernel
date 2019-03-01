@@ -30,15 +30,6 @@
 /* Path of bind-mount source directory */
 #cmakedefine ROOTFSDIR "${ROOTFSDIR}"
 
-/* Path of install directory for libraries */
-#cmakedefine MCKERNEL_LIBDIR "${MCKERNEL_LIBDIR}"
-
-/* Path of install directory for binary */
-#cmakedefine BINDIR "${BINDIR}"
-
-/* Path of install directory for system binary */
-#cmakedefine SBINDIR "${SBINDIR}"
-
 /* for non-RHEL kernels */
 #ifndef RHEL_RELEASE_VERSION
 #define RHEL_RELEASE_VERSION(a,b) (((a) << 8) + (b))
