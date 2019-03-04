@@ -8,7 +8,7 @@ void eventfd(int type);
 void arch_print_stack(void);
 void arch_cpu_stop(void);
 
-void panic(const char *msg)
+void __noreturn panic(const char *msg)
 {
 	if (clv) {
 		struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);

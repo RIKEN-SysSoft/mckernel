@@ -3,7 +3,7 @@
 
 #include "lwk/compiler.h"
 
-void panic(const char *);
+void __noreturn panic(const char *);
 
 /* when someone has a lot of time, add attribute __printf(1, 2) to kprintf */
 int kprintf(const char *format, ...);
