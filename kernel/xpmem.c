@@ -1772,7 +1772,7 @@ int xpmem_fault_process_memory_range(
 	struct xpmem_attachment *att;
 	struct xpmem_segment *seg;
 	size_t pgsize;
-	struct mcs_rwlock_node_irqsave at_lock;
+	struct mcs_rwlock_node_irqsave at_lock = { 0 };
 	int att_locked = 0;
 
 	XPMEM_DEBUG("call: vmr=0x%p, vaddr=0x%lx, reason=0x%lx", 
