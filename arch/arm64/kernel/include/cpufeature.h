@@ -67,21 +67,12 @@ struct arm64_cpu_capabilities {
 	int def_scope;/* default scope */
 	int (*matches)(const struct arm64_cpu_capabilities *caps, int scope);
 	int (*enable)(void *);/* Called on all active CPUs */
-	union {
-		struct {/* To be used for erratum handling only */
-			uint32_t midr_model;
-			uint32_t midr_range_min, midr_range_max;
-		};
-
-		struct {/* Feature register checking */
-			uint32_t sys_reg;
-			uint8_t field_pos;
-			uint8_t min_field_value;
-			uint8_t hwcap_type;
-			int sign;
-			unsigned long hwcap;
-		};
-	};
+	uint32_t sys_reg;
+	uint8_t field_pos;
+	uint8_t min_field_value;
+	uint8_t hwcap_type;
+	int sign;
+	unsigned long hwcap;
 };
 
 /* @ref.impl include/linux/bitops.h */
