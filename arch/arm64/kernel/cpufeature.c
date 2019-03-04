@@ -970,7 +970,7 @@ static const struct arm64_cpu_capabilities arm64_elf_hwcaps[] = {
 #ifdef CONFIG_ARM64_SVE
 	HWCAP_CAP(SYS_ID_AA64PFR0_EL1, ID_AA64PFR0_SVE_SHIFT, FTR_UNSIGNED, 1, CAP_HWCAP, HWCAP_SVE),
 #endif
-	{},
+	{ 0 },
 };
 
 /* @ref.impl arch/arm64/kernel/cpufeature.c */

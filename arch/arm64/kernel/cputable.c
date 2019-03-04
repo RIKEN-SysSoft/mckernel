@@ -10,5 +10,5 @@ struct cpu_info cpu_table[] = {
 		.cpu_name	= "AArch64 Processor",
 		.cpu_setup	= __cpu_setup,
 	},
-	{ /* Empty */ },
+	{ 0 },
 };
