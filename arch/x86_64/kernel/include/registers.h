@@ -71,7 +71,7 @@
 #define MSR_PERF_CTL_0 0xc0010000
 #define MSR_PERF_CTR_0 0xc0010004
 
-static unsigned long xgetbv(unsigned int index)
+static inline unsigned long xgetbv(unsigned int index)
 {
 	unsigned int low, high;
 
@@ -80,7 +80,7 @@ static unsigned long xgetbv(unsigned int index)
 	return low | ((unsigned long)high << 32);
 }
 
-static void xsetbv(unsigned int index, unsigned long val)
+static inline void xsetbv(unsigned int index, unsigned long val)
 {
 	unsigned int low, high;
 
@@ -90,7 +90,8 @@ static void xsetbv(unsigned int index, unsigned long val)
 	asm volatile("xsetbv" : : "a" (low), "d" (high), "c" (index));
 }
 
-static void wrmsr(unsigned int idx, unsigned long value){
+static inline void wrmsr(unsigned int idx, unsigned long value)
+{
 	unsigned int high, low;
 
 	high = value >> 32;
@@ -99,7 +100,7 @@ static void wrmsr(unsigned int idx, unsigned long value){
 	asm volatile("wrmsr" : : "c" (idx), "a" (low), "d" (high) : "memory");
 }
 
-static unsigned long rdpmc(unsigned int counter)
+static inline unsigned long rdpmc(unsigned int counter)
 {
 	unsigned int high, low;
 
@@ -108,7 +109,7 @@ static unsigned long rdpmc(unsigned int counter)
 	return (unsigned long)high << 32 | low;
 }
 
-static unsigned long rdmsr(unsigned int index)
+static inline unsigned long rdmsr(unsigned int index)
 {
 	unsigned int high, low;
 
@@ -117,7 +118,7 @@ static unsigned long rdmsr(unsigned int index)
 	return (unsigned long)high << 32 | low;
 }
 
-static unsigned long rdtsc(void)
+static inline unsigned long rdtsc(void)
 {
 	unsigned int high, low;
 
@@ -126,7 +127,7 @@ static unsigned long rdtsc(void)
 	return (unsigned long)high << 32 | low;
 }
 
-static void set_perfctl(int counter, int event, int mask)
+static inline void set_perfctl(int counter, int event, int mask)
 {
 	unsigned long value;
 
@@ -137,7 +138,7 @@ static void set_perfctl(int counter, int event, int mask)
 	wrmsr(MSR_PERF_CTL_0 + counter, value);
 }
 
-static void start_perfctr(int counter)
+static inline void start_perfctr(int counter)
 {
 	unsigned long value;
 
@@ -145,7 +146,7 @@ static void start_perfctr(int counter)
 	value |= (1 << 22);
 	wrmsr(MSR_PERF_CTL_0 + counter, value);
 }
-static void stop_perfctr(int counter)
+static inline void stop_perfctr(int counter)
 {
 	unsigned long value;
 
@@ -154,17 +155,17 @@ static void stop_perfctr(int counter)
 	wrmsr(MSR_PERF_CTL_0 + counter, value);
 }
 
-static void clear_perfctl(int counter)
+static inline void clear_perfctl(int counter)
 {
 	wrmsr(MSR_PERF_CTL_0 + counter, 0);
 }
 
-static void set_perfctr(int counter, unsigned long value)
+static inline void set_perfctr(int counter, unsigned long value)
 {
 	wrmsr(MSR_PERF_CTR_0 + counter, value);
 }
 
-static unsigned long read_perfctr(int counter)
+static inline unsigned long read_perfctr(int counter)
 {
 	return rdpmc(counter);
 }

@@ -25,7 +25,7 @@ static inline void wmb(void)
 	arch_barrier();
 }
 
-static unsigned long read_tsc(void)
+static inline unsigned long read_tsc(void)
 {
 	unsigned int low, high;
 
