@@ -1621,7 +1621,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 {
 	struct clear_range_args *args = args0;
 	int error;
-	uint64_t phys;
+	uint64_t phys = 0;
 	pte_t old;
 	struct page *page;
 	struct page_table *pt;

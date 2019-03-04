@@ -74,10 +74,10 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		char *envs, int envs_len) 
 {
 	char *args_envs, *args_envs_r;
-	unsigned long args_envs_p, args_envs_rp, envs_offset;
+	unsigned long args_envs_p, args_envs_rp = 0, envs_offset;
 	unsigned long s, e, up;
 	char **argv;
-	int i, n, argc, envc, args_envs_npages;
+	int i, n, argc, envc, args_envs_npages = 0;
 	char **env;
 	int range_npages;
 	void *up_v;
