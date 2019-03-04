@@ -33,7 +33,7 @@ extern void preempt_disable(void);
 
 #define IHK_STATIC_SPINLOCK_FUNCS
 
-static void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
+static inline void ihk_mc_spinlock_init(ihk_spinlock_t *lock)
 {
 	lock->head_tail = 0;
 }
@@ -50,7 +50,7 @@ rc = __ihk_mc_spinlock_trylock_noirq(l); \
 #define ihk_mc_spinlock_trylock_noirq __ihk_mc_spinlock_trylock_noirq
 #endif
 
-static int __ihk_mc_spinlock_trylock_noirq(ihk_spinlock_t *lock)
+static inline int __ihk_mc_spinlock_trylock_noirq(ihk_spinlock_t *lock)
 {
 	ihk_spinlock_t cur = { .head_tail = lock->head_tail };
 	ihk_spinlock_t next = { .tickets.head = cur.tickets.head, .tickets.tail = cur.tickets.tail + 2 };
@@ -80,7 +80,8 @@ __kprintf("[%d] ret ihk_mc_spinlock_trylock\n", ihk_mc_get_processor_id()); rc;\
 #else
 #define ihk_mc_spinlock_trylock __ihk_mc_spinlock_trylock
 #endif
-static unsigned long __ihk_mc_spinlock_trylock(ihk_spinlock_t *lock, int *result)
+static inline unsigned long __ihk_mc_spinlock_trylock(ihk_spinlock_t *lock,
+						      int *result)
 {
 	unsigned long flags;
 	
@@ -101,7 +102,7 @@ __kprintf("[%d] ret ihk_mc_spinlock_lock_noirq\n", ihk_mc_get_processor_id()); \
 #define ihk_mc_spinlock_lock_noirq __ihk_mc_spinlock_lock_noirq
 #endif
 
-static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
+static inline void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 {
 	register struct __raw_tickets inc = { .tail = 0x0002 };
 
@@ -132,7 +133,7 @@ __kprintf("[%d] ret ihk_mc_spinlock_lock\n", ihk_mc_get_processor_id()); rc;\
 #else
 #define ihk_mc_spinlock_lock __ihk_mc_spinlock_lock
 #endif
-static unsigned long __ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
+static inline unsigned long __ihk_mc_spinlock_lock(ihk_spinlock_t *lock)
 {
 	unsigned long flags;
 	
@@ -152,7 +153,7 @@ __kprintf("[%d] ret ihk_mc_spinlock_unlock_noirq\n", ihk_mc_get_processor_id());
 #else
 #define ihk_mc_spinlock_unlock_noirq __ihk_mc_spinlock_unlock_noirq
 #endif
-static void __ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
+static inline void __ihk_mc_spinlock_unlock_noirq(ihk_spinlock_t *lock)
 {
 	__ticket_t inc = 0x0002;
 
@@ -171,7 +172,8 @@ __kprintf("[%d] ret ihk_mc_spinlock_unlock\n", ihk_mc_get_processor_id()); \
 #else
 #define ihk_mc_spinlock_unlock __ihk_mc_spinlock_unlock
 #endif
-static void __ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
+static inline void __ihk_mc_spinlock_unlock(ihk_spinlock_t *lock,
+					    unsigned long flags)
 {
 	__ihk_mc_spinlock_unlock_noirq(lock);
 
@@ -191,13 +193,13 @@ typedef struct mcs_lock_node {
 
 typedef mcs_lock_node_t mcs_lock_t;
 
-static void mcs_lock_init(struct mcs_lock_node *node)
+static inline void mcs_lock_init(struct mcs_lock_node *node)
 {
 	node->locked = 0;
 	node->next = NULL;
 }
 
-static void __mcs_lock_lock(struct mcs_lock_node *lock,
+static inline void __mcs_lock_lock(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	struct mcs_lock_node *pred;
@@ -216,7 +218,7 @@ static void __mcs_lock_lock(struct mcs_lock_node *lock,
 	}
 }
 
-static void __mcs_lock_unlock(struct mcs_lock_node *lock,
+static inline void __mcs_lock_unlock(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	if (node->next == NULL) {
@@ -236,28 +238,28 @@ static void __mcs_lock_unlock(struct mcs_lock_node *lock,
 	node->next->locked = 0;
 }
 
-static void mcs_lock_lock_noirq(struct mcs_lock_node *lock,
+static inline void mcs_lock_lock_noirq(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	preempt_disable();
 	__mcs_lock_lock(lock, node);
 }
 
-static void mcs_lock_unlock_noirq(struct mcs_lock_node *lock,
+static inline void mcs_lock_unlock_noirq(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	__mcs_lock_unlock(lock, node);
 	preempt_enable();
 }
 
-static void mcs_lock_lock(struct mcs_lock_node *lock,
+static inline void mcs_lock_lock(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	node->irqsave = cpu_disable_interrupt_save();
 	mcs_lock_lock_noirq(lock, node);
 }
 
-static void mcs_lock_unlock(struct mcs_lock_node *lock,
+static inline void mcs_lock_unlock(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
 	mcs_lock_unlock_noirq(lock, node);
@@ -310,7 +312,7 @@ typedef struct mcs_rwlock_lock {
 } mcs_rwlock_lock_t;
 #endif
 
-static void
+static inline void
 mcs_rwlock_init(struct mcs_rwlock_lock *lock)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -331,7 +333,7 @@ __kprintf("[%d] ret mcs_rwlock_writer_lock_noirq\n", ihk_mc_get_processor_id());
 #else
 #define mcs_rwlock_writer_lock_noirq __mcs_rwlock_writer_lock_noirq
 #endif
-static void
+static inline void
 __mcs_rwlock_writer_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -358,7 +360,7 @@ __mcs_rwlock_writer_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_n
 }
 
 #ifndef SPINLOCK_IN_MCS_RWLOCK
-static void
+static inline void
 mcs_rwlock_unlock_readers(struct mcs_rwlock_lock *lock)
 {
 	struct mcs_rwlock_node *p;
@@ -425,7 +427,7 @@ __kprintf("[%d] ret mcs_rwlock_writer_unlock_noirq\n", ihk_mc_get_processor_id()
 #else
 #define mcs_rwlock_writer_unlock_noirq __mcs_rwlock_writer_unlock_noirq
 #endif
-static void
+static inline void
 __mcs_rwlock_writer_unlock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -485,7 +487,7 @@ atomic_inc_ifnot0(ihk_atomic_t *v)
 	return old;
 }
 
-static void
+static inline void
 __mcs_rwlock_reader_lock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -551,7 +553,7 @@ __kprintf("[%d] ret mcs_rwlock_reader_unlock_noirq\n", ihk_mc_get_processor_id()
 #else
 #define mcs_rwlock_reader_unlock_noirq __mcs_rwlock_reader_unlock_noirq
 #endif
-static void
+static inline void
 __mcs_rwlock_reader_unlock_noirq(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -598,7 +600,7 @@ __kprintf("[%d] ret mcs_rwlock_writer_lock\n", ihk_mc_get_processor_id()); \
 #else
 #define mcs_rwlock_writer_lock __mcs_rwlock_writer_lock
 #endif
-static void
+static inline void
 __mcs_rwlock_writer_lock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -618,7 +620,7 @@ __kprintf("[%d] ret mcs_rwlock_writer_unlock\n", ihk_mc_get_processor_id()); \
 #else
 #define mcs_rwlock_writer_unlock __mcs_rwlock_writer_unlock
 #endif
-static void
+static inline void
 __mcs_rwlock_writer_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -638,7 +640,7 @@ __kprintf("[%d] ret mcs_rwlock_reader_lock\n", ihk_mc_get_processor_id()); \
 #else
 #define mcs_rwlock_reader_lock __mcs_rwlock_reader_lock
 #endif
-static void
+static inline void
 __mcs_rwlock_reader_lock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
@@ -658,7 +660,7 @@ __kprintf("[%d] ret mcs_rwlock_reader_unlock\n", ihk_mc_get_processor_id()); \
 #else
 #define mcs_rwlock_reader_unlock __mcs_rwlock_reader_unlock
 #endif
-static void
+static inline void
 __mcs_rwlock_reader_unlock(struct mcs_rwlock_lock *lock, struct mcs_rwlock_node_irqsave *node)
 {
 #ifdef SPINLOCK_IN_MCS_RWLOCK
