@@ -53,7 +53,10 @@ rc = __ihk_mc_spinlock_trylock_noirq(l); \
 static inline int __ihk_mc_spinlock_trylock_noirq(ihk_spinlock_t *lock)
 {
 	ihk_spinlock_t cur = { .head_tail = lock->head_tail };
-	ihk_spinlock_t next = { .tickets.head = cur.tickets.head, .tickets.tail = cur.tickets.tail + 2 };
+	ihk_spinlock_t next = { .tickets = {
+		.head = cur.tickets.head,
+		.tail = cur.tickets.tail + 2
+	} };
 	int success;
 
 	if (cur.tickets.head != cur.tickets.tail) {
