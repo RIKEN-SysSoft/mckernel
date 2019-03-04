@@ -1534,7 +1534,7 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	const size_t pgsize = (size_t)1 << pgshift;
 	int error;
 	off_t off;
-	pte_t apte;
+	pte_t apte = PTE_NULL;
 	uintptr_t phys;
 	struct page *page;
 
@@ -1709,7 +1709,7 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	uintptr_t phys;
 	struct page *page;
 	off_t linear_off;
-	pte_t apte;
+	pte_t apte = PTE_NULL;
 	size_t memobj_pgsize;
 
 	dkprintf("invalidate_one_page(%p,%p,%p %#lx,%p,%d)\n",
@@ -1724,15 +1724,10 @@ static int invalidate_one_page(void *arg0, page_table_t pt, pte_t *ptep,
 	linear_off = range->objoff + ((uintptr_t)pgaddr - range->start);
 
 	if (page) {
-		if (page->offset == linear_off) {
-			pte_make_null(&apte, pgsize);
-		}
-		else {
+		if (page->offset != linear_off) {
 			pte_make_fileoff(page->offset, 0, pgsize,
 					 &apte);
 		}
-	} else {
-		pte_make_null(&apte, pgsize);
 	}
 
 	pte_xchg(ptep, &apte);
