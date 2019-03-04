@@ -3158,7 +3158,7 @@ struct overlay_blacklist_entry {
 	{ "/sys/devices/system/node/has%c", -1, -1, '_' },
 	{ "/sys/fs/cgrou%c", -1, -1, 'p' },
 	{ "/sys/devices/pci%*[^/]/%*[^/]/local_cpu%c", -1, -1, 's' },
-	{ NULL, 0, 0 },
+	{ 0 },
 };
 
 int overlay_blacklist(const char *path)
