@@ -179,8 +179,6 @@ static void send_syscall(struct syscall_request *req, int cpu,
 long do_syscall(struct syscall_request *req, int cpu)
 {
 	struct syscall_response res;
-	struct syscall_request req2 IHK_DMA_ALIGN;
-	int error;
 	long rc;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
