@@ -19,17 +19,15 @@ include(CMakeParseArguments)
 include(Kbuild)
 include(CheckCCompilerFlag)
 
-set(CFLAGS_WARNINGS "-Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function")
 CHECK_C_COMPILER_FLAG(-Wno-implicit-fallthrough IMPLICIT_FALLTHROUGH)
 if(IMPLICIT_FALLTHROUGH)
-	set(CFLAGS_WARNINGS "${CFLAGS_WARNINGS} -Wno-implicit-fallthrough")
+	set(EXTRA_WARNINGS "-Wno-implicit-fallthrough")
 endif(IMPLICIT_FALLTHROUGH)
 
-# C flags need to be set before enabling language?
-set(CMAKE_C_FLAGS_DEBUG "-g ${CFLAGS_WARNINGS}" CACHE STRING "Debug compiler flags")
-set(CMAKE_C_FLAGS_RELEASE "${CFLAGS_WARNINGS}" CACHE STRING "Release compiler flags")
-
 # build options
+set(CFLAGS_WARNING "-Wall" "-Wextra" "-Wno-unused-parameter" "-Wno-sign-compare" "-Wno-unused-function" ${EXTRA_WARNINGS} CACHE STRING "Warning flags")
+add_compile_options(${CFLAGS_WARNING})
+
 option(ENABLE_WERROR "Enable -Werror" OFF)
 if (ENABLE_WERROR)
 	add_compile_options("-Werror")
