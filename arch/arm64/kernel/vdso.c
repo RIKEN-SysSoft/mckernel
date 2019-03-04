@@ -87,6 +87,7 @@ int arch_setup_vdso(void)
 	}
 
 	panic("Only support host mapping vDSO");
+	return -1;
 }
 
 static int get_free_area(struct process_vm *vm, size_t len, intptr_t hint,
