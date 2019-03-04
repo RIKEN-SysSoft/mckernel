@@ -174,6 +174,10 @@
 
 /* PMUv3 HW events mapping. */
 
+/* disable -Woverride-init for the following initializations */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverride-init"
+
 /*
  * @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c
  * ARMv8 Architectural defined events, not all of these may
@@ -218,6 +222,9 @@ static const unsigned armv8_pmuv3_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
 	[C(BPU)][C(OP_WRITE)][C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_BR_PRED,
 	[C(BPU)][C(OP_WRITE)][C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_BR_MIS_PRED,
 };
+
+/* restore warnings */
+#pragma GCC diagnostic pop
 
 /* @ref.impl linux-v4.15-rc3 drivers/perf/arm_pmu.c */
 static int
