@@ -85,6 +85,7 @@ int mcctrl_ikc_set_recv_cpu(ihk_os_t os, int cpu);
 int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
                      unsigned long, unsigned long, unsigned long,
                      unsigned long, unsigned long *);
+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *, struct file *);
 
 static long mcexec_prepare_image(ihk_os_t os,
                                  struct program_load_desc * __user udesc)
@@ -316,19 +317,8 @@ struct mcos_handler_info {
 };
 
 struct mcos_handler_info;
-static LIST_HEAD(host_threads); /* Used for FS switch */
+LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
-
-/* Info of Linux counterpart of migrated-to-Linux thread */
-struct host_thread {
-	struct list_head list;
-	struct mcos_handler_info *handler;
-	int     pid;
-	int     tid;
-	unsigned long usp;
-	unsigned long lfs;
-	unsigned long rfs;
-};
 
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 {
@@ -2445,10 +2435,7 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 
 extern void *get_user_sp(void);
 extern void set_user_sp(unsigned long);
-extern void restore_fs(unsigned long fs);
-extern void save_fs_ctx(void *);
-extern unsigned long get_fs_ctx(void *);
-extern unsigned long get_rsp_ctx(void *);
+extern void restore_tls(unsigned long addr);
 
 long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 {
@@ -2492,63 +2479,6 @@ long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 	return rc;
 }
 
-long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
-{
-	int rc = 0;
-	void *usp = get_user_sp();
-	struct mcos_handler_info *info;
-	struct host_thread *thread;
-	unsigned long flags;
-	struct uti_save_fs_desc desc;
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-	struct mcctrl_per_proc_data *ppd;
-
-	if (!usrdata) {
-		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
-		rc = -EINVAL;
-		goto out;
-	}
-
-	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
-		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
-		rc = -EFAULT;
-		goto out;
-	}
-
-	save_fs_ctx(desc.lctx);
-	info = ihk_os_get_mcos_private_data(file);
-	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
-	memset(thread, '\0', sizeof(struct host_thread));
-	thread->pid = task_tgid_vnr(current);
-	thread->tid = task_pid_vnr(current);
-	thread->usp = (unsigned long)usp;
-	thread->lfs = get_fs_ctx(desc.lctx);
-	thread->rfs = get_fs_ctx(desc.rctx);
-	thread->handler = info;
-
-	write_lock_irqsave(&host_thread_lock, flags);
-	list_add_tail(&thread->list, &host_threads);
-	write_unlock_irqrestore(&host_thread_lock, flags);
-
-	/* How ppd refcount reaches zero depends on how utility-thread exits:
-	   (1) MCEXEC_UP_CREATE_PPD sets to 1
-	   (2) mcexec_util_thread2() increments to 2
-	   (3) Tracer detects exit/exit_group/killed by signal of tracee
-               and decrements to 1 via mcexec_terminate_thread()
-	   (4) Tracer calls exit_fd(), it calls release_handler(),
-	       it decrements to 0
-
-	   KNOWN ISSUE: 
-               mcexec_terminate_thread() isn't called when tracer is
-	       unexpectedly killed so the refcount remains 1 when 
-	       exiting release_handler()
-	*/
-	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
-	pr_ppd("get", task_pid_vnr(current), ppd);
- out:
-	return rc;
-}
-
 /* Return value: 0 if target is uti thread, -EINVAL if not */
 long
 mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
@@ -2569,9 +2499,9 @@ mcexec_sig_thread(ihk_os_t os, unsigned long arg, struct file *file)
 	read_unlock_irqrestore(&host_thread_lock, flags);
 	if (thread) {
 		if (arg)
-			restore_fs(thread->lfs);
+			restore_tls(thread->ltls);
 		else
-			restore_fs(thread->rfs);
+			restore_tls(thread->rtls);
 		goto out;
 	}
 	ret = -EINVAL;
