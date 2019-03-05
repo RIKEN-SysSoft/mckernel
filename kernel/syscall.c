@@ -2311,7 +2311,7 @@ static int ptrace_report_exec(struct thread *thread)
 	return 0;
 }
 
-static void ptrace_syscall_event(struct thread *thread)
+void ptrace_syscall_event(struct thread *thread)
 {
 	int ptrace = thread->ptrace;
 
@@ -2589,8 +2589,7 @@ SYSCALL_DECLARE(execve)
 	}
 
 	if (thread->ptrace) {
-		ihk_mc_syscall_ret(ctx) = 0;
-		ptrace_syscall_event(thread);
+		arch_ptrace_syscall_event(thread, ctx, 0);
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
@@ -9659,6 +9658,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	if(cpu_local_var(current)->proc->status == PS_EXITED &&
 	   (num != __NR_exit && num != __NR_exit_group)){
+		/* x86_64: Setting -EINVAL to rax is done in the
+		 * following return.
+		 */
 		save_syscall_return_value(num, -EINVAL);
 		check_signal(-EINVAL, NULL, -1);
 		set_cputime(CPUTIME_MODE_K2U);
@@ -9668,8 +9670,8 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	cpu_enable_interrupt();
 
 	if (cpu_local_var(current)->ptrace) {
-		ihk_mc_syscall_ret(ctx) = -ENOSYS;
-		ptrace_syscall_event(cpu_local_var(current));
+		arch_ptrace_syscall_event(cpu_local_var(current),
+					  ctx, -ENOSYS);
 		num = ihk_mc_syscall_number(ctx);
 	}
 
@@ -9715,11 +9717,15 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 	if (cpu_local_var(current)->ptrace) {
-		ihk_mc_syscall_ret(ctx) = l;
-		ptrace_syscall_event(cpu_local_var(current));
-		l = ihk_mc_syscall_ret(ctx);
+		/* arm64: The return value modified by the tracer is
+		 * stored to x0 in the following check_signal().
+		 */
+		l = arch_ptrace_syscall_event(cpu_local_var(current), ctx, l);
 	}
 
+	/* x86_64: Setting l to rax is done in the
+	 * following return.
+	 */
 	save_syscall_return_value(num, l);
 
 #ifdef PROFILE_ENABLE
