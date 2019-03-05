@@ -2311,7 +2311,7 @@ static int ptrace_report_exec(struct thread *thread)
 	return 0;
 }
 
-static void ptrace_syscall_event(struct thread *thread)
+void ptrace_syscall_event(struct thread *thread)
 {
 	int ptrace = thread->ptrace;
 
@@ -2589,8 +2589,7 @@ SYSCALL_DECLARE(execve)
 	}
 
 	if (thread->ptrace) {
-		ihk_mc_syscall_ret(ctx) = 0;
-		ptrace_syscall_event(thread);
+		arch_ptrace_syscall_enter(thread, 0);
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
@@ -9668,8 +9667,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	cpu_enable_interrupt();
 
 	if (cpu_local_var(current)->ptrace) {
-		ihk_mc_syscall_ret(ctx) = -ENOSYS;
-		ptrace_syscall_event(cpu_local_var(current));
+		arch_ptrace_syscall_enter(cpu_local_var(current), -ENOSYS);
 		num = ihk_mc_syscall_number(ctx);
 	}
 
@@ -9715,9 +9713,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 
 	if (cpu_local_var(current)->ptrace) {
-		ihk_mc_syscall_ret(ctx) = l;
-		ptrace_syscall_event(cpu_local_var(current));
-		l = ihk_mc_syscall_ret(ctx);
+		l = arch_ptrace_syscall_exit(cpu_local_var(current), l);
 	}
 
 	save_syscall_return_value(num, l);

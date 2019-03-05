@@ -2859,4 +2859,18 @@ void calculate_time_from_tsc(struct timespec *ts)
 		++ts->tv_sec;
 	}
 }
+
+extern void ptrace_syscall_event(struct thread *thread);
+void arch_ptrace_syscall_enter(struct thread *thread, long setret)
+{
+	ihk_mc_syscall_ret(ctx) = setret;
+	ptrace_syscall_event(thread);
+}
+
+long arch_ptrace_syscall_exit(struct thread *thread, long setret)
+{
+	ihk_mc_syscall_ret(ctx) = setret;
+	ptrace_syscall_event(thread);
+	return ihk_mc_syscall_ret(ctx);
+}
 /*** End of File ***/
