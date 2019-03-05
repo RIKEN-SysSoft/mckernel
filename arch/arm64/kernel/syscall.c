@@ -2735,4 +2735,23 @@ void calculate_time_from_tsc(struct timespec *ts)
 		++ts->tv_sec;
 	}
 }
+
+extern void ptrace_syscall_event(struct thread *thread);
+void arch_ptrace_syscall_enter(struct thread *thread,
+				ihk_mc_user_context_t *ctx, long setret)
+{
+	ptrace_syscall_event(thread);
+}
+
+long arch_ptrace_syscall_exit(struct thread *thread,
+				ihk_mc_user_context_t *ctx, long setret)
+{
+	ptrace_syscall_event(thread);
+
+	/* No need to return the return value modified by the tracer
+	 * here because the modification is done in check_signal() in
+	 *  arm64
+	 */
+	return setret;
+}
 /*** End of File ***/
