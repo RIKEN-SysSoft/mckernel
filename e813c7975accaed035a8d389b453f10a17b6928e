@@ -2,6 +2,40 @@
   "comments": [
     {
       "key": {
+        "uuid": "97bf0fc2_b4c84df4",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-05T03:28:32Z",
+      "side": 1,
+      "message": "please mention \u0027ptrace\u0027 clearly in the commit subject",
+      "revId": "e813c7975accaed035a8d389b453f10a17b6928e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ca29caa9_0eb55a7b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-05T03:28:32Z",
+      "side": 1,
+      "message": "(nitpick) this does not need to be a bullet point?",
+      "revId": "e813c7975accaed035a8d389b453f10a17b6928e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "bff0cba5_30cdc9c2",
         "filename": "kernel/syscall.c",
         "patchSetId": 1
