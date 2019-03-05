@@ -2858,4 +2858,13 @@ void calculate_time_from_tsc(struct timespec *ts)
 		++ts->tv_sec;
 	}
 }
+
+extern void ptrace_syscall_event(struct thread *thread);
+long arch_ptrace_syscall_event(struct thread *thread,
+				ihk_mc_user_context_t *ctx, long setret)
+{
+	ihk_mc_syscall_ret(ctx) = setret;
+	ptrace_syscall_event(thread);
+	return ihk_mc_syscall_ret(ctx);
+}
 /*** End of File ***/
