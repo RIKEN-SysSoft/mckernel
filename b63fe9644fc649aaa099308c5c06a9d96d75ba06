@@ -1,0 +1,514 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d637d64e_041b634d",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99249baf_3b79d010",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c374a18_264eb11c",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b7c35f0e_53509f8e",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: Single statement macros should not use a do {} while (0) loop\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "627d872f_f19f6a5a",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a37ba224_a0dbf2da",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+#define pr_ppd(msg, tid, ppd) do { } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b05233a5_1f5abea2",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 310,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "93e56a18_a9ab05dc",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 312,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern struct list_head host_threads;",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "44a00ae1_590636c1",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 313,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern rwlock_t host_thread_lock;",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7dfbb3c0_2e5c4a00",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d349ff65_1d423b28",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "083b7169_dd3910ac",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6ab127c_13076987",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: Single statement macros should not use a do {} while (0) loop\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "67d77016_b691986c",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+#define pr_ppd(msg, tid, ppd) do { printk(\"%s: \" msg \",tid\u003d%d,refc\u003d%d\\n\", __FUNCTION__, tid, atomic_read(\u0026ppd-\u003erefcount)); } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "84ad0399_cb9bad5e",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+#define pr_ppd(msg, tid, ppd) do { } while(0)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5cd7d109_f2ceca71",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 390,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e181f859_4e73561c",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 407,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(copy_from_user(\u0026desc, udesc, sizeof(struct uti_save_fs_desc))) {",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "061153f6_eb211dd6",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 408,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tprintk(\"%s: Error: copy_from_user failed\\n\", __FUNCTION__);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8dd18f28_aa354d74",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 408,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\tprintk(\"%s: Error: copy_from_user failed\\n\", __FUNCTION__);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4d1b73c2_5216fe7d",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 429,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t/* How ppd refcount reaches zero depends on how utility-thread exits:\n+\t   (1) MCEXEC_UP_CREATE_PPD sets to 1",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "591fe6c9_e570f52a",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 432,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+               and decrements to 1 via mcexec_terminate_thread()$",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3751d3a_e974aec0",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 436,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I   KNOWN ISSUE: $",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e6bdade_73ec9872",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 437,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+               mcexec_terminate_thread() isn\u0027t called when tracer is$",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75204065_73a732ba",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/archdeps.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 438,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I       unexpectedly killed so the refcount remains 1 when $",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2893a711_925112ed",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *, struct file *);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "049c6d42_1421186a",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct uti_save_fs_desc __user *\u0027 should also have an identifier name\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *, struct file *);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bc155f14_4f57e3cb",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct file *\u0027 should also have an identifier name\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *, struct file *);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "80fc81d5_41e03336",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027ihk_os_t\u0027 should also have an identifier name\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *, struct file *);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d329d064_35edc70f",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+long mcexec_uti_save_fs(ihk_os_t, struct uti_save_fs_desc __user *, struct file *);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e4e1e3b2_76053d99",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2438,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-05T03:49:40Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void restore_tls(unsigned long addr);",
+      "revId": "b63fe9644fc649aaa099308c5c06a9d96d75ba06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
