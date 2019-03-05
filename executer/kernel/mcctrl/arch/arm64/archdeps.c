@@ -2,6 +2,13 @@
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <linux/kallsyms.h>
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
+#include <linux/sched/task_stack.h>
+#endif /* KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE */
+#include <linux/ptrace.h>
+#include <linux/uaccess.h>
+#include <linux/slab.h>
+#include <linux/rwlock_types.h>
 #include <asm/vdso.h>
 #include "config.h"
 #include "../../mcctrl.h"
@@ -12,6 +19,13 @@
 #define	dprintk(...)	printk(__VA_ARGS__)
 #else
 #define	dprintk(...)
+#endif
+
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
 #endif
 
 #define D(fmt, ...) printk("%s(%d) " fmt, __func__, __LINE__, ##__VA_ARGS__)
@@ -140,59 +154,49 @@ out:
 void *
 get_user_sp(void)
 {
-	/* TODO; skeleton for UTI */
-	return NULL;
+	return (void *)current_pt_regs()->sp;
 }
 
 void
 set_user_sp(void *usp)
 {
-	/* TODO; skeleton for UTI */
+	current_pt_regs()->sp = (unsigned long)usp;
 }
 
-/* TODO; skeleton for UTI */
 struct trans_uctx {
 	volatile int cond;
 	int fregsize;
-
-	unsigned long rax;
-	unsigned long rbx;
-	unsigned long rcx;
-	unsigned long rdx;
-	unsigned long rsi;
-	unsigned long rdi;
-	unsigned long rbp;
-	unsigned long r8;
-	unsigned long r9;
-	unsigned long r10;
-	unsigned long r11;
-	unsigned long r12;
-	unsigned long r13;
-	unsigned long r14;
-	unsigned long r15;
-	unsigned long rflags;
-	unsigned long rip;
-	unsigned long rsp;
-	unsigned long fs;
+	struct user_pt_regs regs;
+	unsigned long tls_baseaddr;
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	/* TODO; skeleton for UTI */
+	const unsigned long tpidrro = 0;
+
+	asm volatile(
+	"	msr	tpidr_el0, %0\n"
+	"	msr	tpidrro_el0, %1"
+	: : "r" (addr), "r" (tpidrro));
 }
 
-void
-save_fs_ctx(void *ctx)
+static void
+save_tls_ctx(void *ctx)
 {
-	/* TODO; skeleton for UTI */
+	struct trans_uctx *tctx = ctx;
+
+	asm volatile(
+	"	mrs	%0, tpidr_el0"
+	: "=r" (tctx->tls_baseaddr));
 }
 
-unsigned long
-get_fs_ctx(void *ctx)
+static unsigned long
+get_tls_ctx(void *ctx)
 {
-	/* TODO; skeleton for UTI */
-	return 0;
+	struct trans_uctx *tctx = ctx;
+
+	return tctx->tls_baseaddr;
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
@@ -301,4 +305,69 @@ out:
 	dprintk("translate_rva_to_rpa: %d rva %#lx --> rpa %#lx (%lx)\n",
 			error, rva, rpa, pgsize);
 	return error;
+}
+
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
+{
+	extern struct list_head host_threads;
+	extern rwlock_t host_thread_lock;
+	int rc = 0;
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	struct uti_save_fs_desc desc;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
+	struct trans_uctx klctx;
+	struct trans_uctx *__user rctx = NULL;
+	struct trans_uctx *__user lctx = NULL;
+
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		pr_info("%s: Error: copy_from_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+	rctx = desc.rctx;
+	lctx = desc.lctx;
+
+	klctx.cond = 0;
+	klctx.fregsize = 0;
+	klctx.regs = current_pt_regs()->user_regs;
+
+	if (copy_to_user(lctx, &klctx, sizeof(klctx))) {
+		pr_info("%s: Error: copy_to_user failed\n", __func__);
+		rc = -EFAULT;
+		goto out;
+	}
+	save_tls_ctx(lctx);
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+	thread->ltls = get_tls_ctx(lctx);
+	thread->rtls = get_tls_ctx(rctx);
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_add_tail(&thread->list, &host_threads);
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	if (copy_from_user(&current_pt_regs()->user_regs,
+			   &rctx->regs, sizeof(rctx->regs))) {
+		rc = -EFAULT;
+		goto out;
+	}
+	restore_tls(get_tls_ctx(rctx));
+
+	/* Make per-proc-data survive over the signal-kill of tracee. Note
+	 * that the signal-kill calls close() and then release_hanlde()
+	 * destroys it.
+	 */
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	pr_ppd("get", task_pid_vnr(current), ppd);
+out:
+	return rc;
 }
