@@ -25,6 +25,29 @@
     },
     {
       "key": {
+        "uuid": "1545caf5_b9bf734c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9661,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-03-05T09:05:22Z",
+      "side": 1,
+      "message": "Please add the following comment:\n/* x86_64: Note that setting -EINVAL to rax is done in the following return. */",
+      "range": {
+        "startLine": 9661,
+        "startChar": 0,
+        "endLine": 9661,
+        "endChar": 42
+      },
+      "revId": "07c9752db337f8945556f93dc0a6c03f258abd75",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "48c7abec_6ad0d963",
         "filename": "kernel/syscall.c",
         "patchSetId": 2
