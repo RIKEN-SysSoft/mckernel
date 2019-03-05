@@ -2,6 +2,8 @@
 #include <linux/version.h>
 #include <linux/kallsyms.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
+#include <linux/rwlock_types.h>
 #include <asm/vsyscall.h>
 #include <asm/vgtod.h>
 #include "config.h"
@@ -15,6 +17,13 @@
 #define	dprintk(...)	printk(__VA_ARGS__)
 #else
 #define	dprintk(...)
+#endif
+
+//#define DEBUG_PPD
+#ifdef DEBUG_PPD
+#define pr_ppd(msg, tid, ppd) do { printk("%s: " msg ",tid=%d,refc=%d\n", __FUNCTION__, tid, atomic_read(&ppd->refcount)); } while(0)
+#else
+#define pr_ppd(msg, tid, ppd) do { } while(0)
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
@@ -261,25 +270,35 @@ struct trans_uctx {
 };
 
 void
-restore_fs(unsigned long fs)
+restore_tls(unsigned long addr)
 {
-	wrmsrl(MSR_FS_BASE, fs);
+	wrmsrl(MSR_FS_BASE, addr);
 }
 
-void
-save_fs_ctx(void *ctx)
+static void
+save_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	rdmsrl(MSR_FS_BASE, tctx->fs);
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_info("%s: copy_from_user failed.\n", __func__);
+		return;
+	}
+	rdmsrl(MSR_FS_BASE, kctx.fs);
 }
 
-unsigned long
-get_fs_ctx(void *ctx)
+static unsigned long
+get_tls_ctx(void __user *ctx)
 {
-	struct trans_uctx *tctx = ctx;
+	struct trans_uctx __user *tctx = ctx;
+	struct trans_uctx kctx;
 
-	return tctx->fs;
+	if (copy_from_user(&kctx, tctx, sizeof(struct trans_uctx))) {
+		pr_info("%s: copy_from_user failed.\n", __func__);
+		return 0;
+	}
+	return kctx.fs;
 }
 
 unsigned long
@@ -368,3 +387,59 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
+{
+	int rc = 0;
+	void *usp = get_user_sp();
+	struct mcos_handler_info *info;
+	struct host_thread *thread;
+	unsigned long flags;
+	struct uti_save_fs_desc desc;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_per_proc_data *ppd;
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		rc = -EINVAL;
+		goto out;
+	}
+
+	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
+		rc = -EFAULT;
+		goto out;
+	}
+
+	save_tls_ctx(desc.lctx);
+	info = ihk_os_get_mcos_private_data(file);
+	thread = kmalloc(sizeof(struct host_thread), GFP_KERNEL);
+	memset(thread, '\0', sizeof(struct host_thread));
+	thread->pid = task_tgid_vnr(current);
+	thread->tid = task_pid_vnr(current);
+	thread->usp = (unsigned long)usp;
+	thread->ltls = get_tls_ctx(desc.lctx);
+	thread->rtls = get_tls_ctx(desc.rctx);
+	thread->handler = info;
+
+	write_lock_irqsave(&host_thread_lock, flags);
+	list_add_tail(&thread->list, &host_threads);
+	write_unlock_irqrestore(&host_thread_lock, flags);
+
+	/* How ppd refcount reaches zero depends on how utility-thread exits:
+	   (1) MCEXEC_UP_CREATE_PPD sets to 1
+	   (2) mcexec_util_thread2() increments to 2
+	   (3) Tracer detects exit/exit_group/killed by signal of tracee
+               and decrements to 1 via mcexec_terminate_thread()
+	   (4) Tracer calls exit_fd(), it calls release_handler(),
+	       it decrements to 0
+
+	   KNOWN ISSUE: 
+               mcexec_terminate_thread() isn't called when tracer is
+	       unexpectedly killed so the refcount remains 1 when 
+	       exiting release_handler()
+	*/
+	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(current));
+	pr_ppd("get", task_pid_vnr(current), ppd);
+ out:
+	return rc;
+}
