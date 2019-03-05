@@ -3336,14 +3336,14 @@ unsigned long virt_to_phys(void *v)
 	unsigned long va = (unsigned long)v;
 
 	if (va >= MAP_ST_START) {
-		return va - MAP_ST_START;
+		return va - MAP_ST_START + arm64_st_phys_base;
 	}
 	return va - MAP_KERNEL_START + arm64_kernel_phys_base;
 }
 
 void *phys_to_virt(unsigned long p)
 {
-	return (void *)(p | MAP_ST_START);
+	return (void *)((p - arm64_st_phys_base) | MAP_ST_START);
 }
 
 int copy_from_user(void *dst, const void *src, size_t siz)

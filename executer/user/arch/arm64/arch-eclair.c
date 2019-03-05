@@ -56,7 +56,7 @@ uintptr_t virt_to_phys(uintptr_t va)
 	extern uintptr_t kernel_base;
 
 	if (va >= MAP_ST) {
-		return (va - MAP_ST);
+		return (va - MAP_ST + PHYS_OFFSET);
 	}
 
 	if (va >= MAP_KERNEL) {
