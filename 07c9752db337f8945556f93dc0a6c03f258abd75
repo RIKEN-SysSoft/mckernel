@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "5a3e35a9_93a55b3b",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2750,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-03-06T05:31:36Z",
+      "side": 1,
+      "message": "/* Modification to the return value by the tracer is done in check_signal() in arm64 */",
+      "parentUuid": "97054564_f497b6fc",
+      "range": {
+        "startLine": 2750,
+        "startChar": 0,
+        "endLine": 2750,
+        "endChar": 15
+      },
+      "revId": "07c9752db337f8945556f93dc0a6c03f258abd75",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1545caf5_b9bf734c",
         "filename": "kernel/syscall.c",
         "patchSetId": 2
