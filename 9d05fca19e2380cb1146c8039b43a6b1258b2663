@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7d048b64_ef9e286e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 9671,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-06T05:34:51Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\t\t\t\t\tctx, -ENOSYS);",
+      "revId": "9d05fca19e2380cb1146c8039b43a6b1258b2663",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
