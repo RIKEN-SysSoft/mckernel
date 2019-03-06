@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d9ebe0cb_a64c348e",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-06T02:08:00Z",
+      "side": 1,
+      "message": "That took me really a long time to understand, because I thought it meant \"in mckernel we compute phys_to_virt() differently than linux (on purpose)\" while it means \"fix phys_to_virt() to compute the same as linux\".\nPlease update this to something like \"arm64: fix phys_to_virt() calculation to be the same as linux\" or anything to that intent.\n\nAlso a reference to what PHYS_OFFSET/PAGE_OFFSET on arm (e.g. linux\u0027s Documentation/arm/Porting) mean might help; it\u0027s a bit late to rename arm64_st_phys_base but we might as well explain things a bit somewhere... commit messages are a good start.",
+      "revId": "5d34824d002d3f529a225f2adaa629b9fd459924",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f2a8f070_3be29c7f",
+        "filename": "executer/user/arch/arm64/include/arch-eclair.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-06T02:08:00Z",
+      "side": 1,
+      "message": "Is that really constant? That might happen to work for your particular VM but I doubt all machines ram start at this address.",
+      "revId": "5d34824d002d3f529a225f2adaa629b9fd459924",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
