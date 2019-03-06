@@ -640,7 +640,6 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 	struct copy_args * const args = arg0;
 	int error;
 	intptr_t src_phys;
-	struct page *src_page;
 	unsigned long src_lphys;
 	void *src_kvirt;
 	size_t pgsize = (size_t)1 << pgshift;
@@ -657,9 +656,8 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 	}
 
 	src_phys = pte_get_phys(src_ptep);
-	src_page = phys_to_page(src_phys);
 
-	if (src_page && page_is_in_memobj(src_page)) {
+	if (args->range->memobj && !(args->new_vrflag & VR_PRIVATE)) {
 		error = 0;
 		goto out;
 	}
