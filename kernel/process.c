@@ -1974,8 +1974,8 @@ retry:
 	/* Copy on write */
 	if (((range->flag & VR_PRIVATE) ||
 				((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE)))
-			&& ((!page && phys == NOPHYS) || (page &&
-					(page_is_in_memobj(page) ||
+			&& ((!page && ((phys == NOPHYS) || range->memobj))
+			   || (page && (page_is_in_memobj(page) ||
 					 page_is_multi_mapped(page))))) {
 
 		if (!(attr & PTATTR_DIRTY)) {
