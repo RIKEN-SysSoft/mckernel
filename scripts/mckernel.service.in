@@ -1,0 +1,11 @@
+[Unit]
+Description = Interface for Heterogeneous Kernels and McKernel.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart = /usr/sbin/mckernel "start"
+ExecStop  = /usr/sbin/mckernel "stop"
+
+[Install]
+WantedBy = multi-user.target sshmode.target fastboot.target

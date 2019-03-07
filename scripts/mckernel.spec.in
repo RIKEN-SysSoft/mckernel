@@ -72,6 +72,7 @@ Interface for Heterogeneous Kernels and McKernel.
 %endif
 %{_sbindir}/mcreboot.sh
 %{_sbindir}/mcstop+release.sh
+%{_sbindir}/mckernel
 %{_sbindir}/ihkconfig
 %{_sbindir}/ihkosctl
 %{_sbindir}/ihkmond
@@ -92,6 +93,7 @@ Interface for Heterogeneous Kernels and McKernel.
 %{_mandir}/man1/ihkconfig.1.gz
 %{_mandir}/man1/ihkosctl.1.gz
 %{_mandir}/man1/mcexec.1.gz
+/etc/systemd/system/mckernel.service
 
 %if 0%{?cross_compile}
 /lib/modules/%{kernel_version}/extra/mckernel/ihk.ko
@@ -107,6 +109,12 @@ Interface for Heterogeneous Kernels and McKernel.
 
 %if 0%{?cross_compile}
 # scripts from /usr/lib/rpm/redhat/kmodtool (kernel_module_package) as well
+%pre
+if [ "$1" = "2" ]; then
+    systemctl stop mckernel
+    systemctl disable mckernel
+fi
+
 %post
 if [ -e "/boot/System.map-%{kernel_version}" ]; then
     /usr/sbin/depmod -aeF "/boot/System.map-%{kernel_version}" "%{kernel_version}" > /dev/null || :
@@ -117,8 +125,13 @@ if [ -x "/sbin/weak-modules" ]; then
     printf '%s\n' "${modules[@]}" \
     | /sbin/weak-modules --add-modules
 fi
+systemctl enable mckernel
 
 %preun
+if [ "$1" = "0" ]; then
+    systemctl stop mckernel
+    systemctl disable mckernel
+fi
 rpm -ql %{name}-%{version} | grep '\.ko$' > /var/run/rpm-kmod-%{name}-modules
 
 %postun
