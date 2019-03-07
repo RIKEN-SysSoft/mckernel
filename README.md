@@ -96,19 +96,19 @@ sudo chmod a+r /boot/System.map-`uname -r`
 
 ##### 4. Obtain sources and compile the kernel
 
-Clone the source code and set up ihk symlink (this is currently required):
+Clone the source code:
 
 ~~~~
 mkdir -p ~/src/ihk+mckernel/
 cd ~/src/ihk+mckernel/
-git clone -r git@github.com:RIKEN-SysSoft/mckernel.git
+git clone --recursive git@github.com:RIKEN-SysSoft/mckernel.git
 ~~~~
 
 Configure and compile:
 
 ~~~~
 mkdir -p build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel $HOME/src/mckernel
+cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel $HOME/src/ihk+mckernel/mckernel
 make -j install
 ~~~~
 
