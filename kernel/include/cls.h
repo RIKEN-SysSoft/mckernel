@@ -107,7 +107,7 @@ struct cpu_local_var {
 	struct list_head migq;
 	int in_interrupt;
 	int in_page_fault;
-	int no_preempt;
+	ihk_atomic_t no_preempt;
 	int timer_enabled;
 	unsigned long nr_ctx_switches;
 	int kmalloc_initialized;

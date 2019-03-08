@@ -3678,9 +3678,9 @@ void schedule(void)
 	int prevpid;
 	unsigned long irqstate = 0;
 
-	if (cpu_local_var(no_preempt)) {
+	if (ihk_atomic_read(&cpu_local_var(no_preempt))) {
 		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
-			__FUNCTION__, cpu_local_var(no_preempt));
+			__FUNCTION__, ihk_atomic_read(&cpu_local_var(no_preempt)));
 
 		irqstate = cpu_disable_interrupt_save();
 		ihk_mc_spinlock_lock_noirq(

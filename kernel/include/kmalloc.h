@@ -19,8 +19,10 @@
 
 #define kmalloc(size, flag) ({\
 void *r = _kmalloc(size, flag, __FILE__, __LINE__);\
-if(r == NULL){\
-kprintf("kmalloc: out of memory %s:%d no_preempt=%d\n", __FILE__, __LINE__, cpu_local_var(no_preempt)); \
+if (r == NULL) {\
+	kprintf("kmalloc: out of memory %s:%d no_preempt=%d\n", \
+		__FILE__, __LINE__, \
+		ihk_atomic_read(&cpu_local_var(no_preempt))); \
 }\
 r;\
 })

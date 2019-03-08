@@ -255,7 +255,8 @@ long do_syscall(struct syscall_request *req, int cpu)
 			cpu_pause();
 
 			/* Spin if not preemptable */
-			if (cpu_local_var(no_preempt) || !thread->tid) {
+			if (ihk_atomic_read(&cpu_local_var(no_preempt))
+				|| !thread->tid) {
 				continue;
 			}
 

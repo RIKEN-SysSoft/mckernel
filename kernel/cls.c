@@ -66,15 +66,15 @@ void preempt_enable(void)
 {
 #ifndef ENABLE_FUGAKU_HACKS
 	if (cpu_local_var_initialized)
-		--cpu_local_var(no_preempt);
+		ihk_atomic_dec(&cpu_local_var(no_preempt));
 #else
 	if (cpu_local_var_initialized) {
-		--cpu_local_var(no_preempt);
+		ihk_atomic_dec(&cpu_local_var(no_preempt));
 
-		if (cpu_local_var(no_preempt) < 0) {
+		if (ihk_atomic_read(&cpu_local_var(no_preempt)) < 0) {
 			//cpu_disable_interrupt();
 
-	__kprintf("%s: %d\n", __func__, cpu_local_var(no_preempt));
+		__kprintf("%s: %d\n", __func__, ihk_atomic_read(&cpu_local_var(no_preempt)));
     __kprintf("TID: %d, call stack from builtin frame (most recent first):\n",
         cpu_local_var(current)->tid);
 	__show_context_stack(cpu_local_var(current), (uintptr_t)&preempt_enable,
@@ -93,7 +93,7 @@ void preempt_enable(void)
 void preempt_disable(void)
 {
 	if (cpu_local_var_initialized) {
-		++cpu_local_var(no_preempt);
+		ihk_atomic_inc(&cpu_local_var(no_preempt));
 	}
 }
 
