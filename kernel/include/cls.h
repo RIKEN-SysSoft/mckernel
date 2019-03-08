@@ -90,7 +90,7 @@ struct cpu_local_var {
 	ihk_spinlock_t migq_lock;
 	struct list_head migq;
 	int in_interrupt;
-	int no_preempt;
+	ihk_atomic_t no_preempt;
 	int timer_enabled;
 	int kmalloc_initialized;
 	struct ihk_os_cpu_monitor *monitor;
