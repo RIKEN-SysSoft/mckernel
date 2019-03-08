@@ -3293,9 +3293,10 @@ void schedule(void)
 	int switch_ctx = 0;
 	struct thread *last;
 
-	if (cpu_local_var(no_preempt)) {
+	if (ihk_atomic_read(&cpu_local_var(no_preempt))) {
 		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
-			__FUNCTION__, cpu_local_var(no_preempt));
+			__func__,
+			ihk_atomic_read(&cpu_local_var(no_preempt)));
 		return;
 	}
 

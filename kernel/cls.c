@@ -55,11 +55,11 @@ struct cpu_local_var *get_cpu_local_var(int id)
 void preempt_enable(void)
 {
 	if (cpu_local_var_initialized)
-		--cpu_local_var(no_preempt);
+		ihk_atomic_dec(&cpu_local_var(no_preempt));
 }
 
 void preempt_disable(void)
 {
 	if (cpu_local_var_initialized)
-		++cpu_local_var(no_preempt);
+		ihk_atomic_inc(&cpu_local_var(no_preempt));
 }
