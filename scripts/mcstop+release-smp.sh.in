@@ -17,7 +17,6 @@ KERNDIR="@KERNDIR@"
 
 mem=""
 cpus=""
-irqbalance_used=""
 kill_in_use=""
 
 while getopts k OPT
@@ -36,24 +35,11 @@ if [[ "$#" -ge "$OPTIND" ]]; then
 	exit 1
 fi
 
-disable_irqbalance_mck() {
-	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
-		sudo systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
-
-		# Invalid .service file persists so remove it
-		rm -f /etc/systemd/system/irqbalance_mck.service
-	fi
-}
-
 # No SMP module? Exit.
 if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then exit 0; fi
 
-if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-	irqbalance_used="yes"
-	if ! sudo systemctl stop irqbalance_mck.service 2>/dev/null; then
-		echo "warning: failed to stop irqbalance_mck" >&2
-	fi
-	disable_irqbalance_mck
+if [[ -f /run/systemd/system/irqbalance.service.d/mckernel.conf ]]; then
+	sudo systemctl stop irqbalance 2>/dev/null
 fi
 
 # Destroy all LWK instances
@@ -152,15 +138,15 @@ if [ "${pid}" != "" ]; then
 fi
 
 # Start irqbalance with the original settings
-if [ "${irqbalance_used}" != "" ]; then
-	if ! perl -e '$tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "$tmpdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($tmpdir)); if (0) {print "cp $file $dest\n";} system("sudo cp $file $dest 2>/dev/null"); }'; then
-		echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
-	fi
-	if [ -e /tmp/mcreboot ]; then rm -rf /tmp/mcreboot; fi
-	if [ -e /tmp/irqbalance_mck ]; then rm -f /tmp/irqbalance_mck; fi
-	if ! sudo systemctl start irqbalance.service; then
-		echo "warning: failed to start irqbalance" >&2;
-	fi
+if [ -f /run/systemd/system/irqbalance.service.d/mckernel.conf ]; then
+	for f in /run/sysconfig/irqbalance_mck_affinities/proc/irq/*/smp_affinity; do
+		cat "$f" | sudo tee "${f#/run/sysconfig/irqbalance_mck_affinities}" >/dev/null 2>&1
+	done
+	sudo rm -rf /run/systemd/system/irqbalance.service.d/mckernel.conf \
+		/run/sysconfig/irqbalance_mck /run/sysconfig/irqbalance_mck_affinities
+	sudo rmdir /run/systemd/system/irqbalance.service.d 2>/dev/null
+	sudo systemctl daemon-reload
+	sudo systemctl restart irqbalance.service
 fi
 
 # Set back default swappiness
