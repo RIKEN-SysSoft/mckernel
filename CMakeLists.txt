@@ -158,7 +158,7 @@ install(PROGRAMS
 		"${CMAKE_CURRENT_BINARY_DIR}/mcstop+release.sh"
 	DESTINATION "${CMAKE_INSTALL_SBINDIR}")
 install(FILES
-		"arch/x86_64/tools/irqbalance_mck.service"
+		"arch/x86_64/tools/irqbalance.service-mckernel.conf"
 		"arch/x86_64/tools/irqbalance_mck.in"
 	DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mcreboot.1"
