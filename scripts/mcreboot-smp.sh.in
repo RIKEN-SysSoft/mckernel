@@ -16,7 +16,7 @@
 # This script is meant to be run under sudo. Running it with regular user
 # privileges requires /etc/sudoers to contain the following persmissions:
 #
-# hpcuser ALL=(root) NOPASSWD: /sbin/insmod, /sbin/rmmod, /sbin/setenforce, /bin/systemctl, /bin/cat, /bin/cp /tmp/mcreboot/smp_affinity /proc/irq/*/smp_affinity, /bin/chown * /dev/mcd*, /bin/chown * /dev/mcos*, /*/*/*/*/ihkconfig, /*/*/*/*/ihkosctl, /usr/bin/tee, /bin/sync
+# hpcuser ALL=(root) NOPASSWD: /sbin/insmod, /sbin/rmmod, /sbin/setenforce, /bin/systemctl, /bin/cat, /bin/chown * /dev/mcd*, /bin/chown * /dev/mcos*, /*/*/*/*/ihkconfig, /*/*/*/*/ihkosctl, /usr/bin/tee, /bin/sync, /usr/bin/mkdir, /usr/bin/rmdir /run/systemd/system/irqbalance.service.d, /usr/bin/rm -rf /run/systemd/system/irqbalance.service.d/mckernel.conf /run/sysconfig/irqbalance_mck /run/sysconfig/irqbalance_mck_affinities
 
 ret=1
 prefix="@prefix@"
@@ -52,11 +52,8 @@ if [ "${chown_option}" == "root" ]; then
 	chown_option=`logname 2> /dev/null`
 fi
 
-if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" -o "`systemctl status irqbalance.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-	irqbalance_used="yes"
-else
-	irqbalance_used="no"
-fi
+irqbalance_used="no"
+systemctl status irqbalance.service &>/dev/null && irqbalance_used="yes"
 
 turbo=""
 ihk_irq=""
@@ -120,11 +117,15 @@ if [ "${redirect_kmsg}" != "0" -o "${mon_interval}" != "-1" ]; then
 fi
 
 disable_irqbalance_mck() {
-	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
-		sudo systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
-
-		# Invalid .service file persists so remove it
-		rm -f /etc/systemd/system/irqbalance_mck.service
+	if [ -f /run/systemd/system/irqbalance.service.d/mckernel.conf ]; then
+		for f in /run/sysconfig/irqbalance_mck_affinities/proc/irq/*/smp_affinity; do
+			cat "$f" | sudo tee "${f#/run/sysconfig/irqbalance_mck_affinities}" >/dev/null 2>&1
+		done
+		sudo rm -rf /run/systemd/system/irqbalance.service.d/mckernel.conf \
+			/run/sysconfig/irqbalance_mck /run/sysconfig/irqbalance_mck_affinities
+		sudo rmdir /run/systemd/system/irqbalance.service.d 2>/dev/null
+		sudo systemctl daemon-reload
+		sudo systemctl restart irqbalance.service
 	fi
 }
 
@@ -135,17 +136,6 @@ error_exit() {
 	local status=$1
 
 	case $status in
-	irqbalance_mck_started)
-		if [ "${irqbalance_used}" == "yes" ]; then
-		    if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-			if ! sudo systemctl stop irqbalance_mck.service 2>/dev/null; then
-			    echo "warning: failed to stop irqbalance_mck" >&2
-			fi
-			disable_irqbalance_mck
-			rm /tmp/irqbalance_mck
-		    fi
-		fi
-		;&
 	os_created)
 		# Destroy all LWK instances
 		if ls /dev/mcos* 1>/dev/null 2>&1; then
@@ -185,10 +175,7 @@ error_exit() {
 	smp_affinity_modified)
 		umask $umask_old
 		if [ "${irqbalance_used}" == "yes" ]; then
-		    if ! perl -e '$tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "$tmpdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($tmpdir)); if (0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
-			echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
-		    fi
-		    if [ -e /tmp/mcreboot ]; then rm -rf /tmp/mcreboot; fi
+			disable_irqbalance_mck
 		fi
 		;&
 	irqbalance_stopped)
@@ -233,29 +220,26 @@ if [ "$cpus" == "" ]; then
 	fi
 fi
 
-# Stop irqbalance
-if [ "${irqbalance_used}" == "yes" ]; then
-    sudo systemctl stop irqbalance_mck.service 2>/dev/null
-    if ! sudo systemctl stop irqbalance.service 2>/dev/null ; then
-		echo "error: stopping irqbalance" >&2
-		exit 1
-    fi;
+# Stop irqbalance and save irq affinities (only first mcreboot)
+sudo systemctl stop irqbalance.service >/dev/null 2>&1
 
-    if ! perl -e 'use File::Copy qw(copy); $tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir = substr($rel, 0, length($rel) - length("/smp_affinity")); if (system("mkdir -p $tmpdir/$dir")) { exit 1; } if (0) { print "cp $file $tmpdir/$rel\n"; } if (system("sudo cat $file > $tmpdir/$rel")) { exit 1; } }'; then
-		echo "error: saving /proc/irq/*/smp_affinity" >&2
-		error_exit "irqbalance_stopped"
-	fi;
+if [[ "${irqbalance_used}" == "yes" && ! -e "/run/sysconfig/irqbalance_mck_affinities" ]]; then
+	for f in /proc/irq/*/smp_affinity; do
+		copy=/run/sysconfig/irqbalance_mck_affinities/$f
+		sudo mkdir -p "${copy%/*}"
+		sudo cat $f | sudo tee "$copy" >/dev/null || error_exit "irqbalance_stopped"
+	done
 
 # Prevent /proc/irq/*/smp_affinity from getting zero after offlining
 # McKernel CPUs by using the following algorithm.
 # if (smp_affinity & mck_cores) {
 #     smp_affinity = (mck_cores ^ -1);
 # }
-    ncpus=`lscpu | grep -E '^CPU\(s\):' | awk '{print $2}'`
-    smp_affinity_mask=`echo $cpus | ncpus=$ncpus perl -e 'while(<>){@tokens = split /,/;foreach $token (@tokens) {@nums = split /-/,$token; for($num = $nums[0]; $num <= $nums[$#nums]; $num++) {$ndx=int($num/32); $mask[$ndx] |= (1<<($num % 32))}}} $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if($j != $nint32s - 1){print ",";} $nblks = ($j != $nint32s - 1) ? 8 : ($ENV{'ncpus'} % 32 != 0) ? int((($ENV{'ncpus'} + 3) % 32) / 4) : 8; for($i = $nblks - 1;$i >= 0;$i--){ printf("%01x",($mask[$j] >> ($i*4)) & 0xf);}}'`
-#    echo cpus=$cpus ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask
+	ncpus=`lscpu | grep -E '^CPU\(s\):' | awk '{print $2}'`
+	smp_affinity_mask=`echo $cpus | ncpus=$ncpus perl -e 'while(<>){@tokens = split /,/;foreach $token (@tokens) {@nums = split /-/,$token; for($num = $nums[0]; $num <= $nums[$#nums]; $num++) {$ndx=int($num/32); $mask[$ndx] |= (1<<($num % 32))}}} $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if($j != $nint32s - 1){print ",";} $nblks = ($j != $nint32s - 1) ? 8 : ($ENV{'ncpus'} % 32 != 0) ? int((($ENV{'ncpus'} + 3) % 32) / 4) : 8; for($i = $nblks - 1;$i >= 0;$i--){ printf("%01x",($mask[$j] >> ($i*4)) & 0xf);}}'`
+	# echo cpus=$cpus ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask
 
-    if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `sudo cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); if($len != 0) { $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { system("echo $inv > /tmp/mcreboot/smp_affinity"); $cmd = "cp /tmp/mcreboot/smp_affinity $dir/smp_affinity 2>/dev/null"; system("sudo $cmd")}}'; then
+	if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `sudo cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); if($len != 0) { $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { system("echo $inv | sudo tee $dir/smp_affinity >/dev/null 2>&1")}}'; then
 		echo "error: modifying /proc/irq/*/smp_affinity" >&2
 		error_exit "irqbalance_stopped"
 	fi
@@ -433,22 +417,20 @@ fi
 
 # Start irqbalance with CPUs and IRQ for McKernel banned
 if [ "${irqbalance_used}" == "yes" ]; then
-    banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
+	banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
 
-    sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > /tmp/irqbalance_mck
+	sed -e "s/%mask%/$smp_affinity_mask/g" -e "s/%banirq%/$banirq/g" \
+		"$ETCDIR/irqbalance_mck.in" | sudo tee /run/sysconfig/irqbalance_mck >/dev/null
+	sudo mkdir /run/systemd/system/irqbalance.service.d 2>/dev/null
+	echo -e '[Service]\nEnvironmentFile=\nEnvironmentFile=/run/sysconfig/irqbalance_mck' | \
+		sudo tee /run/systemd/system/irqbalance.service.d/mckernel.conf >/dev/null
+	sudo systemctl daemon-reload
 
-	disable_irqbalance_mck
-
-	if ! sudo systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
-		echo "error: linking irqbalance_mck" >&2
-		error_exit "os_created"
+	if ! sudo systemctl restart irqbalance.service 2>/dev/null ; then
+		echo "error: restarting irqbalance with mckernelconfig" >&2
+		error_exit "mcos_sys_mounted"
 	fi
-
-    if ! sudo systemctl start irqbalance_mck.service 2>/dev/null ; then
-		echo "error: starting irqbalance_mck" >&2
-		error_exit "os_created"
-	fi
-#    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
+#	echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
 
 # Restore umask
