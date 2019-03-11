@@ -20,23 +20,20 @@ cpus=""
 irqbalance_used=""
 
 disable_irqbalance_mck() {
-	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
-		systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
-
-		# Invalid .service file persists so remove it
-		rm -f /etc/systemd/system/irqbalance_mck.service
+	if [ -f /etc/systemd/system/irqbalance.service.d/mckernel.conf ]; then
+		rm -f /etc/systemd/system/irqbalance.service.d/mckernel.conf /etc/sysconfig/irqbalance_mck
+		rmdir /etc/systemd/system/irqbalance.service.d 2>/dev/null
+		systemctl daemon-reload
+		systemctl restart irqbalance.service
 	fi
 }
 
 # No SMP module? Exit.
 if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then exit 0; fi
 
-if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
+if systemctl status irqbalance.service &>/dev/null; then
 	irqbalance_used="yes"
-	if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
-		echo "warning: failed to stop irqbalance_mck" >&2
-	fi
-	disable_irqbalance_mck
+	systemctl stop irqbalance
 fi
 
 # Destroy all LWK instances
@@ -128,9 +125,7 @@ if [ "${irqbalance_used}" != "" ]; then
 		echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
 	fi
 	if [ -e /tmp/mcreboot ]; then rm -rf /tmp/mcreboot; fi
-	if ! systemctl start irqbalance.service; then
-		echo "warning: failed to start irqbalance" >&2;
-	fi
+	disable_irqbalance_mck
 fi
 
 # Set back default swappiness

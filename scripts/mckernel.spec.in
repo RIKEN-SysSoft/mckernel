@@ -87,7 +87,7 @@ Interface for Heterogeneous Kernels and McKernel.
 %{_includedir}/ihk/affinity.h
 %{_includedir}/ihk/ihk_rusage.h
 %{_sysconfdir}/irqbalance_mck.in
-%{_sysconfdir}/irqbalance_mck.service
+%{_sysconfdir}/irqbalance.service-mckernel.conf
 %{_mandir}/man1/mcreboot.1.gz
 %{_mandir}/man1/ihkconfig.1.gz
 %{_mandir}/man1/ihkosctl.1.gz

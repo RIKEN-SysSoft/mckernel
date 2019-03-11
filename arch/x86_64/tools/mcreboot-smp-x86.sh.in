@@ -44,11 +44,8 @@ DUMP_LEVEL=24
 facility="LOG_LOCAL6"
 chown_option=`logname 2> /dev/null`
 
-if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" -o "`systemctl status irqbalance.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-	irqbalance_used="yes"
-else
-	irqbalance_used="no"
-fi
+irqbalance_used="no"
+systemctl status irqbalance.service &>/dev/null && irqbalance_used="yes"
 
 turbo=""
 ihk_irq=""
@@ -112,11 +109,11 @@ if [ "${redirect_kmsg}" != "0" -o "${mon_interval}" != "-1" ]; then
 fi
 
 disable_irqbalance_mck() {
-	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
-		systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
-
-		# Invalid .service file persists so remove it
-		rm -f /etc/systemd/system/irqbalance_mck.service
+	if [ -f /etc/systemd/system/irqbalance.service.d/mckernel.conf ]; then
+		rm -f /etc/systemd/system/irqbalance.service.d/mckernel.conf /etc/sysconfig/irqbalance_mck
+		rmdir /etc/systemd/system/irqbalance.service.d 2>/dev/null
+		systemctl daemon-reload
+		systemctl restart irqbalance.service
 	fi
 }
 
@@ -129,12 +126,7 @@ error_exit() {
 	case $status in
 	irqbalance_mck_started)
 		if [ "${irqbalance_used}" == "yes" ]; then
-		    if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-			if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
-			    echo "warning: failed to stop irqbalance_mck" >&2
-			fi
-			disable_irqbalance_mck
-		    fi
+		    disable_irqbalance_mck
 		fi
 		;&
 	mcos_sys_mounted)
@@ -265,7 +257,6 @@ fi
 
 # Stop irqbalance
 if [ "${irqbalance_used}" == "yes" ]; then
-    systemctl stop irqbalance_mck.service 2>/dev/null
     if ! systemctl stop irqbalance.service 2>/dev/null ; then
 		echo "error: stopping irqbalance" >&2
 		exit 1
@@ -472,22 +463,19 @@ fi
 
 # Start irqbalance with CPUs and IRQ for McKernel banned
 if [ "${irqbalance_used}" == "yes" ]; then
-    banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
+	banirq=`cat /proc/interrupts| perl -e 'while(<>) { if(/^\s*(\d+).*IHK\-SMP\s*$/) {print $1;}}'`
 
-    sed "s/%mask%/$smp_affinity_mask/g" $ETCDIR/irqbalance_mck.in | sed "s/%banirq%/$banirq/g" > /tmp/irqbalance_mck
+	sed "s/%mask%/$smp_affinity_mask/g" "$ETCDIR/irqbalance_mck.in" | sed "s/%banirq%/$banirq/g" > /etc/sysconfig/irqbalance_mck
+	mkdir /etc/systemd/system/irqbalance.service.d 2>/dev/null
+	cp -f "$ETCDIR/irqbalance.service-mckernel.conf" /etc/systemd/system/irqbalance.service.d/mckernel.conf
+	echo -e '[Service]\nEnvironmentFile=\nEnvironmentFile=/etc/sysconfig/irqbalance_mck' > /etc/systemd/system/irqbalance.service.d/mckernel.conf
+	systemctl daemon-reload
 
-	disable_irqbalance_mck
-
-	if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
-		echo "error: linking irqbalance_mck" >&2
+	if ! systemctl restart irqbalance.service 2>/dev/null ; then
+		echo "error: restarting irqbalance with mckernelconfig" >&2
 		error_exit "mcos_sys_mounted"
 	fi
-
-    if ! systemctl start irqbalance_mck.service 2>/dev/null ; then
-		echo "error: starting irqbalance_mck" >&2
-		error_exit "mcos_sys_mounted"
-	fi
-#    echo cpus=$cpus ncpus=$ncpus banirq=$banirq
+#	echo cpus=$cpus ncpus=$ncpus banirq=$banirq
 fi
 
 # Restore umask
