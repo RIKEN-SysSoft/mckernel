@@ -1,0 +1,64 @@
+/* README COPYRIGHT FUJITSU LIMITED 2019 */
+
+arm64版UTIテストセットREADME
+
+(1) テストの実行方法
+	事前準備
+		1. arm64版syscall_interceptライブラリを用意する
+		   https://github.com/RIKEN-SysSoft/syscall_intercept.git
+
+		2. McKernelはENABLE_UTI=ONでビルドしたものを用意する
+
+	以下の手順でテストを実行する
+		1. $HOME/.mck_test_configを用意する
+		   当該ファイルは、McKernelをビルドした際に生成されるmck_test_config.sample
+		   ファイルを$HOMEにコピーし、適宜編集する
+
+		2. 必要に応じて、LD_LIBRARY_PATH環境変数を設定する
+
+		3. make testを実行する
+
+(2) テスト項目詳細
+	CT12-CT20
+		test/uti/READMEを参照のこと
+
+(3) 実行結果ログ
+	result.logファイル内に実行時のログを記載する
+	実行に利用したIHK/McKernelは、以下のものである
+
+	IHK
+		https://github.com/RIKEN-SysSoft/ihk.git
+		tag: fj_test_201902
+
+		commit f4c2dbbb0f1ba87b2b6b33a1e683c313bd2006fa
+		Author: Dominique Martinet <dominique.martinet@cea.fr>
+		Date:   Thu Feb 7 14:02:00 2019 +0900
+
+		上記に加えて、以下の修正を取り込む
+		https://review.gerrithub.io/c/RIKEN-SysSoft/ihk/+/447014
+		https://review.gerrithub.io/c/RIKEN-SysSoft/ihk/+/446206
+
+	McKernel
+		https://github.com/RIKEN-SysSoft/mckernel.git
+		tag: fj_test_201902
+
+		commit 21cf953a03d54e6ca01a39f52637d79134ad4e0e
+		Author: Dominique Martinet <dominique.martinet@cea.fr>
+		Date:   Wed Feb 6 16:55:14 2019 +0900
+
+		上記に加えて、以下の修正を取り込む
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/446205
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/447017
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/447015
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/446581
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/446583
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/446584
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/446797
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/445448
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/442533
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/442534
+		https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/447439
+		patch/futex_wait_on_Linux_use_global_struct.patch
+
+
+以上。
