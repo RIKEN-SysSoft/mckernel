@@ -17,6 +17,8 @@ Syscam call convention:
   rdi:	 fd
   rsi:	cmd
   rdx:	param
+
+  Save and switch the context including FS.
 */
 
 .global switch_ctx

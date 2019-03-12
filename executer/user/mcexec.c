@@ -2956,7 +2956,8 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 	save_fs_desc.rctx = uti_desc->rctx;
 	save_fs_desc.lctx = uti_desc->lctx;
 
-	if ((rc = switch_ctx(fd, MCEXEC_UP_UTI_SAVE_FS, &save_fs_desc, uti_desc->lctx, uti_desc->rctx))
+	if ((rc = switch_ctx(fd, MCEXEC_UP_UTI_SWITCH_CTX, &save_fs_desc,
+			     uti_desc->lctx, uti_desc->rctx))
 	    < 0) {
 		fprintf(stderr, "%s: ERROR switch_ctx failed (%d)\n", __FUNCTION__, rc);
 		goto out;

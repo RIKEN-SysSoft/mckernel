@@ -319,17 +319,6 @@ struct mcos_handler_info;
 static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
 
-/* Info of Linux counterpart of migrated-to-Linux thread */
-struct host_thread {
-	struct list_head list;
-	struct mcos_handler_info *handler;
-	int     pid;
-	int     tid;
-	unsigned long usp;
-	unsigned long lfs;
-	unsigned long rfs;
-};
-
 struct mcos_handler_info *new_mcos_handler_info(ihk_os_t os, struct file *file)
 {
 	struct mcos_handler_info *info;
@@ -2492,7 +2481,8 @@ long mcexec_uti_get_ctx(ihk_os_t os, struct uti_get_ctx_desc __user *udesc)
 	return rc;
 }
 
-long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, struct file *file)
+long mcctrl_switch_ctx(ihk_os_t os, struct uti_save_fs_desc __user *udesc,
+		       struct file *file)
 {
 	int rc = 0;
 	void *usp = get_user_sp();
@@ -2509,9 +2499,14 @@ long mcexec_uti_save_fs(ihk_os_t os, struct uti_save_fs_desc __user *udesc, stru
 		goto out;
 	}
 
-	if(copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
+	if (copy_from_user(&desc, udesc, sizeof(struct uti_save_fs_desc))) {
 		printk("%s: Error: copy_from_user failed\n", __FUNCTION__);
 		rc = -EFAULT;
+		goto out;
+	}
+
+	rc = arch_switch_ctx(&desc);
+	if (rc < 0) {
 		goto out;
 	}
 
@@ -3272,8 +3267,9 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	case MCEXEC_UP_UTI_GET_CTX:
 		return mcexec_uti_get_ctx(os, (struct uti_get_ctx_desc *)arg);
 
-	case MCEXEC_UP_UTI_SAVE_FS:
-		return mcexec_uti_save_fs(os, (struct uti_save_fs_desc *)arg, file);
+	case MCEXEC_UP_UTI_SWITCH_CTX:
+		return mcctrl_switch_ctx(os, (struct uti_save_fs_desc *)arg,
+					 file);
 
 	case MCEXEC_UP_SIG_THREAD:
 		return mcexec_sig_thread(os, arg, file);
