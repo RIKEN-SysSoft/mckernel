@@ -1,0 +1,16 @@
+mckernel booting...  done.
+make: Nothing to be done for 'all'.
+swapout returns: 0
+[OK] so_023 swaptest program is nomrmal exit.
+data = hello
+[OK] so_024 confirmed restoration of data.
+0000000000420000:0000000000620000 is matched.
+0000000000650000:0000000000a50000 is matched.
+0000080000030000:0000080000040000 is matched.
+0000100000450000:0000100000480000 is matched.
+0000100000530000:0000100000640000 is matched.
+0000100000640000:0000100000750000 is matched.
+0000100000750000:0000100000860000 is matched.
+0000100000860000:0000100000970000 is matched.
+0000100000970000:0000100000a80000 is matched.
+[OK] so_025 pageout areas and pagein areas are matched.

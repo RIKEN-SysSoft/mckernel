@@ -1,0 +1,42 @@
+mckernel booting...  done.
+[OK] CT01001 ql_server and  usr_prgs are not running on each node
+make: Entering directory '/root/mckernel/test/qlmpi/qlmpi_testsuite'
+make: 'usr_prg_A' is up to date.
+make: Leaving directory '/root/mckernel/test/qlmpi/qlmpi_testsuite'
+[OK] CT01002 ql_mpiexec_start usr_prg_A (first exec) returns 0
+[OK] CT01003 ql_server is running on master node
+[OK] CT01004 usr_prg_A's args are correct on each node
+[OK] CT01005 usr_prg_A's env (QL_TEST) is correct on each node
+[OK] CT01006 usr_prg_A's calculation is done on each node
+  1 programs is waiting on cnode005
+[OK] CT01007 usr_prg_A is waiting for resume-req on each node
+make: Entering directory '/root/mckernel/test/qlmpi/qlmpi_testsuite'
+make: 'usr_prg_B' is up to date.
+make: Leaving directory '/root/mckernel/test/qlmpi/qlmpi_testsuite'
+[OK] CT01008 ql_mpiexec_start usr_prg_B (first exec) returns 0
+[OK] CT01009 usr_prg_B's calculation is done on each node
+  1 programs is waiting on cnode005
+[OK] CT01010 usr_prg_B is waiting for resume-req on each node
+make: Entering directory '/root/mckernel/test/qlmpi/qlmpi_testsuite'
+make: 'usr_prg_C' is up to date.
+make: Leaving directory '/root/mckernel/test/qlmpi/qlmpi_testsuite'
+[OK] CT01011 ql_mpiexec_start usr_prg_C (first exec) returns 0
+[OK] CT01012 usr_prg_C's calculation is done on each node
+  1 programs is waiting on cnode005
+[OK] CT01013 usr_prg_C is waiting for resume-req on each node
+[OK] CT01014 (again) ql_mpiexec_start usr_prg_A returns 0
+[OK] CT01015 (again) usr_prg_A's args are correct on each node
+[OK] CT01016 (again) usr_prg_A's env (QL_TEST) is correct on each node
+[OK] CT01017 (again) usr_prg_A's calculation is done on each node
+  1 programs is waiting on cnode005
+[OK] CT01018 (again) usr_prg_A is waiting for resume-req on each node
+[OK] CT01019 (again) ql_mpiexec_start usr_prg_B returns 0
+[OK] CT01020 (again) usr_prg_B's calculation is done on each node
+  1 programs is waiting on cnode005
+[OK] CT01021 (again) usr_prg_B is waiting for resume-req on each node
+[OK] CT01022 ql_mpiexec_finalize usr_prg_A return 0
+[OK] CT01023 ql_mpiexec_finalize usr_prg_B return 0
+[OK] CT01024 ql_server is still running on master node
+[OK] CT01025 ql_mpiexec_finalize usr_prg_C return 0
+[OK] CT01026 ql_server is not running on master node
+[OK] so_026 qlmpi test 

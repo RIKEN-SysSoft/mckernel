@@ -1,0 +1,12 @@
+mckernel booting...  done.
+make: Nothing to be done for 'all'.
+[OK] so_014 arealist_preparewrite:info[].start matched went.pair[].start :(420000)
+[OK] so_015 arealist_preparewrite:info[].end matched went.pair[].end :(620000)
+[OK] so_016 arealist_preparewrite:info[].flag matched went.pair[].flag :(331004)
+[OK] so_017 arealist_preparewrite:info[].pos matched went.pair[].pos :(188)
+[OK] so_018 pager_open:swapfname matched si-udate_buf :(/tmp/pages)
+[OK] so_019 pager_unlink:swapfname matched si-udate_buf :(/tmp/pages)
+0
+[OK] so_020 arealist_get:arealist is inistialized. :(0)
+[OK] so_021 arealist_get: area->tail->next is matched :(630620)
+[OK] so_022 arealist_alloc:arealist is inistialized. :(0)
