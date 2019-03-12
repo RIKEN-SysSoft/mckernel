@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "008210b8_75e616de",
+        "filename": "test/user_space/arm64/patch/qlmpilib_bufsize.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T07:23:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "659f825b5045ee5e15f9ddf0ca10cd4e7961b752",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c6e08a8_dfc49e89",
+        "filename": "test/user_space/arm64/patch/qlmpilib_bufsize.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T07:23:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "659f825b5045ee5e15f9ddf0ca10cd4e7961b752",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f76254f_50f31435",
+        "filename": "test/user_space/arm64/patch/qlmpilib_bufsize.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T07:23:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ #define QL_NORMAL 2 $",
+      "revId": "659f825b5045ee5e15f9ddf0ca10cd4e7961b752",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "10ec6388_6ef09f6e",
+        "filename": "test/user_space/arm64/patch/swaptest_bufsize_malloccount.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T07:23:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "659f825b5045ee5e15f9ddf0ca10cd4e7961b752",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cc430d73_8a6abf83",
+        "filename": "test/user_space/arm64/patch/swaptest_bufsize_malloccount.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T07:23:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "659f825b5045ee5e15f9ddf0ca10cd4e7961b752",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3927e867_710999d8",
+        "filename": "test/user_space/arm64/ql_normal.log",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T07:23:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+[OK] so_026 qlmpi test $",
+      "revId": "659f825b5045ee5e15f9ddf0ca10cd4e7961b752",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
