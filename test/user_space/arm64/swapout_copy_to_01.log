@@ -1,0 +1,10 @@
+mckernel booting...  done.
+make: Nothing to be done for 'all'.
+[OK] so_007 arealist_update:variable i matched rea->tail->count :(0)
+[OK] so_008 arealist_add:addr->start matched waddr.start :(420000)
+[OK] so_009 do_pageout:variable si->udata_buf matched si->swapfname :(/tmp/pages)
+[OK] so_010 do_pageout:si->swphdr->magic is McKernel swap :(McKernel swap)
+[OK] so_011 do_pageout:si->swphdr->version is 1.6.0 :(1.6.0)
+9
+[OK] so_012 do_pageout:variable count_sarea matched swap_area.count :(9)
+[OK] so_013 do_pageout:variable count_marea matched mlock_area.count :(2)

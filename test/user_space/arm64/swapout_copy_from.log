@@ -1,0 +1,8 @@
+mckernel booting...  done.
+make: Nothing to be done for 'all'.
+[OK] so_001 arealist_update:variable i matched rea->tail->count :(0)
+[OK] so_002 mlocklist_morereq:variable ent.count matched ent->count :(0)
+[OK] so_003 arealist_preprarewrite:variable ent.count matched ent->count :(7)
+[OK] so_004 do_pageout loop1:variable swap_info[].start matched sw_info.start :(420000)
+[OK] so_005 do_pageout loop2:variable swap_info[].start matched sw_info.start :(420000)
+[OK] so_006 do_pageout loop3:variable swap_info[].start matched sw_info.start :(420000)
