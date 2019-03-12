@@ -1,0 +1,101 @@
+gcc   -Wall -lpthread  CT12.c   -o CT12
+gcc   -Wall -lpthread  CT13.c   -o CT13
+gcc   -Wall -lpthread  CT14.c   -o CT14
+gcc   -Wall -lpthread  CT15.c   -o CT15
+gcc   -Wall -lpthread  CT16.c   -o CT16
+gcc   -Wall -lpthread  CT17.c   -o CT17
+gcc   -Wall -lpthread  CT18.c   -o CT18
+gcc   -Wall -lpthread  CT19.c   -o CT19
+gcc   -Wall -lpthread  CT20.c   -o CT20
+./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 4-7 -m 512M@0 ... done
+CT12001 futex START
+CT12002 pthread_create OK
+CT12100 running on Linux CPU OK
+CT12003 FUTEX_WAKE OK
+CT12101 FUTEX_WAIT OK
+CT12004 pthread_join OK
+CT12005 END
+CT12: OK.
+CT13001 futex START
+CT13002 pthread_create OK
+CT13100 running on Linux CPU OK
+CT13003 FUTEX_WAIT OK
+CT13101 FUTEX_WAKE OK
+CT13004 pthread_join OK
+CT13005 END
+CT13: OK.
+CT14001 futex START
+CT14002 util_indicate_clone OK
+CT14003 pthread_create OK
+CT14004 lock first OK
+CT14100 running on Linux OK
+CT14101 lock second OK
+CT14005 pthread_join OK
+CT14006 END
+nsec=475228464, nspw=47.522846
+CT14: OK.
+CT15001 futex START
+CT15002 util_indicate_clone OK
+CT15003 pthread_create OK
+CT15100 running on Linux OK
+CT15101 lock first OK
+CT15004 lock second OK
+CT15005 pthread_join OK
+CT15006 END
+nsec=466067664, nspw=46.606766
+CT15: OK.
+CT16001 futex START
+CT16002 util_indicate_clone OK
+CT16003 pthread_create OK
+CT16101 running on Linux OK
+CT16102 return from pthread_cond_wait() OK
+CT16004 pthread_join OK
+CT16005 END
+CT16: OK.
+CT17001 futex START
+CT17002 util_indicate_clone OK
+CT17003 pthread_create OK
+CT17004 lock on 0x4200a8 OK
+CT17100 running on Linux OK
+CT17005 wake on 0x4200e0 OK
+CT17006 pthread_join OK
+CT17007 END
+CT17: OK.
+CT18001 futex START
+CT18002 pthread_create OK
+CT18101 running on Linux CPU OK
+start=1552371255.811177536
+op=109
+end=1552371256.658158304
+CT18102 FUTEX_WAIT OK
+CT18103 timeout OK
+CT18003 FUTEX_WAKE missing the waiter OK
+CT18004 pthread_join OK
+CT18005 END
+CT18: OK.
+CT19001 futex START
+CT19002 pthread_create OK
+CT19100 running on Linux CPU OK
+start=1363.826803456
+op=9
+end=1364.640704608
+CT19101 FUTEX_WAIT OK
+CT19102 timeout OK
+CT19003 FUTEX_WAKE missing the waiter OK
+CT19004 pthread_join OK
+CT19005 END
+CT19: OK.
+CT20001 futex START
+CT20002 pthread_create OK
+CT20100 running on Linux CPU OK
+start=1552371275.945834096
+end=1552371276.817846064
+CT20101 FUTEX_WAIT OK
+CT20102 timeout OK
+CT20003 FUTEX_WAKE missing the waiter OK
+CT20004 pthread_join OK
+CT20005 END
+CT20: OK.
+mcstop+release.sh ... done
