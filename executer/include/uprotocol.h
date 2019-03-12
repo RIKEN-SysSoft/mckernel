@@ -358,7 +358,7 @@ struct uti_get_ctx_desc {
 	unsigned long key; /* OUT: struct task_struct* of mcexec thread, used to search struct host_thread */
 };
 
-struct uti_save_fs_desc {
+struct uti_switch_ctx_desc {
 	void *rctx; /* Remote context */
 	void *lctx; /* Local context */
 };
