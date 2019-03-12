@@ -23,6 +23,10 @@ if (${ARCH} STREQUAL "x86_64")
 	add_compile_options(-mcmodel=large -mno-red-zone -mno-sse)
 endif()
 
+if (${ARCH} STREQUAL "arm64")
+	add_compile_options(-mgeneral-regs-only)
+endif()
+
 set(MCKERNEL_SRCS
 	init.c mem.c debug.c mikc.c listeners.c ap.c syscall.c cls.c host.c process.c
 	copy.c waitq.c futex.c timer.c plist.c fileobj.c shmobj.c zeroobj.c
