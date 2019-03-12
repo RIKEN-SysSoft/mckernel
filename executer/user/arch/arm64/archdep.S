@@ -1,4 +1,4 @@
-/* archdep.S COPYRIGHT FUJITSU LIMITED 2017-2018 */
+/* archdep.S COPYRIGHT FUJITSU LIMITED 2017-2019 */
 
 #include <sys/syscall.h>
 
@@ -11,6 +11,8 @@
  *     x2 : void **param
  *     x3 : void *lctx
  *     x4 : void *rctx
+ *
+ * Save and switch the context including TLS.
  */
 .global switch_ctx
 switch_ctx:

@@ -364,3 +364,11 @@ static inline bool pte_is_write_combined(pte_t pte)
 }
 #endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
+/*
+ * The assembler switch_ctx is save/load registers in the context.
+ * Do FS save/load and register host_thread with ioctl.
+ */
+long arch_switch_ctx(struct uti_save_fs_desc *desc)
+{
+	return 0;
+}
