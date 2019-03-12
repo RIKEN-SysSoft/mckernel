@@ -1,0 +1,14 @@
+## qlmpilib_bufsize.patch COPYRIGHT FUJITSU LIMITED 2019 ##
+diff --git a/executer/user/qlmpilib.c b/executer/user/qlmpilib.c
+index 7fcbcb56..78c1f846 100644
+--- a/executer/user/qlmpilib.c
++++ b/executer/user/qlmpilib.c
+@@ -15,7 +15,7 @@
+ #include "../include/pmi.h"
+ 
+ 
+-#define BUF_SIZE        (32*1024)
++#define BUF_SIZE        (128*1024)
+ #define NALLOC 10
+ #define QL_SUCCESS 0
+ #define QL_NORMAL 2 

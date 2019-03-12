@@ -1,6 +1,7 @@
-/* README COPYRIGHT FUJITSU LIMITED 2018 */
+/* README COPYRIGHT FUJITSU LIMITED 2018-2019 */
 
 ユーザ空間アクセスコードのアーキテクチャ依存非依存分離
+プロセススワップ機能
 arm64版テスト結果README
 
 (1) NG項目の補足情報
@@ -16,14 +17,20 @@ arm64版テスト結果README
 	1. move_pagesは一部しか実装されていないため、Arm移植の対象ではない。
 	   そのため、テストを実施しない。
 
-	2. ./go_swapout_test.shを利用したテストケースについては、
-	  プロセススワップ機能のテストセットであると考えているため、
-	  arm64版では移植を行っていない機能となる。
-	  そのため、テストを実施しない。
+(3) テスト実行方法
+	test/user_space/READMEを参照のこと
 
-(3) IA版における対応版数
-	実行に利用したIHK/McKernelは、IA版における下記の版数相当の
-	arm64版移植IHK/McKernelである。
+	swaptest実施の際にはpatch/swaptest_bufsize_malloccount.patchのパッチを
+	適用したものを利用する
+
+(4) テスト項目詳細
+	test/user_space/READMEを参照のこと
+
+(5) 実行結果ログ
+	result.logファイル内に
+	ユーザ空間アクセスコードのアーキテクチャ依存非依存分離
+	のテスト実行時のログを記載する。
+	実行に利用したIHK/McKernelは、IA版における下記の版数相当のものである。
 
 	IHK
 		commit d6fcbee8cb91f9ec4b49f97c918e696ac0335aaf
@@ -34,6 +41,31 @@ arm64版テスト結果README
 		commit 6f9fef2b13447c74c36d15cf5ebd186f8395ccca
 		Author: Ken Sato <ken.sato.ty@hitachi-solutions.com>
 		Date:   Tue Sep 25 10:05:41 2018 +0900
+
+
+	ql_normal.log, swapout_copy_from.log, swapout_copy_to_01.log
+	swapout_copy_to_02.log, swapout_normal.logのログファイル内には
+	プロセススワップ機能のテスト実行時のログを記載する。
+	実行に利用したIHK/McKernelは、下記の版数のものである。
+
+	IHK
+		https://github.com/RIKEN-SysSoft/ihk.git
+		tag: fj_test_201902
+
+		commit f4c2dbbb0f1ba87b2b6b33a1e683c313bd2006fa
+		Author: Dominique Martinet <dominique.martinet@cea.fr>
+		Date:   Thu Feb 7 14:02:00 2019 +0900
+
+	McKernel
+		https://github.com/RIKEN-SysSoft/mckernel.git
+		tag: fj_test_201902
+
+		commit 21cf953a03d54e6ca01a39f52637d79134ad4e0e
+		Author: Dominique Martinet <dominique.martinet@cea.fr>
+		Date:   Wed Feb 6 16:55:14 2019 +0900
+
+		上記に加えて、以下の修正を取り込む
+		patch/qlmpilib_bufsize.patch
 
 
 以上。

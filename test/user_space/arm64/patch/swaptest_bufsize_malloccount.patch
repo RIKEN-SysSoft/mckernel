@@ -1,0 +1,33 @@
+## swaptest_bufsize_malloccount.patch COPYRIGHT FUJITSU LIMITED 2019 ##
+diff --git a/test/user_space/swapout/swaptest.c b/test/user_space/swapout/swaptest.c
+index 3c48446f..5638b6da 100644
+--- a/test/user_space/swapout/swaptest.c
++++ b/test/user_space/swapout/swaptest.c
+@@ -4,14 +4,14 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#define BUF_SIZE	(32*1024)
++#define BUF_SIZE	(128*1024)
+ 
+ int	data[1024*1024];
+ char	sym2[1024*1024] = { 10, 20, 30, 0 };
+ char	sym3[1024*1024] = { 10, 20, 30, 0 };
+ char	*sym1 = "aaaaaa";
+ char	buffer[BUF_SIZE];
+-char	*ptr1, *ptr2;
++char	*ptr1, *ptr2, *ptr3, *ptr4, *ptr5, *ptr6;
+ char	fnamebuf[1024];
+ 
+ int
+@@ -54,6 +55,10 @@ main(int argc, char **argv)
+     printf("&cc = %p\n", &cc);
+     ptr1 = malloc(1024);
+     ptr2 = malloc(1024*1024);
++    ptr3 = malloc(1024*1024);
++    ptr4 = malloc(1024*1024);
++    ptr5 = malloc(1024*1024);
++    ptr6 = malloc(1024*1024);
+     printf("ptr1 = %p\n", ptr1);
+     printf("ptr2 = %p\n", ptr2);
+     sprintf((char*) data, "hello\n");
