@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1307b344_065990b2",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a3c19d49_ae2bf8f3",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7caabe1a_b9c4f063",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e934c186_6255ecda",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ec2393a_b3d1d4e4",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "488eb849_b3ed0450",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "37322db7_78550f88",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c70c6940_69216d35",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48397ca8_fcf75422",
+        "filename": "test/uti/arm64/patch/futex_wait_on_Linux_use_global_struct.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-12T06:50:45Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "e45e29defaf76348580e2e427d856cacaa9b2739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
