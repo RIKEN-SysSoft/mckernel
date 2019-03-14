@@ -2699,4 +2699,11 @@ SYSCALL_DECLARE(time)
 	return time();
 }
 
+extern void ptrace_syscall_event(struct thread *thread);
+long arch_ptrace_syscall_event(struct thread *thread,
+			       ihk_mc_user_context_t *ctx, long setret)
+{
+	ptrace_syscall_event(thread);
+	return setret;
+}
 /*** End of File ***/
