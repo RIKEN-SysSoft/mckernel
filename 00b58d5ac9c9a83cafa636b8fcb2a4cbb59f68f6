@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "764572ab_b5ec17f1",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 683,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-14T16:23:03Z",
+      "side": 1,
+      "message": "ERROR: switch and case should be at the same indent\n+\t\tswitch (proc-\u003estatus \u0026 (0x3f)) {\n+\t\t\tcase PS_INTERRUPTIBLE:\n[...]\n+\t\t\tcase PS_UNINTERRUPTIBLE:\n[...]\n+\t\t\tcase PS_ZOMBIE:\n[...]\n+\t\t\tcase PS_EXITED:\n[...]\n+\t\t\tcase PS_STOPPED:\n[...]\n+\t\t\tcase PS_RUNNING:\n+\t\t\tdefault:",
+      "revId": "00b58d5ac9c9a83cafa636b8fcb2a4cbb59f68f6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
