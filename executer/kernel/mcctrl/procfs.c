@@ -1113,7 +1113,7 @@ static const struct procfs_entry pid_entry_stuff[] = {
 	PROC_REG("mem",        0400, NULL),
 	PROC_REG("pagemap",    0444, NULL),
 //	PROC_REG("smaps",      S_IRUGO, NULL),
-//	PROC_REG("stat",       0444, &mckernel_buff_io),
+	PROC_REG("stat",       0444, &mckernel_buff_io),
 //	PROC_REG("statm",      S_IRUGO, NULL),
 	PROC_REG("status",     0444, &mckernel_buff_io),
 //	PROC_REG("syscall",    S_IRUGO, NULL),
