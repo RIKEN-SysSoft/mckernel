@@ -18,6 +18,22 @@ KERNDIR="@KERNDIR@"
 mem=""
 cpus=""
 irqbalance_used=""
+kill_in_use=""
+
+while getopts k OPT
+do
+	case ${OPT} in
+	k)
+		kill_in_use=1
+		;;
+	\?) exit 1
+		;;
+	esac
+done
+if [[ "$#" -gt 0 ]]; then
+	echo "Extra arguments: $@" >&2
+	exit 1
+fi
 
 disable_irqbalance_mck() {
 	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
@@ -43,6 +59,18 @@ fi
 if ls /dev/mcos* 1>/dev/null 2>&1; then
 	for i in /dev/mcos*; do
 		ind=`echo $i|cut -c10-`;
+
+		# Are processes still using it?
+		PROCS=$(lsof -t $i 2>/dev/null)
+		if [[ -n "$PROCS" ]]; then
+			if ((kill_in_use)); then
+				kill -9 $PROCS
+			else
+				echo "Proesses still using $i: $PROCS" >&2
+				exit 1
+			fi
+		fi
+
 		# Retry when conflicting with ihkmond
 		nretry=0
 		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -ge 4 ]; do
