@@ -4324,6 +4324,7 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	thread->sigevent = 1;
 	for(;;){
 		while(thread->sigevent == 0){
+			thread->status = PS_INTERRUPTIBLE;
 			if(timeout){
 				if (gettime_local_support)
 					calculate_time_from_tsc(&ats);
@@ -4340,6 +4341,7 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 		thread->sigevent = 0;
 #endif /* POSTK_DEBUG_TEMP_FIX_33 */
 
+		thread->status = PS_RUNNING;
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
 		mcs_rwlock_writer_lock(lock, &mcs_rw_node);
@@ -4454,6 +4456,8 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 			int do_schedule = 0;
 			struct cpu_local_var *v;
 			long runq_irqstate;
+
+			thread->status = PS_INTERRUPTIBLE;
 			runq_irqstate =
 				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
@@ -4475,6 +4479,7 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 		thread->sigevent = 0;
 #endif /* POSTK_DEBUG_TEMP_FIX_33 */
 
+		thread->status = PS_RUNNING;
 		lock = &thread->sigcommon->lock;
 		head = &thread->sigcommon->sigpending;
 		mcs_rwlock_writer_lock(lock, &mcs_rw_node);
