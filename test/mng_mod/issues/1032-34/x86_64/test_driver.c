@@ -26,9 +26,6 @@ static int dev_release(struct inode *inode, struct file *file)
 
 static long dev_ioctl(struct file *file, unsigned int request, unsigned long arg)
 {
-	mdelay(request * 1000);
-	return 0;
-/*
 	struct timespec s_time, c_time;
 
 	getnstimeofday(&s_time);
@@ -42,7 +39,6 @@ static long dev_ioctl(struct file *file, unsigned int request, unsigned long arg
 	}
 
 	return 0;
-*/
 }
 
 static struct file_operations fops = {

@@ -1,5 +1,5 @@
 CC = gcc
-MCK_DIR=/home/satoken/ppos
+include $(HOME)/.mck_test_config.mk
 obj-m += test_driver.o
 
 MCEXEC=$(MCK_DIR)/bin/mcexec
