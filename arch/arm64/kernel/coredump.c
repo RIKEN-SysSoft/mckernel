@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ptrace.h>
 #include <cls.h>
+#include <hwcap.h>
 
 #define	align32(x) ((((x) + 3) / 4) * 4)
 
@@ -40,6 +41,9 @@ int arch_get_thread_core_info_size(void)
 	const struct user_regset_view *view = current_user_regset_view();
 	const struct user_regset *regset = find_regset(view, NT_ARM_SVE);
 
+	if (unlikely(!(elf_hwcap & HWCAP_SVE))) {
+		return 0;
+	}
 	return sizeof(struct note) + align32(sizeof("LINUX"))
 		+ regset_size(cpu_local_var(current), regset);
 }
@@ -49,6 +53,10 @@ void arch_fill_thread_core_info(struct note *head,
 {
 	const struct user_regset_view *view = current_user_regset_view();
 	const struct user_regset *regset = find_regset(view, NT_ARM_SVE);
+
+	if (unlikely(!(elf_hwcap & HWCAP_SVE))) {
+		return;
+	}
 
 	/* pre saved registers */
 	save_fp_regs(thread);
