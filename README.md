@@ -85,7 +85,7 @@ sudo reboot
 You will need the following packages installed:
 
 ~~~~
-sudo yum install kernel-devel binutils-devel libnuma-devel
+sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel
 ~~~~
 
 Grant read permission to the System.map file of your kernel version:
