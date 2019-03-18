@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "ee3a3a5f_c6336bac",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-18T02:47:26Z",
+      "side": 1,
+      "message": "Actually why this ifndef?",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "31a2e0f5_eeb36487",
         "filename": "lib/include/ihk/lock.h",
         "patchSetId": 1
@@ -81,6 +98,24 @@
       "writtenOn": "2019-03-18T02:30:01Z",
       "side": 1,
       "message": "WARNING: line over 80 characters\n+\t\tif (__atomic_compare_exchange(\u0026(lock-\u003enext), \u0026expected, \u0026desired, 0,",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00602bdc_08a1b8af",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-18T02:47:26Z",
+      "side": 1,
+      "message": "Might as well fix these style crap if you remove the ifndef, otherwise not really worth it",
+      "parentUuid": "27717d31_181e6887",
       "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
