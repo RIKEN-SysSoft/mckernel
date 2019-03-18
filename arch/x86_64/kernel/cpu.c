@@ -1385,13 +1385,11 @@ void ihk_mc_modify_user_context(ihk_mc_user_context_t *uctx,
 	}
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
 long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp)
 {
 	*eofp = 1;
 	return -ENOMEM;
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_42 */
 
 void arch_clone_thread(struct thread *othread, unsigned long pc,
 			unsigned long sp, struct thread *nthread)

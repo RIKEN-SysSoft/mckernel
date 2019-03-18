@@ -331,7 +331,6 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		ans = 0;
 		goto end;
 	}
-#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
 	else if (!strcmp(p, "cpuinfo")) { /* "/proc/cpuinfo" */
 		ans = ihk_mc_show_cpuinfo(buf, count, 0, &eof);
 		if (ans < 0 || ans > count)
@@ -341,7 +340,6 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		ans = 0;
 		goto end;
 	}
-#endif /* POSTK_DEBUG_ARCH_DEP_42 */
 	else {
 		kprintf("unsupported procfs entry: %s\n", p);
 		goto end;

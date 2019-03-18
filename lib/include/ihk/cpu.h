@@ -99,9 +99,7 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
 void ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
                               unsigned long tls_base_addr);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
 long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int *eofp);
-#endif /* POSTK_DEBUG_ARCH_DEP_42 */
 
 enum ihk_mc_user_context_regtype {
 	IHK_UCR_STACK_POINTER = 1,

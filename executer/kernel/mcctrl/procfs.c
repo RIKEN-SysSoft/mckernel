@@ -1124,11 +1124,7 @@ static const struct procfs_entry pid_entry_stuff[] = {
 
 static const struct procfs_entry base_entry_stuff[] = {
 //	PROC_REG("cmdline",    S_IRUGO, NULL),
-#ifdef POSTK_DEBUG_ARCH_DEP_42 /* /proc/cpuinfo support added. */
 	PROC_REG("cpuinfo",    0444, &mckernel_buff_io),
-#else /* POSTK_DEBUG_ARCH_DEP_42 */
-//	PROC_REG("cpuinfo",    S_IRUGO, NULL),
-#endif /* POSTK_DEBUG_ARCH_DEP_42 */
 //	PROC_REG("meminfo",    S_IRUGO, NULL),
 //	PROC_REG("pagetypeinfo",S_IRUGO, NULL),
 //	PROC_REG("softirq",    S_IRUGO, NULL),
