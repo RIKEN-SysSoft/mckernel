@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "31a2e0f5_eeb36487",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-18T02:30:01Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+ * Mellor-Crummey Scott (MCS) lock */",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6423a86_a338a3e6",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-18T02:30:01Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct mcs_lock_node {",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b5ebfe23_d3cb9ab5",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-18T02:30:01Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef mcs_lock_node_t mcs_lock_t;",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8b0a8769_690fe40f",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-18T02:30:01Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tstruct mcs_lock_node *expected \u003d node;\n+\t\tif (__atomic_compare_exchange(\u0026(lock-\u003enext), \u0026expected, \u0026desired, 0,",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27717d31_181e6887",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-18T02:30:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (__atomic_compare_exchange(\u0026(lock-\u003enext), \u0026expected, \u0026desired, 0,",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
