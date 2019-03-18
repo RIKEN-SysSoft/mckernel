@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e4dbcc41_5d30fead",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 683,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-18T04:46:33Z",
+      "side": 1,
+      "message": "Fixed this to look at `thread-\u003estatus` and not `proc-\u003estatus`.\n\nI was wrong about the file not being created in time, or at least I can\u0027t reproduce anymore, so I assume I was doing something bad somehow at the time.\nThere\u0027s still a race with (at least) futex02 where the futex_wake() runs before the other thread is in futex_wait() beause I assume we show \u0027S\u0027 on some earlier forwarded syscall than what linux does, but it looks rare enough and tbh I see it as a ltp bug so sod that part, let\u0027s wait for tests.",
+      "revId": "052fb263efd33283488cb73f2d0d4797c030e4bf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
