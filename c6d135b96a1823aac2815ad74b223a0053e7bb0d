@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "0d98321e_1631c20e",
+        "filename": "lib/include/ihk/lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-03-18T03:37:21Z",
+      "side": 1,
+      "message": "The intention was that if you want to do your own arch dependent implementation then you just do it in arch-lock.h and define ARCH_MCS_LOCK so that this gets ignored.",
+      "parentUuid": "ee3a3a5f_c6336bac",
+      "revId": "c6d135b96a1823aac2815ad74b223a0053e7bb0d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "31a2e0f5_eeb36487",
         "filename": "lib/include/ihk/lock.h",
         "patchSetId": 1
