@@ -264,25 +264,54 @@ CT10 pthread_cond_{wait,signal}() [OK]
 
 CT11 measure time of system calls [OK]
 
-CT12 child (helper thread) futex() wait [OK]
+CT12 以下の組み合わせのfutexによる待ち合わせと起床とを確認する。なお、
+     LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・Linuxスレッドが待ち合わせる
+・McKernelスレッドが前記スレッドを起こす
 
-CT13 parent futex() wait [OK]
+CT13 以下の組み合わせのfutexによる待ち合わせと起床とを確認する。なお、
+     LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・McKernelスレッドが待ち合わせる
+・Linuxスレッドが前記スレッドを起こす
 
-CT14 child pthread_lock wait [OK]
+CT14 以下の組み合わせのpthread_mutex_lockによる待ち合わせと起床とを確
+     認する。なお、LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・Linuxスレッドが待ち合わせる
+・McKernelスレッドが前記スレッドを起こす
 
-CT15 parent pthread_lock wait [OK]
+CT15 以下の組み合わせのpthread_mutex_lockによる待ち合わせと起床とを確
+     認する。なお、LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・McKernelスレッドが待ち合わせる
+・Linuxスレッドが前記スレッドを起こす
 
-CT16 child pthread_cond_wait [OK]
-Linuxはcondで起きる。その後mutexで起きたりしない。
+CT16 以下の組み合わせのpthread_cond_waitによる待ち合わせと起床とを確
+     認する。なお、LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・Linuxスレッドが待ち合わせる
+・McKernelスレッドが前記スレッドを起こす
 
-CT17 parent pthread_cond_wait [OK]
-McKernelはcondで起きる。その後mutexで起きる。
+CT17 以下の組み合わせのpthread_cond_waitによる待ち合わせと起床とを確
+     認する。なお、LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・McKernelスレッドが待ち合わせる。
+・Linuxスレッドが前記スレッドを起こす
 
-CT18 child (helper thread) futex() wait with FUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIME and non-zero timeout [OK]
+CT18 以下の組み合わせのfutexによる待ち合わせタイムアウトを確認する。
+     なお、LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・LinuxスレッドがFUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIMEと現在時刻
+  プラス800 msのタイムアウト時刻を指定して、タイムアウトする
+・McKernelスレッドがそれより後の時刻に起床を試みる。
 
-CT19 child (helper thread) futex() wait with FUTEX_WAIT_BITSET and non-zero timeout [OK]
+CT19 以下の組み合わせのfutexによる待ち合わせタイムアウトを確認する。
+     なお、LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・LinuxスレッドがFUTEX_WAIT_BITSETと現在時刻プラス800 msのタイムアウ
+  ト時刻を指定して、タイムアウトする
+・McKernelスレッドがそれより後の時刻に起床を試みる。
 
-CT20 child (helper thread) futex() wait with FUTEX_WAIT and non-zero timeout [OK]
+CT20 以下の組み合わせのfutexによる待ち合わせタイムアウトを確認する。
+     なお、LinuxスレッドはMcKernelのfutex()を呼ぶ。
+・LinuxスレッドがFUTEX_WAITと非ゼロのタイムアウト時間を指定して、タ
+  イムアウトする
+・McKernelスレッドが上記タイムアウト時間より長い時間が経過した後に
+  起床を試みる。
 
 CT21 progress-threadのlockタイミングを変化させたテスト
 
