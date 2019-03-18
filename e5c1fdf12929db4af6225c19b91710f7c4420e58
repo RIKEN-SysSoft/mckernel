@@ -1,0 +1,8 @@
+Code-Review+2: Dominique Martinet <asmadeus@codewreck.org>
+Verified+1: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Test-x86+2: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Submitted-by: Dominique Martinet <asmadeus@codewreck.org>
+Submitted-at: Mon, 18 Mar 2019 09:53:30 +0000
+Reviewed-on: https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/448248
+Project: RIKEN-SysSoft/mckernel
+Branch: refs/heads/development
