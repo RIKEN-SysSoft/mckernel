@@ -677,6 +677,18 @@ void handle_IPI(unsigned int vector, struct pt_regs *regs)
 	else if (vector == INTRID_STACK_TRACE) {
 		show_context_stack(regs);
 	}
+	else if (vector == LOCAL_SMP_NULL_VECTOR) {
+		ihk_atomic_t *const poll = &cpu_local_var(perf_ipi_done_flag);
+		ihk_atomic_set(poll, 0);
+	}
+	else if (vector == LOCAL_SMP_PING_VECTOR) {
+		const int cpu = cpu_local_var(perf_ipi_source_cpu);
+		ihk_mc_interrupt_cpu(cpu, LOCAL_SMP_PONG_VECTOR);
+	}
+	else if (vector == LOCAL_SMP_PONG_VECTOR) {
+		ihk_atomic_t *const poll = &cpu_local_var(perf_ipi_done_flag);
+		ihk_atomic_set(poll, 0);
+	}
 	else {
 		list_for_each_entry(h, &handlers[vector], list) {
 			if (h->func) {

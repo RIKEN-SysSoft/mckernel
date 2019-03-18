@@ -9138,6 +9138,115 @@ static void do_mod_exit(int status){
 }
 #endif
 
+#define MODE_POLL  1
+#define SKIP_LOCAL 2
+
+SYSCALL_DECLARE(measure_ipi)
+{
+	int ret = 0;
+	const int dst_cpu = ihk_mc_syscall_arg0(ctx);
+	uint64_t *const user_ptr = (uint64_t *const)ihk_mc_syscall_arg1(ctx);
+	const unsigned count = ihk_mc_syscall_arg2(ctx);
+	const unsigned flags = ihk_mc_syscall_arg3(ctx);
+	const unsigned reps = 1;
+
+#ifdef POSTK_DEBUG_ARCH_DEP_8
+#else
+	const unsigned long apic_id = get_x86_cpu_local_variable(dst_cpu)->apic_id;
+#endif
+	struct cpu_local_var *const remote = get_cpu_local_var(dst_cpu);
+	ihk_atomic_t *const poll = (flags & MODE_POLL)
+		? &remote->perf_ipi_done_flag
+		: &cpu_local_var(perf_ipi_done_flag);
+	const unsigned vector =
+		(flags & MODE_POLL) ? LOCAL_SMP_NULL_VECTOR : LOCAL_SMP_PING_VECTOR;
+	const int local = ihk_mc_get_processor_id() == dst_cpu;
+
+	const size_t size = sizeof(unsigned long) * reps;
+	uint64_t *const buf = kmalloc(size, IHK_MC_AP_WAIT);
+	unsigned i, j; /* No C99, are you fucking kiddin me??? */
+
+	kprintf("CPU[%d] IPI to %d, ptr: %08lx, count: %u\n",
+			ihk_mc_get_processor_id(), dst_cpu, user_ptr, count);
+
+	if (buf == NULL) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	memset(buf, 0, size);
+#ifdef POSTK_DEBUG_ARCH_DEP_8
+	remote->perf_ipi_source_cpu = ihk_mc_get_processor_id();
+#else
+	remote->perf_ipi_source_cpu = get_x86_this_cpu_local()->apic_id;
+#endif
+
+	/* don't even measure if the user buffer is invalid */
+	if (copy_to_user(user_ptr, buf, size)) {
+		ret = -EFAULT;
+		goto dealloc_out;
+	}
+
+	for (i = 0; i < reps; ++i) {
+#ifdef POSTK_DEBUG_ARCH_DEP_8
+		uint64_t begin, end;
+		begin = rdtsc();
+#else
+		uint32_t b_high, b_low, e_high, e_low;
+		__asm__ volatile("CPUID\n\t"
+				"RDTSC\n\t"
+				"mov %%edx, %0\n\t"
+				"mov %%eax, %1\n\t"
+				: "=r"(b_high), "=r"(b_low)::"%rax", "%rbx", "%rcx", "%rdx");
+#endif
+
+
+		for (j = 0; j < count; ++j) {
+			ihk_atomic_set(poll, 1);
+
+			if (local && (flags & SKIP_LOCAL)) {
+				ihk_atomic_set(poll, 0);
+			} else {
+				/* send IPI */
+#ifdef POSTK_DEBUG_ARCH_DEP_8
+				ihk_mc_interrupt_cpu(dst_cpu, vector);
+#else
+				ihk_mc_interrupt_cpu(apic_id, vector);
+#endif
+			}
+
+			/* Wait for remote CPU */
+			while (ihk_atomic_read(poll) > 0) {
+				cpu_pause();
+			}
+		}
+
+#ifdef POSTK_DEBUG_ARCH_DEP_8
+		end = rdtsc();
+#else
+		__asm__ volatile("RDTSCP\n\t"
+				"mov %%edx,%0\n\t"
+				"mov %%eax,%1\n\t"
+				"CPUID\n\t"
+				: "=r"(e_high), "=r"(e_low)::"%rax", "%rbx", "%rcx", "%rdx");
+
+		const uint64_t begin = (uint64_t)b_high << 32 | b_low;
+		const uint64_t end = (uint64_t)e_high << 32 | e_low;
+#endif
+		buf[i] = end - begin;
+	}
+
+	if (copy_to_user(user_ptr, buf, size)) {
+		ret = -EFAULT;
+	}
+
+dealloc_out:
+	kfree(buf);
+
+out:
+	return ret;
+}
+
 #ifdef ENABLE_PERF
 /* select counter type */
 SYSCALL_DECLARE(pmc_init)
@@ -9601,6 +9710,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	long l;
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	struct thread *thread = v->current;
+
+	if (num == 732) {
+		save_syscall_return_value(num, 0);
+		return 0;
+	}
 
 #ifdef DISABLE_SCHED_YIELD
 	if (num != __NR_sched_yield)

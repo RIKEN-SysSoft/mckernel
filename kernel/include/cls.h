@@ -59,6 +59,9 @@ struct smp_func_call_request {
 };
 
 struct cpu_local_var {
+	ihk_atomic_t perf_ipi_done_flag;
+	int perf_ipi_source_cpu;
+
 	/* malloc */
 	struct list_head free_list;
 	struct list_head remote_free_list;

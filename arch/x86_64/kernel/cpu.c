@@ -946,6 +946,18 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 			panic("Unhandled exception");
 		}
 	}
+	else if (vector == LOCAL_SMP_NULL_VECTOR) {
+		ihk_atomic_t *const poll = &cpu_local_var(perf_ipi_done_flag);
+		ihk_atomic_set(poll, 0);
+	}
+	else if (vector == LOCAL_SMP_PING_VECTOR) {
+		const int cpu = cpu_local_var(perf_ipi_source_cpu);
+		ihk_mc_interrupt_cpu(cpu, LOCAL_SMP_PONG_VECTOR);
+	}
+	else if (vector == LOCAL_SMP_PONG_VECTOR) {
+		ihk_atomic_t *const poll = &cpu_local_var(perf_ipi_done_flag);
+		ihk_atomic_set(poll, 0);
+	}
 	else if (vector == LOCAL_TIMER_VECTOR) {
 		unsigned long irqstate;
 		/* Timer interrupt, enabled only on oversubscribed CPU cores,

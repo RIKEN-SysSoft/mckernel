@@ -24,6 +24,10 @@
 #define INTRID_HYP_VIRT_TIMER	28 /* cnthv */
 #define INTRID_PHYS_TIMER	30 /* cntp */
 
+#define LOCAL_SMP_NULL_VECTOR        8
+#define LOCAL_SMP_PING_VECTOR        9
+#define LOCAL_SMP_PONG_VECTOR        10
+
 /* Functions for GICv2 */
 extern void gic_dist_init_gicv2(unsigned long dist_base_pa, unsigned long size);
 extern void gic_cpu_init_gicv2(unsigned long cpu_base_pa, unsigned long size);

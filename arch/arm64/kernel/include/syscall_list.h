@@ -140,6 +140,8 @@ SYSCALL_HANDLED(803, suspend_threads)
 SYSCALL_HANDLED(804, resume_threads)
 SYSCALL_HANDLED(811, linux_spawn)
 
+SYSCALL_HANDLED(852, measure_ipi)
+
 SYSCALL_DELEGATED(1024, open)
 SYSCALL_DELEGATED(1035, readlink)
 SYSCALL_HANDLED(1045, signalfd)
