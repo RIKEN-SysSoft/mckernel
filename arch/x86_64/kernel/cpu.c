@@ -1601,14 +1601,18 @@ int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
 }
 
 /*@
-  @ requires \valid_apicid(cpu);	// valid APIC ID or not
+  @ requires \valid_cpuid(cpu);     // valid CPU logical ID
   @ ensures \result == 0
   @*/
 int ihk_mc_interrupt_cpu(int cpu, int vector)
 {
+	if (cpu < 0 || cpu >= num_processors) {
+		kprintf("%s: invalid CPU id: %d\n", __func__, cpu);
+		return -1;
+	}
 	dkprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
 
-	x86_issue_ipi(cpu, vector);
+	x86_issue_ipi(get_x86_cpu_local_variable(cpu)->apic_id, vector);
 	return 0;
 }
 
@@ -2095,9 +2099,7 @@ int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)
 		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu)->smp_func_req_lock,
 			irq_flags);
 
-		ihk_mc_interrupt_cpu(
-				get_x86_cpu_local_variable(cpu)->apic_id,
-				LOCAL_SMP_FUNC_CALL_VECTOR);
+		ihk_mc_interrupt_cpu(cpu, LOCAL_SMP_FUNC_CALL_VECTOR);
 
 		++cpu_index;
 	}
