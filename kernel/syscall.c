@@ -5988,11 +5988,8 @@ SYSCALL_DECLARE(getrusage)
 			   child->status == PS_RUNNING &&
 			   !child->in_kernel){
 				child->times_update = 0;
-#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
-				ihk_mc_interrupt_cpu(child->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
-#else /* POSTK_DEBUG_ARCH_DEP_8 */
-				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(child->cpu_id)->apic_id, 0xd1);
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
+				ihk_mc_interrupt_cpu(child->cpu_id,
+						ihk_mc_get_vector(IHK_GV_IKC));
 			}
 			else
 				child->times_update = 1;
@@ -7231,11 +7228,8 @@ SYSCALL_DECLARE(clock_gettime)
 			   child->status == PS_RUNNING &&
 			   !child->in_kernel){
 				child->times_update = 0;
-#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
-				ihk_mc_interrupt_cpu(child->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
-#else	/* POSTK_DEBUG_ARCH_DEP_8 */
-				ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(child->cpu_id)->apic_id, 0xd1);
-#endif	/* POSTK_DEBUG_ARCH_DEP_8 */
+				ihk_mc_interrupt_cpu(child->cpu_id,
+						ihk_mc_get_vector(IHK_GV_IKC));
 			}
 		}
 		ats.tv_sec = proc->utime.tv_sec;
