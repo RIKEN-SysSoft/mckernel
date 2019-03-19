@@ -820,17 +820,26 @@ static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
 	return ret;
 }
 
+struct futex_q gq;
 static int futex_wait(uint32_t __user *uaddr, int fshared,
 		      uint32_t val, uint64_t timeout, uint32_t bitset, int clockrt,
 		      struct cpu_local_var *clv_override)
 {
 	struct futex_hash_bucket *hb;
-	struct futex_q q;
 	int64_t time_remain;
+	struct futex_q lq;
+	struct futex_q *q = NULL;
 	int ret;
 
 	if (!bitset)
 		return -EINVAL;
+
+	if (!clv_override) {
+		q = &lq;
+	}
+	else {
+		q = &gq;
+	}
 
 #ifdef PROFILE_ENABLE
 	if (cpu_local_var_with_override(current, clv_override)->profile &&
@@ -841,24 +850,24 @@ static int futex_wait(uint32_t __user *uaddr, int fshared,
 	}
 #endif
 
-	q.bitset = bitset;
-	q.requeue_pi_key = NULL;
-	q.uti_futex_resp = cpu_local_var_with_override(uti_futex_resp, clv_override);
+	q->bitset = bitset;
+	q->requeue_pi_key = NULL;
+	q->uti_futex_resp = cpu_local_var_with_override(uti_futex_resp, clv_override);
 
 retry:
 	/* Prepare to wait on uaddr. */
-	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb, clv_override);
+	ret = futex_wait_setup(uaddr, val, fshared, q, &hb, clv_override);
 	if (ret) {
 		uti_dkprintf("%s: tid=%d futex_wait_setup returns zero, no need to sleep\n", __FUNCTION__, cpu_local_var_with_override(current, clv_override)->tid);
 		goto out;
 	}
 
 	/* queue_me and wait for wakeup, timeout, or a signal. */
-	time_remain = futex_wait_queue_me(hb, &q, timeout, clv_override);
+	time_remain = futex_wait_queue_me(hb, q, timeout, clv_override);
 
 	/* If we were woken (and unqueued), we succeeded, whatever. */
 	ret = 0;
-	if (!unqueue_me(&q)) {
+	if (!unqueue_me(q)) {
 		uti_dkprintf("%s: tid=%d unqueued\n", __FUNCTION__, cpu_local_var_with_override(current, clv_override)->tid);
 		goto out_put_key;
 	}
@@ -878,11 +887,11 @@ retry:
 	}
 
 	/* RIKEN: no signals */
-	put_futex_key(fshared, &q.key);
+	put_futex_key(fshared, &q->key);
 	goto retry;
 
 out_put_key:
-	put_futex_key(fshared, &q.key);
+	put_futex_key(fshared, &q->key);
 out:
 #ifdef PROFILE_ENABLE
 	if (cpu_local_var_with_override(current, clv_override)->profile) {
