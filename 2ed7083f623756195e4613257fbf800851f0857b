@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a73e778f_8213dce8",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-19T07:35:50Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int num_processors;",
+      "revId": "2ed7083f623756195e4613257fbf800851f0857b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
