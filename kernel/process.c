@@ -3520,14 +3520,8 @@ int __sched_wakeup_thread(struct thread *thread,
 	if (!status && (thread->cpu_id != ihk_mc_get_processor_id())) {
 		dkprintf("%s: issuing IPI, thread->cpu_id=%d\n",
 				__FUNCTION__, thread->cpu_id);
-#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
 		ihk_mc_interrupt_cpu(thread->cpu_id,
 		                     ihk_mc_get_vector(IHK_GV_IKC));
-#else /* POSTK_DEBUG_ARCH_DEP_8 */
-		ihk_mc_interrupt_cpu(
-				get_x86_cpu_local_variable(thread->cpu_id)->apic_id,
-				0xd1);
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 	}
 
 	return status;
@@ -3581,15 +3575,11 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	v->status = CPU_STATUS_RUNNING;
 	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
-	if (cpu_id != ihk_mc_get_processor_id())
-		ihk_mc_interrupt_cpu(/* Kick scheduler */
-			thread->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
-#else /* POSTK_DEBUG_ARCH_DEP_8 */
-	if (cpu_id != ihk_mc_get_processor_id())
-		ihk_mc_interrupt_cpu(/* Kick scheduler */
-				get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
+	if (cpu_id != ihk_mc_get_processor_id()) {
+		/* Kick scheduler */
+		ihk_mc_interrupt_cpu(thread->cpu_id,
+				ihk_mc_get_vector(IHK_GV_IKC));
+	}
 	dkprintf("%s: tid: %d -> cpu: %d\n",
 			__FUNCTION__, thread->tid, cpu_id);
 
@@ -3642,15 +3632,10 @@ void runq_add_thread(struct thread *thread, int cpu_id)
 #endif
 
 	/* Kick scheduler */
-#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
-	if (cpu_id != ihk_mc_get_processor_id())
-		ihk_mc_interrupt_cpu(
-			thread->cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
-#else /* POSTK_DEBUG_ARCH_DEP_8 */
-	if (cpu_id != ihk_mc_get_processor_id())
-		ihk_mc_interrupt_cpu(
-		         get_x86_cpu_local_variable(cpu_id)->apic_id, 0xd1);
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
+	if (cpu_id != ihk_mc_get_processor_id()) {
+		ihk_mc_interrupt_cpu(thread->cpu_id,
+				ihk_mc_get_vector(IHK_GV_IKC));
+	}
 }
 
 /* NOTE: shouldn't remove a running process! */
