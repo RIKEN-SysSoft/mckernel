@@ -32,6 +32,7 @@
 #include <ihk/debug.h>
 #include <hwcap.h>
 #include <virt.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_CPU
 
@@ -1346,11 +1347,15 @@ int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
 }
 
 /*@
-  @ requires \valid_apicid(cpu);	// valid APIC ID or not
+  @ requires \valid_cpuid(cpu);     // valid CPU logical ID
   @ ensures \result == 0
   @*/
 int ihk_mc_interrupt_cpu(int cpu, int vector)
 {
+	if (cpu < 0 || cpu >= num_processors) {
+		kprintf("%s: invalid CPU id: %d\n", __func__, cpu);
+		return -1;
+	}
 	dkprintf("[%d] ihk_mc_interrupt_cpu: %d\n", ihk_mc_get_processor_id(), cpu);
 	(*arm64_issue_ipi)(cpu, vector);
 	return 0;

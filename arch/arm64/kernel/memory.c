@@ -3715,44 +3715,6 @@ translation_table_t* get_translation_table_as_paddr(const struct page_table *pt)
 	return pt->tt_pa;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_8
-void remote_flush_tlb_cpumask(struct process_vm *vm, 
-		unsigned long addr, int cpu_id)
-{
-	unsigned long cpu;
-	cpu_set_t _cpu_set;
-	int flush_ind;
-
-	if (addr) {
-		flush_ind = (addr >> PAGE_SHIFT) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
-	}
-	/* Zero address denotes full TLB flush */
-	else {	
-		/* Random.. */
-		flush_ind = (rdtsc()) % IHK_TLB_FLUSH_IRQ_VECTOR_SIZE;
-	}
-
-	/* Take a copy of the cpu set so that we don't hold the lock
-	 * all the way while interrupting other cores */
-	ihk_mc_spinlock_lock_noirq(&vm->address_space->cpu_set_lock);
-	memcpy(&_cpu_set, &vm->address_space->cpu_set, sizeof(cpu_set_t));
-	ihk_mc_spinlock_unlock_noirq(&vm->address_space->cpu_set_lock);
-
-	/* Loop through CPUs in this address space and interrupt them for
-	 * TLB flush on the specified address */
-	for_each_set_bit(cpu, (const unsigned long*)&_cpu_set.__bits, CPU_SETSIZE) {
-		if (ihk_mc_get_processor_id() == cpu) 
-			continue;
-
-		dkprintf("remote_flush_tlb_cpumask: flush_ind: %d, addr: 0x%lX, interrupting cpu: %d\n",
-		        flush_ind, addr, cpu);
-
-		ihk_mc_interrupt_cpu(cpu,
-				     ihk_mc_get_vector(flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START));
-	}
-}
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
-
 void arch_adjust_allocate_page_size(struct page_table *pt,
 				    uintptr_t fault_addr,
 				    pte_t *ptep,
