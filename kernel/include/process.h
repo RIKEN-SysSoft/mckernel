@@ -717,6 +717,7 @@ struct thread {
 	struct uti_attr *mod_clone_arg;
 	int parent_cpuid;
 	int uti_refill_tid;
+	struct futex_q futex_q;
 
 	// for performance counter
 	unsigned long pmc_alloc_map;

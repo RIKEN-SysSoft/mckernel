@@ -94,6 +94,7 @@
 #include <list.h>
 #include <process.h>
 #include <waitq.h>
+#include <plist.h>
 
 #ifndef _ASM_X86_FUTEX_H
 #define _ASM_X86_FUTEX_H
@@ -164,6 +165,38 @@ futex(
 	struct cpu_local_var *clv_override
 );
 
+
+/**
+ * struct futex_q - The hashed futex queue entry, one per waiting task
+ * @task:		the task waiting on the futex
+ * @lock_ptr:		the hash bucket lock
+ * @key:		the key the futex is hashed on
+ * @requeue_pi_key:	the requeue_pi target futex key
+ * @bitset:		bitset for the optional bitmasked wakeup
+ *
+ * We use this hashed waitqueue, instead of a normal wait_queue_t, so
+ * we can wake only the relevant ones (hashed queues may be shared).
+ *
+ * A futex_q has a woken state, just like tasks have TASK_RUNNING.
+ * It is considered woken when plist_node_empty(&q->list) || q->lock_ptr == 0.
+ * The order of wakup is always to make the first condition true, then
+ * the second.
+ *
+ * PI futexes are typically woken before they are removed from the hash list via
+ * the rt_mutex code. See unqueue_me_pi().
+ */
+struct futex_q {
+	struct plist_node list;
+
+	struct thread *task;
+	ihk_spinlock_t *lock_ptr;
+	union futex_key key;
+	union futex_key *requeue_pi_key;
+	uint32_t bitset;
+
+	/* Used to wake-up a thread running on a Linux CPU */
+	void *uti_futex_resp;
+};
 
 #endif
 #endif
