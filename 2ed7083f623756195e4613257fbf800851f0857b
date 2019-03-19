@@ -37,6 +37,24 @@
     },
     {
       "key": {
+        "uuid": "dcbcbf6f_973e91ef",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-03-19T10:13:32Z",
+      "side": 1,
+      "message": "OK, I\u0027ll do that.",
+      "parentUuid": "cee461bc_8bf7bf41",
+      "revId": "2ed7083f623756195e4613257fbf800851f0857b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "7a7ce239_b87d4a22",
         "filename": "arch/arm64/kernel/memory.c",
         "patchSetId": 1
@@ -54,6 +72,24 @@
     },
     {
       "key": {
+        "uuid": "abebf742_ebbe8ede",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3718,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-03-19T10:13:32Z",
+      "side": 1,
+      "message": "sure, it stays in git history after all..",
+      "parentUuid": "7a7ce239_b87d4a22",
+      "revId": "2ed7083f623756195e4613257fbf800851f0857b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "28dc2272_77669f08",
         "filename": "arch/x86_64/kernel/cpu.c",
         "patchSetId": 1
@@ -65,6 +101,24 @@
       "writtenOn": "2019-03-19T07:49:26Z",
       "side": 1,
       "message": "won\u0027t it be confusing that x86_issue_ipi takes an apicid and the arm one a logical one? Shall we move the lookup (get_x86_... -\u003eapi_id) into that function instead for homogeneity?",
+      "revId": "2ed7083f623756195e4613257fbf800851f0857b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d3b60102_040152c9",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1615,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-03-19T10:13:32Z",
+      "side": 1,
+      "message": "The user facing function is ihk_mc_interrupt_cpu() so I think keeping that consistent across architectures is the main point. Also, x86_issue_ipi() is used in places where the APIC id is not derived from the translation used here (e.g., interrupting a Linux CPU in IKC) so we can\u0027t actually move the lookup there.",
+      "parentUuid": "28dc2272_77669f08",
       "revId": "2ed7083f623756195e4613257fbf800851f0857b",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
