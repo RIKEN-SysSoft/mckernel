@@ -1570,7 +1570,8 @@ done:
 		if (thread != tthread) {
 			dkprintf("do_kill,ipi,pid=%d,cpu_id=%d\n",
 				 tproc->pid, tthread->cpu_id);
-			ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(tthread->cpu_id)->apic_id, 0xd0);
+			ihk_mc_interrupt_cpu(tthread->cpu_id,
+					ihk_mc_get_vector(IHK_GV_IKC));
 		}
 
 		if (status != PS_RUNNING) {

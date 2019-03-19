@@ -3715,7 +3715,7 @@ translation_table_t* get_translation_table_as_paddr(const struct page_table *pt)
 	return pt->tt_pa;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_8
+#if 0
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id)
 {
@@ -3751,7 +3751,7 @@ void remote_flush_tlb_cpumask(struct process_vm *vm,
 				     ihk_mc_get_vector(flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START));
 	}
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
+#endif
 
 void arch_adjust_allocate_page_size(struct page_table *pt,
 				    uintptr_t fault_addr,

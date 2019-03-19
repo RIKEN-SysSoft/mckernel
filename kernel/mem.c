@@ -996,7 +996,6 @@ void coredump(struct thread *thread, void *regs)
 	freecore(&coretable);
 }
 
-#ifndef POSTK_DEBUG_ARCH_DEP_8
 void remote_flush_tlb_cpumask(struct process_vm *vm,
 		unsigned long addr, int cpu_id)
 {
@@ -1053,14 +1052,8 @@ void remote_flush_tlb_array_cpumask(struct process_vm *vm,
 		dkprintf("remote_flush_tlb_cpumask: flush_ind: %d, addr: 0x%lX, interrupting cpu: %d\n",
 		        flush_ind, addr, cpu);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_8 /* arch depend hide */
-		/* TODO(pka_idke) Interim support */
 		ihk_mc_interrupt_cpu(cpu, 
 				     ihk_mc_get_vector(flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START));
-#else /* POSTK_DEBUG_ARCH_DEP_8 */
-		ihk_mc_interrupt_cpu(get_x86_cpu_local_variable(cpu)->apic_id,
-		                     flush_ind + IHK_TLB_FLUSH_IRQ_VECTOR_START);
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 	}
 
 #ifdef DEBUG_IC_TLB
@@ -1097,7 +1090,6 @@ void remote_flush_tlb_array_cpumask(struct process_vm *vm,
 
 	ihk_mc_spinlock_unlock_noirq(&flush_entry->lock);
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_8 */
 
 void tlb_flush_handler(int vector)
 {
