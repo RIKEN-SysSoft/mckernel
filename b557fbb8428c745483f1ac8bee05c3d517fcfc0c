@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c15ac0fe_a23d35f6",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2437,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-22T07:36:01Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void restore_tls(unsigned long addr);",
+      "revId": "b557fbb8428c745483f1ac8bee05c3d517fcfc0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ea3ea0a_5900a92b",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2438,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-22T07:36:01Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void save_tls_ctx(void __user *ctx);",
+      "revId": "b557fbb8428c745483f1ac8bee05c3d517fcfc0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be4b49ec_27e1b645",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2439,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-22T07:36:01Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long get_tls_ctx(void __user *ctx);",
+      "revId": "b557fbb8428c745483f1ac8bee05c3d517fcfc0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa740b5f_e758d23b",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2440,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-22T07:36:01Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long get_rsp_ctx(void *ctx);",
+      "revId": "b557fbb8428c745483f1ac8bee05c3d517fcfc0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eb7a0edc_dd061ab3",
+        "filename": "executer/user/archdep.h",
+        "patchSetId": 7
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-22T07:36:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern int switch_ctx(int fd, unsigned long cmd, struct uti_switch_ctx_desc *desc, void *lctx, void *rctx);",
+      "revId": "b557fbb8428c745483f1ac8bee05c3d517fcfc0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
