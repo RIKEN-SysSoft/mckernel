@@ -43,6 +43,7 @@
 #include <linux/semaphore.h>
 #include <linux/spinlock.h>
 #include <linux/mount.h>
+#include <linux/pfn_t.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -518,19 +519,6 @@ retry_alloc:
 	return error;
 }
 
-/*
- * By remap_pfn_range(), VM_PFN_AT_MMAP may be raised.
- * VM_PFN_AT_MMAP cause the following problems.
- *
- * 1) vm_pgoff is changed. As a result, i_mmap tree is corrupted.
- * 2) duplicate free_memtype() calls occur.
- *
- * These problems may be solved in linux-3.7.
- * It uses vm_insert_pfn() until it is fixed.
- */
-
-#define	USE_VM_INSERT_PFN	1
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 static int rus_vm_fault(struct vm_fault *vmf)
 {
@@ -549,9 +537,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	unsigned long		pgsize;
 	unsigned long		rva;
 	unsigned long		pfn;
-#if USE_VM_INSERT_PFN
 	size_t			pix;
-#endif
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	struct task_struct *task = current;
@@ -665,55 +651,112 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	phys = ihk_device_map_memory(dev, rpa, pgsize);
 	pfn = phys >> PAGE_SHIFT;
-#if USE_VM_INSERT_PFN
-	for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
+	if (pgsize == PMD_SIZE && rva >= vma->vm_start && pfn_valid(pfn)) {
 		struct page *page;
-
-		/* LWK may hold large page based mappings that align rva outside
-		 * Linux' VMA, make sure we don't try to map to those pages */
-		if (rva + (pix * PAGE_SIZE) < vma->vm_start) {
-			continue;
-		}
-
-		if (pfn_valid(pfn+pix)) {
-			page = pfn_to_page(pfn+pix);
-
-			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
-			if (error) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				pr_err("%s: error inserting mapping for 0x%#lx (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
-				       __func__, vmf->address,
-				       packet.fault_tid, rsysnum,
-				       error, vma->vm_start, vma->vm_end);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				pr_err("%s: error inserting mapping for 0x%p (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
-				       __func__, vmf->virtual_address,
-				       packet.fault_tid, rsysnum, error,
-				       vma->vm_start, vma->vm_end);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-			}
-		}
-		else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
-			error = vmf_insert_pfn(vma, rva+(pix*PAGE_SIZE),
-					       pfn+pix);
-#else
-			error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE),
-					      pfn+pix);
+		pgd_t *pgd;
+#ifdef P4D_SHIFT
+		p4d_t *p4d;
 #endif
-		if (error) {
-			pr_err("%s: vm_insert_pfn returned %d\n",
-			       __func__, error);
-			if (error == -EBUSY) {
-				error = 0;
-			} else {
-				break;
+		pud_t *pud;
+		pmd_t *pmd;
+
+		page = pfn_to_page(pfn);
+		get_page(page);
+
+		/* pmd normally comes from vmf / pmd argument of huge_fault
+		 * (or pmd_fault on older kernels) ; but we don't use huge
+		 * pages so we probably(?) cannot use that */
+		pgd = pgd_offset(vma->vm_mm, rva);
+#ifdef P4D_SHIFT
+		p4d = mcctrl_p4d_alloc(vma->vm_mm, pgd, rva);
+		if (!p4d) {
+			ret = VM_FAULT_OOM;
+			goto put_and_out;
+		}
+		pud = mcctrl_pud_alloc(vma->vm_mm, p4d, rva);
+#else
+		pud = mcctrl_pud_alloc(vma->vm_mm, pgd, rva);
+#endif
+		if (!pud) {
+			ret = VM_FAULT_OOM;
+			goto put_and_out;
+		}
+		pmd = mcctrl_pmd_alloc(vma->vm_mm, pud, rva);
+		if (!pmd) {
+			ret = VM_FAULT_OOM;
+			goto put_and_out;
+		}
+
+		//pr_info("%d insert %p %lx\n", current->pid, vma, rva);
+		/* note: el7.6 kernel checks for non-null pmd before insert
+		 * as a DAX fix; not sure why it is not null in this case
+		 * though but it sometimes happen...
+		 * If we do not do this we would just fallback to small pages
+		 * with the check below (vmf_insert_pfn_pmd cannot return
+		 * VM_FAULT_FALLBACK normally)
+		 */
+		pmd->pmd = 0;
+		ret = vmf_insert_pfn_pmd(vma, rva, pmd,
+					 pfn_to_pfn_t(pfn|PFN_DEV|PFN_MAP),
+					 1 /* write */);
+		if (ret == VM_FAULT_FALLBACK) {
+			//pr_info("%d fallback: %lx\n", current->pid, native_pmd_val(*pmd));
+			goto smallpages;
+		}
+		if (ret != VM_FAULT_NOPAGE) {
+			//pr_info("insert failed: %d\n", ret);
+			goto put_and_out;
+		}
+	}
+	else {
+smallpages:
+		for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
+			struct page *page;
+
+			/* LWK may hold large page based mappings that align rva outside
+			 * Linux' VMA, make sure we don't try to map to those pages */
+			if (rva + (pix * PAGE_SIZE) < vma->vm_start) {
+				continue;
+			}
+
+			if (pfn_valid(pfn+pix)) {
+				page = pfn_to_page(pfn+pix);
+
+				error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
+				if (error) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+					pr_err("%s: error inserting mapping for 0x%#lx (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+						__func__, vmf->address,
+						packet.fault_tid, rsysnum,
+						error, vma->vm_start, vma->vm_end);
+#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+					pr_err("%s: error inserting mapping for 0x%p (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+						__func__, vmf->virtual_address,
+						packet.fault_tid, rsysnum, error,
+						vma->vm_start, vma->vm_end);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+				}
+			}
+			else {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
+				error = vmf_insert_pfn(vma, rva+(pix*PAGE_SIZE),
+						       pfn+pix);
+#else
+				error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE),
+						      pfn+pix);
+#endif
+				if (error) {
+					pr_err("%s: vm_insert_pfn returned %d\n",
+					       __func__, error);
+					if (error == -EBUSY) {
+						error = 0;
+					} else {
+						break;
+					}
+				}
 			}
 		}
 	}
-#else
-	error = remap_pfn_range(vma, rva, pfn, pgsize, vma->vm_page_prot);
-#endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
@@ -737,9 +780,81 @@ put_and_out:
 	return ret;
 }
 
+static inline unsigned long rus_vm_clean_pmd(struct vm_area_struct *vma,
+		pud_t *pud, unsigned long addr, unsigned long end)
+{
+	pmd_t *pmd, orig_pmd;
+	unsigned long next;
+
+	pmd = pmd_offset(pud, addr);
+	do {
+		next = pmd_addr_end(addr, end);
+		if (pmd_none(*pmd))
+			continue;
+		if (pmd_large(*pmd)) {
+			struct page *page;
+			spinlock_t *ptl;
+
+			pr_info("%d cleaning %p, %lx\n", current->pid, vma, addr);
+			/* __pmd_trans_huge_lock not exported... */
+			ptl = pmd_lock(vma->vm_mm, pmd);
+			orig_pmd = pmdp_get_and_clear(vma->vm_mm, addr, pmd);
+			page = pmd_page(orig_pmd);
+			put_page(page);
+			spin_unlock(ptl);
+		}
+	} while (pmd++, addr = next, addr != end);
+
+	return addr;
+}
+
+static inline unsigned long rus_vm_clean_pud(struct vm_area_struct *vma,
+		pgd_t *pgd, unsigned long addr, unsigned long end)
+{
+	pud_t *pud;
+	unsigned long next;
+
+	pud = pud_offset(pgd, addr);
+	do {
+		next = pud_addr_end(addr, end);
+		if (pud_none(*pud))
+			continue;
+		next = rus_vm_clean_pmd(vma, pud, addr, next);
+	} while (pud++, addr = next, addr != end);
+
+	return addr;
+}
+
 static struct vm_operations_struct rus_vmops = {
 	.fault = &rus_vm_fault,
 };
+
+static void rus_vm_clean(struct task_struct *task)
+{
+	struct vm_area_struct *vma;
+	unsigned long addr, end, next;
+	pgd_t *pgd;
+
+	// XXX locking..
+	for (vma = task->mm->mmap; vma; vma = vma->vm_next) {
+		if (vma->vm_ops != &rus_vmops) {
+			continue;
+		}
+
+		pr_info("rus_vm_clean: %p: %lx-%lx\n", vma, vma->vm_start, vma->vm_end);
+
+		addr = vma->vm_start;
+		end = vma->vm_end;
+
+		pgd = pgd_offset(vma->vm_mm, addr);
+		do {
+			next = pgd_addr_end(addr, end);
+			if (pgd_none(*pgd))
+				continue;
+			next = rus_vm_clean_pud(vma, pgd, addr, next);
+		} while (pgd++, addr = next, addr != end);
+	}
+}
 
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
@@ -2085,7 +2200,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		break;
 
 	case __NR_exit_group: {
-	
+		rus_vm_clean(current);
 		/* Make sure the user space handler will be called as well */
 		error = -ENOSYS;
 		goto out;
