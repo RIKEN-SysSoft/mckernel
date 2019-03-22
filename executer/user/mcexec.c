@@ -1999,7 +1999,7 @@ static ssize_t find_libdir(char *libdir, size_t len)
 	filep = fopen("/proc/self/maps", "r");
 	if (!filep) {
 		rc = -errno;
-		fprintf(stderr, "could not open /proc/self/maps: %d\n", -rc);
+		fprintf(stderr, "could not open /proc/self/maps: %zd\n", -rc);
 		return rc;
 	}
 
