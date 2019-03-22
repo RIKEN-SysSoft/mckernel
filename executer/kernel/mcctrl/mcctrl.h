@@ -436,6 +436,47 @@ extern void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 				     struct zap_details *details);
 extern struct inode_operations *mcctrl_hugetlbfs_inode_operations;
 
+#ifdef P4D_SHIFT
+extern int (*mcctrl___p4d_alloc)(struct mm_struct *mm, pgd_t *pgd,
+				 unsigned long address);
+static inline p4d_t *mcctrl_p4d_alloc(struct mm_struct *mm, pgd_t *pgd,
+				      unsigned long address)
+{
+	return (unlikely(pgd_none(*pgd)) &&
+			mcctrl___p4d_alloc(mm, pgd, address)) ?
+			NULL : p4d_offset(pgd, address);
+}
+extern int (*mcctrl___pud_alloc)(struct mm_struct *mm, p4d_t *p4d,
+				 unsigned long address);
+static inline pud_t *mcctrl_pud_alloc(struct mm_struct *mm, p4d_t *p4d,
+				      unsigned long address)
+{
+	return (unlikely(p4d_none(*p4d)) &&
+			mcctrl___pud_alloc(mm, p4d, address)) ?
+			NULL : pud_offset(p4d, address);
+}
+#else
+extern int (*mcctrl___pud_alloc)(struct mm_struct *mm, pgd_t *pgd,
+				 unsigned long address);
+static inline pud_t *mcctrl_pud_alloc(struct mm_struct *mm, pgd_t *pgd,
+				      unsigned long address)
+{
+	return (unlikely(pgd_none(*pgd)) &&
+			mcctrl___pud_alloc(mm, pgd, address)) ?
+			NULL : pud_offset(pgd, address);
+}
+#endif
+extern int (*mcctrl___pmd_alloc)(struct mm_struct *mm, pud_t *pud,
+				 unsigned long address);
+static inline pmd_t *mcctrl_pmd_alloc(struct mm_struct *mm, pud_t *pud,
+				      unsigned long address)
+{
+	return (unlikely(pud_none(*pud)) &&
+			mcctrl___pmd_alloc(mm, pud, address)) ?
+			NULL : pmd_offset(pud, address);
+}
+
+
 /* syscall.c */
 void pager_add_process(void);
 void pager_remove_process(struct mcctrl_per_proc_data *ppd);

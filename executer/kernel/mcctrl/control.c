@@ -24,6 +24,8 @@
  *  2013/07/02 shirasawa add error handling for prepare_process
  *  2013/04/17 nakamura add generic system call forwarding
  */
+#include <config.h>
+#include "mcctrl.h"
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -41,8 +43,6 @@
 #include <asm/io.h>
 #include <linux/syscalls.h>
 #include <trace/events/sched.h>
-#include <config.h>
-#include "mcctrl.h"
 #include <ihk/ihk_host_user.h>
 #include <rusage.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)

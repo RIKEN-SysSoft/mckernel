@@ -233,6 +233,17 @@ void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 
 struct inode_operations *mcctrl_hugetlbfs_inode_operations;
 
+#ifdef P4D_SHIFT
+int (*mcctrl___p4d_alloc)(struct mm_struct *mm, pgd_t *pgd,
+			  unsigned long address);
+int (*mcctrl___pud_alloc)(struct mm_struct *mm, p4d_t *p4d,
+			  unsigned long address);
+#else
+int (*mcctrl___pud_alloc)(struct mm_struct *mm, pgd_t *pgd,
+			  unsigned long address);
+#endif
+int (*mcctrl___pmd_alloc)(struct mm_struct *mm, pud_t *pud,
+			  unsigned long address);
 
 static int symbols_init(void)
 {
@@ -306,6 +317,20 @@ static int symbols_init(void)
 	mcctrl_hugetlbfs_inode_operations =
 		(void *) kallsyms_lookup_name("hugetlbfs_inode_operations");
 	if (WARN_ON(!mcctrl_hugetlbfs_inode_operations))
+		return -EFAULT;
+
+#ifdef P4D_SHIFT
+	mcctrl___p4d_alloc = (void *) kallsyms_lookup_name("__p4d_alloc");
+	if (WARN_ON(!mcctrl___p4d_alloc))
+		return -EFAULT;
+#endif
+
+	mcctrl___pud_alloc = (void *) kallsyms_lookup_name("__pud_alloc");
+	if (WARN_ON(!mcctrl___pud_alloc))
+		return -EFAULT;
+
+	mcctrl___pmd_alloc = (void *) kallsyms_lookup_name("__pmd_alloc");
+	if (WARN_ON(!mcctrl___pmd_alloc))
 		return -EFAULT;
 
 	return arch_symbols_init();
