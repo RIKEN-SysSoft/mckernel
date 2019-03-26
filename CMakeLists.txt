@@ -145,9 +145,9 @@ add_subdirectory(executer/user)
 add_subdirectory(kernel)
 add_subdirectory(tools/mcstat)
 
-configure_file(arch/x86_64/tools/mcreboot-smp-x86.sh.in mcreboot.sh @ONLY)
-configure_file(arch/x86_64/tools/mcstop+release-smp-x86.sh.in mcstop+release.sh @ONLY)
-configure_file(arch/x86_64/tools/mcreboot.1in mcreboot.1 @ONLY)
+configure_file(scripts/mcreboot-smp.sh.in mcreboot.sh @ONLY)
+configure_file(scripts/mcstop+release-smp.sh.in mcstop+release.sh @ONLY)
+configure_file(scripts/mcreboot.1in mcreboot.1 @ONLY)
 install(PROGRAMS
 		"${CMAKE_CURRENT_BINARY_DIR}/mcreboot.sh"
 		"${CMAKE_CURRENT_BINARY_DIR}/mcstop+release.sh"
