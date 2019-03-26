@@ -1,0 +1,30 @@
+CT21001 mcexec page table update test START
+CT21002 program 1 START
+CT21003 check "data read OK"
+  file=file1     , val=           1
+  *** data read OK ***
+CT21004 program 1 suspend
+CT21005 program 2 START
+CT21006 check "data read OK"
+  file=file1     , val=           1
+  *** data read OK ***
+CT21007 program 2 suspend
+CT21008 program 1 resume
+CT21009 check "data read OK"
+ resume
+  file=file2     , val=           2
+  *** data read OK ***
+CT21010 program 1 suspend
+CT21011 program 2 resume
+CT21012 check "data read OK"
+ resume
+  file=file2     , val=           2
+  *** data read OK ***
+CT21013 program 2 suspend
+CT21014 program 1 resume
+STOP 0
+CT21015 program 1 END
+CT21016 program 2 resume
+STOP 0
+CT21017 program 2 END
+CT21018 mcexec page table update test END

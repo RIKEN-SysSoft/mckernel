@@ -1,0 +1,54 @@
+CT22001 OMP test START
+CT22002 program 1 START
+CT22003 check rank info
+ mpi= 1/ 2, omp= 1/ 4
+ mpi= 1/ 2, omp= 0/ 4
+ mpi= 1/ 2, omp= 3/ 4
+ mpi= 1/ 2, omp= 2/ 4
+ mpi= 0/ 2, omp= 1/ 4
+ mpi= 0/ 2, omp= 0/ 4
+ mpi= 0/ 2, omp= 3/ 4
+ mpi= 0/ 2, omp= 2/ 4
+CT22004 program 1 suspend
+CT22005 program 2 START
+CT22006 check rank info
+ mpi= 0/ 2, omp= 1/ 4
+ mpi= 1/ 2, omp= 1/ 4
+ mpi= 1/ 2, omp= 0/ 4
+ mpi= 1/ 2, omp= 3/ 4
+ mpi= 1/ 2, omp= 2/ 4
+ mpi= 0/ 2, omp= 3/ 4
+ mpi= 0/ 2, omp= 0/ 4
+ mpi= 0/ 2, omp= 2/ 4
+CT22007 program 2 suspend
+CT22008 program 1 resume
+CT22009 check rank info
+ repeat
+ mpi= 0/ 2, omp= 3/ 4
+ mpi= 0/ 2, omp= 0/ 4
+ mpi= 0/ 2, omp= 2/ 4
+ repeat
+ mpi= 0/ 2, omp= 1/ 4
+ mpi= 1/ 2, omp= 2/ 4
+ mpi= 1/ 2, omp= 0/ 4
+ mpi= 1/ 2, omp= 1/ 4
+ mpi= 1/ 2, omp= 3/ 4
+CT22010 program 1 suspend
+CT22011 program 2 resume
+CT22012 check rank info
+ repeat
+ mpi= 0/ 2, omp= 1/ 4
+ mpi= 0/ 2, omp= 0/ 4
+ mpi= 0/ 2, omp= 3/ 4
+ mpi= 0/ 2, omp= 2/ 4
+ repeat
+ mpi= 1/ 2, omp= 1/ 4
+ mpi= 1/ 2, omp= 0/ 4
+ mpi= 1/ 2, omp= 3/ 4
+ mpi= 1/ 2, omp= 2/ 4
+CT22013 program 2 suspend
+CT22014 program 1 resume
+CT22015 program 1 END
+CT22016 program 2 resume
+CT22017 program 2 END
+CT22018 OMP test END
