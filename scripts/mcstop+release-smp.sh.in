@@ -38,7 +38,7 @@ fi
 
 disable_irqbalance_mck() {
 	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
-		systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
+		sudo systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
 
 		# Invalid .service file persists so remove it
 		rm -f /etc/systemd/system/irqbalance_mck.service
@@ -50,7 +50,7 @@ if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then exit 0; fi
 
 if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
 	irqbalance_used="yes"
-	if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
+	if ! sudo systemctl stop irqbalance_mck.service 2>/dev/null; then
 		echo "warning: failed to stop irqbalance_mck" >&2
 	fi
 	disable_irqbalance_mck
@@ -74,7 +74,7 @@ if ls /dev/mcos* 1>/dev/null 2>&1; then
 
 		# Retry when conflicting with ihkmond
 		nretry=0
-		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -ge 4 ]; do
+		until sudo ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -ge 4 ]; do
 		    sleep 0.25
 		    nretry=$[ $nretry + 1 ]
 		done
@@ -89,14 +89,14 @@ fi
 sleep 2.0
 
 # Query IHK-SMP resources and release them
-if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then
+if ! sudo ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then
 	echo "error: querying cpus" >&2
 	exit 1
 fi
 
-cpus=`${SBINDIR}/ihkconfig 0 query cpu`
+cpus=`sudo ${SBINDIR}/ihkconfig 0 query cpu`
 if [ "${cpus}" != "" ]; then
-	if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
+	if ! sudo ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
 		echo "error: releasing CPUs" >&2
 		exit 1
 	fi
@@ -116,14 +116,14 @@ fi
 #fi
 
 # Release all memory
-if ! ${SBINDIR}/ihkconfig 0 release mem "all" > /dev/null; then
+if ! sudo ${SBINDIR}/ihkconfig 0 release mem "all" > /dev/null; then
 	echo "error: releasing memory" >&2
 	exit 1
 fi
 
 # Remove delegator if loaded
 if grep mcctrl /proc/modules &>/dev/null; then
-	if ! rmmod mcctrl 2>/dev/null; then
+	if ! sudo rmmod mcctrl 2>/dev/null; then
 		echo "error: removing mcctrl" >&2
 		exit 1
 	fi
@@ -131,7 +131,7 @@ fi
 
 # Remove SMP module
 if grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
-	if ! rmmod ihk_smp_@ARCH@ 2>/dev/null; then
+	if ! sudo rmmod ihk_smp_@ARCH@ 2>/dev/null; then
 		echo "error: removing ihk_smp_@ARCH@" >&2
 		exit 1
 	fi
@@ -139,7 +139,7 @@ fi
 
 # Remove core module
 if grep -E 'ihk\s' /proc/modules &>/dev/null; then
-	if ! rmmod ihk 2>/dev/null; then
+	if ! sudo rmmod ihk 2>/dev/null; then
 		echo "error: removing ihk" >&2
 		exit 1
 	fi
@@ -153,14 +153,15 @@ fi
 
 # Start irqbalance with the original settings
 if [ "${irqbalance_used}" != "" ]; then
-	if ! perl -e '$tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "$tmpdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($tmpdir)); if (0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
+	if ! perl -e '$tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "$tmpdir/proc/irq/*/smp_affinity"; foreach $file (@files) { $dest = substr($file, length($tmpdir)); if (0) {print "cp $file $dest\n";} system("sudo cp $file $dest 2>/dev/null"); }'; then
 		echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
 	fi
 	if [ -e /tmp/mcreboot ]; then rm -rf /tmp/mcreboot; fi
-	if ! systemctl start irqbalance.service; then
+	if [ -e /tmp/irqbalance_mck ]; then rm -f /tmp/irqbalance_mck; fi
+	if ! sudo systemctl start irqbalance.service; then
 		echo "warning: failed to start irqbalance" >&2;
 	fi
 fi
 
 # Set back default swappiness
-echo 60 > /proc/sys/vm/swappiness
+echo 60 | sudo tee /proc/sys/vm/swappiness 1>/dev/null
