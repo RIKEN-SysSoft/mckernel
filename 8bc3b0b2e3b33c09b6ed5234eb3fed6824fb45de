@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f25056ac_2fa41ded",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1353,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T06:05:14Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!readmem(page_table, KVADDR, \u0026page_table, sizeof(page_table),",
+      "revId": "8bc3b0b2e3b33c09b6ed5234eb3fed6824fb45de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e9cc98e_897becd9",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1354,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T06:05:14Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t     \"page_table translation table\", RETURN_ON_ERROR|QUIET)) {",
+      "revId": "8bc3b0b2e3b33c09b6ed5234eb3fed6824fb45de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "198d9427_64321852",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1355,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T06:05:14Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror(FATAL, \"Could not read translation table from page_table\");",
+      "revId": "8bc3b0b2e3b33c09b6ed5234eb3fed6824fb45de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
