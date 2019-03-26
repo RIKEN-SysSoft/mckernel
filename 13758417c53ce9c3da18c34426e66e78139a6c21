@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fd93b8b0_f6eb0014",
+        "filename": "scripts/mcreboot-smp.sh.in",
+        "patchSetId": 2
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T09:56:35Z",
+      "side": 1,
+      "message": "WARNING: \u0027occured\u0027 may be misspelled - perhaps \u0027occurred\u0027?\n+# Revert any state that has been initialized before the error occured.",
+      "revId": "13758417c53ce9c3da18c34426e66e78139a6c21",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b9a645af_189a8c3c",
+        "filename": "scripts/mcreboot.1in",
+        "patchSetId": 2
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T09:56:35Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+.I mcctrl, $",
+      "revId": "13758417c53ce9c3da18c34426e66e78139a6c21",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "19ed623c_281d8ed9",
+        "filename": "scripts/mcreboot.1in",
+        "patchSetId": 2
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T09:56:35Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+.I ihk_mic, $",
+      "revId": "13758417c53ce9c3da18c34426e66e78139a6c21",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ce85e3d_344c9a6e",
+        "filename": "scripts/mcstop+release-smp.sh.in",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T09:56:35Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+# $",
+      "revId": "13758417c53ce9c3da18c34426e66e78139a6c21",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
