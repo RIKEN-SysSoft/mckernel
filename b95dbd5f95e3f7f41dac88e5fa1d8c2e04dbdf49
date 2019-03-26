@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0d4c67f4_14016a50",
+        "filename": "scripts/mcreboot-smp.sh.in",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-26T09:20:39Z",
+      "side": 1,
+      "message": "WARNING: \u0027priviledges\u0027 may be misspelled - perhaps \u0027privileges\u0027?\n+# priviledges requires /etc/sudoers to contain the following persmissions:",
+      "revId": "b95dbd5f95e3f7f41dac88e5fa1d8c2e04dbdf49",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
