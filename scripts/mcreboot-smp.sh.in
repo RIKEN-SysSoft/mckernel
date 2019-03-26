@@ -1,9 +1,9 @@
 #!/bin/bash
-# mcreboot-smp-x86.sh.in COPYRIGHT FUJITSU LIMITED 2018
-
-# IHK SMP-x86 example boot script.
+# IHK/McKernel SMP boot script.
 # author: Balazs Gerofi <bgerofi@riken.jp>
 #      Copyright (C) 2014  RIKEN AICS
+# modified: Fujitsu Ltd.
+#      Copyright (C) 2018
 #
 # This is an example script for loading IHK, configuring a partition and
 # booting McKernel on it.  Unless specific CPUs and memory are requested,
@@ -12,6 +12,11 @@
 # Otherwise, it destroys the current McKernel instance and reboots it using
 # the same set of resources as it used previously.
 # Note that the script does not output anything unless an error occurs.
+#
+# This script is meant to be run under sudo. Running it with regular user
+# privileges requires /etc/sudoers to contain the following persmissions:
+#
+# hpcuser ALL=(root) NOPASSWD: /sbin/insmod, /sbin/rmmod, /sbin/setenforce, /bin/systemctl, /bin/cat, /bin/cp /tmp/mcreboot/smp_affinity /proc/irq/*/smp_affinity, /bin/chown * /dev/mcd*, /bin/chown * /dev/mcos*, /*/*/*/*/ihkconfig, /*/*/*/*/ihkosctl, /usr/bin/tee, /bin/sync
 
 ret=1
 prefix="@prefix@"
@@ -41,7 +46,11 @@ redirect_kmsg=0
 mon_interval="-1"
 DUMP_LEVEL=24
 facility="LOG_LOCAL6"
-chown_option=`logname 2> /dev/null`
+chown_option=`id -un 2> /dev/null`
+# For the case when the entire script is run with sudo fall back to login name
+if [ "${chown_option}" == "root" ]; then
+	chown_option=`logname 2> /dev/null`
+fi
 
 if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" -o "`systemctl status irqbalance.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
 	irqbalance_used="yes"
@@ -112,7 +121,7 @@ fi
 
 disable_irqbalance_mck() {
 	if [ -f /etc/systemd/system/irqbalance_mck.service ]; then
-		systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
+		sudo systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null
 
 		# Invalid .service file persists so remove it
 		rm -f /etc/systemd/system/irqbalance_mck.service
@@ -129,10 +138,11 @@ error_exit() {
 	irqbalance_mck_started)
 		if [ "${irqbalance_used}" == "yes" ]; then
 		    if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" != "" ]; then
-			if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
+			if ! sudo systemctl stop irqbalance_mck.service 2>/dev/null; then
 			    echo "warning: failed to stop irqbalance_mck" >&2
 			fi
 			disable_irqbalance_mck
+			rm /tmp/irqbalance_mck
 		    fi
 		fi
 		;&
@@ -141,36 +151,36 @@ error_exit() {
 		if ls /dev/mcos* 1>/dev/null 2>&1; then
 			for i in /dev/mcos*; do
 				ind=`echo $i|cut -c10-`;
-				if ! ${SBINDIR}/ihkconfig 0 destroy $ind; then
+				if ! sudo ${SBINDIR}/ihkconfig 0 destroy $ind; then
 					echo "warning: failed to destroy LWK instance $ind" >&2
 				fi
 			done
 		fi
 		;&
 	mcctrl_loaded)
-		rmmod mcctrl 2>/dev/null || echo "warning: failed to remove mcctrl" >&2
+		sudo rmmod mcctrl 2>/dev/null || echo "warning: failed to remove mcctrl" >&2
 		;&
 	cpus_reserved)
-		cpus=`${SBINDIR}/ihkconfig 0 query cpu`
+		cpus=`sudo ${SBINDIR}/ihkconfig 0 query cpu`
 		if [ "${cpus}" != "" ]; then
-			if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
+			if ! sudo ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
 				echo "warning: failed to release CPUs" >&2
 			fi
 		fi
 		;&
 	mem_reserved)
-		mem=`${SBINDIR}/ihkconfig 0 query mem`
+		mem=`sudo ${SBINDIR}/ihkconfig 0 query mem`
 		if [ "${mem}" != "" ]; then
-			if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
+			if ! sudo ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
 				echo "warning: failed to release memory" >&2
 			fi
 		fi
 		;&
 	ihk_smp_loaded)
-		rmmod ihk_smp_@ARCH@ 2>/dev/null || echo "warning: failed to remove ihk_smp_@ARCH@" >&2
+		sudo rmmod ihk_smp_@ARCH@ 2>/dev/null || echo "warning: failed to remove ihk_smp_@ARCH@" >&2
 		;&
 	ihk_loaded)
-		rmmod ihk 2>/dev/null || echo "warning: failed to remove ihk" >&2
+		sudo rmmod ihk 2>/dev/null || echo "warning: failed to remove ihk" >&2
 		;&
 	smp_affinity_modified)
 		umask $umask_old
@@ -183,7 +193,7 @@ error_exit() {
 		;&
 	irqbalance_stopped)
 		if [ "${irqbalance_used}" == "yes" ]; then
-		    if ! systemctl start irqbalance.service; then
+		    if ! sudo systemctl start irqbalance.service; then
 			echo "warning: failed to start irqbalance" >&2;
 		    fi
 		fi
@@ -225,13 +235,13 @@ fi
 
 # Stop irqbalance
 if [ "${irqbalance_used}" == "yes" ]; then
-    systemctl stop irqbalance_mck.service 2>/dev/null
-    if ! systemctl stop irqbalance.service 2>/dev/null ; then
+    sudo systemctl stop irqbalance_mck.service 2>/dev/null
+    if ! sudo systemctl stop irqbalance.service 2>/dev/null ; then
 		echo "error: stopping irqbalance" >&2
 		exit 1
     fi;
 
-    if ! perl -e 'use File::Copy qw(copy); $tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir = substr($rel, 0, length($rel) - length("/smp_affinity")); if (system("mkdir -p $tmpdir/$dir")) { exit 1; } if (0) { print "cp $file $tmpdir/$rel\n"; } if (!copy($file,"$tmpdir/$rel")) { exit 1; } }'; then
+    if ! perl -e 'use File::Copy qw(copy); $tmpdir="/tmp/mcreboot"; @files = grep { -f } glob "/proc/irq/*/smp_affinity"; foreach $file (@files) { $rel = substr($file, 1); $dir = substr($rel, 0, length($rel) - length("/smp_affinity")); if (system("mkdir -p $tmpdir/$dir")) { exit 1; } if (0) { print "cp $file $tmpdir/$rel\n"; } if (system("sudo cat $file > $tmpdir/$rel")) { exit 1; } }'; then
 		echo "error: saving /proc/irq/*/smp_affinity" >&2
 		error_exit "irqbalance_stopped"
 	fi;
@@ -245,7 +255,7 @@ if [ "${irqbalance_used}" == "yes" ]; then
     smp_affinity_mask=`echo $cpus | ncpus=$ncpus perl -e 'while(<>){@tokens = split /,/;foreach $token (@tokens) {@nums = split /-/,$token; for($num = $nums[0]; $num <= $nums[$#nums]; $num++) {$ndx=int($num/32); $mask[$ndx] |= (1<<($num % 32))}}} $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if($j != $nint32s - 1){print ",";} $nblks = ($j != $nint32s - 1) ? 8 : ($ENV{'ncpus'} % 32 != 0) ? int((($ENV{'ncpus'} + 3) % 32) / 4) : 8; for($i = $nblks - 1;$i >= 0;$i--){ printf("%01x",($mask[$j] >> ($i*4)) & 0xf);}}'`
 #    echo cpus=$cpus ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask
 
-    if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); if($len != 0) { $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { $cmd = "echo $inv > $dir/smp_affinity 2>/dev/null"; system $cmd;}}'; then
+    if ! ncpus=$ncpus smp_affinity_mask=$smp_affinity_mask perl -e '@dirs = grep { -d } glob "/proc/irq/*"; foreach $dir (@dirs) { $hit = 0; $affinity_str = `sudo cat $dir/smp_affinity`; chomp $affinity_str; @int32strs = split /,/, $affinity_str; @int32strs_mask=split /,/, $ENV{'smp_affinity_mask'}; for($i=0;$i <= $#int32strs_mask; $i++) { $int32strs_inv[$i] = sprintf("%08x",hex($int32strs_mask[$i])^0xffffffff); if($i == 0) { $len = int((($ENV{'ncpus'}%32)+3)/4); if($len != 0) { $int32strs_inv[$i] = substr($int32strs_inv[$i], -$len, $len); } } } $inv = join(",", @int32strs_inv); $nint32s = int(($ENV{'ncpus'}+31)/32); for($j = $nint32s - 1; $j >= 0; $j--) { if(hex($int32strs[$nint32s - 1 - $j]) & hex($int32strs_mask[$nint32s - 1 - $j])) { $hit = 1; }} if($hit == 1) { system("echo $inv > /tmp/mcreboot/smp_affinity"); $cmd = "cp /tmp/mcreboot/smp_affinity $dir/smp_affinity 2>/dev/null"; system("sudo $cmd")}}'; then
 		echo "error: modifying /proc/irq/*/smp_affinity" >&2
 		error_exit "irqbalance_stopped"
 	fi
@@ -258,22 +268,22 @@ umask 0`printf "%o" ${umask_dec}`
 
 # Load IHK if not loaded
 if ! grep -E 'ihk\s' /proc/modules &>/dev/null; then
-	if ! taskset -c 0 insmod ${KMODDIR}/ihk.ko 2>/dev/null; then
+	if ! taskset -c 0 sudo insmod ${KMODDIR}/ihk.ko 2>/dev/null; then
 		echo "error: loading ihk" >&2
 		error_exit "smp_affinity_modified"
 	fi
 fi
 
 # Increase swappiness so that we have better chance to allocate memory for IHK
-echo 100 > /proc/sys/vm/swappiness
+echo 100 | sudo tee /proc/sys/vm/swappiness 1>/dev/null
 
 # Drop Linux caches to free memory
-sync && echo 3 > /proc/sys/vm/drop_caches
+sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches 1>/dev/null
 
 # Merge free memory areas into large, physically contigous ones
-echo 1 > /proc/sys/vm/compact_memory 2>/dev/null
+echo 1 | sudo tee /proc/sys/vm/compact_memory 1>/dev/null 2>/dev/null
 
-sync
+sudo sync
 
 # Load IHK-SMP if not loaded and reserve CPUs and memory
 if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
@@ -289,7 +299,7 @@ if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
 			error_exit "ihk_loaded"
 		fi
 	fi
-	if ! taskset -c 0 insmod ${KMODDIR}/ihk-smp-@ARCH@.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
+	if ! taskset -c 0 sudo insmod ${KMODDIR}/ihk-smp-@ARCH@.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
 		echo "error: loading ihk-smp-@ARCH@" >&2
 		error_exit "ihk_loaded"
 	fi
@@ -330,11 +340,11 @@ if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
 		done
 	fi
 
-	if ! ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then
+	if ! sudo ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then
 		echo "error: reserving memory" >&2
 		error_exit "ihk_smp_loaded"
 	fi
-	if ! ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
+	if ! sudo ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
 		echo "error: reserving CPUs" >&2;
 		error_exit "mem_reserved"
 	fi
@@ -342,14 +352,14 @@ fi
 
 # Load mcctrl if not loaded
 if ! grep mcctrl /proc/modules &>/dev/null; then
-	if ! taskset -c 0 insmod ${KMODDIR}/mcctrl.ko 2>/dev/null; then
+	if ! taskset -c 0 sudo insmod ${KMODDIR}/mcctrl.ko 2>/dev/null; then
 		echo "error: inserting mcctrl.ko" >&2
 		error_exit "cpus_reserved"
 	fi
 fi
 
 # Check that different versions of binaries/scripts are not mixed
-IHK_BUILDID=`${SBINDIR}/ihkconfig 0 get buildid`
+IHK_BUILDID=`sudo ${SBINDIR}/ihkconfig 0 get buildid`
 if [  "${IHK_BUILDID}" != "${MCK_BUILDID}" ]; then
 	echo "IHK build-id (${IHK_BUILDID}) didn't match McKernel build-id (${MCK_BUILDID})." >&2
 	error_exit "mcctrl_loaded"
@@ -361,7 +371,7 @@ if ls /dev/mcos* 1>/dev/null 2>&1; then
 		ind=`echo $i|cut -c10-`;
 		# Retry when conflicting with ihkmond
 		nretry=0
-		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -ge 4 ]; do
+		until sudo ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -ge 4 ]; do
 		    sleep 0.25
 		    nretry=$[ $nretry + 1 ]
 		done
@@ -373,51 +383,51 @@ if ls /dev/mcos* 1>/dev/null 2>&1; then
 fi
 
 # Create OS instance
-if ! ${SBINDIR}/ihkconfig 0 create; then
+if ! sudo ${SBINDIR}/ihkconfig 0 create; then
 	echo "error: creating OS instance" >&2
 	error_exit "mcctrl_loaded"
 fi
 
 # Assign CPUs
-if ! ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then
+if ! sudo ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then
 	echo "error: assign CPUs" >&2
 	error_exit "os_created"
 fi
 
 if [ "$ikc_map" != "" ]; then
 	# Specify IKC map
-	if ! ${SBINDIR}/ihkosctl 0 set ikc_map ${ikc_map}; then
+	if ! sudo ${SBINDIR}/ihkosctl 0 set ikc_map ${ikc_map}; then
 		echo "error: assign CPUs" >&2
 		error_exit "os_created"
 	fi
 fi
 
 # Assign memory
-if ! ${SBINDIR}/ihkosctl 0 assign mem ${mem}; then
+if ! sudo ${SBINDIR}/ihkosctl 0 assign mem ${mem}; then
 	echo "error: assign memory" >&2
 	error_exit "os_created"
 fi
 
 # Load kernel image
-if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
+if ! sudo ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
 	echo "error: loading kernel image: ${KERNDIR}/mckernel.img" >&2
 	error_exit "os_created"
 fi
 
 # Set kernel arguments
-if ! ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo $safe_kernel_map $idle_halt dump_level=${DUMP_LEVEL} $extra_kopts $allow_oversubscribe $time_sharing"; then
+if ! sudo ${SBINDIR}/ihkosctl 0 kargs "hidos $turbo $safe_kernel_map $idle_halt dump_level=${DUMP_LEVEL} $extra_kopts $allow_oversubscribe $time_sharing"; then
 	echo "error: setting kernel arguments" >&2
 	error_exit "os_created"
 fi
 
 # Boot OS instance
-if ! ${SBINDIR}/ihkosctl 0 boot; then
+if ! sudo ${SBINDIR}/ihkosctl 0 boot; then
 	echo "error: booting" >&2
 	error_exit "os_created"
 fi
 
 # Set device file ownership
-if ! chown ${chown_option} /dev/mcd* /dev/mcos*; then
+if ! sudo chown ${chown_option} /dev/mcd* /dev/mcos*; then
 	echo "warning: failed to chown device files" >&2
 fi
 
@@ -429,12 +439,12 @@ if [ "${irqbalance_used}" == "yes" ]; then
 
 	disable_irqbalance_mck
 
-	if ! systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
+	if ! sudo systemctl link $ETCDIR/irqbalance_mck.service >/dev/null 2>/dev/null; then
 		echo "error: linking irqbalance_mck" >&2
 		error_exit "os_created"
 	fi
 
-    if ! systemctl start irqbalance_mck.service 2>/dev/null ; then
+    if ! sudo systemctl start irqbalance_mck.service 2>/dev/null ; then
 		echo "error: starting irqbalance_mck" >&2
 		error_exit "os_created"
 	fi
