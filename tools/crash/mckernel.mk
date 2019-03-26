@@ -33,6 +33,10 @@ ifeq ($(shell arch), x86_64)
   TARGET=X86_64
   TARGET_CFLAGS=
 endif
+ifeq ($(shell arch), aarch64)
+  TARGET=ARM64
+  TARGET_CFLAGS=
+endif
 
 ifeq ($(shell /bin/ls ../defs.h 2> /dev/null), ../defs.h)
   INCDIR=..

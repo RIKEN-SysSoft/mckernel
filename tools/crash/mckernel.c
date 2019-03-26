@@ -77,6 +77,7 @@ static struct mck_size_table {
 #define MCK_ASSIGN_OFFSET(X) (mck_offset_table.X)
 #define MCK_ASSIGN_SIZE(X) (mck_size_table.X)
 #define MCK_SYMBOL_INIT(X) (MCK_ASSIGN_SYMBOL(X) = get_symbol_value(#X))
+#define MCK_SYMBOL_INIT_VAL(X, Y) (MCK_ASSIGN_SYMBOL(X) = get_symbol_value(#Y))
 #define MCK_MEMBER_OFFSET_INIT(X, Y, Z) (MCK_ASSIGN_OFFSET(X) = MEMBER_OFFSET(Y, Z))
 #define MCK_SIZE_INIT(X, Y) (MCK_ASSIGN_SIZE(X) = STRUCT_SIZE(Y))
 
@@ -112,10 +113,12 @@ get_symbol_value(char *name)
 
 	close_tmpfile2();
 
+#ifdef X86_64
 	/* adjust symbols in MAP_ST_START */
 	if (value < 0xffff810000000000UL && value >= 0xffff800000000000UL) {
 		value += 0x80000000000UL;
 	}
+#endif
 
 	return value;
 }
@@ -156,11 +159,26 @@ datatype_error(void **retaddr, char *errmsg, char *func, char *file, int line)
 	exit(1);
 }
 
+#ifdef X86_64
 #define LINUX_PAGE_OFFSET 0xffff880000000000UL
 static inline ulong phys_to_virt(ulong phys)
 {
 	return phys + LINUX_PAGE_OFFSET;
 }
+#elif defined(ARM64)
+ulong MAP_ST_START = -1UL;
+/* PHYS_OFFSET needs updating depending on the environment
+ * We should normally get it from boot params but we need it to read
+ * boot_param from its pa...
+ * See linux's Documentation/arm/Porting
+ */
+#define V2PHYS_OFFSET 0x40000000UL
+
+static inline ulong phys_to_virt(ulong phys)
+{
+	return (phys - V2PHYS_OFFSET) | MAP_ST_START;
+}
+#endif
 
 /* basically copy of OFFSET_verify */
 static ulong
@@ -390,7 +408,11 @@ mckernel_refresh_symbols(int fatal)
 	MCK_ASSIGN_SYMBOL(boot_param_boot_nsec) = boot_param_boot_nsec;
 
 	MCK_SYMBOL_INIT(clv);
+#ifdef X86_64
 	MCK_SYMBOL_INIT(init_pt);
+#elif defined(ARM64)
+	MCK_SYMBOL_INIT_VAL(init_pt, swapper_page_table);
+#endif
 	MCK_SYMBOL_INIT(mck_num_processors);
 	if (!readmem(MCK_SYMBOL(mck_num_processors), KVADDR,
 		     &MCK_ASSIGN_SYMBOL(num_processors), sizeof(int),
@@ -406,9 +428,10 @@ mckernel_refresh_symbols(int fatal)
 	MCK_ASSIGN_SYMBOL(kmsg_buf) = phys_to_virt(MCK_SYMBOL(kmsg_buf));
 }
 
+static void arch_init(void);
+
 
 /* mcsymbols */
-
 static void
 cmd_mcsymbols(void)
 {
@@ -450,6 +473,7 @@ cmd_mcsymbols(void)
 		return;
 	}
 
+	arch_init();
 	mckernel_refresh_symbols(0);
 
 	mck_loaded = TRUE;
@@ -933,29 +957,184 @@ static char *help_mcmem[] = {
 /* mcvtop */
 
 /* arch specific pte functions */
-#if X86_64
+#ifdef X86_64
 #define PAGE_SHIFT         12
 #define PAGE_SIZE          (1UL << PAGE_SHIFT)
 #define PAGE_MASK          (~((unsigned long)PAGE_SIZE - 1))
 
 #define PTL4_SHIFT         39
-#define PTL4_SIZE          (1UL << PTL4_SHIFT)
 #define PTL3_SHIFT         30
-#define PTL3_SIZE          (1UL << PTL3_SHIFT)
 #define PTL2_SHIFT         21
-#define PTL2_SIZE          (1UL << PTL2_SHIFT)
 #define PTL1_SHIFT         12
-#define PTL1_SIZE          (1UL << PTL1_SHIFT)
 
+#define PGTABLE_LEVELS     4
 #define PT_ENTRIES         512
+static ulong PTL_ENTRIES[4] = { PT_ENTRIES, PT_ENTRIES,
+				PT_ENTRIES, PT_ENTRIES };
+static int PTL_SHIFTS[4] = { PTL1_SHIFT, PTL2_SHIFT,
+			     PTL3_SHIFT, PTL4_SHIFT };
 
 #define PT_PHYSMASK (((1UL << 52) - 1) & PAGE_MASK)
 
-#define GET_VIRT_INDICES(virt, l4i, l3i, l2i, l1i) \
-	l4i = ((virt) >> PTL4_SHIFT) & (PT_ENTRIES - 1); \
-	l3i = ((virt) >> PTL3_SHIFT) & (PT_ENTRIES - 1); \
-	l2i = ((virt) >> PTL2_SHIFT) & (PT_ENTRIES - 1); \
-	l1i = ((virt) >> PTL1_SHIFT) & (PT_ENTRIES - 1)
+#define PTATTRMASK (_PAGE_RW | _PAGE_USER | _PAGE_PWT | _PAGE_PCD | \
+		    _PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_GLOBAL | _PAGE_NX)
+
+#elif defined(ARM64)
+//PAGESIZE()
+//PAGESHIFT()
+#define PAGE_MASK (~((ulong)PAGESIZE() - 1))
+#define PT_PHYSMASK (((1UL << 48) - 1) & PAGE_MASK)
+
+/* assume anything set means present for now */
+#define _PAGE_PRESENT 0xffffffffffffffffUL
+
+
+#define PMD_TYPE_MASK           (3UL << 0)
+#define PMD_TYPE_SECT           (1UL << 0)
+
+/* commented out ones are already defined in defs.h */
+//#define PTE_TYPE_MASK           (3UL << 0)
+//#define PTE_TYPE_FAULT          (0UL << 0)
+//#define PTE_TYPE_PAGE           (3UL << 0)
+#define PTE_TABLE_BIT           (1UL << 1)
+//#define PTE_USER                (1UL << 6)    /* AP[1] */
+//#define PTE_RDONLY              (1UL << 7)    /* AP[2] */
+//#define PTE_SHARED              (3UL << 8)    /* SH[1:0], inner shareable */
+//#define PTE_AF                  (1UL << 10)   /* Access Flag */
+//#define PTE_NG                  (1UL << 11)   /* nG */
+#define PTE_CONT                (1UL << 52)   /* Contiguous range */
+//#define PTE_PXN                 (1UL << 53)   /* Privileged XN */
+//#define PTE_UXN                 (1UL << 54)   /* User XN */
+/* Software defined PTE bits definition.*/
+//#define PTE_VALID               (1UL << 0)
+#define PTE_FILE                (1UL << 2)    /* only when !pte_present() */
+//#define PTE_DIRTY               (1UL << 55)
+//#define PTE_SPECIAL             (1UL << 56)
+#define PTE_WRITE               (1UL << 57)
+#define PTE_PROT_NONE           (1UL << 58) /* only when !PTE_VALID */
+
+#define PTATTRMASK (PTE_USER | PTE_RDONLY | PTE_SHARED | PTE_AF | PTE_NG | \
+		    PTE_PXN | PTE_UXN | PTE_DIRTY | PTE_SPECIAL | PTE_WRITE | \
+		    PTE_PROT_NONE)
+
+#define VA_BITS() (machdep->machspec->VA_BITS)
+
+static ulong PTL_ENTRIES[4];
+static int PTL_SHIFTS[4];
+static int PGTABLE_LEVELS = -1;
+#endif
+
+static void
+arch_init(void)
+{
+#ifdef X86_64
+	/* nothing to do */
+#elif defined(ARM64)
+	/* page shifts */
+	switch (machdep->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K)) {
+	case VM_L4_4K:
+	case VM_L3_4K:
+		PTL_SHIFTS[0] = 12;
+		PTL_SHIFTS[1] = 21;
+		PTL_SHIFTS[2] = 32;
+		PTL_SHIFTS[3] = 39;
+		switch (VA_BITS()) {
+		case 39:
+			MAP_ST_START = 0xffffffc000000000UL;
+			PGTABLE_LEVELS = 3;
+			break;
+		case 48:
+			MAP_ST_START = 0xffff800000000000UL;
+			PGTABLE_LEVELS = 4;
+			break;
+		default:
+			error(FATAL,
+			      "va_bits must be 39 or 48 with 4k pages\n");
+		}
+		break;
+	case VM_L3_64K:
+	case VM_L2_64K:
+		PTL_SHIFTS[0] = 16;
+		PTL_SHIFTS[1] = 29;
+		PTL_SHIFTS[2] = 42;
+		PTL_SHIFTS[3] = 55;
+		switch (VA_BITS()) {
+		case 42:
+			MAP_ST_START = 0xfffffe0000000000UL;
+			PGTABLE_LEVELS = 2;
+			break;
+		case 48:
+			MAP_ST_START = 0xffff800000000000UL;
+			PGTABLE_LEVELS = 3;
+			break;
+		default:
+			error(FATAL,
+			      "va_bits must be 42 or 48 with 64k pages\n");
+		}
+		break;
+	default:
+		error(FATAL,
+		      "arm64 but non-standard pagesize/page table levels?\n");
+	}
+
+	/* page table stuff also depend on VA_BITS */
+	switch (machdep->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K)) {
+	case VM_L4_4K:
+		if (VA_BITS() > PTL_SHIFTS[3]) {
+			PTL_ENTRIES[0] = 1UL << (PTL_SHIFTS[0] - 3);
+			PTL_ENTRIES[1] = 1UL << (PTL_SHIFTS[0] - 3);
+			PTL_ENTRIES[2] = 1UL << (PTL_SHIFTS[0] - 3);
+			PTL_ENTRIES[3] = 1UL << (VA_BITS() - PTL_SHIFTS[3]);
+			break;
+		}
+	/* fallthrough */
+	case VM_L3_4K:
+	case VM_L3_64K:
+		if (VA_BITS() > PTL_SHIFTS[2]) {
+			PTL_ENTRIES[0] = 1UL << (PTL_SHIFTS[0] - 3);
+			PTL_ENTRIES[1] = 1UL << (PTL_SHIFTS[0] - 3);
+			PTL_ENTRIES[2] = 1UL << (VA_BITS() - PTL_SHIFTS[2]);
+			PTL_ENTRIES[3] = 1;
+			break;
+		}
+	/* fallthrough */
+	case VM_L2_64K:
+		if (VA_BITS() > PTL_SHIFTS[1]) {
+			PTL_ENTRIES[0] = 1UL << (PTL_SHIFTS[0] - 3);
+			PTL_ENTRIES[1] = 1UL << (VA_BITS() - PTL_SHIFTS[1]);
+			PTL_ENTRIES[2] = 1;
+			PTL_ENTRIES[3] = 1;
+			break;
+		}
+		PTL_ENTRIES[0] = 1UL << (VA_BITS() - PTL_SHIFTS[0]);
+		PTL_ENTRIES[1] = 1;
+		PTL_ENTRIES[2] = 1;
+		PTL_ENTRIES[3] = 1;
+		break;
+	default:
+		error(FATAL,
+		      "arm64 but non-standard pagesize/page table levels?\n");
+	}
+#endif
+}
+
+static const char*
+pgshift_to_string(int pgshift)
+{
+	switch (pgshift) {
+	case 12: return "4K";
+	case 16: return "64K";
+	case 21: return "2M";
+	case 29: return "512M";
+	case 30: return "1G";
+	case 39: return "512G";
+	case 42: return "4T";
+	case 55: return "32P";
+	default:
+		error(FATAL, "called with invalid pgshift: %d\n", pgshift);
+	}
+	return "???";
+}
 
 static ulong
 pte_get_phys(ulong pte)
@@ -963,11 +1142,21 @@ pte_get_phys(ulong pte)
 	return pte & PT_PHYSMASK;
 }
 
-#define PTATTRMASK (_PAGE_PRESENT | _PAGE_RW | _PAGE_USER | _PAGE_PWT |    \
-		    _PAGE_PCD | _PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_PSE | \
-		    _PAGE_PROTNONE | _PAGE_GLOBAL | _PAGE_NX)
+static int
+pte_is_type_page(ulong pte, int level)
+{
+#ifdef X86_64
+	if (level == 1)
+		return TRUE;
+	return (level == 2 || level == 3) && (pte & _PAGE_PSE) != 0;
+#elif defined(ARM64)
+	if (level == 1)
+		return (pte & PTE_TYPE_MASK) == PTE_TYPE_PAGE;
 
-/* XXX check if _PAGE* macros are arch-independent in crash */
+	return (pte & PMD_TYPE_MASK) == PMD_TYPE_SECT;
+#endif
+}
+
 static void
 pte_print_(ulong pte, ulong virt, int pgshift)
 {
@@ -979,8 +1168,8 @@ pte_print_(ulong pte, ulong virt, int pgshift)
 		virt += 0xffff000000000000UL;
 
 	fprintf(fp, "%016lx %016lx %4s (",
-	       phys, virt, pgshift == PTL1_SHIFT ? "4K" :
-		   (pgshift == PTL2_SHIFT ? "2M" : "1G"));
+		phys, virt, pgshift_to_string(pgshift));
+#ifdef X86_64
 	if (pte & _PAGE_RW)
 		fprintf(fp, "%sRW", others++ ? "|" : "");
 	if (pte & _PAGE_USER)
@@ -997,6 +1186,32 @@ pte_print_(ulong pte, ulong virt, int pgshift)
 		fprintf(fp, "%sGLOBAL", others++ ? "|" : "");
 	if (pte & _PAGE_NX)
 		fprintf(fp, "%sNX", others++ ? "|" : "");
+#elif defined(ARM64)
+	if (pte & PTE_USER)
+		fprintf(fp, "%sUSER", others++ ? "|" : "");
+	if (pte & PTE_RDONLY)
+		fprintf(fp, "%sRDONLY", others++ ? "|" : "");
+	if (pte & PTE_SHARED)
+		fprintf(fp, "%sSHARED", others++ ? "|" : "");
+	if (pte & PTE_AF)
+		fprintf(fp, "%sAF", others++ ? "|" : "");
+	if (pte & PTE_NG)
+		fprintf(fp, "%sNG", others++ ? "|" : "");
+	if (pte & PTE_PXN)
+		fprintf(fp, "%sPXN", others++ ? "|" : "");
+	if (pte & PTE_UXN)
+		fprintf(fp, "%sUXN", others++ ? "|" : "");
+	if (pte & PTE_DIRTY)
+		fprintf(fp, "%sDIRTY", others++ ? "|" : "");
+	if (pte & PTE_SPECIAL)
+		fprintf(fp, "%sSPECIAL", others++ ? "|" : "");
+	if (pte & PTE_WRITE)
+		fprintf(fp, "%sWRITE", others++ ? "|" : "");
+	if (pte & PTE_PROT_NONE)
+		fprintf(fp, "%sPROT_NONE", others++ ? "|" : "");
+	if (!others)
+		fprintf(fp, "%016lx", pte);
+#endif
 	fprintf(fp, ")\n");
 }
 
@@ -1036,122 +1251,49 @@ pte_print(ulong pte, ulong virt, int pgshift)
 static int
 ptl_shift(int level)
 {
-	switch (level) {
-	case 1: return PTL1_SHIFT;
-	case 2: return PTL2_SHIFT;
-	case 3: return PTL3_SHIFT;
-	case 4: return PTL4_SHIFT;
-	default: error(FATAL, "ptl_shift called with invalid level %d\n", level);
-	}
+	if (level >= 1 && level <= 4)
+		return PTL_SHIFTS[level-1];
+
+	error(FATAL, "ptl_shift called with invalid level %d\n", level);
 	return 0; // never happens
 }
 
 static void
-pte_do_walk(ulong pt, ulong virt, int level)
+pte_do_walk(ulong pt, ulong virt, int level, int lookup, ulong addr)
 {
 	ulong i;
 	ulong pte;
 
-	for (i = 0; i < PT_ENTRIES; i++) {
+	for (i = 0; i < PTL_ENTRIES[level-1]; i++) {
+		/* lookup: skip out of range entries */
+		if (lookup && addr >= (virt | ((i + 1) << ptl_shift(level))))
+			continue;
+		if (lookup && addr < (virt | (i << ptl_shift(level))))
+			break;
+
 		if (!readmem(pt + i * sizeof(pte), KVADDR, &pte, sizeof(pte),
 			     "page table entry", RETURN_ON_ERROR|QUIET))
 			error(FATAL, "Could not read page table entry");
 		if (!(pte & _PAGE_PRESENT))
 			continue;
-		if (level == 1 || ((level == 2 || level == 3) &&
-				   (pte & _PAGE_PSE))) {
+		if (pte_is_type_page(pte, level)) {
 			pte_print(pte, virt | (i << ptl_shift(level)),
 				  ptl_shift(level));
 		} else if (level > 1) {
 			pte_do_walk(phys_to_virt(pte_get_phys(pte)),
 				    virt | (i << ptl_shift(level)),
-				    level - 1);
+				    level - 1, lookup, addr);
 		}
 	}
 }
 
 static void
-pte_walk(ulong pt)
+pte_walk(ulong pt, int lookup, ulong addr)
 {
 	fprintf(fp, "%-16s %-16s %s %s\n", "PHYS", "VIRT", "SIZE", "FLAGS");
-	pte_do_walk(pt, 0, 4);
+	pte_do_walk(pt, 0, PGTABLE_LEVELS, lookup, addr);
 	pte_print(0, 0, 0); // flush last one if any
 }
-
-static void
-pte_lookup(ulong pt, ulong virt)
-{
-	int l4idx, l3idx, l2idx, l1idx;
-	int pgshift;
-	ulong pte;
-
-	GET_VIRT_INDICES(virt, l4idx, l3idx, l2idx, l1idx);
-	// XXX use_1gb_page ?
-
-	if (pc->debug)
-		fprintf(fp, "pt %#lx, virt %lx, l4idx %d, l3idx %d, l2idx %d, l1idx %d\n",
-			pt, virt, l4idx, l3idx, l2idx, l1idx);
-
-	if (!readmem(pt + l4idx * sizeof(pte), KVADDR, &pte, sizeof(pte),
-		     "l4 page table entry", RETURN_ON_ERROR|QUIET))
-		error(FATAL, "Could not read l4 page table entry");
-	if (!pte) {
-		fprintf(fp, "l4 page table entry empty\n");
-		return;
-	}
-
-	pt = phys_to_virt(pte_get_phys(pte));
-	if (pc->debug)
-		fprintf(fp, "l4 pte %lx, l3 base pt: %#lx\n", pte, pt);
-	if (!readmem(pt + l3idx * sizeof(pte), KVADDR, &pte, sizeof(pte),
-		     "l3 page table entry", RETURN_ON_ERROR|QUIET))
-		error(FATAL, "Could not read l3 page table entry");
-	if (!pte) {
-		fprintf(fp, "l3 page table entry empty\n");
-		return;
-	}
-	if (pte & _PAGE_PSE) {
-		pgshift = PTL3_SHIFT;
-		goto found;
-	}
-
-	pt = phys_to_virt(pte_get_phys(pte));
-	if (pc->debug)
-		fprintf(fp, "l3 pte %lx, l2 base pt: %#lx\n", pte, pt);
-	if (!readmem(pt + l2idx * sizeof(pte), KVADDR, &pte, sizeof(pte),
-		     "l2 page table entry", RETURN_ON_ERROR|QUIET))
-		error(FATAL, "Could not read l2 page table entry");
-	if (!pte) {
-		fprintf(fp, "l2 page table entry empty\n");
-		return;
-	}
-	if (pte & _PAGE_PSE) {
-		pgshift = PTL2_SHIFT;
-		goto found;
-	}
-
-	pt = phys_to_virt(pte_get_phys(pte));
-	if (pc->debug)
-		fprintf(fp, "l2 pte %lx, l1 base pt: %#lx\n", pte, pt);
-	if (!readmem(pt + l1idx * sizeof(pte), KVADDR, &pte, sizeof(pte),
-		     "l1 page table entry", RETURN_ON_ERROR|QUIET))
-		error(FATAL, "Could not read l1 page table entry");
-	if (!pte) {
-		fprintf(fp, "l1 page table entry empty\n");
-		return;
-	}
-	pgshift = PTL1_SHIFT;
-
-found:
-	if (pc->debug)
-		fprintf(fp, "pte found %lx, pgshift %d\n", pte, pgshift);
-
-	fprintf(fp, "%-16s %-16s %s %s\n", "PHYS", "VIRT", "SIZE", "FLAGS");
-	pte_print(pte, virt, pgshift);
-}
-#elif ARM64
-// XXX
-#endif // arch specific pte lookup
 
 static void
 cmd_mcvtop(void)
@@ -1207,12 +1349,18 @@ cmd_mcvtop(void)
 			     "page_table", RETURN_ON_ERROR|QUIET)) {
 			error(FATAL, "Could not read page_table for thread");
 		}
+#ifdef ARM64
+		if (!readmem(page_table, KVADDR, &page_table, sizeof(page_table),
+			     "page_table translation table", RETURN_ON_ERROR|QUIET)) {
+			error(FATAL, "Could not read translation table from page_table");
+		}
+#endif
 	} else {
 		page_table = MCK_SYMBOL(init_pt);
 	}
 
 	if (print_all) {
-		pte_walk(page_table);
+		pte_walk(page_table, 0, 0);
 		return;
 	}
 
@@ -1230,7 +1378,7 @@ next:
 	if (argerrs)
 		cmd_usage(pc->curcmd, SYNOPSIS);
 
-	pte_lookup(page_table, addr);
+	pte_walk(page_table, 1, addr);
 
 	if (!thread)
 		goto skip_mem_range;
