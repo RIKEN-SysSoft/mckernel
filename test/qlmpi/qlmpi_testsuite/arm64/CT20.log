@@ -1,0 +1,42 @@
+CT20001 device mapping program test START
+CT20002 program 1 START
+CT20003 check "MPI_Send/Recv OK"
+ val=           1
+ val=           1
+ r1 val=           1
+ r2 val=           1
+ *** MPI_Send/Recv OK *** 
+CT20004 program 1 suspend
+CT20005 program 2 START
+CT20006 check "MPI_Send/Recv OK"
+ val=           2
+ val=           2
+ r1 val=           2
+ r2 val=           2
+ *** MPI_Send/Recv OK *** 
+CT20007 program 2 suspend
+CT20008 program 1 resume
+CT20009 check "MPI_Send/Recv OK"
+ repeat
+ val=           3
+ repeat
+ val=           3
+ r1 val=           3
+ r2 val=           3
+ *** MPI_Send/Recv OK *** 
+CT20010 program 1 suspend
+CT20011 program 2 resume
+CT20012 check "MPI_Send/Recv OK"
+ repeat
+ val=           4
+ repeat
+ val=           4
+ r1 val=           4
+ r2 val=           4
+ *** MPI_Send/Recv OK *** 
+CT20013 program 2 suspend
+CT20014 program 1 resume
+CT20015 program 1 END
+CT20016 program 2 resume
+CT20017 program 2 END
+CT20018 device mapping program test END

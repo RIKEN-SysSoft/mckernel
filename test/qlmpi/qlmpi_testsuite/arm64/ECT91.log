@@ -1,0 +1,37 @@
+specify -machinefile option
+[OK] ECT91001 machinefile is not specified, so ql_mpiexec_start returns not 0. returns 1
+no user program
+[OK] ECT91002 MPI program is not specified, so ql_mpiexec_start returns not 0. returns 1
+-machinefile not exist
+[OK] ECT91003 specified machinefile does not exist, so ql_mpiexec_start returns not 0. returns 1
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+dose_not_exist: could not load program: No such file or directory
+[OK] ECT91004 specified MPI program does not exist, so ql_mpiexec_start returns not 0. returns 1
+mpiexec: exec(No such file or directory)
+[OK] ECT91005 mpiexec is not found, so ql_mpiexec_start returns not 0. returns 1
+mpiexec: exec(Permission denied)
+[OK] ECT91006 mpiexec abort, so ql_mpiexec_start returns not 0. returns 1
+specify -machinefile option
+[OK] ECT91007 machinefile is not specified, so ql_mpiexec_finalize returns not 0. returns 1
+no user program
+[OK] ECT91008 MPI program is not specified, so ql_mpiexec_finalize returns not 0. returns 1
+not found mpi process
+[OK] ECT91009 specified machinefile is wrong, so ql_mpiexec_finalize returns not 0. returns 1
+not found mpi process
+[OK] ECT91010 specified MPI program name is wrong, so ql_mpiexec_finalize returns not 0. returns 1
+application called MPI_Abort(MPI_COMM_WORLD, -1) - process 0
+[OK] ECT91011 one of MPI processes aborts, so ql_mpiexec_start returns not 0. returns 141
