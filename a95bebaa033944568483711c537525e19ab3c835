@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5212c2e2_f2986a84",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1574,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-27T02:23:41Z",
+      "side": 1,
+      "message": "let\u0027s use ihk_mc_get_vector here again",
+      "revId": "a95bebaa033944568483711c537525e19ab3c835",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
