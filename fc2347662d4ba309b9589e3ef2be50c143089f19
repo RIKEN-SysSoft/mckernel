@@ -16,6 +16,40 @@
       "revId": "fc2347662d4ba309b9589e3ef2be50c143089f19",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5fa1a9b_95c8e923",
+        "filename": "scripts/mcreboot-smp.sh.in",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-27T02:20:32Z",
+      "side": 1,
+      "message": "So you\u0027re sticking with the wildcards here?",
+      "revId": "fc2347662d4ba309b9589e3ef2be50c143089f19",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "51c6b107_93857b75",
+        "filename": "scripts/mcreboot-smp.sh.in",
+        "patchSetId": 2
+      },
+      "lineNbr": 145,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-27T02:20:32Z",
+      "side": 1,
+      "message": "argh! The irqbalance to drop-in commit hasn\u0027t been merged yet... not having quick merges is making this way more painful that it has to be :p",
+      "revId": "fc2347662d4ba309b9589e3ef2be50c143089f19",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
