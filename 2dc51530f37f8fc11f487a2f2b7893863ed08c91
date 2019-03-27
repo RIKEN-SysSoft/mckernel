@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "46a5e05a_339331c9",
+        "filename": "scripts/mcreboot-smp.sh.in",
+        "patchSetId": 5
+      },
+      "lineNbr": 311,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-27T05:34:09Z",
+      "side": 1,
+      "message": "I also changed these to use sudo tee (noticed by chance looking at what redirected stderr with 2\u003e\u00261 to check error messages)\n\n`echo 0 \u003e $f 2\u003e\u00261 \u003e/dev/null` probably didn\u0027t do what we wanted before (it would write the stderr of `echo 0` to that file, so nothing) - do we need these at all?",
+      "revId": "2dc51530f37f8fc11f487a2f2b7893863ed08c91",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
