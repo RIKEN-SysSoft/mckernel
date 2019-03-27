@@ -34,6 +34,24 @@
       "revId": "a95bebaa033944568483711c537525e19ab3c835",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "46029f77_6eb81f17",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1574,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-27T04:11:25Z",
+      "side": 1,
+      "message": "Ugh... honestly that looks like a mistake in 2f4f3628f974b508f8c279b859d619090fc040e5 where 0xd0 was introduced here... but hard to tell... I\u0027d be tempted to try the other one and let tests run to see if it works, and revert back to this if it doesn\u0027t? Or actually since I don\u0027t see 0xd0 plugged in anywhere we probably can get away with removing the interrupt altogether...\n\nThat x86 `ihk_mc_get_vector` is pretty horrible too, returning either 0xd1 or 200 (mixing hex and decimal for fun an profit?)...",
+      "parentUuid": "1b897666_f411372a",
+      "revId": "a95bebaa033944568483711c537525e19ab3c835",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
