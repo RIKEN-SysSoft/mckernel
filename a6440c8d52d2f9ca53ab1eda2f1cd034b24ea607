@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "26c68b1d_d2f57024",
+        "filename": "scripts/mcstop+release-smp.sh.in",
+        "patchSetId": 3
+      },
+      "lineNbr": 156,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-27T04:30:06Z",
+      "side": 1,
+      "message": "how does this one work without sudo?\nYou\u0027re just not seeing the errors because of the 2\u003e/dev/null...",
+      "revId": "a6440c8d52d2f9ca53ab1eda2f1cd034b24ea607",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
