@@ -16,6 +16,24 @@
       "revId": "2dc51530f37f8fc11f487a2f2b7893863ed08c91",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "deb799c0_34ecee8a",
+        "filename": "scripts/mcreboot-smp.sh.in",
+        "patchSetId": 5
+      },
+      "lineNbr": 311,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-03-27T06:29:19Z",
+      "side": 1,
+      "message": "thx for fixing! let\u0027s keep these, not really used these days though..",
+      "parentUuid": "46a5e05a_339331c9",
+      "revId": "2dc51530f37f8fc11f487a2f2b7893863ed08c91",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
