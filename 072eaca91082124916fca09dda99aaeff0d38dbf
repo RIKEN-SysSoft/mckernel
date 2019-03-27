@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5a86250f_3d15f021",
+        "filename": "CMakeLists.txt",
+        "patchSetId": 5
+      },
+      "lineNbr": 155,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-03-27T06:32:58Z",
+      "side": 1,
+      "message": "how about moving this to scripts as well?",
+      "revId": "072eaca91082124916fca09dda99aaeff0d38dbf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
