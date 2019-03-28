@@ -1453,17 +1453,28 @@ SYSCALL_DECLARE(exit_group)
 	return 0;
 }
 
-void clear_host_pte(uintptr_t addr, size_t len)
+void clear_host_pte(uintptr_t addr, size_t len, int holding_memory_range_lock)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
+	struct thread *thread = cpu_local_var(current);
 
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
 	/* NOTE: 3rd parameter denotes new rpgtable of host process (if not zero) */
 	ihk_mc_syscall_arg2(&ctx) = 0;
 
+	/* #986: Let remote page fault code skip
+	   read-locking memory_range_lock. It's safe because other writers are warded off
+	   until the remote PF handling code calls up_write(&current->mm->mmap_sem) and
+	   vm_range is consistent when calling this function. */
+	if (holding_memory_range_lock) {
+		thread->vm->is_memory_range_lock_taken = 1;
+	}
 	lerror = syscall_generic_forwarding(__NR_munmap, &ctx);
+	if (holding_memory_range_lock) {
+		thread->vm->is_memory_range_lock_taken = 0;
+	}
 	if (lerror) {
 		kprintf("clear_host_pte failed. %ld\n", lerror);
 	}
@@ -1482,7 +1493,7 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory
 
 	dkprintf("%s: offloading __NR_mprotect\n", __FUNCTION__);
 	/* #986: Let remote page fault code skip
-	   read-locking memory_range_lock. It's safe because other writers are warded off 
+	   read-locking memory_range_lock. It's safe because other writers are warded off
 	   until the remote PF handling code calls up_write(&current->mm->mmap_sem) and
 	   vm_range is consistent when calling this function. */
 	if (holding_memory_range_lock) {
@@ -1512,7 +1523,7 @@ int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
 	if (error || !ro_freed) {
-		clear_host_pte((uintptr_t)addr, len);
+		clear_host_pte((uintptr_t)addr, len, holding_memory_range_lock);
 	}
 	else {
 		error = set_host_vma((uintptr_t)addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, holding_memory_range_lock);
@@ -7859,7 +7870,7 @@ SYSCALL_DECLARE(remap_file_pages)
 				start0, size, prot, pgoff, flags, error);
 		goto out;
 	}
-	clear_host_pte(start, size);	/* XXX: workaround */
+	clear_host_pte(start, size, 1 /* memory range lock */);	/* XXX: workaround */
 
 	if (range->flag & VR_LOCKED) {
 		need_populate = 1;
