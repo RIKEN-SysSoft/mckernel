@@ -115,7 +115,7 @@ arch_clear_host_user_space()
 
 	/* XXX: might be unnecessary */
 	clear_host_pte(th->vm->region.user_start,
-			(th->vm->region.user_end - th->vm->region.user_start));
+			(th->vm->region.user_end - th->vm->region.user_start), 0);
 	return 0;
 }
 
