@@ -742,7 +742,7 @@ struct process_vm {
     // 2. addition of process page table (allocate_pages, update_process_page_table)
     // note that physical memory allocator (ihk_mc_alloc_pages, ihk_pagealloc_alloc)
     // is protected by its own lock (see ihk/manycore/generic/page_alloc.c)
-	unsigned long is_memory_range_lock_taken;
+	int is_memory_range_lock_taken;
 	/* #986: Fix deadlock between do_page_fault_process_vm() and set_host_vma() */
 
 	ihk_atomic_t refcount;
