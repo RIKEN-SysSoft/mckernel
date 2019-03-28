@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "97808b2a_ad6b7dc5",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(th-\u003evm-\u003eregion.user_end - th-\u003evm-\u003eregion.user_start), 0);",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81658e47_37ac14a1",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 156,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(th-\u003evm-\u003eregion.user_end - th-\u003evm-\u003eregion.user_start), 0);",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1bb9fdc0_3786ae34",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1468,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t/* #986: Let remote page fault code skip\n+\t   read-locking memory_range_lock. It\u0027s safe because other writers are warded off",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "886f2a04_73f3a218",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1468,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t   read-locking memory_range_lock. It\u0027s safe because other writers are warded off",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d39b64d_4a40cd0b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1469,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t   until the remote PF handling code calls up_write(\u0026current-\u003emm-\u003emmap_sem) and",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e65f6b8_ccce91e2",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1470,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t   vm_range is consistent when calling this function. */",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3264979_a3451902",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1496,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t   read-locking memory_range_lock. It\u0027s safe because other writers are warded off",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bbfe387d_f098bd17",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 7873,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:02:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tclear_host_pte(start, size, 1 /* memory range lock */);\t/* XXX: workaround */",
+      "revId": "e76bd5d3c0efc6e569c3004e5c32bdb89ea8dc4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
