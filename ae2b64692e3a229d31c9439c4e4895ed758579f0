@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "64feed28_59026555",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 668,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t * pages so we probably(?) cannot use that */",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9d3f7a5_fec1f9fc",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 703,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t//pr_info(\"%d fallback: %lx\\n\", current-\u003epid, native_pmd_val(*pmd));",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5652a4d7_bc142d49",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 716,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t/* LWK may hold large page based mappings that align rva outside",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f000e73c_86947e9a",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 717,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t * Linux\u0027 VMA, make sure we don\u0027t try to map to those pages */",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0be69674_1d0505d1",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 717,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t\t * Linux\u0027 VMA, make sure we don\u0027t try to map to those pages */",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "78738266_850811aa",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 725,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\terror \u003d vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48caef06_6113ccfc",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 731,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\terror, vma-\u003evm_start, vma-\u003evm_end);",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d58747e_181782d4",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 735,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tpacket.fault_tid, rsysnum, error,",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ce4d709_9c4895df",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 798,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-28T05:35:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tpr_info(\"%d cleaning %p, %lx\\n\", current-\u003epid, vma, addr);",
+      "revId": "ae2b64692e3a229d31c9439c4e4895ed758579f0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
