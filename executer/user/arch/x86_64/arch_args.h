@@ -1,8 +1,6 @@
 #ifndef ARCH_ARGS_H
 #define ARCH_ARGS_H
 
-#include <asm/prctl.h>
-
 typedef struct user_regs_struct syscall_args;
 
 static inline int
