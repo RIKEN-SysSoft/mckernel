@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8d27fbf4_bd2d0d29",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 391,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-29T09:15:27Z",
+      "side": 1,
+      "message": "I agree that IS_ERR was wrong given the smp function, but we can\u0027t use PTR_ERR in this case - error will be set to 0 :) (PTR_ERR is just a cast)\n\nSet this to ENOENT or something",
+      "revId": "7bbd8e3a4be51db7d58d822b072a587dd2ceb5fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
