@@ -1,10 +1,6 @@
 #ifndef ARCH_ARGS_H
 #define ARCH_ARGS_H
 
-#ifdef POSTK_DEBUG_ARCH_DEP_77 /* arch depend hide */
-#include <asm/prctl.h>
-#endif /* !POSTK_DEBUG_ARCH_DEP_77 */
-
 typedef struct user_regs_struct syscall_args;
 
 static inline int
