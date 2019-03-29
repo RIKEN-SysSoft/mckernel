@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "ef244d36_ae2c081f",
+        "filename": "test/perf_event/go_perf_test.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-29T07:20:01Z",
+      "side": 1,
+      "message": "(should we add convenience variables for $MCEXEC $IHKOSCTL etc in common.sh?)",
+      "revId": "c23f35b0e639382b4047427c1e0a5811a2a976e5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "953ca63c_39da0cfb",
         "filename": "test/perf_event/go_perf_test.sh",
         "patchSetId": 1
