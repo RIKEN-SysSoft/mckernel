@@ -44,11 +44,9 @@
 #define LAPIC_ICR0          0x300
 #define LAPIC_ICR2          0x310
 #define LAPIC_ESR           0x280
-#ifdef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
 #define LOCAL_TIMER_VECTOR  0xef
 #define LOCAL_PERF_VECTOR   0xf0
 #define LOCAL_SMP_FUNC_CALL_VECTOR   0xf1
-#endif /* POSTK_DEBUG_ARCH_DEP_75 */
 
 #define APIC_INT_LEVELTRIG      0x08000
 #define APIC_INT_ASSERT         0x04000

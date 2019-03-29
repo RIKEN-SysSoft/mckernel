@@ -123,19 +123,9 @@ enum ihk_asr_type {
 	IHK_ASR_X86_GS,
 };
 
-#ifndef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
-/* Local IRQ vectors */
-#define LOCAL_TIMER_VECTOR  0xef
-#define LOCAL_PERF_VECTOR   0xf0
-#endif /* !POSTK_DEBUG_ARCH_DEP_75 */
-
 #define IHK_TLB_FLUSH_IRQ_VECTOR_START		68
 #define IHK_TLB_FLUSH_IRQ_VECTOR_SIZE		64
 #define IHK_TLB_FLUSH_IRQ_VECTOR_END		(IHK_TLB_FLUSH_IRQ_VECTOR_START + IHK_TLB_FLUSH_IRQ_VECTOR_SIZE)
-
-#ifndef POSTK_DEBUG_ARCH_DEP_75 /* x86 depend hide */
-#define LOCAL_SMP_FUNC_CALL_VECTOR   0xf1
-#endif /* !POSTK_DEBUG_ARCH_DEP_75 */
 
 int ihk_mc_arch_set_special_register(enum ihk_asr_type, unsigned long value);
 int ihk_mc_arch_get_special_register(enum ihk_asr_type, unsigned long *value);
