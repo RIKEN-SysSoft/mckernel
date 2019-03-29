@@ -68,9 +68,6 @@
 #include <sys/user.h>
 #endif /* !__aarch64__ */
 #include <sys/prctl.h>
-#ifndef POSTK_DEBUG_ARCH_DEP_77 /* arch depend hide */
-#include <asm/prctl.h>
-#endif /* !POSTK_DEBUG_ARCH_DEP_77 */
 #include "../include/uprotocol.h"
 #include <ihk/ihk_host_user.h>
 #include "../include/uti.h"
