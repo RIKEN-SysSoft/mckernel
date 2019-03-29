@@ -453,7 +453,6 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd);
 int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data);
 void mcctrl_put_per_thread_data_unsafe(struct mcctrl_per_thread_data *ptd);
 void mcctrl_put_per_thread_data(struct mcctrl_per_thread_data* ptd);
-#ifdef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
 static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd,
 									struct task_struct *task)
 {
@@ -484,9 +483,6 @@ static inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct m
 	write_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
 	return ptd;
 }
-#else /* POSTK_DEBUG_ARCH_DEP_56 */
-inline struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task);
-#endif /* POSTK_DEBUG_ARCH_DEP_56 */
 int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len);
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 

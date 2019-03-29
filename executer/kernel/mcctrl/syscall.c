@@ -178,38 +178,6 @@ int mcctrl_add_per_thread_data(struct mcctrl_per_proc_data *ppd, void *data)
 	return ret;
 }
 
-#ifndef POSTK_DEBUG_ARCH_DEP_56 /* Strange how to use inline declaration fix. */
-struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc_data *ppd, struct task_struct *task)
-{
-	struct mcctrl_per_thread_data *ptd_iter, *ptd = NULL;
-	int hash = (((uint64_t)task >> 4) & MCCTRL_PER_THREAD_DATA_HASH_MASK);
-	unsigned long flags;
-
-	/* Check if data for this thread exists */
-	read_lock_irqsave(&ppd->per_thread_data_hash_lock[hash], flags);
-
-	list_for_each_entry(ptd_iter, &ppd->per_thread_data_hash[hash], hash) {
-		if (ptd_iter->task == task) {
-			ptd = ptd_iter;
-			break;
-		}
-	}
-
-	if (ptd) {
-		if (atomic_read(&ptd->refcount) <= 0) {
-			printk("%s: ERROR: use-after-free detected (%d)", __FUNCTION__, atomic_read(&ptd->refcount));
-			ptd = NULL;
-			goto out;
-		}
-		atomic_inc(&ptd->refcount);
-	}
-
- out:
-	read_unlock_irqrestore(&ppd->per_thread_data_hash_lock[hash], flags);
-	return ptd;
-}
-#endif /* !POSTK_DEBUG_ARCH_DEP_56 */
-
 static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet,
 		struct syscall_response *res)
 {
