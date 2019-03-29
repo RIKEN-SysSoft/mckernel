@@ -68,10 +68,11 @@ main(int argc, char** argv)
 	/* print result */
 	for (i = 0; i < cntr_num; i++) {
 		if (types[i] == PERF_TYPE_HARDWARE) {
-			printf("%s,%ld\n", hw_event_names[configs[i]], counts[i]);
+			printf("%s: %ld\n",
+			       hw_event_names[configs[i]], counts[i]);
 		}
 		else if (types[i] == PERF_TYPE_HW_CACHE) {
-			printf("%s_%s_%s,%ld\n",
+			printf("%s_%s_%s: %ld\n",
 			        id_names[(configs[i] >> 0) & 0xff],
 			        op_id_names[(configs[i] >> 8) & 0xff],
 			        result_names[(configs[i] >> 16) & 0xff],
