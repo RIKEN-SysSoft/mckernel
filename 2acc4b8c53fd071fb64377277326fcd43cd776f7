@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da089cb2_a48ea6a6",
+        "filename": "executer/user/arch/x86_64/arch_args.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-03-29T09:35:42Z",
+      "side": 1,
+      "message": "We don\u0027t actually need this one, just remove it?",
+      "revId": "2acc4b8c53fd071fb64377277326fcd43cd776f7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
