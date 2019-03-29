@@ -387,12 +387,8 @@ static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 	topology->saved = ihk_device_get_cpu_topology(dev, 
 			mckernel_cpu_2_hw_id(udp, index));
 
-#ifdef POSTK_DEBUG_TEMP_FIX_21 /* IS_ERR() through return NULL */
 	if (!topology->saved) {
-#else /* POSTK_DEBUG_TEMP_FIX_21 */
-	if (IS_ERR(topology->saved)) {
-#endif /* POSTK_DEBUG_TEMP_FIX_21 */
-		error = PTR_ERR(topology->saved);
+		error = -ENOENT;
 		eprintk("mcctrl:get_one_cpu_topology:"
 				"ihk_device_get_cpu_topology failed. %d\n",
 				error);
@@ -427,6 +423,9 @@ static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 			eprintk("mcctrl:get_one_cpu_topology:"
 					"get_cache_topology failed. %d\n",
 					error);
+			goto out;
+		} else if (!cache) {
+			error = -ENOENT;
 			goto out;
 		}
 
