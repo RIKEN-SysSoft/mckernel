@@ -1,0 +1,191 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6f55d263_c0ba9ec5",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(th-\u003evm-\u003eregion.user_end - th-\u003evm-\u003eregion.user_start), 0);",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1f2dc098_3819c290",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 156,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(th-\u003evm-\u003eregion.user_end - th-\u003evm-\u003eregion.user_start), 0);",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7600d21f_13020743",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2089,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tthread-\u003evm-\u003eis_memory_range_lock_taken !\u003d ihk_mc_get_processor_id()) {",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d25217e_0a73aa73",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1468,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t   read-locking memory_range_lock. It\u0027s safe because other writers are warded off",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d2024e34_cb652ccc",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1468,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t/* #986: Let remote page fault code skip\n+\t   read-locking memory_range_lock. It\u0027s safe because other writers are warded off",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72f06a10_c13d2a0e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1469,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t   until the remote PF handling code calls up_write(\u0026current-\u003emm-\u003emmap_sem) and",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "46581ed3_84848603",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1470,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t   vm_range is consistent when calling this function. */",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bdf54951_1240369b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1472,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tthread-\u003evm-\u003eis_memory_range_lock_taken \u003d ihk_mc_get_processor_id();",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "88389cc5_f8e95a46",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1496,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t   read-locking memory_range_lock. It\u0027s safe because other writers are warded off",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "85b85425_87ddb519",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1500,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tthread-\u003evm-\u003eis_memory_range_lock_taken \u003d ihk_mc_get_processor_id();",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "072f365e_61328efb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 7873,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-03-29T08:10:31Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tclear_host_pte(start, size, 1 /* memory range lock */);\t/* XXX: workaround */",
+      "revId": "7a95e14819dd229e6a508c1562d5a0ef20771fd4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
