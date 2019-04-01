@@ -1,0 +1,6 @@
+===============
+How to run test
+===============
+$ (cd <mckernel> && patch < test/issues/1270/patch)
+$ (build mckernel)
+$ ./C1270.sh
