@@ -255,6 +255,7 @@ static void __ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
 	cpu_restore_interrupt(flags);
 }
 
+#define SPIN_LOCK_IN_MCS
 #define SPINLOCK_IN_MCS_RWLOCK
 
 // reader/writer lock
