@@ -1,0 +1,12 @@
+diff --git arch/arm64/kernel/include/arch-lock.h arch/arm64/kernel/include/arch-lock.h
+index 0086671f..55a5dc44 100644
+--- arch/arm64/kernel/include/arch-lock.h
++++ arch/arm64/kernel/include/arch-lock.h
+@@ -255,6 +255,7 @@ static void __ihk_mc_spinlock_unlock(ihk_spinlock_t *lock, unsigned long flags)
+ 	cpu_restore_interrupt(flags);
+ }
+ 
++#define SPIN_LOCK_IN_MCS
+ #define SPINLOCK_IN_MCS_RWLOCK
+ 
+ // reader/writer lock
