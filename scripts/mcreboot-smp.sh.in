@@ -26,6 +26,7 @@ ETCDIR=@ETCDIR@
 KMODDIR="@KMODDIR@"
 KERNDIR="@MCKERNELDIR@"
 MCK_BUILDID=@BUILDID@
+ENABLE_IHK_IKC_SGI="@ENABLE_IHK_IKC_SGI@"
 
 mem="512M@0"
 cpus=""
@@ -271,7 +272,7 @@ sudo sync
 
 # Load IHK-SMP if not loaded and reserve CPUs and memory
 if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
-	if [ "$ihk_irq" == "" ]; then
+	if [ "$ihk_irq" == "" ] && [ "$ENABLE_IHK_IKC_SGI" != "ON" ]; then
 		for i in `seq 64 255`; do
 			if [ ! -d /proc/irq/$i ] && [ "`cat /proc/interrupts | grep ":" | awk '{print $1}' | grep -o '[0-9]*' | grep -e '^$i$'`" == "" ]; then
 				ihk_irq=$i
@@ -283,7 +284,13 @@ if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
 			error_exit "ihk_loaded"
 		fi
 	fi
-	if ! taskset -c 0 sudo insmod ${KMODDIR}/ihk-smp-@ARCH@.ko ihk_start_irq=$ihk_irq ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
+
+	IHK_IRQ_ARG=""
+	if [ "${ihk_irq}" != "" ]; then
+		IHK_IRQ_ARG="ihk_start_irq=${ihk_irq}"
+	fi
+
+	if ! taskset -c 0 sudo insmod ${KMODDIR}/ihk-smp-@ARCH@.ko ${IHK_IRQ_ARG} ihk_ikc_irq_core=$ihk_ikc_irq_core 2>/dev/null; then
 		echo "error: loading ihk-smp-@ARCH@" >&2
 		error_exit "ihk_loaded"
 	fi

@@ -195,14 +195,11 @@ static inline void gic_write_bpr1(uint32_t val)
 }
 #endif
 
-static void arm64_raise_sgi_gicv3(uint32_t cpuid, uint32_t vector)
+static void __arm64_raise_sgi_gicv3(uint32_t hw_cpuid, uint32_t vector)
 {
 	uint64_t mpidr, cluster_id;
 	uint16_t tlist;
 	uint64_t val;
-
-	/* Build interrupt destination of the target cpu */
-	uint32_t hw_cpuid = ihk_mc_get_cpu_info()->hw_ids[cpuid];
 
 	/*
 	 * Ensure that stores to Normal memory are visible to the
@@ -239,6 +236,22 @@ static void arm64_raise_sgi_gicv3(uint32_t cpuid, uint32_t vector)
 	}
 }
 
+static void arm64_raise_sgi_gicv3(uint32_t cpuid, uint32_t vector)
+{
+	/* Build interrupt destination of the target CPU */
+	uint32_t hw_cpuid = ihk_mc_get_cpu_info()->hw_ids[cpuid];
+
+	__arm64_raise_sgi_gicv3(hw_cpuid, vector);
+}
+
+static void arm64_raise_sgi_to_host_gicv3(uint32_t cpuid, uint32_t vector)
+{
+	/* Build interrupt destination of the target Linux/host CPU */
+	uint32_t hw_cpuid = ihk_mc_get_apicid(cpuid);
+
+	__arm64_raise_sgi_gicv3(hw_cpuid, vector);
+}
+
 static void arm64_raise_spi_gicv3(uint32_t cpuid, uint32_t vector)
 {
 	uint64_t spi_reg_offset;
@@ -268,6 +281,11 @@ static void arm64_raise_lpi_gicv3(uint32_t cpuid, uint32_t vector)
 	ekprintf("%s called.\n", __func__);
 }
  
+void arm64_issue_host_ipi_gicv3(uint32_t cpuid, uint32_t vector)
+{
+	arm64_raise_sgi_to_host_gicv3(cpuid, vector);
+}
+
 void arm64_issue_ipi_gicv3(uint32_t cpuid, uint32_t vector)
 {
 	dkprintf("Send irq#%d to cpuid=%d\n", vector, cpuid);
