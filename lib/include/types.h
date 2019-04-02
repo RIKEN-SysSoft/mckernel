@@ -17,6 +17,10 @@
 #define BITS_PER_BYTE	8
 #define BITS_PER_LONG	(sizeof(long) * BITS_PER_BYTE)
 
+#ifndef __ASSEMBLY__
+typedef _Bool bool;
+#endif // __ASSEMBLY__
+
 #include <ihk/types.h>
 
 #endif
