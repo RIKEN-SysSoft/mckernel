@@ -2548,7 +2548,7 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable)
 		attr |= PTATTR_UNCACHABLE;
 	}
 
-	kprintf("map_fixed: phys: 0x%lx => 0x%lx (%d pages)\n",
+	dkprintf("map_fixed: phys: 0x%lx => 0x%lx (%d pages)\n",
 			paligned, v, npages);
 
 	for (i = 0; i < npages; i++) {
