@@ -18,6 +18,8 @@
 #include <ihk/context.h>
 #include <arch/cpu.h>
 
+extern int num_processors;
+
 void cpu_enable_interrupt(void);
 void cpu_disable_interrupt(void);
 void cpu_halt(void);
@@ -161,5 +163,6 @@ void arch_start_pvclock(void);
 
 struct cpu_mapping;
 int arch_get_cpu_mapping(struct cpu_mapping **buf, int *nelemsp);
+int ihk_mc_ikc_arch_issue_host_ipi(int cpu, int vector);
 
 #endif

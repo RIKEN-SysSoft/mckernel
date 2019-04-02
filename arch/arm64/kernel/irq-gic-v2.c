@@ -31,10 +31,9 @@ void *cpu_base;
  * function, it is not necessary to perform the disable/enable
  * interrupts in this function as gic_raise_softirq() .
  */
-static void arm64_raise_sgi_gicv2(unsigned int cpuid, unsigned int vector)
+static void __arm64_raise_sgi_gicv2(unsigned int hw_cpuid, unsigned int vector)
 {
 	/* Build interrupt destination of the target cpu */
-	unsigned int hw_cpuid = ihk_mc_get_cpu_info()->hw_ids[cpuid];
 	uint8_t cpu_target_list = gic_hwid_to_affinity(hw_cpuid);
 
 	/*
@@ -49,6 +48,23 @@ static void arm64_raise_sgi_gicv2(unsigned int cpuid, unsigned int vector)
 		(void *)(dist_base + GIC_DIST_SOFTINT)
 	);
 }
+
+static void arm64_raise_sgi_gicv2(uint32_t cpuid, uint32_t vector)
+{
+	/* Build interrupt destination of the target CPU */
+	uint32_t hw_cpuid = ihk_mc_get_cpu_info()->hw_ids[cpuid];
+
+	__arm64_raise_sgi_gicv2(hw_cpuid, vector);
+}
+
+static void arm64_raise_sgi_to_host_gicv2(uint32_t cpuid, uint32_t vector)
+{
+	/* Build interrupt destination of the target Linux/host CPU */
+	uint32_t hw_cpuid = ihk_mc_get_apicid(cpuid);
+
+	__arm64_raise_sgi_gicv2(hw_cpuid, vector);
+}
+
 
 /**
  * arm64_raise_spi_gicv2
@@ -75,6 +91,11 @@ static void arm64_raise_spi_gicv2(unsigned int cpuid, unsigned int vector)
 		1 << spi_set_pending_bitpos, 
 		(void *)(dist_base + GIC_DIST_PENDING_SET + spi_reg_offset)
 	);
+}
+
+void arm64_issue_host_ipi_gicv2(uint32_t cpuid, uint32_t vector)
+{
+	arm64_raise_sgi_to_host_gicv2(cpuid, vector);
 }
 
 /**

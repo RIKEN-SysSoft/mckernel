@@ -195,14 +195,11 @@ static inline void gic_write_bpr1(uint32_t val)
 }
 #endif
 
-static void arm64_raise_sgi_gicv3(uint32_t cpuid, uint32_t vector)
+static void __arm64_raise_sgi_gicv3(uint32_t hw_cpuid, uint32_t vector)
 {
 	uint64_t mpidr, cluster_id;
 	uint16_t tlist;
 	uint64_t val;
-
-	/* Build interrupt destination of the target cpu */
-	uint32_t hw_cpuid = ihk_mc_get_cpu_info()->hw_ids[cpuid];
 
 	/*
 	 * Ensure that stores to Normal memory are visible to the
@@ -239,6 +236,22 @@ static void arm64_raise_sgi_gicv3(uint32_t cpuid, uint32_t vector)
 	}
 }
 
+static void arm64_raise_sgi_gicv3(uint32_t cpuid, uint32_t vector)
+{
+	/* Build interrupt destination of the target CPU */
+	uint32_t hw_cpuid = ihk_mc_get_cpu_info()->hw_ids[cpuid];
+
+	__arm64_raise_sgi_gicv3(hw_cpuid, vector);
+}
+
+static void arm64_raise_sgi_to_host_gicv3(uint32_t cpuid, uint32_t vector)
+{
+	/* Build interrupt destination of the target Linux/host CPU */
+	uint32_t hw_cpuid = ihk_mc_get_apicid(cpuid);
+
+	__arm64_raise_sgi_gicv3(hw_cpuid, vector);
+}
+
 static void arm64_raise_spi_gicv3(uint32_t cpuid, uint32_t vector)
 {
 	uint64_t spi_reg_offset;
@@ -268,6 +281,11 @@ static void arm64_raise_lpi_gicv3(uint32_t cpuid, uint32_t vector)
 	ekprintf("%s called.\n", __func__);
 }
  
+void arm64_issue_host_ipi_gicv3(uint32_t cpuid, uint32_t vector)
+{
+	arm64_raise_sgi_to_host_gicv3(cpuid, vector);
+}
+
 void arm64_issue_ipi_gicv3(uint32_t cpuid, uint32_t vector)
 {
 	dkprintf("Send irq#%d to cpuid=%d\n", vector, cpuid);
@@ -344,9 +362,11 @@ static void init_spi_routing(uint32_t irq, uint32_t linux_cpu)
 
 void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 {
+#ifndef IHK_IKC_USE_LINUX_WORK_IRQ
 	extern int spi_table[];
 	extern int nr_spi_table;
 	int i;
+#endif // !IHK_IKC_USE_LINUX_WORK_IRQ
 
 	dist_base = map_fixed_area(dist_base_pa, size, 1 /*non chachable*/);
 
@@ -357,6 +377,7 @@ void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 	}
 #endif
 
+#ifndef IHK_IKC_USE_LINUX_WORK_IRQ
 	/* initialize spi routing */
 	for (i = 0; i < nr_spi_table; i++) {
 		if (spi_table[i] == -1) {
@@ -364,6 +385,7 @@ void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 		}
 		init_spi_routing(spi_table[i], i);
 	}
+#endif // !IHK_IKC_USE_LINUX_WORK_IRQ
 }
 
 void gic_cpu_init_gicv3(unsigned long cpu_base_pa, unsigned long size)
