@@ -67,6 +67,7 @@ void (*gic_dist_init)(unsigned long dist_base_pa, unsigned long size);
 void (*gic_cpu_init)(unsigned long cpu_base_pa, unsigned long size);
 void (*gic_enable)(void);
 void (*arm64_issue_ipi)(unsigned int cpid, unsigned int vector);
+void (*arm64_issue_host_ipi)(unsigned int cpid, unsigned int vector);
 void (*handle_arch_irq)(struct pt_regs *);
 
 static void gic_init(void)
@@ -77,14 +78,18 @@ static void gic_init(void)
 		gic_cpu_init = gic_cpu_init_gicv3;
 		gic_enable = gic_enable_gicv3;
 		arm64_issue_ipi = arm64_issue_ipi_gicv3;
+		arm64_issue_host_ipi = arm64_issue_host_ipi_gicv3;
 		handle_arch_irq = handle_interrupt_gicv3;
+		kprintf("%: GICv3\n", __func__);
 	} else {
 		/* Setup functions for GICv2 */
 		gic_dist_init = gic_dist_init_gicv2;
 		gic_cpu_init = gic_cpu_init_gicv2;
 		gic_enable = gic_enable_gicv2;
 		arm64_issue_ipi = arm64_issue_ipi_gicv2;
+		arm64_issue_host_ipi = arm64_issue_host_ipi_gicv2;
 		handle_arch_irq = handle_interrupt_gicv2;
+		kprintf("%: GICv2\n", __func__);
 	}
 
 	gic_dist_init(ihk_param_gic_dist_base_pa, ihk_param_gic_dist_map_size);

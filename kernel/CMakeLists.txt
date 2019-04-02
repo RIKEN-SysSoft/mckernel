@@ -14,6 +14,7 @@ include_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}"
 	"${PROJECT_BINARY_DIR}"
 	"${IHK_FULL_SOURCE_DIR}/cokernel/smp/${ARCH}/include"
+	"${IHK_FULL_SOURCE_DIR}/cokernel/smp/${ARCH}/"
 	"${IHK_FULL_SOURCE_DIR}/ikc/include"
 	"${IHK_FULL_SOURCE_DIR}/linux/include"
 	"${PROJECT_SOURCE_DIR}/lib/include"
@@ -44,8 +45,8 @@ set(MCKERNEL_SRCS
 	${PROJECT_SOURCE_DIR}/lib/string.c
 	${PROJECT_SOURCE_DIR}/lib/vsprintf.c
 
+	${IHK_FULL_SOURCE_DIR}/cokernel/smp/ikc.c
 	${IHK_FULL_SOURCE_DIR}/cokernel/smp/${ARCH}/dma.c
-	${IHK_FULL_SOURCE_DIR}/cokernel/smp/${ARCH}/ikc.c
 	${IHK_FULL_SOURCE_DIR}/cokernel/smp/${ARCH}/setup.c
 )
 
