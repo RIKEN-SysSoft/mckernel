@@ -29,6 +29,7 @@ extern void gic_dist_init_gicv2(unsigned long dist_base_pa, unsigned long size);
 extern void gic_cpu_init_gicv2(unsigned long cpu_base_pa, unsigned long size);
 extern void gic_enable_gicv2(void);
 extern void arm64_issue_ipi_gicv2(unsigned int cpuid, unsigned int vector);
+extern void arm64_issue_host_ipi_gicv2(uint32_t cpuid, uint32_t vector);
 extern void handle_interrupt_gicv2(struct pt_regs *regs);
 
 /* Functions for GICv3 */
@@ -36,6 +37,7 @@ extern void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size);
 extern void gic_cpu_init_gicv3(unsigned long cpu_base_pa, unsigned long size);
 extern void gic_enable_gicv3(void);
 extern void arm64_issue_ipi_gicv3(unsigned int cpuid, unsigned int vector);
+extern void arm64_issue_host_ipi_gicv3(uint32_t cpuid, uint32_t vector);
 extern void handle_interrupt_gicv3(struct pt_regs *regs);
 
 void handle_IPI(unsigned int vector, struct pt_regs *regs);
