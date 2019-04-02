@@ -34,4 +34,12 @@ static inline unsigned long read_tsc(void)
 	return (low | ((unsigned long)high << 32));
 }
 
+#define smp_load_acquire(p)						\
+({									\
+	typeof(*p) ___p1 = ACCESS_ONCE(*p);				\
+	compiletime_assert_atomic_type(*p);				\
+	barrier();							\
+	___p1;								\
+})
+
 #endif /* ARCH_CPU_H */

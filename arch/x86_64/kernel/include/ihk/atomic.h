@@ -13,6 +13,8 @@
 #ifndef HEADER_X86_COMMON_IHK_ATOMIC_H
 #define HEADER_X86_COMMON_IHK_ATOMIC_H
  
+#include <lwk/compiler.h>
+
 /***********************************************************************
  * ihk_atomic_t
  */
@@ -156,43 +158,55 @@ static inline unsigned long xchg8(unsigned long *ptr, unsigned long x)
 	return __x;
 }
 
-#define __xchg(x, ptr, size)						\
-({									\
-	__typeof(*(ptr)) __x = (x);					\
-	switch (size) {							\
-	case 1:								\
-		asm volatile("xchgb %b0,%1"				\
-			     : "=q" (__x)				\
-			     : "m" (*__xg(ptr)), "0" (__x)		\
-			     : "memory");				\
-		break;							\
-	case 2:								\
-		asm volatile("xchgw %w0,%1"				\
-			     : "=r" (__x)				\
-			     : "m" (*__xg(ptr)), "0" (__x)		\
-			     : "memory");				\
-		break;							\
-	case 4:								\
-		asm volatile("xchgl %k0,%1"				\
-			     : "=r" (__x)				\
-			     : "m" (*__xg(ptr)), "0" (__x)		\
-			     : "memory");				\
-		break;							\
-	case 8:								\
-		asm volatile("xchgq %0,%1"				\
-			     : "=r" (__x)				\
-			     : "m" (*__xg(ptr)), "0" (__x)		\
-			     : "memory");				\
-		break;							\
-	default:							\
-		panic("xchg for wrong size");					\
-	}								\
-	__x;								\
-})
+#define __X86_CASE_B	1
+#define __X86_CASE_W	2
+#define __X86_CASE_L	4
+#define __X86_CASE_Q	8
 
+extern void __xchg_wrong_size(void)
+	__compiletime_error("Bad argument size for xchg");
 
-#define xchg(ptr, v)							\
-	__xchg((v), (ptr), sizeof(*ptr))
+/*
+ * An exchange-type operation, which takes a value and a pointer, and
+ * returns the old value.
+ */
+#define __xchg_op(ptr, arg, op, lock)					\
+	({								\
+		__typeof__(*(ptr)) __ret = (arg);			\
+		switch (sizeof(*(ptr))) {				\
+		case __X86_CASE_B:					\
+			asm volatile (lock #op "b %b0, %1\n"		\
+				      : "+q" (__ret), "+m" (*(ptr))	\
+				      : : "memory", "cc");		\
+			break;						\
+		case __X86_CASE_W:					\
+			asm volatile (lock #op "w %w0, %1\n"		\
+				      : "+r" (__ret), "+m" (*(ptr))	\
+				      : : "memory", "cc");		\
+			break;						\
+		case __X86_CASE_L:					\
+			asm volatile (lock #op "l %0, %1\n"		\
+				      : "+r" (__ret), "+m" (*(ptr))	\
+				      : : "memory", "cc");		\
+			break;						\
+		case __X86_CASE_Q:					\
+			asm volatile (lock #op "q %q0, %1\n"		\
+				      : "+r" (__ret), "+m" (*(ptr))	\
+				      : : "memory", "cc");		\
+			break;						\
+		default:						\
+			__xchg_wrong_size();			\
+		}							\
+		__ret;							\
+	})
+
+/*
+ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
+ * Since this is generally used to protect other memory information, we
+ * use "asm volatile" and "memory" clobbers to prevent gcc from moving
+ * information around.
+ */
+#define xchg(ptr, v)	__xchg_op((ptr), (v), xchg, "")
 
 static inline unsigned long atomic_cmpxchg8(unsigned long *addr,
 		unsigned long oldval,
@@ -240,5 +254,67 @@ static inline unsigned long ihk_atomic_add_long_return(long i, long *v) {
                      : : "memory");
         return i + __i;
 }
+
+extern void __cmpxchg_wrong_size(void)
+	__compiletime_error("Bad argument size for cmpxchg");
+
+/*
+ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+ * store NEW in MEM.  Return the initial value in MEM.  Success is
+ * indicated by comparing RETURN with OLD.
+ */
+#define __raw_cmpxchg(ptr, old, new, size, lock)		\
+({									\
+	__typeof__(*(ptr)) __ret;					\
+	__typeof__(*(ptr)) __old = (old);				\
+	__typeof__(*(ptr)) __new = (new);				\
+	switch (size) {							\
+	case __X86_CASE_B:						\
+	{								\
+		volatile uint8_t *__ptr = (volatile uint8_t *)(ptr);\
+		asm volatile(lock "cmpxchgb %2,%1"			\
+			     : "=a" (__ret), "+m" (*__ptr)		\
+			     : "q" (__new), "0" (__old)			\
+			     : "memory");				\
+		break;							\
+	}								\
+	case __X86_CASE_W:						\
+	{								\
+		volatile uint16_t *__ptr = (volatile uint16_t *)(ptr);\
+		asm volatile(lock "cmpxchgw %2,%1"			\
+			     : "=a" (__ret), "+m" (*__ptr)		\
+			     : "r" (__new), "0" (__old)			\
+			     : "memory");				\
+		break;							\
+	}								\
+	case __X86_CASE_L:						\
+	{								\
+		volatile uint32_t *__ptr = (volatile uint32_t *)(ptr);\
+		asm volatile(lock "cmpxchgl %2,%1"			\
+			     : "=a" (__ret), "+m" (*__ptr)		\
+			     : "r" (__new), "0" (__old)			\
+			     : "memory");				\
+		break;							\
+	}								\
+	case __X86_CASE_Q:						\
+	{								\
+		volatile uint64_t *__ptr = (volatile uint64_t *)(ptr);\
+		asm volatile(lock "cmpxchgq %2,%1"			\
+			     : "=a" (__ret), "+m" (*__ptr)		\
+			     : "r" (__new), "0" (__old)			\
+			     : "memory");				\
+		break;							\
+	}								\
+	default:							\
+		__cmpxchg_wrong_size();		\
+	}								\
+	__ret;								\
+})
+
+#define __cmpxchg(ptr, old, new, size)					\
+	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
+
+#define cmpxchg(ptr, old, new)						\
+	__cmpxchg(ptr, old, new, sizeof(*(ptr)))
 
 #endif
