@@ -31,6 +31,7 @@
 #include <page.h>
 #include <limits.h>
 #include <syscall.h>
+#include <bitops.h>
 #include <rusage_private.h>
 #include <ihk/debug.h>
 
@@ -1668,7 +1669,7 @@ SYSCALL_DECLARE(mmap)
 		;
 
 	const uintptr_t addr0 = ihk_mc_syscall_arg0(ctx);
-	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
 	const int flags0 = ihk_mc_syscall_arg3(ctx);
 	const int fd = ihk_mc_syscall_arg4(ctx);
@@ -1725,6 +1726,8 @@ SYSCALL_DECLARE(mmap)
 		}
 
 		pgsize = (size_t)1 << ((flags >> MAP_HUGE_SHIFT) & 0x3F);
+		/* Round-up map length by pagesize */
+		len0 = ALIGN(len0, pgsize);
 
 		if (rusage_check_overmap(len0,
 				(flags >> MAP_HUGE_SHIFT) & 0x3F)) {
@@ -1775,7 +1778,7 @@ recheck:
 		goto out;
 	}
 
-	addr = do_mmap(addr, len, prot, flags, fd, off0);
+	addr = do_mmap(addr, len, prot, flags, fd, off0, 0, NULL);
 
 	error = 0;
 out:
@@ -2104,7 +2107,7 @@ int arch_map_vdso(struct process_vm *vm)
 	vrflags |= VR_PROT_READ | VR_PROT_EXEC;
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
 	error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
-			NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, &range);
+			NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, NULL, &range);
 	if (error) {
 		ekprintf("ERROR: adding memory range for vdso. %d\n", error);
 		goto out;
@@ -2136,7 +2139,8 @@ int arch_map_vdso(struct process_vm *vm)
 		vrflags |= VR_PROT_READ;
 		vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
 		error = add_process_memory_range(vm, (intptr_t)s, (intptr_t)e,
-				NOPHYS, vrflags, NULL, 0, PAGE_SHIFT, &range);
+				NOPHYS, vrflags, NULL, 0,
+				PAGE_SHIFT, NULL, &range);
 		if (error) {
 			ekprintf("ERROR: adding memory range for vvar. %d\n", error);
 			goto out;
