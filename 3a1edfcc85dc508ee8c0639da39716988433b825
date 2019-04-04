@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ad447d2f_5a63cd8d",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+if grep \u0027large page allocation\u0027 ${log_file} | grep -c $XPMEM_ADDR \u003e /dev/null; then",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "935ebcf5_bdcfe44c",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e1121fdd_f9ef11ad",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b41745f9_4008c4cd",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ef5e6cef_aa52eedd",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2a167a57_f0a4ecd8",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f83106fc_7f2b53f9",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 1
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6667bcad_2039c177",
+        "filename": "test/issues/1259/util.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, err, ...) do { \\\n+\tif (cond) {\t\t\t\\\n+\t\tprintf(__VA_ARGS__);   \\\n+\t\tret \u003d err;\t\t\\\n+\t\tgoto out;\t\t\\\n+\t}\t\t\t\t\\\n+} while (0)",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2640e1e3_fd0c019a",
+        "filename": "test/issues/1259/util.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-04T02:35:46Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\\\n+\tif (cond) {\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\\\n+\t\t\tprintf(\"[ OK ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\\\n+\t\tprintf(\"[ NG ] \" fmt, ##args);\t\t\\\n+\t\tif (jump)\t\t\t\t\\\n+\t\t\tgoto out;\t\t\t\\\n+\t}\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "3a1edfcc85dc508ee8c0639da39716988433b825",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
