@@ -155,7 +155,7 @@ int arch_map_vdso(struct process_vm *vm)
 	flag = VR_REMOTE | VR_PROT_READ;
 	flag |= VRFLAG_PROT_TO_MAXPROT(flag);
 	ret = add_process_memory_range(vm, start, end, vdso.vvar_phys, flag,
-				       NULL, 0, PAGE_SHIFT, &range);
+				       NULL, 0, PAGE_SHIFT, NULL, &range);
 	if (ret != 0){
 		dkprintf("ERROR: adding memory range for tod_data\n");
 		goto exit;
@@ -167,7 +167,7 @@ int arch_map_vdso(struct process_vm *vm)
 	flag = VR_REMOTE | VR_PROT_READ | VR_PROT_EXEC;
 	flag |= VRFLAG_PROT_TO_MAXPROT(flag);
 	ret = add_process_memory_range(vm, start, end, vdso.vdso_physlist[0], flag,
-				       NULL, 0, PAGE_SHIFT, &range);
+				       NULL, 0, PAGE_SHIFT, NULL, &range);
 	if (ret != 0) {
 		dkprintf("ERROR: adding memory range for vdso_text\n");
 

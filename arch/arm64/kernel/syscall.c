@@ -15,6 +15,7 @@
 #include <limits.h>
 #include <uio.h>
 #include <syscall.h>
+#include <bitops.h>
 #include <rusage_private.h>
 #include <ihk/debug.h>
 
@@ -1934,7 +1935,7 @@ SYSCALL_DECLARE(mmap)
 		;
 
 	const uintptr_t addr0 = ihk_mc_syscall_arg0(ctx);
-	const size_t len0 = ihk_mc_syscall_arg1(ctx);
+	size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
 	const int flags0 = ihk_mc_syscall_arg3(ctx);
 	const int fd = ihk_mc_syscall_arg4(ctx);
@@ -1993,6 +1994,8 @@ SYSCALL_DECLARE(mmap)
 			goto out;
 		}
 		pgsize = (size_t)1 << ((flags >> MAP_HUGE_SHIFT) & 0x3F);
+		/* Round-up map length by pagesize */
+		len0 = ALIGN(len0, pgsize);
 
 		if (rusage_check_overmap(len0,
 				(flags >> MAP_HUGE_SHIFT) & 0x3F)) {
@@ -2034,7 +2037,7 @@ SYSCALL_DECLARE(mmap)
 		goto out;
 	}
 
-	addr = do_mmap(addr, len, prot, flags, fd, off0);
+	addr = do_mmap(addr, len, prot, flags, fd, off0, 0, NULL);
 
 	error = 0;
 out:
