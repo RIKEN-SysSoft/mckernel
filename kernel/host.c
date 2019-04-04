@@ -142,7 +142,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
 					pn->sections[i].len > LARGE_PAGE_SIZE ?
 					LARGE_PAGE_SHIFT : PAGE_SHIFT,
-					&range) != 0) {
+					NULL, &range) != 0) {
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
 		}
@@ -284,7 +284,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	dkprintf("%s: args_envs: %d pages\n",
 			__func__, argenv_page_count);
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
-				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
+				flags, NULL, 0, PAGE_SHIFT, NULL, NULL) != 0){
 		ihk_mc_free_pages_user(args_envs, argenv_page_count);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
