@@ -1,0 +1,102 @@
+*** C1259T01 start *******************************
+** xpem_attach to Huge mapped memory range
+** end of range is aligned with Large page size
+pageshift: 16
+** [ OK ] xpmem_addr (1000001a0000) is allocated using large pages
+pageshift: 21
+** [ OK ] xpmem_addr (100000200000) is allocated using large pages
+pageshift: 25
+** [ OK ] xpmem_addr (100002000000) is allocated using large pages
+pageshift: 30
+** [ OK ] xpmem_addr (100040000000) is allocated using large pages
+*** C1259T01: PASSED
+
+*** C1259T02 start *******************************
+** xpem_attach to Huge mapped memory range
+** end of range is NOT aligned with Large page size
+pageshift: 16
+** [ OK ] xpmem_addr (1000001a0000) is allocated using large pages
+pageshift: 21
+** [ OK ] xpmem_addr (100000200000) is allocated using large pages
+pageshift: 25
+** [ OK ] xpmem_addr (100002000000) is allocated using large pages
+pageshift: 30
+** [ OK ] xpmem_addr (100040000000) is allocated using large pages
+*** C1259T02: PASSED
+
+*** C1259T03 start *******************************
+** xpem_attach to small mapped memory range
+pageshift: small page
+** [ OK ] xpmem_addr (10000019e000) is allocated using small pages
+*** C1259T03: PASSED
+
+*** XTP_001 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get
+ [OK] xpmem_attach
+ [OK] xpmem_detach
+ [OK] xpmem_remove
+*** XTP_001 PASSED
+
+*** XTP_002 start ***
+ [OK] xpmem_make in child
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] xpmem_remove in child
+*** XTP_002 PASSED
+
+*** XTP_003 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** XTP_003 PASSED
+
+*** XTP_004 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** XTP_004 PASSED
+
+*** XTP_005 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** XTP_005 PASSED
+
+*** XTP_006 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child failed (parent process exited already
+*** XTP_006 PASSED
+
+*** XTP_007 start ***
+ [OK] xpmem_make failed (invalid address)
+ [OK] xpmem_make succeed(do twice to same address)
+*** XTP_007 PASSED
+
+*** XTP_008 start ***
+ [OK] xpmem_get in child failed (invalid segid)
+ [OK] xpmem_get in child (do twice to same segid
+*** XTP_008 PASSED
+
+*** XTP_009 start ***
+ [OK] xpmem_attach in childi failed (invalid apid)
+ [OK] xpmem_attach in child succeed (do twice to same apid)
+*** XTP_009 PASSED
+
+*** XTP_010 start ***
+ [OK] xpmem_detach in child succeed (invalid address)
+ [OK] xpmem_detach in child succeed (do twice to same address)
+mcexec detected hang of McKernel
+*** XTP_011 start ***
+ [OK] xpmem_remove failed (invalid segid)
+ [OK] xpmem_remove failed (do twice to same segid)
+*** XTP_011 PASSED

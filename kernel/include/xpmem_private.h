@@ -241,6 +241,8 @@ static void xpmem_flush(struct mckfd *);
 
 static int xpmem_attach(struct mckfd *, xpmem_apid_t, off_t, size_t, 
 	unsigned long, int, int, unsigned long *);
+static int xpmem_update_process_page_table(struct process_vm *vm,
+	struct vm_range *vmr);
 
 static int xpmem_detach(unsigned long);
 static int xpmem_vm_munmap(struct process_vm *vm, void *addr, size_t len);
