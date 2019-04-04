@@ -446,7 +446,8 @@ static int xpmem_make(
 	 * The start of the segment must be page aligned and it must be a
 	 * multiple of pages in size.
 	 */
-	if (offset_in_page(vaddr) != 0 || offset_in_page(size) != 0) {
+	if (offset_in_page(vaddr, PAGE_SIZE) != 0 ||
+			offset_in_page(size, PAGE_SIZE) != 0) {
 		xpmem_tg_deref(seg_tg);
 		XPMEM_DEBUG("return: ret=%d", -EINVAL);
 		return -EINVAL;
@@ -1011,6 +1012,8 @@ static int xpmem_attach(
 	struct mcs_rwlock_node_irqsave at_lock;
 	struct vm_range *vmr;
 	struct process_vm *vm = cpu_local_var(current)->vm;
+	int seg_pgshift;
+	size_t seg_pgsize;
 
 	XPMEM_DEBUG("call: apid=0x%lx, offset=0x%lx, size=0x%lx, vaddr=0x%lx, " 
 		"fd=%d, att_flags=%d", 
@@ -1021,13 +1024,14 @@ static int xpmem_attach(
 	}
 
 	/* The start of the attachment must be page aligned */
-	if (offset_in_page(vaddr) != 0 || offset_in_page(offset) != 0) {
+	if (offset_in_page(vaddr, PAGE_SIZE) != 0 ||
+			offset_in_page(offset, PAGE_SIZE) != 0) {
 		return -EINVAL;
 	}
 
 	/* If the size is not page aligned, fix it */
-	if (offset_in_page(size) != 0) {
-		size += PAGE_SIZE - offset_in_page(size);
+	if (offset_in_page(size, PAGE_SIZE) != 0) {
+		size += PAGE_SIZE - offset_in_page(size, PAGE_SIZE);
 	}
 
 	ap_tg = xpmem_tg_ref_by_apid(apid);
@@ -1056,7 +1060,10 @@ static int xpmem_attach(
 		goto out_1;
 	}
 
-	size += offset_in_page(seg_vaddr);
+	seg_pgshift = xpmem_get_pgshift(seg_tg->vm, seg_vaddr);
+	seg_pgsize = 1UL << seg_pgshift;
+
+	size += offset_in_page(seg_vaddr, seg_pgsize);
 
 	seg = ap->seg;
 	if (cpu_local_var(current)->proc->pid == seg_tg->tgid && vaddr) {
@@ -1120,6 +1127,12 @@ static int xpmem_attach(
 		}
 	}
 
+	/* Inherit original pagesize */
+	if (seg_pgshift > PAGE_SHIFT) {
+		flags |= MAP_HUGETLB;
+		flags |= seg_pgshift << MAP_HUGE_SHIFT;
+	}
+
 	flags |= MAP_ANONYMOUS;
 	XPMEM_DEBUG("do_mmap(): vaddr=0x%lx, size=0x%lx, prot_flags=0x%lx, " 
 		"flags=0x%lx, fd=%d, offset=0x%lx", 
@@ -1156,7 +1169,7 @@ static int xpmem_attach(
 
 	att->at_vmr = vmr;
 
-	*at_vaddr_p = at_vaddr + offset_in_page(att->vaddr);
+	*at_vaddr_p = at_vaddr + offset_in_page(att->vaddr, seg_pgsize);
 
 	ret = 0;
 out_2:
@@ -1232,7 +1245,8 @@ static int xpmem_detach(
 		return -EACCES;
 	}
 
-	xpmem_unpin_pages(ap->seg, vm, att->at_vaddr, att->at_size);
+	xpmem_unpin_pages(ap->seg, vm, att->at_vaddr, att->at_size,
+			range->pgshift);
 
 	range->private_data = NULL;
     /* range->memobj is released in xpmem_vm_munmap() --> xpmem_remove_process_range() -->
@@ -1448,7 +1462,8 @@ static void xpmem_detach_att(
 	DBUG_ON((range->end - range->start) != att->at_size);
 	DBUG_ON(range->private_data != att);
 
-	xpmem_unpin_pages(ap->seg, vm, att->at_vaddr, att->at_size);
+	xpmem_unpin_pages(ap->seg, vm, att->at_vaddr, att->at_size,
+			range->pgshift);
 
 	range->private_data = NULL;
 	/* range->memobj is released in xpmem_vm_munmap() --> xpmem_remove_process_range() -->
@@ -1598,13 +1613,13 @@ static void xpmem_clear_PTEs_of_att(
 
 		unpin_at = att->at_vaddr + offset_start;
 		invalidate_len = offset_end - offset_start;
-		DBUG_ON(offset_in_page(unpin_at) ||
-			offset_in_page(invalidate_len));
+		DBUG_ON(offset_in_page(unpin_at, PAGE_SIZE) ||
+			offset_in_page(invalidate_len, PAGE_SIZE));
 		XPMEM_DEBUG("unpin_at=0x%lx, invalidate_len=0x%lx\n",
 			unpin_at, invalidate_len);
 
 		xpmem_unpin_pages(att->ap->seg, att->vm, unpin_at,
-			invalidate_len);
+			invalidate_len, PAGE_SHIFT);
 
 		range = lookup_process_memory_range(att->vm, att->at_vaddr, 
 			att->at_vaddr + 1);
@@ -2068,15 +2083,14 @@ static int xpmem_pin_page(
         return ret;
 }
 
-
 static void xpmem_unpin_pages(
 	struct xpmem_segment *seg,
 	struct process_vm *vm,
 	unsigned long vaddr,
-	size_t size)
+	size_t size, int pgshift)
 {
-	int n_pgs = (((offset_in_page(vaddr) + (size)) + (PAGE_SIZE - 1)) >> 
-		PAGE_SHIFT);
+	unsigned long pgsize = 1UL << pgshift;
+	int n_pgs = 0;
 	int n_pgs_unpinned = 0;
 	size_t vsize = 0;
 	pte_t *pte = NULL;
@@ -2084,20 +2098,22 @@ static void xpmem_unpin_pages(
 	XPMEM_DEBUG("call: segid=0x%lx, vaddr=0x%lx, size=0x%lx", 
 		seg->segid, vaddr, size);
 
+	n_pgs = (offset_in_page(vaddr, pgsize) + size) >> pgshift;
+
 	XPMEM_DEBUG("n_pgs=%d", n_pgs);
 
-	vaddr &= PAGE_MASK;
+	vaddr &= ~(pgsize - 1);
 
 	while (n_pgs > 0) {
 		pte = xpmem_vaddr_to_pte(vm, vaddr, &vsize);
 		if (pte && !pte_is_null(pte)) {
 			n_pgs_unpinned++;
-			vaddr += PAGE_SIZE;
+			vaddr += pgsize;
 			n_pgs--;
 		}
 		else {
 			vsize = ((vaddr + vsize) & (~(vsize - 1)));
-			n_pgs -= (vsize - vaddr) / PAGE_SIZE;
+			n_pgs -= (vsize - vaddr) / pgsize;
 			vaddr = vsize;
 		}
 	}
@@ -2108,7 +2124,6 @@ static void xpmem_unpin_pages(
 
 	XPMEM_DEBUG("return: ");
 }
-
 
 static struct xpmem_thread_group *__xpmem_tg_ref_by_tgid_nolock_internal(
 	pid_t tgid,
@@ -2300,3 +2315,19 @@ static int xpmem_validate_access(
 	return 0;
 }
 
+static int xpmem_get_pgshift(struct process_vm *vm,
+	unsigned long seg_vaddr)
+{
+	struct vm_range *seg_vmr;
+	int pgshift = 0;
+
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	seg_vmr = lookup_process_memory_range(vm, seg_vaddr, seg_vaddr + 1);
+	if (seg_vmr) {
+		pgshift = seg_vmr->pgshift;
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+
+	return pgshift;
+}

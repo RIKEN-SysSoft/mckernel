@@ -46,7 +46,7 @@
 #define DBUG_ON(condition)
 #endif
 
-#define offset_in_page(p)	((unsigned long)(p) & ~PAGE_MASK)
+#define offset_in_page(p, sz)	((unsigned long)(p) & ((sz) - 1))
 
 /*
  * Both the xpmem_segid_t and xpmem_apid_t are of type __s64 and designed
@@ -267,7 +267,7 @@ static pte_t * xpmem_vaddr_to_pte(struct process_vm *, unsigned long,
 static int xpmem_pin_page(struct xpmem_thread_group *, struct thread *,
 	struct process_vm *, unsigned long);
 static void xpmem_unpin_pages(struct xpmem_segment *, struct process_vm *, 
-	unsigned long, size_t);
+	unsigned long, size_t, int);
 
 static struct xpmem_thread_group *__xpmem_tg_ref_by_tgid_nolock_internal(
 	pid_t tgid, int index, int return_destroying);
@@ -331,6 +331,8 @@ static void xpmem_ap_deref(struct xpmem_access_permit *ap);
 static void xpmem_att_deref(struct xpmem_attachment *att);
 static int xpmem_validate_access(struct xpmem_access_permit *, off_t, size_t,
 	int, unsigned long *);
+static int xpmem_get_pgshift(struct process_vm *vm,
+	unsigned long seg_vaddr);
 
 /*
  * Inlines that mark an internal driver structure as being destroyable or not.
