@@ -15,6 +15,7 @@
 #include <limits.h>
 #include <uio.h>
 #include <syscall.h>
+#include <bitops.h>
 #include <rusage_private.h>
 #include <ihk/debug.h>
 
@@ -2036,7 +2037,7 @@ SYSCALL_DECLARE(mmap)
 		goto out;
 	}
 
-	addr = do_mmap(addr, len, prot, flags, fd, off0);
+	addr = do_mmap(addr, len, prot, flags, fd, off0, 0, NULL);
 
 	error = 0;
 out:
