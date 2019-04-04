@@ -1,0 +1,8 @@
+===============
+How to run test
+===============
+cd <mckernel>
+patch -p0 < test/issues/1259/large_page.patch
+(build mckernel)
+cd test/issues/1259
+make test
