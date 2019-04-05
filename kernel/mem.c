@@ -1687,31 +1687,34 @@ static void virtual_allocator_init(void)
 void *ihk_mc_map_virtual(unsigned long phys, int npages,
                          enum ihk_mc_pt_attribute attr)
 {
-	void *p;
+	void *va;
 	unsigned long i, offset;
 
 	offset = (phys & (PAGE_SIZE - 1));
 	phys = phys & PAGE_MASK;
 
-	p = (void *)ihk_pagealloc_alloc(vmap_allocator, npages, PAGE_P2ALIGN);
-	if (!p) {
+	va = (void *)ihk_pagealloc_alloc(vmap_allocator, npages, PAGE_P2ALIGN);
+	if (!va) {
 		return NULL;
 	}
 	for (i = 0; i < npages; i++) {
-		if(ihk_mc_pt_set_page(NULL, (char *)p + (i << PAGE_SHIFT),
-		                   phys + (i << PAGE_SHIFT), attr) != 0){
+		if (ihk_mc_pt_set_page(NULL, (char *)va + (i << PAGE_SHIFT),
+				       phys + (i << PAGE_SHIFT), attr) != 0) {
 			int j;
-			for(j = 0; j < i; j++){
-				ihk_mc_pt_clear_page(NULL, (char *)p + (j << PAGE_SHIFT));
+
+			for (j = 0; j < i; j++) {
+				ihk_mc_pt_clear_page(NULL, (char *)va +
+						     (j << PAGE_SHIFT));
 			}
-			ihk_pagealloc_free(vmap_allocator, virt_to_phys(p), npages);
+			ihk_pagealloc_free(vmap_allocator, (unsigned long)va,
+					   npages);
 			return NULL;
 		}
 
-		flush_tlb_single((unsigned long)(p + (i << PAGE_SHIFT)));
+		flush_tlb_single((unsigned long)(va + (i << PAGE_SHIFT)));
 	}
 	barrier();	/* Temporary fix for Thunder-X */
-	return (char *)p + offset;
+	return (char *)va + offset;
 }
 
 void ihk_mc_unmap_virtual(void *va, int npages)
