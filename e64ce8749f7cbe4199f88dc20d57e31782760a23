@@ -37,6 +37,24 @@
     },
     {
       "key": {
+        "uuid": "ae9da632_1ab90151",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1195,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-04-07T13:39:26Z",
+      "side": 1,
+      "message": "let\u0027s fix the _PAGE_PRESENT macro instead, on x86 it\u0027s defined as \u00271\u0027 so actually just using PTE_VALID for arm directly might work, unless you think there is any use of printing other non-valid pte",
+      "parentUuid": "9aff1193_686a90a1",
+      "revId": "e64ce8749f7cbe4199f88dc20d57e31782760a23",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "35362025_55be058e",
         "filename": "tools/crash/mckernel.c",
         "patchSetId": 1
