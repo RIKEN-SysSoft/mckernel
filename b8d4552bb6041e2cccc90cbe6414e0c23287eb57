@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4e2ff3a2_52ca18a3",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 978,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-04-07T13:30:04Z",
+      "side": 1,
+      "message": "add leading zeroes?",
+      "revId": "b8d4552bb6041e2cccc90cbe6414e0c23287eb57",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b647df1c_eabdd168",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1171,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-04-07T13:30:04Z",
+      "side": 1,
+      "message": "hmm yeah in the old lookup code virt could already have been extended but I guess that\u0027s not possible anymore... Maybe |\u003d instead of +\u003d below to be safe?",
+      "revId": "b8d4552bb6041e2cccc90cbe6414e0c23287eb57",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
