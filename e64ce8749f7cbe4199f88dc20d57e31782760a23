@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "9aff1193_686a90a1",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1195,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-04-07T13:32:46Z",
+      "side": 1,
+      "message": "It seems to me that any non-zero PTE is printed, so maybe better to indicate which are really valid.",
+      "parentUuid": "cd7086ee_2cc17355",
+      "revId": "e64ce8749f7cbe4199f88dc20d57e31782760a23",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "35362025_55be058e",
         "filename": "tools/crash/mckernel.c",
         "patchSetId": 1
@@ -30,6 +48,24 @@
       "writtenOn": "2019-04-07T12:48:42Z",
       "side": 1,
       "message": "Should we?",
+      "revId": "e64ce8749f7cbe4199f88dc20d57e31782760a23",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "085bd4de_6b91c788",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1269,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-04-07T13:32:46Z",
+      "side": 1,
+      "message": "It\u0027s getting really messy... :) The 48 bits vs. 64 bits handling appears to be completely different in x86 and ARM..",
+      "parentUuid": "35362025_55be058e",
       "revId": "e64ce8749f7cbe4199f88dc20d57e31782760a23",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
