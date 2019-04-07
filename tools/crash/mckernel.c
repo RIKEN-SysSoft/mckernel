@@ -167,12 +167,7 @@ static inline ulong phys_to_virt(ulong phys)
 }
 #elif defined(ARM64)
 ulong MAP_ST_START = -1UL;
-/* PHYS_OFFSET needs updating depending on the environment
- * We should normally get it from boot params but we need it to read
- * boot_param from its pa...
- * See linux's Documentation/arm/Porting
- */
-#define V2PHYS_OFFSET 0x40000000UL
+ulong V2PHYS_OFFSET = -1UL;
 
 static inline ulong phys_to_virt(ulong phys)
 {
@@ -979,14 +974,15 @@ static int PTL_SHIFTS[4] = { PTL1_SHIFT, PTL2_SHIFT,
 #define PTATTRMASK (_PAGE_RW | _PAGE_USER | _PAGE_PWT | _PAGE_PCD | \
 		    _PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_GLOBAL | _PAGE_NX)
 
+/* 2^48 - 1 */
+#define ADDR_NONFIXED_MASK (0x0000FFFFFFFFFFFF)
+
 #elif defined(ARM64)
 //PAGESIZE()
 //PAGESHIFT()
 #define PAGE_MASK (~((ulong)PAGESIZE() - 1))
 #define PT_PHYSMASK (((1UL << 48) - 1) & PAGE_MASK)
 
-/* assume anything set means present for now */
-#define _PAGE_PRESENT 0xffffffffffffffffUL
 
 
 #define PMD_TYPE_MASK           (3UL << 0)
@@ -1013,6 +1009,8 @@ static int PTL_SHIFTS[4] = { PTL1_SHIFT, PTL2_SHIFT,
 #define PTE_WRITE               (1UL << 57)
 #define PTE_PROT_NONE           (1UL << 58) /* only when !PTE_VALID */
 
+#define _PAGE_PRESENT           (PTE_VALID)
+
 #define PTATTRMASK (PTE_USER | PTE_RDONLY | PTE_SHARED | PTE_AF | PTE_NG | \
 		    PTE_PXN | PTE_UXN | PTE_DIRTY | PTE_SPECIAL | PTE_WRITE | \
 		    PTE_PROT_NONE)
@@ -1022,6 +1020,7 @@ static int PTL_SHIFTS[4] = { PTL1_SHIFT, PTL2_SHIFT,
 static ulong PTL_ENTRIES[4];
 static int PTL_SHIFTS[4];
 static int PGTABLE_LEVELS = -1;
+static ulong ADDR_NONFIXED_MASK = -1UL;
 #endif
 
 static void
@@ -1030,6 +1029,8 @@ arch_init(void)
 #ifdef X86_64
 	/* nothing to do */
 #elif defined(ARM64)
+	V2PHYS_OFFSET = get_symbol_value("memstart_addr");
+
 	/* page shifts */
 	switch (machdep->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K)) {
 	case VM_L4_4K:
@@ -1115,6 +1116,8 @@ arch_init(void)
 		error(FATAL,
 		      "arm64 but non-standard pagesize/page table levels?\n");
 	}
+
+	ADDR_NONFIXED_MASK = ((1UL << VA_BITS()) - 1);
 #endif
 }
 
@@ -1163,12 +1166,14 @@ pte_print_(ulong pte, ulong virt, int pgshift)
 	int others = 0;
 	ulong phys = pte_get_phys(pte) + (virt & ((1 << pgshift) - 1));
 
+#ifdef X86_64
 	/* sign extension */
-	if (virt >= 0x0000800000000000UL && virt < 0xffff800000000000UL)
-		virt += 0xffff000000000000UL;
+	if (virt >= 0x0000800000000000UL)
+		virt |= 0xffff000000000000UL;
+#endif
 
 	fprintf(fp, "%016lx %016lx %4s (",
-		phys, virt, pgshift_to_string(pgshift));
+		virt, phys, pgshift_to_string(pgshift));
 #ifdef X86_64
 	if (pte & _PAGE_RW)
 		fprintf(fp, "%sRW", others++ ? "|" : "");
@@ -1187,6 +1192,8 @@ pte_print_(ulong pte, ulong virt, int pgshift)
 	if (pte & _PAGE_NX)
 		fprintf(fp, "%sNX", others++ ? "|" : "");
 #elif defined(ARM64)
+	if (pte & PTE_VALID)
+		fprintf(fp, "%sVALID", others++ ? "|" : "");
 	if (pte & PTE_USER)
 		fprintf(fp, "%sUSER", others++ ? "|" : "");
 	if (pte & PTE_RDONLY)
@@ -1207,6 +1214,8 @@ pte_print_(ulong pte, ulong virt, int pgshift)
 		fprintf(fp, "%sSPECIAL", others++ ? "|" : "");
 	if (pte & PTE_WRITE)
 		fprintf(fp, "%sWRITE", others++ ? "|" : "");
+	if (pte & PTE_CONT)
+		fprintf(fp, "%sCONT", others++ ? "|" : "");
 	if (pte & PTE_PROT_NONE)
 		fprintf(fp, "%sPROT_NONE", others++ ? "|" : "");
 	if (!others)
@@ -1258,17 +1267,23 @@ ptl_shift(int level)
 	return 0; // never happens
 }
 
+/* We should separate x86 and ARM64.. */
 static void
-pte_do_walk(ulong pt, ulong virt, int level, int lookup, ulong addr)
+pte_do_walk(ulong pt, ulong virt, int level, int lookup,
+		ulong addr, ulong prefix)
 {
 	ulong i;
 	ulong pte;
 
 	for (i = 0; i < PTL_ENTRIES[level-1]; i++) {
 		/* lookup: skip out of range entries */
-		if (lookup && addr >= (virt | ((i + 1) << ptl_shift(level))))
+		if (lookup && (addr & ADDR_NONFIXED_MASK) >=
+				((virt & ADDR_NONFIXED_MASK) +
+				 ((i + 1) << ptl_shift(level))))
 			continue;
-		if (lookup && addr < (virt | (i << ptl_shift(level))))
+		if (lookup && (addr & ADDR_NONFIXED_MASK) <
+				((virt & ADDR_NONFIXED_MASK) +
+				 (i << ptl_shift(level))))
 			break;
 
 		if (!readmem(pt + i * sizeof(pte), KVADDR, &pte, sizeof(pte),
@@ -1277,21 +1292,30 @@ pte_do_walk(ulong pt, ulong virt, int level, int lookup, ulong addr)
 		if (!(pte & _PAGE_PRESENT))
 			continue;
 		if (pte_is_type_page(pte, level)) {
-			pte_print(pte, virt | (i << ptl_shift(level)),
-				  ptl_shift(level));
+			pte_print(pte, (virt | prefix) +
+					(i << ptl_shift(level)),
+					ptl_shift(level));
+			if (lookup)
+				return;
 		} else if (level > 1) {
 			pte_do_walk(phys_to_virt(pte_get_phys(pte)),
-				    virt | (i << ptl_shift(level)),
-				    level - 1, lookup, addr);
+				    (virt | prefix) + (i << ptl_shift(level)),
+				    level - 1, lookup, addr, prefix);
+			if (lookup)
+				return;
 		}
+	}
+
+	if (lookup) {
+		fprintf(fp, "Couldn't find valid PTE for 0x%lx\n", addr);
 	}
 }
 
 static void
-pte_walk(ulong pt, int lookup, ulong addr)
+pte_walk(ulong pt, int lookup, ulong addr, ulong prefix)
 {
-	fprintf(fp, "%-16s %-16s %s %s\n", "PHYS", "VIRT", "SIZE", "FLAGS");
-	pte_do_walk(pt, 0, PGTABLE_LEVELS, lookup, addr);
+	fprintf(fp, "%-16s %-16s %s %s\n", "VIRT", "PHYS", "SIZE", "FLAGS");
+	pte_do_walk(pt, 0, PGTABLE_LEVELS, lookup, addr, prefix);
 	pte_print(0, 0, 0); // flush last one if any
 }
 
@@ -1360,7 +1384,23 @@ cmd_mcvtop(void)
 	}
 
 	if (print_all) {
-		pte_walk(page_table, 0, 0);
+#ifdef X86_64
+		pte_walk(page_table, 0, 0, 0);
+#endif
+#ifdef ARM64
+		/*
+		 * On ARM64 TTRB0 holds the translation tables to user-space
+		 * and TTRB1 to kernel, print each depending on the request
+		 */
+		if (thread)
+			pte_walk(page_table, 0, 0, 0);
+
+		/*
+		 * Prefix kernel space with the fixed mask of kernel addresses,
+		 * see: Documentation/arm64/memory.txt
+		 */
+		pte_walk(MCK_SYMBOL(init_pt), 0, 0, ~(ADDR_NONFIXED_MASK));
+#endif
 		return;
 	}
 
@@ -1378,7 +1418,18 @@ next:
 	if (argerrs)
 		cmd_usage(pc->curcmd, SYNOPSIS);
 
-	pte_walk(page_table, 1, addr);
+#ifdef X86_64
+	pte_walk(page_table, 1, addr, 0);
+#endif
+#ifdef ARM64
+	if (thread && !(addr & ~(ADDR_NONFIXED_MASK))) {
+		pte_walk(page_table, 1, addr, 0);
+	}
+	else {
+		pte_walk(MCK_SYMBOL(init_pt), 1, addr,
+				addr & ~(ADDR_NONFIXED_MASK));
+	}
+#endif
 
 	if (!thread)
 		goto skip_mem_range;
@@ -1518,6 +1569,40 @@ static char *help_mckmsg[] = {
 	NULL
 };
 
+static char *help_mcinfo[] = {
+	"mcinfo",
+	"various configuration information",
+	"",
+
+	"This command displays various architecture specific kernel configuration.",
+	NULL
+};
+
+static void
+cmd_mcinfo(void)
+{
+#ifdef x86
+
+#endif
+
+#ifdef ARM64
+	fprintf(fp, "V2PHYS_OFFSET: 0x%lx\n", V2PHYS_OFFSET);
+
+	fprintf(fp, "VA_BITS: %lu, paging mode: %s\n"
+			"PTL_ENTRIES[0]: %lu, PTL_ENTRIES[1]: %lu, "
+			"PTL_ENTRIES[2]: %lu, PTL_ENTRIES[3]: %lu\n",
+			VA_BITS(),
+			(machdep->flags & VM_L4_4K ? "VM_L4_4K" :
+			 machdep->flags & VM_L3_4K ? "VM_L3_4K" :
+			 machdep->flags & VM_L3_64K ? "VM_L3_64K" :
+			 machdep->flags & VM_L2_64K ? "VM_L2_64K" : "??"),
+			PTL_ENTRIES[0],
+			PTL_ENTRIES[1],
+			PTL_ENTRIES[2],
+			PTL_ENTRIES[3]);
+#endif
+}
+
 
 /* boilerplate */
 
@@ -1527,6 +1612,7 @@ static struct command_table_entry command_table[] = {
 	{ "mcmem", cmd_mcmem, help_mcmem, 0},
 	{ "mckmsg", cmd_mckmsg, help_mckmsg, 0},
 	{ "mcvtop", cmd_mcvtop, help_mcvtop, 0},
+	{ "mcinfo", cmd_mcinfo, help_mcinfo, 0},
 	{ NULL },
 };
 
