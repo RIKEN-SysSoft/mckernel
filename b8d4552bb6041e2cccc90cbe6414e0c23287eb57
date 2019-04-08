@@ -69,6 +69,24 @@
       "revId": "b8d4552bb6041e2cccc90cbe6414e0c23287eb57",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "88306cc5_d544c9e0",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1171,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-04-08T01:24:02Z",
+      "side": 1,
+      "message": "Changed to |\u003d, with that any caller should be fine.",
+      "parentUuid": "239270ad_cd3dd1bd",
+      "revId": "b8d4552bb6041e2cccc90cbe6414e0c23287eb57",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
