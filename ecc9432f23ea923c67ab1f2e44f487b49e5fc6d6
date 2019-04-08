@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ca7a00c8_5fcd6f9a",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 977,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-04-08T02:27:56Z",
+      "side": 1,
+      "message": "hm not sure what happened but this reverted to 2^64-1 ; probably not intended",
+      "revId": "ecc9432f23ea923c67ab1f2e44f487b49e5fc6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cdc031d2_11565365",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1171,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-04-08T02:27:56Z",
+      "side": 1,
+      "message": "ditto, lost this bit",
+      "revId": "ecc9432f23ea923c67ab1f2e44f487b49e5fc6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
