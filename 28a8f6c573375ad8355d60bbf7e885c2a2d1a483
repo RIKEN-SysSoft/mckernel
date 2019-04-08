@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2b3dccd0_62208aa4",
+        "filename": "kernel/llist.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-08T01:51:51Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tentry \u003d smp_load_acquire(\u0026head-\u003efirst);",
+      "revId": "28a8f6c573375ad8355d60bbf7e885c2a2d1a483",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a551883_8e1ca54e",
+        "filename": "lib/include/types.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-08T01:51:51Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef _Bool bool;",
+      "revId": "28a8f6c573375ad8355d60bbf7e885c2a2d1a483",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
