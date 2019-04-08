@@ -73,6 +73,24 @@
     },
     {
       "key": {
+        "uuid": "7c3ddcad_2a87fbe1",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1195,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-04-08T01:39:28Z",
+      "side": 1,
+      "message": "hmm, we might incorrectly follow intermediate level pte with an invalid _PAGE_PRESENT though.\ne.g. if level3 has some content without the valid bit, we\u0027ll still try to read whatever this points to even though it\u0027s not valid and continue on the next level, which doesn\u0027t make sense on garbage address or will incorrectly point to some valid content we might print as valid if the lower level is valid but intermediate level on the was wasn\u0027t.\n\nI\u0027d rather keep things simple and just print valid stuff, to be honest",
+      "parentUuid": "0b7d850c_7b9a800b",
+      "revId": "e64ce8749f7cbe4199f88dc20d57e31782760a23",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "35362025_55be058e",
         "filename": "tools/crash/mckernel.c",
         "patchSetId": 1
