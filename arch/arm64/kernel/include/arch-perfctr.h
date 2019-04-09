@@ -29,6 +29,9 @@ struct arm_pmu {
 	int (*get_event_idx)(int num_events, unsigned long used_mask,
 			     unsigned long config);
 	int (*map_event)(uint32_t, uint64_t);
+	int (*map_hw_event)(uint64_t config);
+	int (*map_cache_event)(uint64_t config);
+	int (*map_raw_event)(uint64_t config);
 	void (*enable_user_access_pmu_regs)(void);
 	void (*disable_user_access_pmu_regs)(void);
 	struct per_cpu_arm_pmu *per_cpu;
