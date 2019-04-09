@@ -120,9 +120,8 @@ int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode)
 
 int ihk_mc_perfctr_init(int counter, uint64_t config, int mode)
 {
-	int ret;
-	ret = __ihk_mc_perfctr_init(counter, PERF_TYPE_RAW, config, mode);
-	return ret;
+	/* pmc_init system call is not supported on arm64 */
+	return -ENOSYS;
 }
 
 int ihk_mc_perfctr_start(unsigned long counter_mask)
