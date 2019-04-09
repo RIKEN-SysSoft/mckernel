@@ -186,28 +186,8 @@ static void (* const write_pmevtyper_el0[])(uint32_t) = {
 	write_pmevtyper30_el0,
 };
 
-/*
- * @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c
- * Perf Events' indices
- */
-#define	ARMV8_IDX_CYCLE_COUNTER	0
-#define	ARMV8_IDX_COUNTER0	1
-#define	ARMV8_IDX_COUNTER_LAST	(ARMV8_IDX_CYCLE_COUNTER + get_per_cpu_pmu()->num_events - 1)
-
-/* @ref.impl linux-v4.15-rc3 arch/arm64/include/asm/perf_event.h */
-#define	ARMV8_PMU_MAX_COUNTERS	32
-#define	ARMV8_PMU_COUNTER_MASK	(ARMV8_PMU_MAX_COUNTERS - 1)
-
-/*
- * ARMv8 low level PMU access
- */
-
-/*
- * @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c
- * Perf Event to low level counters mapping
- */
-#define	ARMV8_IDX_TO_COUNTER(x)	\
-	(((x) - ARMV8_IDX_COUNTER0) & ARMV8_PMU_COUNTER_MASK)
+#define	ARMV8_IDX_CYCLE_COUNTER	31
+#define	ARMV8_IDX_COUNTER0	0
 
 /*
  * @ref.impl linux-v4.15-rc3 arch/arm64/include/asm/perf_event.h
@@ -469,11 +449,25 @@ armpmu_map_event(uint32_t type, uint64_t config,
 	return -ENOENT;
 }
 
-/* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
+static inline int armv8pmu_counter_mask_valid(unsigned long counter_mask)
+{
+	int num;
+	unsigned long event;
+	unsigned long cycle;
+	unsigned long invalid_mask;
+
+	num = get_per_cpu_pmu()->num_events;
+	num--; /* Sub the CPU cycles counter */
+	event = ((1UL << num) - 1) << ARMV8_IDX_COUNTER0;
+	cycle = 1UL << ARMV8_IDX_CYCLE_COUNTER;
+	invalid_mask = ~(event | cycle);
+
+	return !(counter_mask & invalid_mask);
+}
+
 static inline int armv8pmu_counter_valid(int idx)
 {
-	return idx >= ARMV8_IDX_CYCLE_COUNTER &&
-		idx <= ARMV8_IDX_COUNTER_LAST;
+	return armv8pmu_counter_mask_valid(1UL << idx);
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
@@ -572,9 +566,7 @@ static inline uint32_t armv8pmu_read_counter(int idx)
 		value = read_sysreg(pmccntr_el0);
 	}
 	else {
-		uint32_t counter = ARMV8_IDX_TO_COUNTER(idx);
-
-		value = read_pmevcntr_el0[counter]();
+		value = read_pmevcntr_el0[idx]();
 	}
 
 	return value;
@@ -598,40 +590,37 @@ static inline void armv8pmu_write_counter(int idx, uint32_t value)
 		write_sysreg(value64, pmccntr_el0);
 	}
 	else {
-		uint32_t counter = ARMV8_IDX_TO_COUNTER(idx);
-
-		write_pmevcntr_el0[counter](value);
+		write_pmevcntr_el0[idx](value);
 	}
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
-static inline int armv8pmu_enable_intens(int idx)
+static inline int armv8pmu_enable_intens(unsigned long counter_mask)
 {
-	uint32_t counter;
-
-	if (!armv8pmu_counter_valid(idx)) {
-		ekprintf("%s: The count_register#%d is not implemented.\n",
-			__func__, idx);
+	if (!armv8pmu_counter_mask_valid(counter_mask)) {
+		ekprintf("%s: invalid counter mask(%#lx)\n",
+			__func__, counter_mask);
 		return -EINVAL;
 	}
 
-	counter = ARMV8_IDX_TO_COUNTER(idx);
-	write_sysreg(BIT(counter), pmintenset_el1);
-	return idx;
+	write_sysreg(counter_mask, pmintenset_el1);
+	return 0;
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
-static inline int armv8pmu_disable_intens(int idx)
+static inline int armv8pmu_disable_intens(unsigned long counter_mask)
 {
-	uint32_t counter = ARMV8_IDX_TO_COUNTER(idx);
-
-	write_sysreg(BIT(counter), pmintenclr_el1);
+	if (!armv8pmu_counter_mask_valid(counter_mask)) {
+		ekprintf("%s: invalid counter mask(%#lx)\n",
+			__func__, counter_mask);
+		return -EINVAL;
+	}
+	write_sysreg(counter_mask, pmintenclr_el1);
 	isb();
 	/* Clear the overflow flag in case an interrupt is pending. */
-	write_sysreg(BIT(counter), pmovsclr_el0);
+	write_sysreg(counter_mask, pmovsclr_el0);
 	isb();
-
-	return idx;
+	return 0;
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
@@ -671,42 +660,32 @@ static inline void armv8pmu_write_evtype(int idx, uint32_t val)
 			 __func__, idx);
 		return;
 	} else if (idx != ARMV8_IDX_CYCLE_COUNTER) {
-		uint32_t counter = ARMV8_IDX_TO_COUNTER(idx);
-
-		write_pmevtyper_el0[counter](val);
+		write_pmevtyper_el0[idx](val);
 	}
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
-static inline int armv8pmu_enable_counter(int idx)
+static inline int armv8pmu_enable_counter(unsigned long counter_mask)
 {
-	uint32_t counter;
-
-	if (!armv8pmu_counter_valid(idx)) {
-		ekprintf("%s: The count_register#%d is not implemented.\n",
-			__func__, idx);
+	if (!armv8pmu_counter_mask_valid(counter_mask)) {
+		ekprintf("%s: invalid counter mask 0x%lx.\n",
+			 __func__, counter_mask);
 		return -EINVAL;
 	}
-
-	counter = ARMV8_IDX_TO_COUNTER(idx);
-	write_sysreg(BIT(counter), pmcntenset_el0);
-	return idx;
+	write_sysreg(counter_mask, pmcntenset_el0);
+	return 0;
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
-static inline int armv8pmu_disable_counter(int idx)
+static inline int armv8pmu_disable_counter(unsigned long counter_mask)
 {
-	uint32_t counter;
-
-	if (!armv8pmu_counter_valid(idx)) {
-		ekprintf("%s: The count_register#%d is not implemented.\n",
-			__func__, idx);
+	if (!armv8pmu_counter_mask_valid(counter_mask)) {
+		ekprintf("%s: invalid counter mask 0x%lx.\n",
+			 __func__, counter_mask);
 		return -EINVAL;
 	}
-
-	counter = ARMV8_IDX_TO_COUNTER(idx);
-	write_sysreg(BIT(counter), pmcntenclr_el0);
-	return idx;
+	write_sysreg(counter_mask, pmcntenclr_el0);
+	return 0;
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
@@ -735,40 +714,19 @@ static void armv8pmu_stop(void)
 }
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
-static void armv8pmu_disable_event(int idx)
-{
-	unsigned long flags;
-
-	/*
-	 * Disable counter and interrupt
-	 */
-	flags = ihk_mc_spinlock_lock(&pmu_lock);
-
-	/*
-	 * Disable counter
-	 */
-	armv8pmu_disable_counter(idx);
-
-	/*
-	 * Disable interrupt for this counter
-	 */
-	armv8pmu_disable_intens(idx);
-
-	ihk_mc_spinlock_unlock(&pmu_lock, flags);
-}
-
-/* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
 static void armv8pmu_reset(void *info)
 {
 	struct arm_pmu *cpu_pmu = (struct arm_pmu *)info;
-	uint32_t idx, nb_cnt =
+	uint32_t nb_cnt =
 		cpu_pmu->per_cpu[ihk_mc_get_processor_id()].num_events;
+	nb_cnt--; /* Sub the CPU cycles counter */
+	unsigned long event = ((1UL << nb_cnt) - 1) << ARMV8_IDX_COUNTER0;
+	unsigned long cycle = 1UL << ARMV8_IDX_CYCLE_COUNTER;
+	unsigned long valid_mask = event | cycle;
 
 	/* The counter and interrupt enable registers are unknown at reset. */
-	for (idx = ARMV8_IDX_CYCLE_COUNTER; idx < nb_cnt; ++idx) {
-		armv8pmu_disable_counter(idx);
-		armv8pmu_disable_intens(idx);
-	}
+	armv8pmu_disable_counter(valid_mask);
+	armv8pmu_disable_intens(valid_mask);
 
 	/*
 	 * Initialize & Reset PMNC. Request overflow interrupt for
@@ -782,7 +740,7 @@ static void armv8pmu_reset(void *info)
 static int armv8pmu_get_event_idx(int num_events, unsigned long used_mask,
 				  unsigned long config)
 {
-	int idx;
+	int idx, end;
 	unsigned long evtype = config & ARMV8_PMU_EVTYPE_EVENT;
 
 	/* Always prefer to place a cycle counter into the cycle counter. */
@@ -794,7 +752,9 @@ static int armv8pmu_get_event_idx(int num_events, unsigned long used_mask,
 	/*
 	 * Otherwise use events counters
 	 */
-	for (idx = ARMV8_IDX_COUNTER0; idx < num_events; ++idx) {
+	end = ARMV8_IDX_COUNTER0 + num_events;
+	end--; /* Sub the CPU cycles counter */
+	for (idx = ARMV8_IDX_COUNTER0; idx < end; ++idx) {
 		if (!(used_mask & (1UL << idx)))
 			return idx;
 	}
@@ -922,6 +882,7 @@ int armv8pmu_init(struct arm_pmu* cpu_pmu)
 	cpu_pmu->disable_user_access_pmu_regs =
 		armv8pmu_disable_user_access_pmu_regs;
 	cpu_pmu->handler = &armv8pmu_handler;
+	cpu_pmu->counter_mask_valid = &armv8pmu_counter_mask_valid;
 	return 0;
 }
 
