@@ -3723,8 +3723,8 @@ unsigned long perf_event_read_value(struct mc_perf_event *event)
 	int counter_id = event->counter_id;
 
 	if(event->pid == 0) {
-		pmc_count = ihk_mc_perfctr_read(counter_id) + event->attr.sample_freq;
-		pmc_count &= 0x000000ffffffffffL; // 40bit MASK
+		pmc_count = ihk_mc_perfctr_value(counter_id,
+						 event->attr.sample_freq);
 	}
 
 	rtn_count += event->count + pmc_count;
