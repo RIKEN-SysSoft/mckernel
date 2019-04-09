@@ -4187,9 +4187,7 @@ SYSCALL_DECLARE(perf_event_open)
 
 	event->pid = pid;
 
-	counter_idx = ihk_mc_perfctr_alloc(thread,
-			(attr->type == PERF_TYPE_HARDWARE &&
-			 attr->config == PERF_COUNT_HW_CPU_CYCLES));
+	counter_idx = ihk_mc_perfctr_alloc(thread, event);
 	if (counter_idx < 0) {
 		return counter_idx;
 	}
