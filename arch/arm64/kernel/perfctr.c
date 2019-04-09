@@ -240,7 +240,9 @@ int ihk_mc_perf_counter_mask_check(unsigned long counter_mask)
 
 int ihk_mc_perf_get_num_counters(void)
 {
-	return cpu_pmu.per_cpu[ihk_mc_get_processor_id()].num_events;
+	const struct per_cpu_arm_pmu *per_cpu_arm_pmu = get_per_cpu_pmu();
+
+	return per_cpu_arm_pmu->num_events;
 }
 
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
