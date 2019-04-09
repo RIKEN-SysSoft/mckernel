@@ -1,0 +1,242 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f5fa1470_b5f60317",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+#define smp_load_acquire(p)\t\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca8a1562_c9479bca",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 166,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027void\u0027 should also have an identifier name\n+extern void __xchg_wrong_size(void)",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "20ea5fd8_9c31e42b",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 182,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\t\tcase __X86_CASE_W:\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "35e8dd3b_cc57a72f",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 187,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\t\tcase __X86_CASE_L:\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d2e5bec5_aea1ec27",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 192,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\t\tcase __X86_CASE_Q:\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a29fe71_bf88d076",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 197,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\t\tdefault:\t\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4d6cc9fb_13593bec",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 274,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t\tvolatile uint8_t *__ptr \u003d (volatile uint8_t *)(ptr);\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a9dff03_dd068505",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 281,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\tcase __X86_CASE_W:\t\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f3a38963_d4e0ed63",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 283,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t\tvolatile uint16_t *__ptr \u003d (volatile uint16_t *)(ptr);\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ebd1cad7_68576fa9",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 290,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\tcase __X86_CASE_L:\t\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fdf3908d_2d7e6024",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 292,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t\tvolatile uint32_t *__ptr \u003d (volatile uint32_t *)(ptr);\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00ce206c_f70c121b",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 299,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\tcase __X86_CASE_Q:\t\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54e48b31_218a874e",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 301,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t\tvolatile uint64_t *__ptr \u003d (volatile uint64_t *)(ptr);\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a390c249_708ac7be",
+        "filename": "arch/x86_64/kernel/include/ihk/atomic.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 308,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-09T01:53:47Z",
+      "side": 1,
+      "message": "WARNING: Possible switch case/default not preceded by break or fallthrough comment\n+\tdefault:\t\t\t\t\t\t\t\\",
+      "revId": "0d902872a1ad9a50f7ccbb5a35c774f6394a9e26",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
