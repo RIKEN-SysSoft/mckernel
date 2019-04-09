@@ -86,18 +86,10 @@ void arm64_disable_user_access_pmu_regs(void)
 	cpu_pmu.disable_user_access_pmu_regs();
 }
 
-extern unsigned int *arm64_march_perfmap;
-
 static int __ihk_mc_perfctr_init(int counter, uint32_t type, uint64_t config, int mode)
 {
 	int ret = -1;
 	unsigned long config_base = 0;
-	int mapping;
-
-	mapping = cpu_pmu.map_event(type, config);
-	if (mapping < 0) {
-		return mapping;
-	}
 
 	ret = cpu_pmu.disable_counter(counter);
 	if (ret < 0) {
@@ -113,7 +105,7 @@ static int __ihk_mc_perfctr_init(int counter, uint32_t type, uint64_t config, in
 	if (ret) {
 		return ret;
 	}
-	config_base |= (unsigned long)mapping;
+	config_base |= config;
 	cpu_pmu.write_evtype(counter, config_base);
 	return ret;
 }

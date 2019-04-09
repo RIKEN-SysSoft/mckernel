@@ -363,6 +363,23 @@ static int armv8_pmuv3_map_event(uint32_t type, uint64_t config)
 	return __armv8_pmuv3_map_event(type, config, NULL, NULL);
 }
 
+
+static int armv8_pmuv3_map_hw_event(uint64_t config)
+{
+	return __armv8_pmuv3_map_event(PERF_TYPE_HARDWARE, config, NULL, NULL);
+}
+
+
+static int armv8_pmuv3_map_cache_event(uint64_t config)
+{
+	return __armv8_pmuv3_map_event(PERF_TYPE_HW_CACHE, config, NULL, NULL);
+}
+
+static int armv8_pmuv3_map_raw_event(uint64_t config)
+{
+	return __armv8_pmuv3_map_event(PERF_TYPE_RAW, config, NULL, NULL);
+}
+
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
 static inline uint32_t armv8pmu_pmcr_read(void)
 {
@@ -741,6 +758,9 @@ int armv8pmu_init(struct arm_pmu* cpu_pmu)
 	cpu_pmu->write_evtype = armv8pmu_write_evtype;
 	cpu_pmu->get_event_idx = armv8pmu_get_event_idx;
 	cpu_pmu->map_event = armv8_pmuv3_map_event;
+	cpu_pmu->map_hw_event = armv8_pmuv3_map_hw_event;
+	cpu_pmu->map_cache_event = armv8_pmuv3_map_cache_event;
+	cpu_pmu->map_raw_event = armv8_pmuv3_map_raw_event;
 	cpu_pmu->enable_user_access_pmu_regs =
 		armv8pmu_enable_user_access_pmu_regs;
 	cpu_pmu->disable_user_access_pmu_regs =
