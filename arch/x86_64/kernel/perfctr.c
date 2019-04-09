@@ -421,6 +421,14 @@ unsigned long ihk_mc_perfctr_read(int counter)
 	return retval;
 }
 
+unsigned long ihk_mc_perfctr_value(int counter, unsigned long correction)
+{
+	unsigned long count = ihk_mc_perfctr_read(counter) + correction;
+
+	count &= 0x000000ffffffffffL;
+	return count;
+}
+
 // read by rdmsr
 unsigned long ihk_mc_perfctr_read_msr(int counter)
 {

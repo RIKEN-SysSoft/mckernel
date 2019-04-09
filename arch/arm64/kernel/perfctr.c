@@ -198,6 +198,14 @@ unsigned long ihk_mc_perfctr_read(int counter)
 	return count;
 }
 
+unsigned long ihk_mc_perfctr_value(int counter, unsigned long correction)
+{
+	unsigned long count = ihk_mc_perfctr_read(counter) + correction;
+
+	count &= ((1UL << 32) - 1);
+	return count;
+}
+
 int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config,
 				 unsigned long pmc_status)
 {

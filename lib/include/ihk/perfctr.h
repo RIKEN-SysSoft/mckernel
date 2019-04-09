@@ -70,6 +70,7 @@ int ihk_mc_perfctr_reset(int counter);
 int ihk_mc_perfctr_set(int counter, long value);
 int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value);
 unsigned long ihk_mc_perfctr_read(int counter);
+unsigned long ihk_mc_perfctr_value(int counter, unsigned long correction);
 unsigned long ihk_mc_perfctr_read_msr(int counter);
 int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config, unsigned long pmc_status);
 int ihk_mc_perfctr_alloc(struct thread *thread, struct mc_perf_event *event);
