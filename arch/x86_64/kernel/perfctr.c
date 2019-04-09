@@ -377,7 +377,7 @@ int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value)
 	return 0;
 }
 
-int ihk_mc_perfctr_alloc(struct thread *thread, int cpu_cycles)
+int ihk_mc_perfctr_alloc(struct thread *thread, struct mc_perf_event *event)
 {
 	int ret = -EINVAL;
 	int i = 0;

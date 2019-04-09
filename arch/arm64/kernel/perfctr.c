@@ -184,25 +184,13 @@ int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value)
 	return 0;
 }
 
-int ihk_mc_perfctr_alloc(struct thread *thread, int cpu_cycles)
+int ihk_mc_perfctr_alloc(struct thread *thread, struct mc_perf_event *event)
 {
-	int ret = -EINVAL;
-	int i = 1;
 	const int counters = ihk_mc_perf_get_num_counters();
 
-	// Counter 0 is only used for CPU cycles on ARM
-	if (cpu_cycles) {
-		i = 0;
-	}
-
-	for (; i < counters; i++) {
-		if (!(thread->pmc_alloc_map & (1 << i))) {
-			ret = i;
-			break;
-		}
-	}
-
-	return ret;
+	return cpu_pmu.get_event_idx(counters,
+				     thread->pmc_alloc_map,
+				     event->hw_config);
 }
 
 unsigned long ihk_mc_perfctr_read(int counter)
