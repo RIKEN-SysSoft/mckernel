@@ -91,12 +91,12 @@ static int __ihk_mc_perfctr_init(int counter, uint32_t type, uint64_t config, in
 	int ret = -1;
 	unsigned long config_base = 0;
 
-	ret = cpu_pmu.disable_counter(counter);
+	ret = cpu_pmu.disable_counter(1UL << counter);
 	if (ret < 0) {
 		return ret;
 	}
 
-	ret = cpu_pmu.enable_intens(counter);
+	ret = cpu_pmu.enable_intens(1UL << counter);
 	if (ret < 0) {
 		return ret;
 	}
@@ -125,47 +125,12 @@ int ihk_mc_perfctr_init(int counter, uint64_t config, int mode)
 
 int ihk_mc_perfctr_start(unsigned long counter_mask)
 {
-	int ret = 0, i;
-
-	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
-		if (counter_mask & (1UL << i)) {
-			ret = cpu_pmu.enable_counter(i);
-			if (ret < 0) {
-				kprintf("%s: enable failed(idx=%d)\n",
-					__func__, i);
-				break;
-			}
-		}
-	}
-	return ret;
+	return cpu_pmu.enable_counter(counter_mask);
 }
 
 int ihk_mc_perfctr_stop(unsigned long counter_mask, int flags)
 {
-	int i = 0;
-
-	for (i = 0; i < sizeof(counter_mask) * BITS_PER_BYTE; i++) {
-		if (!(counter_mask & (1UL << i)))
-			continue;
-
-		int ret = 0;
-
-		ret = cpu_pmu.disable_counter(i);
-		if (ret < 0) {
-			continue;
-		}
-
-		if (flags & IHK_MC_PERFCTR_DISABLE_INTERRUPT) {
-			// when ihk_mc_perfctr_start is called,
-			// ihk_mc_perfctr_init is also called so disable
-			// interrupt
-			ret = cpu_pmu.disable_intens(i);
-			if (ret < 0) {
-				continue;
-			}
-		}
-	}
-	return 0;
+	return cpu_pmu.disable_counter(counter_mask);
 }
 
 int ihk_mc_perfctr_reset(int counter)
@@ -241,7 +206,7 @@ int ihk_mc_perfctr_alloc_counter(unsigned int *type, unsigned long *config,
 
 int ihk_mc_perf_counter_mask_check(unsigned long counter_mask)
 {
-	return 1;
+	return cpu_pmu.counter_mask_valid(counter_mask);
 }
 
 int ihk_mc_perf_get_num_counters(void)
