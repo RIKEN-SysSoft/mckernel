@@ -59,10 +59,8 @@ enum ihk_perfctr_type {
 #define IHK_MC_PERFCTR_DISABLE_INTERRUPT 1
 
 #ifdef POSTK_DEBUG_TEMP_FIX_29
-int ihk_mc_perfctr_init(int counter, uint64_t config, int mode);
 int ihk_mc_perfctr_init_raw(int counter, uint64_t config, int mode);
 #else
-int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode);
 int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode);
 #endif/*POSTK_DEBUG_TEMP_FIX_29*/
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event);

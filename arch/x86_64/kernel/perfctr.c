@@ -223,41 +223,6 @@ int ihk_mc_perfctr_init_raw(int counter, unsigned int code, int mode)
 #endif /*POSTK_DEBUG_TEMP_FIX_29*/
 }
 
-#ifdef POSTK_DEBUG_TEMP_FIX_29
-int ihk_mc_perfctr_init(int counter, uint64_t config, int mode)
-#else
-int ihk_mc_perfctr_init(int counter, enum ihk_perfctr_type type, int mode)
-#endif /*POSTK_DEBUG_TEMP_FIX_29*/
-{
-#ifdef POSTK_DEBUG_TEMP_FIX_29
-	enum ihk_perfctr_type type;
-
-	switch (config) {
-	case PERF_COUNT_HW_CPU_CYCLES :
-		type = APT_TYPE_CYCLE;
-		break;
-	case PERF_COUNT_HW_INSTRUCTIONS :
-		type = APT_TYPE_INSTRUCTIONS;
-		break;
-	default :
-		// Not supported config.
-		type = PERFCTR_MAX_TYPE;
-	}
-#endif /*POSTK_DEBUG_TEMP_FIX_29*/
-
-	if (counter < 0 || counter >= NUM_PERF_COUNTERS) {
-		return -EINVAL;
-	}
-	if (type < 0 || type >= PERFCTR_MAX_TYPE) {
-		return -EINVAL;
-	}
-	if (!x86_march_perfmap[type]) {
-		return -EINVAL;
-	}
-
-	return set_perfctr_x86_direct(counter, mode, x86_march_perfmap[type]);
-}
-
 int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
 {
 	struct thread *thread = cpu_local_var(current);
