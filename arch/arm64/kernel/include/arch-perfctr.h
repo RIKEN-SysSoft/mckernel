@@ -20,10 +20,10 @@ struct arm_pmu {
 	void (*reset)(void*);
 	int (*enable_pmu)(void);
 	void (*disable_pmu)(void);
-	int (*enable_counter)(int);
-	int (*disable_counter)(int);
-	int (*enable_intens)(int);
-	int (*disable_intens)(int);
+	int (*enable_counter)(unsigned long counter_mask);
+	int (*disable_counter)(unsigned long counter_mask);
+	int (*enable_intens)(unsigned long counter_mask);
+	int (*disable_intens)(unsigned long counter_mask);
 	int (*set_event_filter)(unsigned long*, int);
 	void (*write_evtype)(int, uint32_t);
 	int (*get_event_idx)(int num_events, unsigned long used_mask,
@@ -34,6 +34,7 @@ struct arm_pmu {
 	int (*map_raw_event)(uint64_t config);
 	void (*enable_user_access_pmu_regs)(void);
 	void (*disable_user_access_pmu_regs)(void);
+	int (*counter_mask_valid)(unsigned long counter_mask);
 	struct per_cpu_arm_pmu *per_cpu;
 };
 
