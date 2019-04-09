@@ -20,6 +20,171 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
+/*
+ * read pmevcntr<n>_el0 functions
+ */
+#define read_pmevcntrN_el0(N) \
+static uint32_t read_pmevcntr##N##_el0(void) \
+{ \
+	return read_sysreg(pmevcntr##N##_el0); \
+}
+
+read_pmevcntrN_el0(0)
+read_pmevcntrN_el0(1)
+read_pmevcntrN_el0(2)
+read_pmevcntrN_el0(3)
+read_pmevcntrN_el0(4)
+read_pmevcntrN_el0(5)
+read_pmevcntrN_el0(6)
+read_pmevcntrN_el0(7)
+read_pmevcntrN_el0(8)
+read_pmevcntrN_el0(9)
+read_pmevcntrN_el0(10)
+read_pmevcntrN_el0(11)
+read_pmevcntrN_el0(12)
+read_pmevcntrN_el0(13)
+read_pmevcntrN_el0(14)
+read_pmevcntrN_el0(15)
+read_pmevcntrN_el0(16)
+read_pmevcntrN_el0(17)
+read_pmevcntrN_el0(18)
+read_pmevcntrN_el0(19)
+read_pmevcntrN_el0(20)
+read_pmevcntrN_el0(21)
+read_pmevcntrN_el0(22)
+read_pmevcntrN_el0(23)
+read_pmevcntrN_el0(24)
+read_pmevcntrN_el0(25)
+read_pmevcntrN_el0(26)
+read_pmevcntrN_el0(27)
+read_pmevcntrN_el0(28)
+read_pmevcntrN_el0(29)
+read_pmevcntrN_el0(30)
+
+static uint32_t (* const read_pmevcntr_el0[])(void) = {
+	read_pmevcntr0_el0, read_pmevcntr1_el0, read_pmevcntr2_el0,
+	read_pmevcntr3_el0, read_pmevcntr4_el0, read_pmevcntr5_el0,
+	read_pmevcntr6_el0, read_pmevcntr7_el0, read_pmevcntr8_el0,
+	read_pmevcntr9_el0, read_pmevcntr10_el0, read_pmevcntr11_el0,
+	read_pmevcntr12_el0, read_pmevcntr13_el0, read_pmevcntr14_el0,
+	read_pmevcntr15_el0, read_pmevcntr16_el0, read_pmevcntr17_el0,
+	read_pmevcntr18_el0, read_pmevcntr19_el0, read_pmevcntr20_el0,
+	read_pmevcntr21_el0, read_pmevcntr22_el0, read_pmevcntr23_el0,
+	read_pmevcntr24_el0, read_pmevcntr25_el0, read_pmevcntr26_el0,
+	read_pmevcntr27_el0, read_pmevcntr28_el0, read_pmevcntr29_el0,
+	read_pmevcntr30_el0,
+};
+
+
+/*
+ * write pmevcntr<n>_el0 functions
+ */
+#define write_pmevcntrN_el0(N) \
+static void write_pmevcntr##N##_el0(uint32_t v) \
+{ \
+	write_sysreg(v, pmevcntr##N##_el0); \
+}
+
+write_pmevcntrN_el0(0)
+write_pmevcntrN_el0(1)
+write_pmevcntrN_el0(2)
+write_pmevcntrN_el0(3)
+write_pmevcntrN_el0(4)
+write_pmevcntrN_el0(5)
+write_pmevcntrN_el0(6)
+write_pmevcntrN_el0(7)
+write_pmevcntrN_el0(8)
+write_pmevcntrN_el0(9)
+write_pmevcntrN_el0(10)
+write_pmevcntrN_el0(11)
+write_pmevcntrN_el0(12)
+write_pmevcntrN_el0(13)
+write_pmevcntrN_el0(14)
+write_pmevcntrN_el0(15)
+write_pmevcntrN_el0(16)
+write_pmevcntrN_el0(17)
+write_pmevcntrN_el0(18)
+write_pmevcntrN_el0(19)
+write_pmevcntrN_el0(20)
+write_pmevcntrN_el0(21)
+write_pmevcntrN_el0(22)
+write_pmevcntrN_el0(23)
+write_pmevcntrN_el0(24)
+write_pmevcntrN_el0(25)
+write_pmevcntrN_el0(26)
+write_pmevcntrN_el0(27)
+write_pmevcntrN_el0(28)
+write_pmevcntrN_el0(29)
+write_pmevcntrN_el0(30)
+
+static void (* const write_pmevcntr_el0[])(uint32_t) = {
+	write_pmevcntr0_el0, write_pmevcntr1_el0, write_pmevcntr2_el0,
+	write_pmevcntr3_el0, write_pmevcntr4_el0, write_pmevcntr5_el0,
+	write_pmevcntr6_el0, write_pmevcntr7_el0, write_pmevcntr8_el0,
+	write_pmevcntr9_el0, write_pmevcntr10_el0, write_pmevcntr11_el0,
+	write_pmevcntr12_el0, write_pmevcntr13_el0, write_pmevcntr14_el0,
+	write_pmevcntr15_el0, write_pmevcntr16_el0, write_pmevcntr17_el0,
+	write_pmevcntr18_el0, write_pmevcntr19_el0, write_pmevcntr20_el0,
+	write_pmevcntr21_el0, write_pmevcntr22_el0, write_pmevcntr23_el0,
+	write_pmevcntr24_el0, write_pmevcntr25_el0, write_pmevcntr26_el0,
+	write_pmevcntr27_el0, write_pmevcntr28_el0, write_pmevcntr29_el0,
+	write_pmevcntr30_el0,
+};
+
+/*
+ * write pmevtyper<n>_el0 functions
+ */
+#define write_pmevtyperN_el0(N) \
+static void write_pmevtyper##N##_el0(uint32_t v) \
+{ \
+	write_sysreg(v, pmevtyper##N##_el0); \
+}
+
+write_pmevtyperN_el0(0)
+write_pmevtyperN_el0(1)
+write_pmevtyperN_el0(2)
+write_pmevtyperN_el0(3)
+write_pmevtyperN_el0(4)
+write_pmevtyperN_el0(5)
+write_pmevtyperN_el0(6)
+write_pmevtyperN_el0(7)
+write_pmevtyperN_el0(8)
+write_pmevtyperN_el0(9)
+write_pmevtyperN_el0(10)
+write_pmevtyperN_el0(11)
+write_pmevtyperN_el0(12)
+write_pmevtyperN_el0(13)
+write_pmevtyperN_el0(14)
+write_pmevtyperN_el0(15)
+write_pmevtyperN_el0(16)
+write_pmevtyperN_el0(17)
+write_pmevtyperN_el0(18)
+write_pmevtyperN_el0(19)
+write_pmevtyperN_el0(20)
+write_pmevtyperN_el0(21)
+write_pmevtyperN_el0(22)
+write_pmevtyperN_el0(23)
+write_pmevtyperN_el0(24)
+write_pmevtyperN_el0(25)
+write_pmevtyperN_el0(26)
+write_pmevtyperN_el0(27)
+write_pmevtyperN_el0(28)
+write_pmevtyperN_el0(29)
+write_pmevtyperN_el0(30)
+
+static void (* const write_pmevtyper_el0[])(uint32_t) = {
+	write_pmevtyper0_el0, write_pmevtyper1_el0, write_pmevtyper2_el0,
+	write_pmevtyper3_el0, write_pmevtyper4_el0, write_pmevtyper5_el0,
+	write_pmevtyper6_el0, write_pmevtyper7_el0, write_pmevtyper8_el0,
+	write_pmevtyper9_el0, write_pmevtyper10_el0, write_pmevtyper11_el0,
+	write_pmevtyper12_el0, write_pmevtyper13_el0, write_pmevtyper14_el0,
+	write_pmevtyper15_el0, write_pmevtyper16_el0, write_pmevtyper17_el0,
+	write_pmevtyper18_el0, write_pmevtyper19_el0, write_pmevtyper20_el0,
+	write_pmevtyper21_el0, write_pmevtyper22_el0, write_pmevtyper23_el0,
+	write_pmevtyper24_el0, write_pmevtyper25_el0, write_pmevtyper26_el0,
+	write_pmevtyper27_el0, write_pmevtyper28_el0, write_pmevtyper29_el0,
+	write_pmevtyper30_el0,
+};
 
 /*
  * @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c
@@ -424,8 +589,10 @@ static inline uint32_t armv8pmu_read_counter(int idx)
 	else if (idx == ARMV8_IDX_CYCLE_COUNTER) {
 		value = read_sysreg(pmccntr_el0);
 	}
-	else if (armv8pmu_select_counter(idx) == idx) {
-		value = read_sysreg(pmxevcntr_el0);
+	else {
+		uint32_t counter = ARMV8_IDX_TO_COUNTER(idx);
+
+		value = read_pmevcntr_el0[counter]();
 	}
 
 	return value;
@@ -448,8 +615,10 @@ static inline void armv8pmu_write_counter(int idx, uint32_t value)
 
 		write_sysreg(value64, pmccntr_el0);
 	}
-	else if (armv8pmu_select_counter(idx) == idx) {
-		write_sysreg(value, pmxevcntr_el0);
+	else {
+		uint32_t counter = ARMV8_IDX_TO_COUNTER(idx);
+
+		write_pmevcntr_el0[counter](value);
 	}
 }
 
@@ -515,9 +684,14 @@ static int armv8pmu_set_event_filter(unsigned long *config_base, int mode)
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
 static inline void armv8pmu_write_evtype(int idx, uint32_t val)
 {
-	if (armv8pmu_select_counter(idx) == idx) {
-		val &= ARMV8_PMU_EVTYPE_MASK;
-		write_sysreg(val, pmxevtyper_el0);
+	if (!armv8pmu_counter_valid(idx)) {
+		ekprintf("%s: The count_register#%d is not implemented.\n",
+			 __func__, idx);
+		return;
+	} else if (idx != ARMV8_IDX_CYCLE_COUNTER) {
+		uint32_t counter = ARMV8_IDX_TO_COUNTER(idx);
+
+		write_pmevtyper_el0[counter](val);
 	}
 }
 
