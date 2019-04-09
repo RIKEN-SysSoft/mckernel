@@ -164,14 +164,12 @@ int ihk_mc_perfctr_stop(unsigned long counter_mask, int flags)
 
 int ihk_mc_perfctr_reset(int counter)
 {
-	// TODO[PMU]: ihk_mc_perfctr_setと同様にサンプリングレートの共通部実装の扱いを見てから本実装。
 	cpu_pmu.write_counter(counter, 0);
 	return 0;
 }
 
 int ihk_mc_perfctr_set(int counter, long val)
 {
-	// TODO[PMU]: 共通部でサンプリングレートの計算をして、設定するカウンタ値をvalに渡してくるようになると想定。サンプリングレートの扱いを見てから本実装。
 	uint32_t v = val;
 	cpu_pmu.write_counter(counter, v);
 	return 0;
