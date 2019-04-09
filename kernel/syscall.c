@@ -4094,7 +4094,7 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 		extra_config = ihk_mc_hw_cache_extra_reg_map(attr->config);
 		break;
 	case PERF_TYPE_RAW :
-		val = attr->config;
+		val = ihk_mc_raw_event_map(attr->config);
 		break;
 
 	default:
