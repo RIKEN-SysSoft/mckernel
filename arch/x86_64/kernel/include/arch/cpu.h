@@ -42,4 +42,12 @@ static inline unsigned long read_tsc(void)
 	___p1;								\
 })
 
+#define smp_store_release(p, v)			\
+({							\
+	compiletime_assert_atomic_type(*p);	\
+	barrier();							\
+	WRITE_ONCE(*p, v);					\
+})
+
+
 #endif /* ARCH_CPU_H */

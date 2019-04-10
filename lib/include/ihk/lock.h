@@ -46,6 +46,7 @@ static void mcs_lock_init(struct mcs_lock_node *node)
 #endif // SPIN_LOCK_IN_MCS
 }
 
+
 static void __mcs_lock_lock(struct mcs_lock_node *lock,
 		struct mcs_lock_node *node)
 {
@@ -56,15 +57,20 @@ static void __mcs_lock_lock(struct mcs_lock_node *lock,
 
 	node->next = NULL;
 	node->locked = 0;
-	__atomic_exchange(&(lock->next), &node, &pred, __ATOMIC_SEQ_CST);
 
-	if (pred) {
-		node->locked = 1;
-		pred->next = node;
-		while (node->locked != 0) {
-			cpu_pause();
-		}
+	pred = xchg(&lock->next, node);
+	if (likely(pred == NULL)) {
+		/*
+		 * Lock acquired, don't need to set node->locked to 1. Threads
+		 * only spin on its own node->locked value for lock acquisition.
+		 */
+		return;
 	}
+	WRITE_ONCE(pred->next, node);
+
+	/* Wait until the lock holder passes the lock down. */
+	while (!(smp_load_acquire(&node->locked)))
+		cpu_pause();
 #endif // SPIN_LOCK_IN_MCS
 }
 
@@ -74,20 +80,22 @@ static void __mcs_lock_unlock(struct mcs_lock_node *lock,
 #ifdef SPIN_LOCK_IN_MCS
 	ihk_mc_spinlock_unlock_noirq(&lock->spinlock);
 #else
-	if (node->next == NULL) {
-		struct mcs_lock_node *desired = NULL;
-		struct mcs_lock_node *expected = node;
-		if (__atomic_compare_exchange(&(lock->next), &expected, &desired, 0,
-					__ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
-			return;
-		}
+	struct mcs_lock_node *next = READ_ONCE(node->next);
 
-		while (node->next == NULL) {
+	if (likely(!next)) {
+		/*
+		 * Release the lock by setting it to NULL
+		 */
+		if (likely(cmpxchg(&lock->next, node, NULL) == node))
+			return;
+
+		/* Wait until the next pointer is set */
+		while (!(next = READ_ONCE(node->next)))
 			cpu_pause();
-		}
 	}
 
-	node->next->locked = 0;
+	/* Pass lock to next waiter. */
+	smp_store_release((&next->locked), 1);
 #endif // SPIN_LOCK_IN_MCS
 }
 
