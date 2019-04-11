@@ -470,7 +470,7 @@ int gencore(struct process *proc, struct coretable **coretable, int *chunks,
 				if (ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
 							    (void *)p, &phys) != 0) {
 					if (prevzero == 0) {
-						/* Start a new chunk */
+						/* Start chunk with page */
 						size = PAGE_SIZE;
 						start = p;
 					} else {
@@ -480,15 +480,13 @@ int gencore(struct process *proc, struct coretable **coretable, int *chunks,
 					prevzero = 1;
 				} else {
 					if (prevzero == 1) {
-						/* Flush out an empty chunk */
-						ct[i].addr = 0;
-						ct[i].len = size;
-						dkprintf("coretable[%d]: %lx@%lx(%lx)\n",
-							 i, ct[i].len,
-							 ct[i].addr, start);
-						i++;
-
+						/* Skip chunk without page */
+						dkprintf("%s: skipping %lx-%lx\n",
+							 __func__, start,
+							 start + size);
 					}
+
+					/* Flush chunk with page */
 					ct[i].addr = phys;
 					ct[i].len = PAGE_SIZE;
 					dkprintf("coretable[%d]: %lx@%lx(%lx)\n",
@@ -498,12 +496,9 @@ int gencore(struct process *proc, struct coretable **coretable, int *chunks,
 				}
 			}
 			if (prevzero == 1) {
-				/* An empty chunk */
-				ct[i].addr = 0;
-				ct[i].len = size;
-				dkprintf("coretable[%d]: %lx@%lx(%lx)\n",
-					 i, ct[i].len, ct[i].addr, start);
-				i++;
+				/* Skip chunk without page */
+				dkprintf("%s: skipping %lx-%lx\n",
+					 __func__, start, start + size);
 			}
 		} else {
 			if ((vm->region.user_start <= range->start) &&
