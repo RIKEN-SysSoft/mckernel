@@ -1,0 +1,8 @@
+Test-x86+2: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Verified+1: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Code-Review+2: Dominique Martinet <asmadeus@codewreck.org>
+Submitted-by: Masamichi Takagi <masamichi.takagi@riken.jp>
+Submitted-at: Thu, 11 Apr 2019 01:15:14 +0000
+Reviewed-on: https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/450397
+Project: RIKEN-SysSoft/mckernel
+Branch: refs/heads/development
