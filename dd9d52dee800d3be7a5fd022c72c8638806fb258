@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "287c34bd_f8a54d43",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 484,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-11T09:24:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"%s: skipping %lx-%lx\\n\",",
+      "revId": "dd9d52dee800d3be7a5fd022c72c8638806fb258",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
