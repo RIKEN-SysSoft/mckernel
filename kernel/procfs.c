@@ -515,6 +515,9 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		int bitmasks_offset = 0;
 		char *cpu_bitmask, *cpu_list, *numa_bitmask, *numa_list;
 		char *state;
+		struct mcs_rwlock_node_irqsave lock;
+		struct thread *thread_iter;
+		int nr_threads = 0;
 
 		bitmasks = kmalloc(BITMASKS_BUF_SIZE, IHK_MC_AP_CRITICAL);
 		if (!bitmasks) {
@@ -556,6 +559,13 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 				proc->vm->numa_mask, PROCESS_NUMA_MASK_BITS);
 		bitmasks_offset++;
 
+		mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+		list_for_each_entry(thread_iter, &proc->threads_list,
+				siblings_list) {
+			++nr_threads;
+		}
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+
 		state = "R (running)";
 		if (proc->status == PS_STOPPED)
 			state = "T (stopped)";
@@ -568,12 +578,14 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			"Uid:\t%d\t%d\t%d\t%d\n"
 			"Gid:\t%d\t%d\t%d\t%d\n"
 			"State:\t%s\n"
-			"VmLck:\t%9lu kB\n",
+			"VmLck:\t%9lu kB\n"
+			"Threads:	%d\n",
 			proc->pid,
 			proc->ruid, proc->euid, proc->suid, proc->fsuid,
 			proc->rgid, proc->egid, proc->sgid, proc->fsgid,
 			state,
-			(lockedsize + 1023) >> 10);
+			(lockedsize + 1023) >> 10,
+			nr_threads);
 		if (ans < 0 || ans > count ||
 		    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
 			goto err;
@@ -670,6 +682,9 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 	if (!strcmp(p, "stat")) {
 		const char *comm = "exe";
 		char state;
+		struct mcs_rwlock_node_irqsave lock;
+		struct thread *thread_iter;
+		int nr_threads = 0;
 
 		if (proc->saved_cmdline) {
 			comm = strrchr(proc->saved_cmdline, '/');
@@ -705,6 +720,13 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			}
 		}
 
+		mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
+		list_for_each_entry(thread_iter, &proc->threads_list,
+				siblings_list) {
+			++nr_threads;
+		}
+		mcs_rwlock_reader_unlock(&proc->threads_lock, &lock);
+
 		/*
 		 * pid (comm) state ppid
 		 * pgrp session tty_nr tpgid
@@ -735,7 +757,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		    thread->proc->pid, 0, 0, 0, // pgrp...
 		    0, 0L, 0L, 0L,	      // flags...
 		    0L, 0L, 0L, 0L,	      // cmajflt...
-		    0L, 0L, 0L, 0L,	      // cstime...
+		    0L, 0L, 0L, nr_threads,	  // cstime...
 		    0L, 0LL, 0L, 0L,	      // itrealvalue...
 		    0L, 0L, 0L, 0L,	      // rsslim...
 		    0L, 0L, 0L, 0L,	      // kstkesp...
