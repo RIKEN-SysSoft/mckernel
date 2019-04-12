@@ -477,8 +477,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		/* Check alignment */
 		if ((offset % sizeof(uint64_t) != 0) || 
 		    (count % sizeof(uint64_t) != 0)) {
-			ans = 0;
-			eof = 1;
+			ans = -EINVAL;
 			goto end;
 		}
 
