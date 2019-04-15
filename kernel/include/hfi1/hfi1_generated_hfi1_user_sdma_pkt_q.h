@@ -23,7 +23,7 @@ struct hfi1_user_sdma_pkt_q {
 		};
 		struct {
 			char padding5[288];
-			unsigned int state;
+			enum pkt_q_sdma_state state;
 		};
 	};
 };

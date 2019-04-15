@@ -50,47 +50,39 @@ struct user_sdma_request {
 			u64 seqsubmitted;
 		};
 		struct {
-			char padding12[144];
-			int status;
-		};
-		struct {
-			char padding13[192];
+			char padding12[192];
 			struct list_head txps;
 		};
 		struct {
-			char padding14[208];
+			char padding13[208];
 			u64 seqnum;
 		};
 		struct {
-			char padding15[216];
+			char padding14[216];
 			u32 tidoffset;
 		};
 		struct {
-			char padding16[220];
+			char padding15[220];
 			u32 koffset;
 		};
 		struct {
-			char padding17[224];
+			char padding16[224];
 			u32 sent;
 		};
 		struct {
-			char padding18[228];
+			char padding17[228];
 			u16 tididx;
 		};
 		struct {
-			char padding19[230];
+			char padding18[230];
 			u8 iov_idx;
 		};
 		struct {
-			char padding20[231];
-			u8 done;
-		};
-		struct {
-			char padding21[232];
+			char padding19[231];
 			u8 has_error;
 		};
 		struct {
-			char padding22[240];
+			char padding20[232];
 			struct user_sdma_iovec iovs[8];
 		};
 	};

@@ -57,8 +57,8 @@ HFI1_KO="${1-$(modinfo -n hfi1)}" || \
 		> "${HDR_PREFIX}sdma_engine.h"
 
 "$DES_BIN" "$HFI1_KO" user_sdma_request	\
-	data_iovs pq cq status txps info hdr tidoffset data_len \
-	iov_idx sent seqnum done has_error koffset tididx \
+	data_iovs pq cq txps info hdr tidoffset data_len \
+	iov_idx sent seqnum has_error koffset tididx \
 	tids n_tids sde ahg_idx iovs seqcomp seqsubmitted \
 		> "${HDR_PREFIX}user_sdma_request.h"
 

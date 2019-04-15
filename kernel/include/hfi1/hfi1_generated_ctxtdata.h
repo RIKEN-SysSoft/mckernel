@@ -1,6 +1,6 @@
 struct hfi1_ctxtdata {
 	union {
-		char whole_struct[1408];
+		char whole_struct[1160];
 		struct {
 			char padding0[144];
 			u16 ctxt;

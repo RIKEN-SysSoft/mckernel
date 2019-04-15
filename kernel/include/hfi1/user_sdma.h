@@ -114,6 +114,11 @@ extern uint extended_psn;
 #define KDETH_OM_LARGE_SHIFT     6
 #define KDETH_OM_MAX_SIZE  (1 << ((KDETH_OM_LARGE / KDETH_OM_SMALL) + 1))
 
+enum pkt_q_sdma_state {
+	SDMA_PKT_Q_ACTIVE,
+	SDMA_PKT_Q_DEFERRED,
+};
+
 #include <hfi1/hfi1_generated_hfi1_user_sdma_pkt_q.h>
 
 struct hfi1_user_sdma_comp_q {

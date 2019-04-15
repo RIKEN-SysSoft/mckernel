@@ -1,6 +1,6 @@
 struct hfi1_devdata {
 	union {
-		char whole_struct[7872];
+		char whole_struct[7808];
 		struct {
 			char padding0[3368];
 			u8 *kregbase1;
@@ -46,19 +46,19 @@ struct hfi1_devdata {
 			u32 chip_rcv_array_count;
 		};
 		struct {
-			char padding11[7392];
+			char padding11[7264];
 			struct hfi1_pportdata *pport;
 		};
 		struct {
-			char padding12[7416];
+			char padding12[7296];
 			u16 flags;
 		};
 		struct {
-			char padding13[7419];
+			char padding13[7299];
 			u8 first_dyn_alloc_ctxt;
 		};
 		struct {
-			char padding14[7432];
+			char padding14[7368];
 			u64 sc2vl[4];
 		};
 	};
