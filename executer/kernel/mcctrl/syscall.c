@@ -556,29 +556,30 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	struct mcctrl_per_thread_data *ptd;
 	struct task_struct *task = current;
 	struct ikc_scd_packet packet = { };
+	unsigned long addr;
 	unsigned long rsysnum = 0;
 	int ret = 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %#lx page %p\n",
-			vmf->flags, vmf->pgoff, vmf->address, vmf->page);
+	addr = vmf->address;
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-	dprintk("mcctrl:page fault:flags %#x pgoff %#lx va %p page %p\n",
-			vmf->flags, vmf->pgoff, vmf->virtual_address, vmf->page);
+	addr = vmf->virtual_address;
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(task));
 	if (!ppd) {
-		dprintk("%s: INFO: no per-process structure for pid %d (tid %d), trying to use pid %d\n",
-			__func__, task_tgid_vnr(task), task_pid_vnr(task),
-			vma->vm_mm->owner->pid);
+		pr_err("%s: INFO: no per-process structure for "
+				"pid %d (tid %d), trying to use pid %d\n",
+				__func__,
+				task_tgid_vnr(task), task_pid_vnr(task),
+				vma->vm_mm->owner->pid);
 		task = vma->vm_mm->owner;
 		ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(task));
 	}
 
 	if (!ppd) {
-		kprintf("%s: ERROR: no per-process structure for PID %d??\n",
+		pr_err("%s: ERROR: no per-process structure for PID %d??\n",
 				__func__, task_tgid_vnr(task));
 		ret = VM_FAULT_SIGBUS;
 		goto no_ppd;
@@ -600,27 +601,24 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		pr_ptd("put", task_pid_vnr(task), ptd);
 	}
 
+	/* Don't even bother looking up NULL */
+	if (!addr) {
+		pr_warn("%s: WARNING: attempted NULL pointer access\n",
+				__func__);
+		ret = VM_FAULT_SIGBUS;
+		goto put_and_out;
+	}
+
 	for (try = 1; ; ++try) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
-				vmf->address, &rpa, &pgsize);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
-				(unsigned long)vmf->virtual_address,
-				&rpa, &pgsize);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+				addr, &rpa, &pgsize);
 #define	NTRIES 2
 		if (!error || (try >= NTRIES)) {
 			if (error) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				pr_err("%s: error translating 0x%#lx (req: TID: %u, syscall: %lu)\n",
-				       __func__, vmf->address,
-				       packet.fault_tid, rsysnum);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				pr_err("%s: error translating 0x%p (req: TID: %u, syscall: %lu)\n",
-				       __func__, vmf->virtual_address,
-				       packet.fault_tid, rsysnum);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+				pr_err("%s: error translating 0x%#lx "
+					"(req: TID: %u, syscall: %lu)\n",
+					__func__,
+					addr, packet.fault_tid, rsysnum);
 			}
 
 			break;
@@ -631,23 +629,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #define	PF_WRITE	0x02
 			reason |= PF_WRITE;
 		}
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-		error = remote_page_fault(usrdata, (void *)vmf->address,
+		error = remote_page_fault(usrdata, (void *)addr,
 					  reason, ppd, &packet);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		error = remote_page_fault(usrdata, vmf->virtual_address,
-					  reason, ppd, &packet);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
 		if (error) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-			pr_err("%s: error forwarding PF for 0x%#lx (req: TID: %d, syscall: %lu)\n",
-			       __func__, vmf->address,
-			       packet.fault_tid, rsysnum);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-			pr_err("%s: error forwarding PF for 0x%p (req: TID: %d, syscall: %lu)\n",
-			       __func__, vmf->virtual_address,
-			       packet.fault_tid, rsysnum);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+			pr_err("%s: error forwarding PF for 0x%#lx "
+					"(req: TID: %d, syscall: %lu)\n",
+					__func__,
+					addr, packet.fault_tid, rsysnum);
 			break;
 		}
 	}
@@ -656,11 +644,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		goto put_and_out;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-	rva = vmf->address & ~(pgsize - 1);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-	rva = (unsigned long)vmf->virtual_address & ~(pgsize - 1);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+	rva = addr & ~(pgsize - 1);
 	rpa = rpa & ~(pgsize - 1);
 
 	phys = ihk_device_map_memory(dev, rpa, pgsize);
@@ -680,17 +664,12 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				pr_err("%s: error inserting mapping for 0x%#lx (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
-				       __func__, vmf->address,
-				       packet.fault_tid, rsysnum,
-				       error, vma->vm_start, vma->vm_end);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				pr_err("%s: error inserting mapping for 0x%p (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
-				       __func__, vmf->virtual_address,
-				       packet.fault_tid, rsysnum, error,
-				       vma->vm_start, vma->vm_end);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+				pr_err("%s: error inserting mapping for 0x%#lx "
+					"(req: TID: %d, syscall: %lu) error: %d,"
+					" vm_start: 0x%lx, vm_end: 0x%lx\n",
+					__func__,
+					addr, packet.fault_tid, rsysnum,
+					error, vma->vm_start, vma->vm_end);
 			}
 		}
 		else
@@ -716,15 +695,10 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-		pr_err("%s: remote PF failed for 0x%#lx, pgoff: %lu (req: TID: %d, syscall: %lu)\n",
-		       __func__, vmf->address, vmf->pgoff,
-		       packet.fault_tid, rsysnum);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-		pr_err("%s: remote PF failed for 0x%p, pgoff: %lu (req: TID: %d, syscall: %lu)\n",
-		       __func__, vmf->virtual_address, vmf->pgoff,
-		       packet.fault_tid, rsysnum);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+		pr_err("%s: remote PF failed for 0x%#lx, pgoff: %lu"
+				" (req: TID: %d, syscall: %lu)\n",
+				__func__, addr, vmf->pgoff,
+				packet.fault_tid, rsysnum);
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
 	}
