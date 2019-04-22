@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ed5aa362_6991d3b6",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1181,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-04-22T02:12:44Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027ptl_shift\u0027, this function\u0027s name, in a string\n+\terror(FATAL, \"ptl_shift called with invalid level %d\\n\", level);",
+      "revId": "cd4216cbbadbd4d09bb0904cfd135da690703c54",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
