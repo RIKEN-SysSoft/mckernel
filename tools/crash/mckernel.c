@@ -1022,6 +1022,7 @@ static int PTL_SHIFTS[4] = { PTL1_SHIFT, PTL2_SHIFT,
 
 static ulong PTL_ENTRIES[4];
 static int PTL_SHIFTS[4];
+static int PTL_CONT_SHIFTS[4];
 static int PGTABLE_LEVELS = -1;
 static ulong ADDR_NONFIXED_MASK = -1UL;
 #endif
@@ -1042,6 +1043,10 @@ arch_init(void)
 		PTL_SHIFTS[1] = 21;
 		PTL_SHIFTS[2] = 32;
 		PTL_SHIFTS[3] = 39;
+		PTL_CONT_SHIFTS[0] = PTL_SHIFTS[0] + 4;
+		PTL_CONT_SHIFTS[1] = PTL_SHIFTS[1] + 4;
+		PTL_CONT_SHIFTS[2] = PTL_SHIFTS[2] + 4;
+		PTL_CONT_SHIFTS[3] = PTL_SHIFTS[3];
 		switch (VA_BITS()) {
 		case 39:
 			MAP_ST_START = 0xffffffc000000000UL;
@@ -1062,6 +1067,10 @@ arch_init(void)
 		PTL_SHIFTS[1] = 29;
 		PTL_SHIFTS[2] = 42;
 		PTL_SHIFTS[3] = 55;
+		PTL_CONT_SHIFTS[0] = PTL_SHIFTS[0] + 5;
+		PTL_CONT_SHIFTS[1] = PTL_SHIFTS[1] + 5;
+		PTL_CONT_SHIFTS[2] = PTL_SHIFTS[2];
+		PTL_CONT_SHIFTS[3] = PTL_SHIFTS[3];
 		switch (VA_BITS()) {
 		case 42:
 			MAP_ST_START = 0xfffffe0000000000UL;
@@ -1163,16 +1172,35 @@ pte_is_type_page(ulong pte, int level)
 #endif
 }
 
+static int
+ptl_shift(int level)
+{
+	if (level >= 1 && level <= 4)
+		return PTL_SHIFTS[level-1];
+
+	error(FATAL, "ptl_shift called with invalid level %d\n", level);
+	return 0; // never happens
+}
+
 static void
-pte_print_(ulong pte, ulong virt, int pgshift)
+pte_print_(ulong pte, ulong virt, int level)
 {
 	int others = 0;
+	int pgshift = level ? ptl_shift(level) : 0;
 	ulong phys = pte_get_phys(pte) + (virt & ((1 << pgshift) - 1));
 
 #ifdef X86_64
 	/* sign extension */
 	if (virt >= 0x0000800000000000UL)
 		virt |= 0xffff000000000000UL;
+#endif
+
+
+#ifdef ARM64
+	/* Handle contiguous bit */
+	if (pte & PTE_CONT) {
+		pgshift = PTL_CONT_SHIFTS[level - 1];
+	}
 #endif
 
 	fprintf(fp, "%016lx %016lx %4s (",
@@ -1228,10 +1256,11 @@ pte_print_(ulong pte, ulong virt, int pgshift)
 }
 
 static void
-pte_print(ulong pte, ulong virt, int pgshift)
+pte_print(ulong pte, ulong virt, int level)
 {
 	static ulong prev_pte, prev_virt;
-	static int prev_pgshift, skipped_pte;
+	static int prev_pgshift, prev_level, skipped_pte;
+	int pgshift = level ? ptl_shift(level) : 0;
 
 	if ((pte & PTATTRMASK) == (prev_pte & PTATTRMASK) &&
 	    pgshift == prev_pgshift &&
@@ -1247,27 +1276,18 @@ pte_print(ulong pte, ulong virt, int pgshift)
 		if (skipped_pte > 1)
 			fprintf(fp, "...\n");
 		if (skipped_pte)
-			pte_print_(prev_pte, prev_virt, prev_pgshift);
+			pte_print_(prev_pte, prev_virt, prev_level);
 		prev_pte = skipped_pte = 0;
 	}
 
 	if (!pte)
 		return;
 
-	pte_print_(pte, virt, pgshift);
+	pte_print_(pte, virt, level);
 	prev_pte = pte;
 	prev_virt = virt;
 	prev_pgshift = pgshift;
-}
-
-static int
-ptl_shift(int level)
-{
-	if (level >= 1 && level <= 4)
-		return PTL_SHIFTS[level-1];
-
-	error(FATAL, "ptl_shift called with invalid level %d\n", level);
-	return 0; // never happens
+	prev_level = level;
 }
 
 /* We should separate x86 and ARM64.. */
@@ -1296,8 +1316,7 @@ pte_do_walk(ulong pt, ulong virt, int level, int lookup,
 			continue;
 		if (pte_is_type_page(pte, level)) {
 			pte_print(pte, (virt | prefix) +
-					(i << ptl_shift(level)),
-					ptl_shift(level));
+					(i << ptl_shift(level)), level);
 			if (lookup)
 				return;
 		} else if (level > 1) {
