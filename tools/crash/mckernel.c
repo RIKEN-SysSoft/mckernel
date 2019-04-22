@@ -505,7 +505,7 @@ static int
 mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 {
 	ulong proc, parent_proc, tmp;
-	int tid = 0, ppid = 0, status;
+	int tid = 0, pid = 0, ppid = 0, status;
 	long saved_cmdline_len;
 	char *saved_cmdline, *comm = is_idle ? "idle" : "";
 	char *status_st;
@@ -558,6 +558,9 @@ mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 		else
 			comm = saved_cmdline;
 	}
+	readmem(proc + MCK_MEMBER_OFFSET(process_pid), KVADDR,
+		&pid, sizeof(int), "process_pid",
+		RETURN_ON_ERROR);
 	readmem(proc + MCK_MEMBER_OFFSET(process_ppid_parent), KVADDR,
 		&parent_proc, sizeof(ulong), "process_ppid_parent",
 		RETURN_ON_ERROR);
@@ -567,9 +570,9 @@ mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 			RETURN_ON_ERROR);
 	}
 
-	fprintf(fp, "%s%6d %6d %3d %016lx %2s %s\n",
+	fprintf(fp, "%s%6d %6d %6d %3d %016lx %2s %s\n",
 		is_active ? ">" : " ",
-		tid, ppid, cpu, thread,
+		tid, pid, ppid, cpu, thread,
 		status_st, comm);
 	if (saved_cmdline_len)
 		FREEBUF(saved_cmdline);
@@ -614,8 +617,8 @@ cmd_mcps(void)
 	if (argerrs)
 		cmd_usage(pc->curcmd, SYNOPSIS);
 
-	fprintf(fp, " %6s %6s %3s %-16s %2s %s\n",
-	       "PID", "PPID", "CPU", "THREAD", "ST", "COMM");
+	fprintf(fp, " %6s %6s %6s %3s %-16s %2s %s\n",
+	       "TID", "PID", "PPID", "CPU", "THREAD", "ST", "COMM");
 	for (cpu = 0; cpu < MCK_SYMBOL(num_processors); cpu++) {
 		ulong clv = MCK_SYMBOL(clv) + cpu * MCK_SIZE(clv);
 		ulong thread, idle_thread;
