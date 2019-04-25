@@ -16,6 +16,24 @@
       "revId": "2acc4b8c53fd071fb64377277326fcd43cd776f7",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a8c3be23_0c7965a8",
+        "filename": "executer/user/arch/x86_64/arch_args.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-04-25T01:15:51Z",
+      "side": 1,
+      "message": "Thanks for pointing it out! I\u0027ve removed it.",
+      "parentUuid": "da089cb2_a48ea6a6",
+      "revId": "2acc4b8c53fd071fb64377277326fcd43cd776f7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
