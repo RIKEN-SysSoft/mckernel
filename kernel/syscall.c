@@ -4781,11 +4781,11 @@ SYSCALL_DECLARE(madvise)
 	default:
 	case MADV_MERGEABLE:
 	case MADV_UNMERGEABLE:
-	case MADV_NOHUGEPAGE:
 		error = -EINVAL;
 		break;
 
 	case MADV_HUGEPAGE:
+	case MADV_NOHUGEPAGE:
 	case MADV_NORMAL:
 	case MADV_RANDOM:
 	case MADV_SEQUENTIAL:
@@ -4865,6 +4865,13 @@ SYSCALL_DECLARE(madvise)
 					ihk_mc_get_processor_id(), start,
 					len0, advice, range->start,
 					range->end, range->flag);
+			error = -EINVAL;
+			goto out;
+		}
+
+		/* only hugetlbfs and shm map support hugepage */
+		if ((advice == MADV_HUGEPAGE || advice == MADV_NOHUGEPAGE)
+		    && !(range->memobj->flags & (MF_HUGETLBFS | MF_SHM))) {
 			error = -EINVAL;
 			goto out;
 		}
