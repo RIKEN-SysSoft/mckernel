@@ -4869,6 +4869,13 @@ SYSCALL_DECLARE(madvise)
 			goto out;
 		}
 
+		/* hugetlbfs and shm map support hugepages */
+		if ((advice == MADV_HUGEPAGE)
+		    && (!range->memobj->flags & (MF_HUGETLBFS | MF_SHM))) {
+			error = -EINVAL;
+			goto out;
+		}
+
 		s = start;
 		if (s < range->start) {
 			s = range->start;
