@@ -103,8 +103,11 @@ struct cpu_local_var {
 
 	/* UTI */
 	void *uti_futex_resp;
+	/* Per-CPU memory allocator cache */
+	struct rb_root free_chunks;
 } __attribute__((aligned(64)));
 
+extern int cpu_local_var_initialized;
 
 struct cpu_local_var *get_cpu_local_var(int id);
 static struct cpu_local_var *get_this_cpu_local_var(void)
