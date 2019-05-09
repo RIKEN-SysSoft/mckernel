@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "cb9483d4_c9bafcfd",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define mb()    asm volatile(\"mfence\":::\"memory\")",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "68d8b7ac_2df68e30",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+#define mb()    asm volatile(\"mfence\":::\"memory\")",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2d35a8a_64f03274",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+#define rmb()   asm volatile(\"lfence\":::\"memory\")",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "296ba1c0_6874d204",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define rmb()   asm volatile(\"lfence\":::\"memory\")",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8fac3e4e_cdbce09e",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+#define wmb()   asm volatile(\"sfence\" ::: \"memory\")",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "29c1baed_7e3dad1d",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define wmb()   asm volatile(\"sfence\" ::: \"memory\")",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ed62e4a2_6b8730ef",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+#define smp_mb()    mb()",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "39b359ad_fd621d99",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+#define smp_rmb()   rmb()",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3689678_d2d9077d",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+#define smp_wmb()\tbarrier()",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "395f74a8_a75dd336",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-09T23:43:47Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define arch_barrier()\tasm volatile(\"\" : : : \"memory\")",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
