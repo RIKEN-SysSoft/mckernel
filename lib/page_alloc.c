@@ -19,6 +19,7 @@
 #include <memory.h>
 #include <bitops.h>
 #include <errno.h>
+#include <cls.h>
 
 //#define DEBUG_PRINT_PAGE_ALLOC
 
@@ -608,6 +609,22 @@ unsigned long ihk_numa_alloc_pages(struct ihk_mc_numa_node *node,
 	unsigned long addr = 0;
 	mcs_lock_node_t mcs_node;
 
+	/* Check CPU local cache first */
+	if (cpu_local_var_initialized) {
+		unsigned long irqflags;
+
+		irqflags = cpu_disable_interrupt_save();
+		addr = __page_alloc_rbtree_alloc_pages(&cpu_local_var(free_chunks),
+				npages, p2align);
+		cpu_restore_interrupt(irqflags);
+
+		if (addr) {
+			dkprintf("%s: 0x%lx:%d allocated from cache\n",
+				__func__, addr, npages);
+			return addr;
+		}
+	}
+
 	mcs_lock_lock(&node->lock, &mcs_node);
 
 	if (node->nr_free_pages < npages) {
@@ -634,6 +651,25 @@ void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
 	unsigned long addr, int npages)
 {
 	mcs_lock_node_t mcs_node;
+
+	/* CPU local cache */
+	if (cpu_local_var_initialized) {
+		unsigned long irqflags;
+
+		irqflags = cpu_disable_interrupt_save();
+		if (__page_alloc_rbtree_free_range(&cpu_local_var(free_chunks), addr,
+					npages << PAGE_SHIFT)) {
+			kprintf("%s: ERROR: freeing 0x%lx:%lu to CPU local cache\n",
+					__FUNCTION__, addr, npages << PAGE_SHIFT);
+			cpu_restore_interrupt(irqflags);
+		}
+		else {
+			dkprintf("%s: 0x%lx:%d freed to cache\n",
+				__func__, addr, npages);
+			cpu_restore_interrupt(irqflags);
+			return;
+		}
+	}
 
 	if (addr < node->min_addr ||
 			(addr + (npages << PAGE_SHIFT)) > node->max_addr) {
