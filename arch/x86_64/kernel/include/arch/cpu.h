@@ -13,17 +13,15 @@
 #ifndef ARCH_CPU_H
 #define ARCH_CPU_H
 
+#define mb()    asm volatile("mfence":::"memory")
+#define rmb()   asm volatile("lfence":::"memory")
+#define wmb()   asm volatile("sfence" ::: "memory")
+
+#define smp_mb()    mb()
+#define smp_rmb()   rmb()
+#define smp_wmb()	barrier()
+
 #define arch_barrier()	asm volatile("" : : : "memory")
-
-static inline void rmb(void)
-{
-	arch_barrier();
-}
-
-static inline void wmb(void)
-{
-	arch_barrier();
-}
 
 static inline unsigned long read_tsc(void)
 {
