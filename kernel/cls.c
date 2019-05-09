@@ -42,9 +42,11 @@ void cpu_local_var_init(void)
 		clv[i].monitor = monitor->cpu + i;
 		clv[i].rusage = rusage.cpu + i;
 		INIT_LIST_HEAD(&clv[i].smp_func_req_list);
+		clv[i].free_chunks.rb_node = NULL;
 	}
 
 	cpu_local_var_initialized = 1;
+	smp_mb();
 }
 
 struct cpu_local_var *get_cpu_local_var(int id)
