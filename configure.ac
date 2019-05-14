@@ -1,9 +1,9 @@
 # configure.ac COPYRIGHT FUJITSU LIMITED 2015-2016
 AC_PREREQ(2.63)
-m4_define([IHK_VERSION_m4],[1.5.0-knl+hfi])dnl
-m4_define([MCKERNEL_VERSION_m4],[1.5.0-knl+hfi])dnl
-m4_define([IHK_RELEASE_DATE_m4],[2018-06-20])dnl
-m4_define([MCKERNEL_RELEASE_DATE_m4],[2018-06-20])dnl
+m4_define([IHK_VERSION_m4],[1.5.1-knl+hfi])dnl
+m4_define([MCKERNEL_VERSION_m4],[1.5.1-knl+hfi])dnl
+m4_define([IHK_RELEASE_DATE_m4],[2019-05-14])dnl
+m4_define([MCKERNEL_RELEASE_DATE_m4],[2019-05-14])dnl
 
 AC_INIT([mckernel], MCKERNEL_VERSION_m4)
 
