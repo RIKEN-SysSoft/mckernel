@@ -155,6 +155,23 @@
     },
     {
       "key": {
+        "uuid": "8c053597_ef0262aa",
+        "filename": "arch/x86_64/kernel/include/arch/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-05-17T06:32:40Z",
+      "side": 1,
+      "message": "why not \"#define smp_wmb() wmb()\"?",
+      "revId": "24a8d9341b7cc0784c0e1485b62c132def9f0d58",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "395f74a8_a75dd336",
         "filename": "arch/x86_64/kernel/include/arch/cpu.h",
         "patchSetId": 1
