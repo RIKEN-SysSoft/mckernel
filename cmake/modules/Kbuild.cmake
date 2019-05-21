@@ -39,9 +39,17 @@ endif(ENABLE_WERROR)
 	else ()
 		set(MAKE "$(MAKE)")
 	endif ()
-	if (NOT "${ARCH}" STREQUAL "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+
+	# Convert McKernel "arm64" into Linux "aarch64"
+	if ("${ARCH}" STREQUAL "arm64")
+		set(LINUX_ARCH "aarch64")
+	else ()
+		set(LINUX_ARCH "${ARCH}")
+	endif ()
+
+	if (NOT "${LINUX_ARCH}" STREQUAL "${CMAKE_HOST_SYSTEM_PROCESSOR}")
 		string(REGEX REPLACE "ld$" "" CROSS_COMPILE "${CMAKE_LINKER}")
-		list(APPEND KBUILD_MAKE_FLAGS "ARCH=${ARCH};CROSS_COMPILE=${CROSS_COMPILE}")
+		list(APPEND KBUILD_MAKE_FLAGS "ARCH=${LINUX_ARCH};CROSS_COMPILE=${CROSS_COMPILE}")
 	endif()
 
 	string(REGEX REPLACE "\\.c(;|$)" ".o.cmd\\1" KMOD_O_CMD "${KMOD_SOURCES}")
