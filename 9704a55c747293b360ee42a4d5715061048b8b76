@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9564dd66_189f700e",
+        "filename": "kernel/cls.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-24T00:41:33Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tsmp_mb();",
+      "revId": "9704a55c747293b360ee42a4d5715061048b8b76",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c204a32_ac1ee2e6",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 617,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-24T00:41:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\taddr \u003d __page_alloc_rbtree_alloc_pages(\u0026cpu_local_var(free_chunks),",
+      "revId": "9704a55c747293b360ee42a4d5715061048b8b76",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f2047bf5_a3f96785",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 660,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-24T00:41:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (__page_alloc_rbtree_free_range(\u0026cpu_local_var(free_chunks), addr,",
+      "revId": "9704a55c747293b360ee42a4d5715061048b8b76",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "692feca5_117a3b17",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 662,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-24T00:41:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: ERROR: freeing 0x%lx:%lu to CPU local cache\\n\",",
+      "revId": "9704a55c747293b360ee42a4d5715061048b8b76",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3b8606b1_bf146ec0",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 663,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-24T00:41:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t__FUNCTION__, addr, npages \u003c\u003c PAGE_SHIFT);",
+      "revId": "9704a55c747293b360ee42a4d5715061048b8b76",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8cd54334_1edea32f",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 663,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-05-24T00:41:33Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t__FUNCTION__, addr, npages \u003c\u003c PAGE_SHIFT);",
+      "revId": "9704a55c747293b360ee42a4d5715061048b8b76",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
