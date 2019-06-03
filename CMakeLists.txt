@@ -88,6 +88,9 @@ option(ENABLE_QLMPI "Enable qlmpi programs" OFF)
 option(ENABLE_UTI "Enable uti support" OFF)
 option(ENABLE_UBSAN "Enable undefined behaviour sanitizer on mckernel size" OFF)
 
+find_package(PkgConfig REQUIRED)
+set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH ON)
+
 find_library(LIBRT rt)
 find_library(LIBNUMA numa)
 find_library(LIBBFD bfd)
@@ -98,7 +101,8 @@ if (ENABLE_QLMPI)
 endif()
 
 if (ENABLE_UTI)
-	find_library(LIBSYSCALL_INTERCEPT syscall_intercept)
+	pkg_check_modules(LIBSYSCALL_INTERCEPT REQUIRED libsyscall_intercept)
+	link_directories(${LIBSYSCALL_INTERCEPT_LIBRARY_DIRS})
 endif()
 
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([0-9]+)(.*))?" "\\1;\\2;\\3;\\5;\\6" LINUX_VERSION ${UNAME_R})

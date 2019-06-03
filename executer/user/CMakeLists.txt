@@ -58,7 +58,8 @@ endif()
 
 if (ENABLE_UTI)
 	add_library(mck_syscall_intercept SHARED syscall_intercept.c arch/${ARCH}/archdep_c.c)
-	target_link_libraries(mck_syscall_intercept ${LIBSYSCALL_INTERCEPT})
+	target_link_libraries(mck_syscall_intercept ${LIBSYSCALL_INTERCEPT_LIBRARIES})
+	target_include_directories(mck_syscall_intercept PRIVATE ${LIBSYSCALL_INTERCEPT_INCLUDE_DIRS})
 	set_target_properties(mck_syscall_intercept PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 	install(TARGETS mck_syscall_intercept
