@@ -1634,6 +1634,9 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 
 	if (flags & MAP_HUGETLB) {
 		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
+		if (!pgshift) {
+			pgshift = ihk_mc_get_linux_default_huge_page_shift();
+		}
 		p2align = pgshift - PAGE_SHIFT;
 	}
 	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)
@@ -5123,6 +5126,9 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 
 	if (shmflg & SHM_HUGETLB) {
 		pgshift = (shmflg >> SHM_HUGE_SHIFT) & 0x3F;
+		if (!pgshift) {
+			pgshift = ihk_mc_get_linux_default_huge_page_shift();
+		}
 	} else if (proc->thp_disable) {
 		pgshift = PAGE_SHIFT;
 	} else {
