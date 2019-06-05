@@ -1940,7 +1940,8 @@ SYSCALL_DECLARE(mmap)
 
 		if (hugeshift == 0) {
 			/* default hugepage size */
-			flags |= MAP_HUGE_SECOND_BLOCK;
+			flags |= ihk_mc_get_linux_default_huge_page_shift() <<
+				MAP_HUGE_SHIFT;
 		} else if ((first_level_block_support &&
 				hugeshift == MAP_HUGE_FIRST_BLOCK) ||
 			   (first_level_block_support &&
@@ -2017,7 +2018,8 @@ SYSCALL_DECLARE(shmget)
 
 		if (hugeshift == 0) {
 			/* default hugepage size */
-			shmflg |= SHM_HUGE_SECOND_BLOCK;
+			shmflg |= ihk_mc_get_linux_default_huge_page_shift() <<
+				MAP_HUGE_SHIFT;
 		} else if ((first_level_block_support &&
 				hugeshift == SHM_HUGE_FIRST_BLOCK) ||
 			   (first_level_block_support &&

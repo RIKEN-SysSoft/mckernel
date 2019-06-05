@@ -211,6 +211,7 @@ struct smp_coreset;
 int ihk_mc_get_numa_node(int id, int *linux_numa_id, int *type);
 int ihk_mc_get_numa_distance(int i, int j);
 int ihk_mc_get_nr_memory_chunks(void);
+int ihk_mc_get_linux_default_huge_page_shift(void);
 int ihk_mc_get_memory_chunk(int id,
 	unsigned long *start,
 	unsigned long *end,
