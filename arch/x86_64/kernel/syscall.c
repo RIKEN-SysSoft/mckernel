@@ -1683,7 +1683,9 @@ SYSCALL_DECLARE(mmap)
 	if (flags & MAP_HUGETLB) {
 		switch (flags & (0x3F << MAP_HUGE_SHIFT)) {
 		case 0:
-			flags |= MAP_HUGE_2MB;	/* default hugepage size */
+			/* default hugepage size */
+			flags |= ihk_mc_get_linux_default_huge_page_shift() <<
+				MAP_HUGE_SHIFT;
 			break;
 
 		case MAP_HUGE_2MB:
@@ -1785,7 +1787,9 @@ SYSCALL_DECLARE(shmget)
 		int hugeshift = shmflg & (0x3F << SHM_HUGE_SHIFT);
 
 		if (hugeshift == 0) {
-			shmflg |= SHM_HUGE_2MB;	/* default hugepage size */
+			/* default hugepage size */
+			shmflg |= ihk_mc_get_linux_default_huge_page_shift() <<
+				MAP_HUGE_SHIFT;
 		} else if (hugeshift == SHM_HUGE_2MB ||
 			   hugeshift == SHM_HUGE_1GB) {
 			/*nop*/
