@@ -81,6 +81,40 @@ static struct mck_size_table {
 #define MCK_MEMBER_OFFSET_INIT(X, Y, Z) (MCK_ASSIGN_OFFSET(X) = MEMBER_OFFSET(Y, Z))
 #define MCK_SIZE_INIT(X, Y) (MCK_ASSIGN_SIZE(X) = STRUCT_SIZE(Y))
 
+#ifdef X86_64
+#define LINUX_PAGE_OFFSET 0xffff880000000000UL
+static inline ulong phys_to_virt(ulong phys)
+{
+	return phys + LINUX_PAGE_OFFSET;
+}
+#elif defined(ARM64)
+ulong MAP_ST_START = -1UL;
+ulong V2PHYS_OFFSET = -1UL;
+
+static inline ulong phys_to_virt(ulong phys)
+{
+	return (phys - V2PHYS_OFFSET) | MAP_ST_START;
+}
+#endif
+
+int mcreadmem(ulonglong addr, int memtype, void *buffer, long size,
+	char *type, ulong error_handle)
+{
+#ifdef ARM64
+	ulong phys;
+
+	/*
+	 * Crash on ARM RedHat8 can't seem to access module space
+	 * virtual addresses, translate to kernel fixed map.
+	 */
+	if (MAP_ST_START != -1UL) {
+		kvtop(NULL, addr, &phys, 0);
+		addr = phys_to_virt(phys);
+	}
+#endif
+
+	return readmem(addr, memtype, buffer, size, type, error_handle);
+}
 
 /* helpers - symbol helpers */
 
@@ -104,8 +138,9 @@ get_symbol_value(char *name)
 			else if (STRNEQ(buf, "(nil)"))
 				value = 0;
 		}
+
 		if (value > 0 &&
-		    !readmem(value, KVADDR, &value, sizeof(value),
+		    !mcreadmem(value, KVADDR, &value, sizeof(value),
 			     "symbol value", RETURN_ON_ERROR|QUIET)) {
 			value = -1;
 		}
@@ -159,22 +194,6 @@ datatype_error(void **retaddr, char *errmsg, char *func, char *file, int line)
 	exit(1);
 }
 
-#ifdef X86_64
-#define LINUX_PAGE_OFFSET 0xffff880000000000UL
-static inline ulong phys_to_virt(ulong phys)
-{
-	return phys + LINUX_PAGE_OFFSET;
-}
-#elif defined(ARM64)
-ulong MAP_ST_START = -1UL;
-ulong V2PHYS_OFFSET = -1UL;
-
-static inline ulong phys_to_virt(ulong phys)
-{
-	return (phys - V2PHYS_OFFSET) | MAP_ST_START;
-}
-#endif
-
 /* basically copy of OFFSET_verify */
 static ulong
 SYMBOL_verify(ulong value, char *func, char *file, int line, char *item)
@@ -211,7 +230,7 @@ mck_str_to_context_listcb(void *_thread, void *data)
 	int tid;
 	struct mck_str_to_context_listcb_wrapper *wrap = data;
 
-	if (readmem(thread + MCK_MEMBER_OFFSET(thread_tid), KVADDR,
+	if (mcreadmem(thread + MCK_MEMBER_OFFSET(thread_tid), KVADDR,
 		    &tid, sizeof(int), "thread_tid",
 		    RETURN_ON_ERROR|QUIET) && tid == wrap->pid) {
 		wrap->thread = thread;
@@ -233,7 +252,7 @@ lookup_pid(ulong pid, ulong thash, ulong *thread)
 	};
 	wrap.pid = pid;
 	ld.end = thash + (pid % HASH_SIZE) * SIZE(list_head);
-	if (readmem(ld.end, KVADDR, &ld.start, sizeof(ld.start), "first list element",
+	if (mcreadmem(ld.end, KVADDR, &ld.start, sizeof(ld.start), "first list element",
 				RETURN_ON_ERROR|QUIET) && ld.start != ld.end) {
 		do_list(&ld);
 		if (wrap.thread) {
@@ -266,10 +285,10 @@ mck_str_to_context(char *string, ulong *pid, ulong *thread)
 	if (hexadecimal(s, 0))
 		hvalue = htol(s, RETURN_ON_ERROR|QUIET, NULL);
 
-	if (readmem(MCK_SYMBOL(clv) + MCK_MEMBER_OFFSET(clv_resource_set),
+	if (mcreadmem(MCK_SYMBOL(clv) + MCK_MEMBER_OFFSET(clv_resource_set),
 		    KVADDR, &rset, sizeof(rset), "clv resource_set",
 		    RETURN_ON_ERROR|QUIET) &&
-	    readmem(rset + MCK_MEMBER_OFFSET(resource_set_thread_hash), KVADDR,
+	    mcreadmem(rset + MCK_MEMBER_OFFSET(resource_set_thread_hash), KVADDR,
 		    &thash, sizeof(thash), "rset thread hash",
 		    RETURN_ON_ERROR|QUIET)) {
 		if (dvalue != BADADDR) {
@@ -291,7 +310,7 @@ mck_str_to_context(char *string, ulong *pid, ulong *thread)
 	if (hvalue != BADADDR) {
 		int tid;
 
-		if (readmem(hvalue + MCK_MEMBER_OFFSET(thread_tid), KVADDR,
+		if (mcreadmem(hvalue + MCK_MEMBER_OFFSET(thread_tid), KVADDR,
 			    &tid, sizeof(int), "thread tid",
 			    RETURN_ON_ERROR|QUIET)) {
 			if (thread)
@@ -326,10 +345,10 @@ mckernel_refresh_symbols(int fatal)
 	MCK_MEMBER_OFFSET_INIT(boot_param_boot_nsec, "struct smp_boot_param",
 			       "boot_nsec");
 	boot_param = phys_to_virt(boot_param_pa);
-	if (!readmem(boot_param + MCK_MEMBER_OFFSET(boot_param_boot_sec),
+	if (!mcreadmem(boot_param + MCK_MEMBER_OFFSET(boot_param_boot_sec),
 		     KVADDR, &boot_param_boot_sec, sizeof(ulong),
 		     "boot_sec", RETURN_ON_ERROR|QUIET) ||
-	    !readmem(boot_param + MCK_MEMBER_OFFSET(boot_param_boot_nsec),
+	    !mcreadmem(boot_param + MCK_MEMBER_OFFSET(boot_param_boot_nsec),
 		     KVADDR, &boot_param_boot_nsec, sizeof(ulong),
 		     "boot_nsec", RETURN_ON_ERROR|QUIET)) {
 		if (!fatal)
@@ -409,12 +428,12 @@ mckernel_refresh_symbols(int fatal)
 	MCK_SYMBOL_INIT_VAL(init_pt, swapper_page_table);
 #endif
 	MCK_SYMBOL_INIT(mck_num_processors);
-	if (!readmem(MCK_SYMBOL(mck_num_processors), KVADDR,
+	if (!mcreadmem(MCK_SYMBOL(mck_num_processors), KVADDR,
 		     &MCK_ASSIGN_SYMBOL(num_processors), sizeof(int),
 		     "mck_num_processors", RETURN_ON_ERROR|QUIET)) {
 		error(FATAL, "Could not read mckernel num_processors value");
 	}
-	if (!readmem(MCK_SYMBOL(boot_param) +
+	if (!mcreadmem(MCK_SYMBOL(boot_param) +
 				MCK_MEMBER_OFFSET(boot_param_msg_buffer),
 		     KVADDR, &MCK_ASSIGN_SYMBOL(kmsg_buf), sizeof(ulong),
 		     "kmsg_buf", RETURN_ON_ERROR|QUIET)) {
@@ -511,10 +530,10 @@ mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 	char *status_st;
 
 	if (!is_idle)
-		readmem(thread + MCK_MEMBER_OFFSET(thread_tid), KVADDR,
+		mcreadmem(thread + MCK_MEMBER_OFFSET(thread_tid), KVADDR,
 			&tid, sizeof(int), "thread_tid",
 			RETURN_ON_ERROR);
-	readmem(thread + MCK_MEMBER_OFFSET(thread_status), KVADDR,
+	mcreadmem(thread + MCK_MEMBER_OFFSET(thread_status), KVADDR,
 		&status, sizeof(ulong), "thread_status",
 		RETURN_ON_ERROR);
 	switch (status) {
@@ -537,19 +556,19 @@ mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 		status_st = "??";
 		break;
 	}
-	readmem(thread + MCK_MEMBER_OFFSET(thread_proc), KVADDR,
+	mcreadmem(thread + MCK_MEMBER_OFFSET(thread_proc), KVADDR,
 		&proc, sizeof(ulong), "thread_proc",
 		RETURN_ON_ERROR);
-	readmem(proc + MCK_MEMBER_OFFSET(process_saved_cmdline_len),
+	mcreadmem(proc + MCK_MEMBER_OFFSET(process_saved_cmdline_len),
 		KVADDR, &saved_cmdline_len, sizeof(long),
 		"process saved_cmdline_len", RETURN_ON_ERROR);
 	if (saved_cmdline_len) {
 		saved_cmdline = GETBUF(saved_cmdline_len);
-		readmem(proc + MCK_MEMBER_OFFSET(process_saved_cmdline),
+		mcreadmem(proc + MCK_MEMBER_OFFSET(process_saved_cmdline),
 			KVADDR, &tmp, sizeof(ulong),
 			"process saved_cmdline address",
 			RETURN_ON_ERROR);
-		readmem(tmp, KVADDR,
+		mcreadmem(tmp, KVADDR,
 			saved_cmdline, saved_cmdline_len,
 			"process saved_cmdline", RETURN_ON_ERROR);
 		comm = strrchr(saved_cmdline, '/');
@@ -558,14 +577,14 @@ mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 		else
 			comm = saved_cmdline;
 	}
-	readmem(proc + MCK_MEMBER_OFFSET(process_pid), KVADDR,
+	mcreadmem(proc + MCK_MEMBER_OFFSET(process_pid), KVADDR,
 		&pid, sizeof(int), "process_pid",
 		RETURN_ON_ERROR);
-	readmem(proc + MCK_MEMBER_OFFSET(process_ppid_parent), KVADDR,
+	mcreadmem(proc + MCK_MEMBER_OFFSET(process_ppid_parent), KVADDR,
 		&parent_proc, sizeof(ulong), "process_ppid_parent",
 		RETURN_ON_ERROR);
 	if (parent_proc) {
-		readmem(parent_proc + MCK_MEMBER_OFFSET(process_pid), KVADDR,
+		mcreadmem(parent_proc + MCK_MEMBER_OFFSET(process_pid), KVADDR,
 			&ppid, sizeof(int), "parent process_pid",
 			RETURN_ON_ERROR);
 	}
@@ -632,7 +651,7 @@ cmd_mcps(void)
 		struct mcps_listcb_wrapper cb_data;
 
 		idle_thread = clv + MCK_MEMBER_OFFSET(clv_idle);
-		readmem(clv + MCK_MEMBER_OFFSET(clv_current), KVADDR,
+		mcreadmem(clv + MCK_MEMBER_OFFSET(clv_current), KVADDR,
 			&thread, sizeof(ulong), "clv_current",
 			RETURN_ON_ERROR);
 
@@ -643,7 +662,7 @@ cmd_mcps(void)
 		cb_data.cpu = cpu;
 		cb_data.running_thr = thread;
 		ld.callback_data = &cb_data;
-		readmem(clv + MCK_MEMBER_OFFSET(clv_runq), KVADDR,
+		mcreadmem(clv + MCK_MEMBER_OFFSET(clv_runq), KVADDR,
 			&ld.start, sizeof(void *), "first list element",
 			RETURN_ON_ERROR);
 		if (ld.start != ld.end)
@@ -707,10 +726,10 @@ mcmem_print_one_range(ulong range, void *cb_arg)
 	char path_str[MAXPATHLEN];
 	struct mcmem_print_wrap *wrap = cb_arg;
 
-	if (!readmem(range + MCK_MEMBER_OFFSET(vm_range_start), KVADDR,
+	if (!mcreadmem(range + MCK_MEMBER_OFFSET(vm_range_start), KVADDR,
 		     &start, sizeof(start), "vm_range start", RETURN_ON_ERROR))
 		return 1;
-	if (!readmem(range + MCK_MEMBER_OFFSET(vm_range_end), KVADDR,
+	if (!mcreadmem(range + MCK_MEMBER_OFFSET(vm_range_end), KVADDR,
 		     &end, sizeof(end), "vm_range end", RETURN_ON_ERROR))
 		return 1;
 
@@ -719,16 +738,16 @@ mcmem_print_one_range(ulong range, void *cb_arg)
 	if (wrap->match_addr != -1UL && end <= wrap->match_addr)
 		return 0;
 
-	if (!readmem(range + MCK_MEMBER_OFFSET(vm_range_flag), KVADDR,
+	if (!mcreadmem(range + MCK_MEMBER_OFFSET(vm_range_flag), KVADDR,
 		     &flag, sizeof(flag), "vm_range flag", RETURN_ON_ERROR))
 		return 1;
-	if (!readmem(range + MCK_MEMBER_OFFSET(vm_range_memobj), KVADDR,
+	if (!mcreadmem(range + MCK_MEMBER_OFFSET(vm_range_memobj), KVADDR,
 		     &memobj, sizeof(memobj), "vm_range memobj",
 		     RETURN_ON_ERROR))
 		return 1;
 
 	path_str[0] = 0;
-	if (memobj && readmem(memobj + MCK_MEMBER_OFFSET(memobj_path), KVADDR,
+	if (memobj && mcreadmem(memobj + MCK_MEMBER_OFFSET(memobj_path), KVADDR,
 			      &path, sizeof(path), "memobj path",
 			      RETURN_ON_ERROR) && path) {
 		read_string(path, path_str, MAXPATHLEN);
@@ -779,9 +798,9 @@ mck_rbtree_iteration(ulong node_p, struct tree_data_cb *td, char *pos)
 		error(FATAL, "\nduplicate tree entry: %lx\n", node_p);
 
 	if ((td->flags & TREE_LINEAR_ORDER) &&
-	    readmem(node_p+OFFSET(rb_node_rb_left), KVADDR, &new_p,
+	    mcreadmem(node_p+OFFSET(rb_node_rb_left), KVADDR, &new_p,
 	    sizeof(void *), "rb_node rb_left", RETURN_ON_ERROR) && new_p) {
-		if (readmem(new_p+OFFSET(rb_node_rb_left), KVADDR, &test_p,
+		if (mcreadmem(new_p+OFFSET(rb_node_rb_left), KVADDR, &test_p,
 			sizeof(void *), "rb_node rb_left", RETURN_ON_ERROR|QUIET)) {
 			sprintf(new_pos, "%s/l", pos);
 			mck_rbtree_iteration(new_p, td, new_pos);
@@ -802,9 +821,9 @@ mck_rbtree_iteration(ulong node_p, struct tree_data_cb *td, char *pos)
 		return; // mck
 
 	if (!(td->flags & TREE_LINEAR_ORDER) &&
-	    readmem(node_p+OFFSET(rb_node_rb_left), KVADDR, &new_p,
+	    mcreadmem(node_p+OFFSET(rb_node_rb_left), KVADDR, &new_p,
 	    sizeof(void *), "rb_node rb_left", RETURN_ON_ERROR) && new_p) {
-		if (readmem(new_p+OFFSET(rb_node_rb_left), KVADDR, &test_p,
+		if (mcreadmem(new_p+OFFSET(rb_node_rb_left), KVADDR, &test_p,
 			sizeof(void *), "rb_node rb_left", RETURN_ON_ERROR|QUIET)) {
 			sprintf(new_pos, "%s/l", pos);
 			mck_rbtree_iteration(new_p, td, new_pos);
@@ -813,9 +832,9 @@ mck_rbtree_iteration(ulong node_p, struct tree_data_cb *td, char *pos)
 					node_p, new_p);
 	}
 
-	if (readmem(node_p+OFFSET(rb_node_rb_right), KVADDR, &new_p,
+	if (mcreadmem(node_p+OFFSET(rb_node_rb_right), KVADDR, &new_p,
 	    sizeof(void *), "rb_node rb_right", RETURN_ON_ERROR) && new_p) {
-		if (readmem(new_p+OFFSET(rb_node_rb_left), KVADDR, &test_p,
+		if (mcreadmem(new_p+OFFSET(rb_node_rb_left), KVADDR, &test_p,
 			sizeof(void *), "rb_node rb_left", RETURN_ON_ERROR|QUIET)) {
 			sprintf(new_pos, "%s/r", pos);
 			mck_rbtree_iteration(new_p, td, new_pos);
@@ -841,7 +860,7 @@ mck_do_rbtree(struct tree_data_cb *td)
 	if (td->flags & TREE_NODE_POINTER)
 		start = td->start;
 	else
-		readmem(td->start + OFFSET(rb_root_rb_node), KVADDR,
+		mcreadmem(td->start + OFFSET(rb_root_rb_node), KVADDR,
 			&start, sizeof(void *), "rb_root rb_node", FAULT_ON_ERROR);
 
 	hq_open(); //mck
@@ -886,7 +905,7 @@ next:
 	if (argerrs)
 		cmd_usage(pc->curcmd, SYNOPSIS);
 
-	if (!readmem(thread + MCK_MEMBER_OFFSET(thread_vm), KVADDR,
+	if (!mcreadmem(thread + MCK_MEMBER_OFFSET(thread_vm), KVADDR,
 		     &process_vm, sizeof(process_vm), "thread vm",
 		     RETURN_ON_ERROR|QUIET)) {
 		error(FATAL, "Could not read process_vm for thread");
@@ -894,17 +913,17 @@ next:
 	struct mcmem_print_wrap wrap = {
 		.match_addr = -1UL,
 	};
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vdso_addr),
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vdso_addr),
 		KVADDR, &wrap.vdso_addr, sizeof(wrap.vdso_addr),
 		"process_vm vdso_addr", RETURN_ON_ERROR|QUIET);
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vvar_addr),
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vvar_addr),
 		KVADDR, &wrap.vvar_addr, sizeof(wrap.vvar_addr),
 		"process_vm vvar_addr", RETURN_ON_ERROR|QUIET);
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
 			   + MCK_MEMBER_OFFSET(vm_regions_brk_start),
 		KVADDR, &wrap.brk_start, sizeof(wrap.brk_start),
 		"process_vm region.brk_start", RETURN_ON_ERROR|QUIET);
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
 			   + MCK_MEMBER_OFFSET(vm_regions_brk_end_allocated),
 		KVADDR, &wrap.brk_end_allocated, sizeof(wrap.brk_end_allocated),
 		"process_vm region.brk_end_allocated", RETURN_ON_ERROR|QUIET);
@@ -1309,7 +1328,7 @@ pte_do_walk(ulong pt, ulong virt, int level, int lookup,
 				 (i << ptl_shift(level))))
 			break;
 
-		if (!readmem(pt + i * sizeof(pte), KVADDR, &pte, sizeof(pte),
+		if (!mcreadmem(pt + i * sizeof(pte), KVADDR, &pte, sizeof(pte),
 			     "page table entry", RETURN_ON_ERROR|QUIET))
 			error(FATAL, "Could not read page table entry");
 		if (!(pte & _PAGE_PRESENT))
@@ -1380,23 +1399,23 @@ cmd_mcvtop(void)
 	}
 
 	if (thread) {
-		if (!readmem(thread + MCK_MEMBER_OFFSET(thread_vm), KVADDR,
+		if (!mcreadmem(thread + MCK_MEMBER_OFFSET(thread_vm), KVADDR,
 			     &process_vm, sizeof(process_vm), "thread vm",
 			     RETURN_ON_ERROR|QUIET)) {
 			error(FATAL, "Could not read process_vm for thread");
 		}
-		if (!readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_address_space),
+		if (!mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_address_space),
 			     KVADDR, &address_space, sizeof(address_space),
 			     "address_space", RETURN_ON_ERROR|QUIET)) {
 			error(FATAL, "Could not read address_space for thread");
 		}
-		if (!readmem(address_space + MCK_MEMBER_OFFSET(address_space_page_table),
+		if (!mcreadmem(address_space + MCK_MEMBER_OFFSET(address_space_page_table),
 			     KVADDR, &page_table, sizeof(page_table),
 			     "page_table", RETURN_ON_ERROR|QUIET)) {
 			error(FATAL, "Could not read page_table for thread");
 		}
 #ifdef ARM64
-		if (!readmem(page_table, KVADDR, &page_table, sizeof(page_table),
+		if (!mcreadmem(page_table, KVADDR, &page_table, sizeof(page_table),
 			     "page_table translation table", RETURN_ON_ERROR|QUIET)) {
 			error(FATAL, "Could not read translation table from page_table");
 		}
@@ -1459,17 +1478,17 @@ next:
 	struct mcmem_print_wrap wrap = {
 		.match_addr = addr,
 	};
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vdso_addr),
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vdso_addr),
 		KVADDR, &wrap.vdso_addr, sizeof(wrap.vdso_addr),
 		"process_vm vdso_addr", RETURN_ON_ERROR|QUIET);
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vvar_addr),
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_vvar_addr),
 		KVADDR, &wrap.vvar_addr, sizeof(wrap.vvar_addr),
 		"process_vm vvar_addr", RETURN_ON_ERROR|QUIET);
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
 			   + MCK_MEMBER_OFFSET(vm_regions_brk_start),
 		KVADDR, &wrap.brk_start, sizeof(wrap.brk_start),
 		"process_vm region.brk_start", RETURN_ON_ERROR|QUIET);
-	readmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
+	mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_region)
 			   + MCK_MEMBER_OFFSET(vm_regions_brk_end_allocated),
 		KVADDR, &wrap.brk_end_allocated, sizeof(wrap.brk_end_allocated),
 		"process_vm region.brk_end_allocated", RETURN_ON_ERROR|QUIET);
@@ -1536,15 +1555,15 @@ cmd_mckmsg(void)
 	mckernel_refresh_symbols(1);
 
 	kmsg_buf_str = MCK_SYMBOL(kmsg_buf) + MCK_MEMBER_OFFSET(kmsg_buf_str);
-	if (!readmem(MCK_SYMBOL(kmsg_buf) + MCK_MEMBER_OFFSET(kmsg_buf_head),
+	if (!mcreadmem(MCK_SYMBOL(kmsg_buf) + MCK_MEMBER_OFFSET(kmsg_buf_head),
 		     KVADDR, &kmsg_buf_head, sizeof(kmsg_buf_head),
 		     "kmsg_buf head", RETURN_ON_ERROR))
 		return;
-	if (!readmem(MCK_SYMBOL(kmsg_buf) + MCK_MEMBER_OFFSET(kmsg_buf_tail),
+	if (!mcreadmem(MCK_SYMBOL(kmsg_buf) + MCK_MEMBER_OFFSET(kmsg_buf_tail),
 		     KVADDR, &kmsg_buf_tail, sizeof(kmsg_buf_tail),
 		     "kmsg_buf tail", RETURN_ON_ERROR))
 		return;
-	if (!readmem(MCK_SYMBOL(kmsg_buf) + MCK_MEMBER_OFFSET(kmsg_buf_len),
+	if (!mcreadmem(MCK_SYMBOL(kmsg_buf) + MCK_MEMBER_OFFSET(kmsg_buf_len),
 		     KVADDR, &kmsg_buf_len, sizeof(kmsg_buf_len),
 		     "kmsg_buf len", RETURN_ON_ERROR))
 		return;
