@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2521b613_b6e4a563",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 255,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-05T05:32:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif (mcreadmem(ld.end, KVADDR, \u0026ld.start, sizeof(ld.start), \"first list element\",",
+      "revId": "dc52c8a11ac4a4998c66410a1e75c1929440b662",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bc3b3efb_b8fa73ad",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-05T05:32:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t    mcreadmem(rset + MCK_MEMBER_OFFSET(resource_set_thread_hash), KVADDR,",
+      "revId": "dc52c8a11ac4a4998c66410a1e75c1929440b662",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a22b68f7_3fbe7335",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1407,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-05T05:32:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!mcreadmem(process_vm + MCK_MEMBER_OFFSET(process_vm_address_space),",
+      "revId": "dc52c8a11ac4a4998c66410a1e75c1929440b662",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "428ffafe_0d08b4d4",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1412,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-05T05:32:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!mcreadmem(address_space + MCK_MEMBER_OFFSET(address_space_page_table),",
+      "revId": "dc52c8a11ac4a4998c66410a1e75c1929440b662",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08bde8e2_dec643bf",
+        "filename": "tools/crash/mckernel.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1418,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-05T05:32:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!mcreadmem(page_table, KVADDR, \u0026page_table, sizeof(page_table),",
+      "revId": "dc52c8a11ac4a4998c66410a1e75c1929440b662",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
