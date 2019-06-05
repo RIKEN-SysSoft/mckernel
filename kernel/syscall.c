@@ -3689,24 +3689,6 @@ SYSCALL_DECLARE(signalfd4)
 }
 
 #ifdef ENABLE_PERF
-int
-perf_counter_alloc(struct thread *thread)
-{
-	int ret = -EINVAL;
-	int i = 0;
-	const int counters = ihk_mc_perf_get_num_counters();
-
-	// find avail generic counter
-	for (i = 0; i < counters; i++) {
-		if(!(thread->pmc_alloc_map & (1 << i))) {
-			ret = i;
-			break;
-		}
-	}
-
-	return ret;
-}
-
 int perf_counter_set(struct mc_perf_event *event)
 {
 	int ret = 0;
@@ -4102,7 +4084,7 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 	event->child_count_total = 0;
 	event->parent = NULL;
 
-	switch(attr->type) {
+	switch (attr->type) {
 	case PERF_TYPE_HARDWARE :
 		val = ihk_mc_hw_event_map(attr->config);
 		break;
@@ -4204,7 +4186,9 @@ SYSCALL_DECLARE(perf_event_open)
 
 	event->pid = pid;
 
-	counter_idx = perf_counter_alloc(thread);
+	counter_idx = ihk_mc_perfctr_alloc(thread,
+			(attr->type == PERF_TYPE_HARDWARE &&
+			 attr->config == PERF_COUNT_HW_CPU_CYCLES));
 	if (counter_idx < 0) {
 		return counter_idx;
 	}

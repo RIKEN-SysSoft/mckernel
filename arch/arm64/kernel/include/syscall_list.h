@@ -111,7 +111,7 @@ SYSCALL_HANDLED(236, get_mempolicy)
 SYSCALL_HANDLED(237, set_mempolicy)
 SYSCALL_HANDLED(238, migrate_pages)
 SYSCALL_HANDLED(239, move_pages)
-#ifdef PERF_ENABLE
+#ifdef ENABLE_PERF
 SYSCALL_HANDLED(241, perf_event_open)
 #else // PERF_ENABLE
 SYSCALL_DELEGATED(241, perf_event_open)
