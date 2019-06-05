@@ -2847,7 +2847,7 @@ retry:
 	error = 0;
 out:
 	if (tt_pa) {
-		ihk_mc_free_pages(tt_pa, 1);
+		ihk_mc_free_pages(phys_to_virt((unsigned long)tt_pa), 1);
 	}
 	dkprintf("set_range_middle(%lx,%lx,%lx,%d): %d %lx\n",
 		 base, start, end, level, error, *ptep);
