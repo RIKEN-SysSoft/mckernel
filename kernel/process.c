@@ -2303,7 +2303,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	memset(stack, 0, minsz);
 
-	vrflag = VR_STACK | VR_DEMAND_PAGING;
+	vrflag = VR_STACK | VR_DEMAND_PAGING | VR_PRIVATE;
 	vrflag |= ((ap_flag & IHK_MC_AP_USER) ? VR_AP_USER : 0);
 	vrflag |= PROT_TO_VR_FLAG(pn->stack_prot);
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;

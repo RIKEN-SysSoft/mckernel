@@ -254,7 +254,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 #endif
 
 	/* Map, copy and update args and envs */
-	flags = VR_PROT_READ | VR_PROT_WRITE;
+	flags = VR_PROT_READ | VR_PROT_WRITE | VR_PRIVATE;
 	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
 	addr = vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
 	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;

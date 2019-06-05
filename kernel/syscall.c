@@ -2203,6 +2203,7 @@ SYSCALL_DECLARE(brk)
 #else /* POSTK_DEBUG_ARCH_DEP_60 */
 	vrflag = VR_PROT_READ | VR_PROT_WRITE;
 #endif /* POSTK_DEBUG_ARCH_DEP_60 */
+	vrflag |= VR_PRIVATE;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	old_brk_end_allocated = region->brk_end_allocated;
 	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
