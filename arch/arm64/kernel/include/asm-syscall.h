@@ -8,6 +8,7 @@
 #define SYSCALL_HANDLED(number, name)	DECLARATOR(number, name)
 #define SYSCALL_DELEGATED(number, name)	DECLARATOR(number, name)
 
+#include <config.h>
 #include <syscall_list.h>
 
 #undef DECLARATOR

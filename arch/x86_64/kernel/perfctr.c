@@ -17,6 +17,7 @@
 #include <mc_perf_event.h>
 #include <config.h>
 #include <ihk/debug.h>
+#include <process.h>
 
 extern unsigned int *x86_march_perfmap;
 extern int running_on_kvm(void);
@@ -409,6 +410,23 @@ int ihk_mc_perfctr_read_mask(unsigned long counter_mask, unsigned long *value)
 		}
 	}
 	return 0;
+}
+
+int ihk_mc_perfctr_alloc(struct thread *thread, int cpu_cycles)
+{
+	int ret = -EINVAL;
+	int i = 0;
+	const int counters = ihk_mc_perf_get_num_counters();
+
+	// find avail generic counter
+	for (i = 0; i < counters; i++) {
+		if (!(thread->pmc_alloc_map & (1 << i))) {
+			ret = i;
+			break;
+		}
+	}
+
+	return ret;
 }
 
 unsigned long ihk_mc_perfctr_read(int counter)
