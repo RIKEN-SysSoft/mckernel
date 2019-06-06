@@ -3102,6 +3102,26 @@ int overlay_blacklist(const char *path)
 	int ids[3];
 	struct overlay_blacklist_entry *entry;
 	int rc;
+	int pid = -1;
+	int tid = -1;
+
+	/* handle /proc/N/task/tid/ files */
+	if (sscanf(path, "/proc/self/task/%d/", &tid) == 1) {
+		pid = getpid();
+	}
+	else {
+		sscanf(path, "/proc/%d/task/%d/", &pid, &tid);
+	}
+
+	if (pid > 0 && tid > 0) {
+		char check_path[PATH_MAX];
+		struct stat sb;
+
+		sprintf(check_path, "/proc/mcos%d/%d/task/%d",
+			mcosid, pid, tid);
+		if (stat(check_path, &sb) < 0)
+			return -ENOENT;
+	}
 
 	if (strncmp(path, "/sys/", 5))
 		return 0;
@@ -3387,23 +3407,33 @@ int overlay_getdents(int sysnum, int fd, void *_dirp, unsigned int count)
 	int ret = 0, pos, linux_ret, mcpos;
 	unsigned short reclen;
 	struct overlay_fd *ofd = NULL, *ofd_iter;
+	int hide_orig = 0;
 
 	pthread_spin_lock(&overlay_fd_lock);
 	list_for_each_entry(ofd_iter, &overlay_fd_list, link) {
 		if (ofd_iter->fd == fd) {
 			ofd = ofd_iter;
+			__dprintf("found overlay cache entry (%s)\n",
+					ofd->path);
 			break;
 		}
 	}
 	pthread_spin_unlock(&overlay_fd_lock);
 
+	/* special case for /proc/N/task */
+	if (ofd && !strncmp(ofd->path, "/proc", 5) &&
+			!strncmp(ofd->path + strlen(ofd->path) - 4,
+				"task", 4)) {
+		hide_orig = 1;
+	}
+
 	/* not a directory we overlay, or not there yet */
-	if (ofd == NULL || ofd->linux_fd == -1) {
+	if (ofd == NULL || ofd->linux_fd == -1 || hide_orig) {
 		ret = syscall(sysnum, fd, _dirp, count);
 		if (ret == -1)
 			ret = -errno;
 	}
-	if (ofd == NULL || ret < 0)
+	if (ofd == NULL || ret < 0 || hide_orig)
 		return ret;
 
 	/* copy mckernel dirents to our buffer, in case of split getdents */
