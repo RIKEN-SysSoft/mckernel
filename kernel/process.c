@@ -1969,10 +1969,11 @@ retry:
 
 	attr = arch_vrflag_to_ptattr(range->flag | memobj_flag, reason, ptep);
 
-	/* Copy on write */
+	/* Copy on write. Excluding zeroobj because it's disabled. */
 	if (((range->flag & VR_PRIVATE) ||
 				((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE)))
-			&& ((!page && ((phys == NOPHYS) || range->memobj))
+		&& ((!page && ((phys == NOPHYS) ||
+					   (range->memobj && !(range->memobj->flags | MF_ZEROOBJ))))
 			   || (page && (page_is_in_memobj(page) ||
 					 page_is_multi_mapped(page))))) {
 
