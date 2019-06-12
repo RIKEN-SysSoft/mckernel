@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f5b7b9bd_99c20643",
+        "filename": "kernel/process.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1976,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-12T14:55:45Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t   (range-\u003ememobj \u0026\u0026 !(range-\u003ememobj-\u003eflags | MF_ZEROOBJ))))",
+      "revId": "2d9876f9d68155ae9c2fc411d6450168a3fe7386",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
