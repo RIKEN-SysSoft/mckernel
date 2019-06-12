@@ -2429,6 +2429,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 	unsigned long new_end_allocated;
 	void *p;
 	int rc;
+	size_t len;
+	int npages;
 
 	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
 		LARGE_PAGE_SIZE : PAGE_SIZE;
@@ -2445,17 +2447,27 @@ unsigned long extend_process_region(struct process_vm *vm,
 				(align_size - 1)) & align_mask;
 	}
 
+	len = new_end_allocated - end_allocated;
+	npages = len >> PAGE_SHIFT;
+
 	if (flag & VR_DEMAND_PAGING) {
 		p = 0;
 	}
 	else {
 		p = ihk_mc_alloc_aligned_pages_user(
-				(new_end_allocated - end_allocated) >> PAGE_SHIFT,
-				align_p2align, IHK_MC_AP_NOWAIT |
-				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ? IHK_MC_AP_USER : 0), end_allocated);
+				npages, align_p2align,
+				IHK_MC_AP_NOWAIT |
+				(!(vm->proc->mpol_flags & MPOL_NO_HEAP) ?
+				 IHK_MC_AP_USER : 0),
+				end_allocated);
 
 		if (!p) {
-			return end_allocated;
+			dkprintf("%s: warning: failed to allocate %d contiguous pages "
+					" (bytes: %lu, pgshift: %d), enabling demand paging\n",
+					 __func__, npages, len, align_p2align);
+
+			/* Give demand paging a chance */
+			flag |= VR_DEMAND_PAGING;
 		}
 	}
 
