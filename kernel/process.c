@@ -1855,6 +1855,8 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	uintptr_t phys;
 	struct page *page = NULL;
 	unsigned long memobj_flag = 0;
+	int private_range, patching_to_rdonly;
+	int devfile_or_hugetlbfs_or_premap, regfile_or_shm;
 
 	dkprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx)\n", vm, range->start, range->end, range->flag, fault_addr, reason);
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
@@ -1970,11 +1972,23 @@ retry:
 	attr = arch_vrflag_to_ptattr(range->flag | memobj_flag, reason, ptep);
 
 	/* Copy on write */
-	if (((range->flag & VR_PRIVATE) ||
-				((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE)))
-			&& ((!page && ((phys == NOPHYS) || range->memobj))
-			   || (page && (page_is_in_memobj(page) ||
-					 page_is_multi_mapped(page))))) {
+
+	private_range = (range->flag & VR_PRIVATE);
+	patching_to_rdonly =
+		((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE));
+
+	/* device file map, hugetlbfs file map, pre-mapped file map */
+	devfile_or_hugetlbfs_or_premap =
+		(!page &&
+		 (range->memobj && !(range->memobj->flags | MF_ZEROOBJ)));
+
+	/* regular file map, Sys V shared memory map */
+	regfile_or_shm =
+		(page &&
+		 (page_is_in_memobj(page) || page_is_multi_mapped(page)));
+
+	if ((private_range || patching_to_rdonly) &&
+	    (devfile_or_hugetlbfs_or_premap || regfile_or_shm)) {
 
 		if (!(attr & PTATTR_DIRTY)) {
 			attr &= ~PTATTR_WRITABLE;
