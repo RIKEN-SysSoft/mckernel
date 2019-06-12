@@ -1855,6 +1855,7 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	uintptr_t phys;
 	struct page *page = NULL;
 	unsigned long memobj_flag = 0;
+	int private_range, patching_to_rdonly, memobj_managed_private, memobj_managed_shared;
 
 	dkprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx)\n", vm, range->start, range->end, range->flag, fault_addr, reason);
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
@@ -1970,11 +1971,29 @@ retry:
 	attr = arch_vrflag_to_ptattr(range->flag | memobj_flag, reason, ptep);
 
 	/* Copy on write */
-	if (((range->flag & VR_PRIVATE) ||
-				((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE)))
-			&& ((!page && ((phys == NOPHYS) || range->memobj))
-			   || (page && (page_is_in_memobj(page) ||
-					 page_is_multi_mapped(page))))) {
+	private_range = (range->flag & VR_PRIVATE);
+	patching_to_rdonly =
+		((reason & PF_PATCH) && !(range->flag & VR_PROT_WRITE));
+
+	/* There's no such case? */
+	if (!page && phys == NOPHYS) {
+		kprintf("%s: no page and no physical page, %lx-%lx flag: %lx, fault_addr: %lx, reason: %lx)\n",
+			__func__, range->start, range->end, range->flag, fault_addr, reason);
+		error = -ENOMEM;
+		goto out;
+	}
+
+	/* Excluding zeroobj because it's partially disabled. */
+	memobj_managed_private =
+		(!page &&
+		 (range->memobj && !(range->memobj->flags | MF_ZEROOBJ)));
+
+	memobj_managed_shared =
+		(page &&
+		 (page_is_in_memobj(page) || page_is_multi_mapped(page)));
+
+	if ((private_range || patching_to_rdonly) &&
+	    (memobj_managed_private || memobj_managed_shared)) {
 
 		if (!(attr & PTATTR_DIRTY)) {
 			attr &= ~PTATTR_WRITABLE;
