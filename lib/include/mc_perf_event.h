@@ -275,6 +275,13 @@ struct mc_perf_event {
 	int 				nr_siblings;
 	int				pid;
 	struct list_head		group_entry;
+	int				use_tsc;
+	long long			base_user_tsc;
+	long long			stopped_user_tsc;
+	long long			user_ref_count;
+	long long			base_system_tsc;
+	long long			stopped_system_tsc;
+	long long			system_ref_count;
 };
 
 struct perf_event_mmap_page {
