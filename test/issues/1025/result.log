@@ -1,0 +1,248 @@
+*** C1025T01 ******************************************
+** Linux's result *************************************
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: none]
+REF_CPU_CYCLES         :        264921202
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: user]
+REF_CPU_CYCLES         :         17832698
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: kernel]
+REF_CPU_CYCLES         :        244078510
+
+** McKernel's result *************************************
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: none]
+REF_CPU_CYCLES         :        256293892
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: user]
+REF_CPU_CYCLES         :         13169620
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: kernel]
+REF_CPU_CYCLES         :        241964676
+
+*** C1025T02 ******************************************
+** Linux's result *************************************
+[ CASE-A , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48344686
+CPU_CYCLES             :         48343690
+[ CASE-A , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :           171028
+CPU_CYCLES             :           170145
+[ CASE-A , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48090562
+CPU_CYCLES             :         48090508
+
+** McKernel's result *************************************
+[ CASE-A , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48172148
+CPU_CYCLES             :         48171365
+[ CASE-A , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :            31888
+CPU_CYCLES             :            32740
+[ CASE-A , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48151740
+CPU_CYCLES             :         48150461
+
+*** C1025T03 ******************************************
+** Linux's result *************************************
+[ CASE-B , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48310548
+CPU_CYCLES             :         48309450
+[ CASE-B , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :           163124
+CPU_CYCLES             :           162153
+[ CASE-B , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48276696
+CPU_CYCLES             :         48276690
+
+** McKernel's result *************************************
+[ CASE-B , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48218900
+CPU_CYCLES             :         48218287
+[ CASE-B , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :            32148
+CPU_CYCLES             :            32844
+[ CASE-B , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48186488
+CPU_CYCLES             :         48185220
+
+*** C1025T04 ******************************************
+** Linux's result *************************************
+[ CASE-C , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+
+** McKernel's result *************************************
+[ CASE-C , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+
+*** C1025T05 ******************************************
+** Linux's result *************************************
+[ CASE-D , Leader fd : YES , exclude: none]
+** Result of 1st read
+REF_CPU_CYCLES         :         48499802
+CPU_CYCLES             :         48498919
+** Result of 2nd read
+REF_CPU_CYCLES         :         96777304
+CPU_CYCLES             :         96776326
+[ CASE-D , Leader fd : YES , exclude: user]
+** Result of 1st read
+REF_CPU_CYCLES         :           167570
+CPU_CYCLES             :           166704
+** Result of 2nd read
+REF_CPU_CYCLES         :           217594
+CPU_CYCLES             :           216830
+[ CASE-D , Leader fd : YES , exclude: kernel]
+** Result of 1st read
+REF_CPU_CYCLES         :         48250774
+CPU_CYCLES             :         48250565
+** Result of 2nd read
+REF_CPU_CYCLES         :         96441462
+CPU_CYCLES             :         96441007
+
+** McKernel's result *************************************
+[ CASE-D , Leader fd : YES , exclude: none]
+** Result of 1st read
+REF_CPU_CYCLES         :         48346428
+CPU_CYCLES             :         48347269
+** Result of 2nd read
+REF_CPU_CYCLES         :         96551736
+CPU_CYCLES             :         96551870
+[ CASE-D , Leader fd : YES , exclude: user]
+** Result of 1st read
+REF_CPU_CYCLES         :           130136
+CPU_CYCLES             :           133074
+** Result of 2nd read
+REF_CPU_CYCLES         :           134780
+CPU_CYCLES             :           137461
+[ CASE-D , Leader fd : YES , exclude: kernel]
+** Result of 1st read
+REF_CPU_CYCLES         :         48206996
+CPU_CYCLES             :         48204885
+** Result of 2nd read
+REF_CPU_CYCLES         :         96407244
+CPU_CYCLES             :         96404551
+
+*** C1025T06 ******************************************
+** Linux's result *************************************
+[ CASE-A , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         48324619
+REF_CPU_CYCLES         :         48323652
+[ CASE-A , Leader fd : NO , exclude: user]
+CPU_CYCLES             :           168179
+REF_CPU_CYCLES         :           167206
+[ CASE-A , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48171745
+REF_CPU_CYCLES         :         48171812
+
+** McKernel's result *************************************
+[ CASE-A , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         48160327
+REF_CPU_CYCLES         :         48160452
+[ CASE-A , Leader fd : NO , exclude: user]
+CPU_CYCLES             :            32309
+REF_CPU_CYCLES         :            31560
+[ CASE-A , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48114296
+REF_CPU_CYCLES         :         48115576
+
+*** C1025T07 ******************************************
+** Linux's result *************************************
+[ CASE-B , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         49395630
+REF_CPU_CYCLES         :         49394618
+[ CASE-B , Leader fd : NO , exclude: user]
+CPU_CYCLES             :           194801
+REF_CPU_CYCLES         :           193648
+[ CASE-B , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48196215
+REF_CPU_CYCLES         :         48196252
+
+** McKernel's result *************************************
+[ CASE-B , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         48264601
+REF_CPU_CYCLES         :         48265204
+[ CASE-B , Leader fd : NO , exclude: user]
+CPU_CYCLES             :            44083
+REF_CPU_CYCLES         :            43560
+[ CASE-B , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48201230
+REF_CPU_CYCLES         :         48202512
+
+*** C1025T08 ******************************************
+** Linux's result *************************************
+[ CASE-C , Leader fd : NO , exclude: none]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: user]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+
+** McKernel's result *************************************
+[ CASE-C , Leader fd : NO , exclude: none]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: user]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+
+*** C1025T09 ******************************************
+** Linux's result *************************************
+[ CASE-D , Leader fd : NO , exclude: none]
+** Result of 1st read
+CPU_CYCLES             :         48477899
+REF_CPU_CYCLES         :         48477052
+** Result of 2nd read
+CPU_CYCLES             :         96800343
+REF_CPU_CYCLES         :         96799248
+[ CASE-D , Leader fd : NO , exclude: user]
+** Result of 1st read
+CPU_CYCLES             :           172709
+REF_CPU_CYCLES         :           171834
+** Result of 2nd read
+CPU_CYCLES             :           230326
+REF_CPU_CYCLES         :           229086
+[ CASE-D , Leader fd : NO , exclude: kernel]
+** Result of 1st read
+CPU_CYCLES             :         48320966
+REF_CPU_CYCLES         :         48320974
+** Result of 2nd read
+CPU_CYCLES             :         96585104
+REF_CPU_CYCLES         :         96585320
+
+** McKernel's result *************************************
+[ CASE-D , Leader fd : NO , exclude: none]
+** Result of 1st read
+CPU_CYCLES             :         48395375
+REF_CPU_CYCLES         :         48396208
+** Result of 2nd read
+CPU_CYCLES             :         96600600
+REF_CPU_CYCLES         :         96601728
+[ CASE-D , Leader fd : NO , exclude: user]
+** Result of 1st read
+CPU_CYCLES             :           131682
+REF_CPU_CYCLES         :           130520
+** Result of 2nd read
+CPU_CYCLES             :           136455
+REF_CPU_CYCLES         :           135016
+[ CASE-D , Leader fd : NO , exclude: kernel]
+** Result of 1st read
+CPU_CYCLES             :         48204895
+REF_CPU_CYCLES         :         48206888
+** Result of 2nd read
+CPU_CYCLES             :         96405088
+REF_CPU_CYCLES         :         96407664

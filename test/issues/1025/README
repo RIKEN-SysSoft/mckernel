@@ -1,0 +1,53 @@
+【Issue#1025 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムでの確認
+C1025T01: PERF_COUNT_HW_REF_CPU_CYCLES 指定での計測
+	除外なし、ユーザモード除外、カーネルモード除外の3パターンを用いて
+	PERF_COUNT_HW_REF_CPU_CYCLES の計測を行う
+
+それぞれの計測において、PERF_COUNT_HW_REF_CPU_CYCLESが計測された場合にPASSとする
+
+2. perf_event_openでの基本機能の確認として、計測対象の演算処理と、
+Start, Stop, Reset, Readを以下のフローで実施する
+	CASE-A: 基本計測の確認
+		Start -> 演算 -> Stop -> Read
+	CASE-B: Stop機能の確認
+		Start -> 演算 -> Stop -> 演算 -> Read
+	CASE-C: Reset機能の確認
+		Start -> 演算 -> Stop -> Reset -> Read
+	CASE-D: Read機能の確認
+		Start -> 演算 -> Read -> 演算 -> Read
+
+また、本テストでは、perf_event_openで取得したfdをグループ化し、
+グループ内のリーダーとなるfdへの操作でグループ全体の操作が可能な
+PERF_FORMAT_GROUP の指定を用いる。
+その上で、PERF_COUNT_HW_REF_CPU_CYCLES の指定を行ったfdがリーダーの場合と
+リーダー以外の場合で検証を行う。
+本テストで実行するテストプログラム群(perf_case_X)では、1つ目の計測項目として
+指定したものがリーダーとなる。
+
+  C1025T02: CASE-A でPERF_FORMAT_GROUPのリーダーの場合
+  C1025T03: CASE-B でPERF_FORMAT_GROUPのリーダーの場合
+  C1025T04: CASE-C でPERF_FORMAT_GROUPのリーダーの場合
+  C1025T05: CASE-D でPERF_FORMAT_GROUPのリーダーの場合
+
+  C1025T06: CASE-A でPERF_FORMAT_GROUPのリーダー以外の場合
+  C1025T07: CASE-B でPERF_FORMAT_GROUPのリーダー以外の場合
+  C1025T08: CASE-C でPERF_FORMAT_GROUPのリーダー以外の場合
+  C1025T09: CASE-D でPERF_FORMAT_GROUPのリーダー以外の場合
+
+McKernelで計測したPERF_COUNT_HW_REF_CPU_CYCLESの計測値が、
+PERF_COUNT_HW_CPU_CYCLESの計測値の±10%以内に収まっている場合にPASSとする
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照
+すべての項目で、PERF_COUNT_HW_REF_CPU_CYCLESの計測値がPASSとする条件を
+満たしていることを確認する

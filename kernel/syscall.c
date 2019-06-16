@@ -3721,9 +3721,38 @@ unsigned long perf_event_read_value(struct mc_perf_event *event)
 	unsigned long rtn_count = 0;
 	unsigned long pmc_count = 0;
 	int counter_id = event->counter_id;
+	struct thread *thread = cpu_local_var(current);
+	unsigned long cur_user_tsc, cur_system_tsc;
+
+	if (event->stopped_user_tsc) {
+		cur_user_tsc = event->stopped_user_tsc;
+	}
+	else {
+		cur_user_tsc = thread->user_tsc;
+	}
+
+	if (event->stopped_system_tsc) {
+		cur_system_tsc = event->stopped_system_tsc;
+	}
+	else {
+		cur_system_tsc = thread->system_tsc;
+	}
 
 	if(event->pid == 0) {
-		pmc_count = ihk_mc_perfctr_read(counter_id) + event->attr.sample_freq;
+		if (event->use_tsc) {
+			if (!event->attr.exclude_user) {
+				pmc_count += cur_user_tsc -
+					event->base_user_tsc;
+			}
+			if (!event->attr.exclude_kernel) {
+				pmc_count += cur_system_tsc -
+					event->base_system_tsc;
+			}
+		}
+		else {
+			pmc_count = ihk_mc_perfctr_read(counter_id) +
+				event->attr.sample_freq;
+		}
 		pmc_count &= 0x000000ffffffffffL; // 40bit MASK
 	}
 
@@ -3741,14 +3770,14 @@ perf_event_read_group(struct mc_perf_event *event, unsigned long read_format, ch
 	struct mc_perf_event *leader = event->group_leader, *sub;
 	int n = 0, size = 0, ret;
 	unsigned long count;
-	unsigned long  values[5];
+	long long values[5];
 
 	count = perf_event_read_value(leader);
 
 	values[n++] = 1 + leader->nr_siblings;
 	values[n++] = count;
 
-	size = n * sizeof(unsigned long);
+	size = n * sizeof(long long);
 
 	if (copy_to_user(buf, values, size))
 		return -EFAULT;
@@ -3759,7 +3788,7 @@ perf_event_read_group(struct mc_perf_event *event, unsigned long read_format, ch
 		n = 0;
 		values[n++] = perf_event_read_value(sub);
 
-		size = n * sizeof(unsigned long);
+		size = n * sizeof(long long);
 
 		if (copy_to_user(buf + ret, values, size)) {
 			return -EFAULT;
@@ -3808,25 +3837,64 @@ void perf_start(struct mc_perf_event *event)
 	int counter_id;
 	unsigned long counter_mask = 0;
 	struct mc_perf_event *leader = event->group_leader, *sub;
+	struct thread *thread = cpu_local_var(current);
 
 	counter_id = leader->counter_id;
 	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
-		perf_counter_set(leader);
-		counter_mask |= 1UL << counter_id;
+		if (leader->use_tsc) {
+			if (leader->stopped_user_tsc) {
+				leader->user_ref_count +=
+					leader->stopped_user_tsc -
+					leader->base_user_tsc;
+				leader->stopped_user_tsc = 0;
+			}
+			leader->base_user_tsc = thread->user_tsc;
+
+			if (leader->stopped_system_tsc) {
+				leader->system_ref_count +=
+					leader->stopped_system_tsc -
+					leader->base_system_tsc;
+				leader->stopped_system_tsc = 0;
+			}
+			leader->base_system_tsc = thread->system_tsc;
+		}
+		else {
+			perf_counter_set(leader);
+			counter_mask |= 1UL << counter_id;
+		}
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
 		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
-			perf_counter_set(sub);
-			counter_mask |= 1UL << counter_id;
+			if (sub->use_tsc) {
+				if (sub->stopped_user_tsc) {
+					sub->user_ref_count +=
+						sub->stopped_user_tsc -
+						sub->base_user_tsc;
+					sub->stopped_user_tsc = 0;
+				}
+				sub->base_user_tsc = thread->user_tsc;
+
+				if (sub->stopped_system_tsc) {
+					sub->system_ref_count +=
+						sub->stopped_system_tsc -
+						sub->base_system_tsc;
+					sub->stopped_system_tsc = 0;
+				}
+				sub->base_system_tsc = thread->system_tsc;
+			}
+			else {
+				perf_counter_set(sub);
+				counter_mask |= 1UL << counter_id;
+			}
 		}
 	}
 
 	if (counter_mask) {
 		ihk_mc_perfctr_start(counter_mask);
-		cpu_local_var(current)->proc->perf_status = PP_COUNT;
 	}
+	thread->proc->perf_status = PP_COUNT;
 }
 
 void 
@@ -3834,16 +3902,60 @@ perf_reset(struct mc_perf_event *event)
 {
 	int counter_id;
 	struct mc_perf_event *leader = event->group_leader, *sub;
+	struct thread *thread = cpu_local_var(current);
 
 	counter_id = leader->counter_id;
 	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
-		ihk_mc_perfctr_reset(counter_id);
+		if (leader->use_tsc) {
+			if (leader->stopped_user_tsc) {
+				leader->base_user_tsc =
+					leader->stopped_user_tsc;
+			}
+			else {
+				leader->base_user_tsc = thread->user_tsc;
+			}
+			leader->user_ref_count = 0;
+
+			if (leader->stopped_system_tsc) {
+				leader->base_system_tsc =
+					leader->stopped_system_tsc;
+			}
+			else {
+				leader->base_system_tsc = thread->system_tsc;
+			}
+			leader->system_ref_count = 0;
+		}
+		else {
+			ihk_mc_perfctr_reset(counter_id);
+		}
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
 		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
-			ihk_mc_perfctr_reset(counter_id);
+			if (sub->use_tsc) {
+				if (sub->stopped_user_tsc) {
+					sub->base_user_tsc =
+						sub->stopped_user_tsc;
+				}
+				else {
+					sub->base_user_tsc = thread->user_tsc;
+				}
+				sub->user_ref_count = 0;
+
+				if (sub->stopped_system_tsc) {
+					sub->base_system_tsc =
+						sub->stopped_system_tsc;
+				}
+				else {
+					sub->base_system_tsc =
+						thread->system_tsc;
+				}
+				sub->system_ref_count = 0;
+			}
+			else {
+				ihk_mc_perfctr_reset(counter_id);
+			}
 		}
 	}
 }
@@ -3854,16 +3966,39 @@ perf_stop(struct mc_perf_event *event)
 	int counter_id;
 	unsigned long counter_mask = 0;
 	struct mc_perf_event *leader = event->group_leader, *sub;
+	struct thread *thread = cpu_local_var(current);
 
 	counter_id = leader->counter_id;
 	if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
-		counter_mask |= 1UL << counter_id;
+		if (leader->use_tsc) {
+			if (leader->stopped_user_tsc == 0) {
+				leader->stopped_user_tsc = thread->user_tsc;
+			}
+			if (leader->stopped_system_tsc == 0) {
+				leader->stopped_system_tsc = thread->system_tsc;
+			}
+		}
+		else {
+			counter_mask |= 1UL << counter_id;
+		}
 	}
 
 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
 		counter_id = sub->counter_id;
 		if (ihk_mc_perf_counter_mask_check(1UL << counter_id)) {
-			counter_mask |= 1UL << counter_id;
+			if (sub->use_tsc) {
+				if (sub->stopped_user_tsc == 0) {
+					sub->stopped_user_tsc =
+						thread->user_tsc;
+				}
+				if (sub->stopped_system_tsc == 0) {
+					sub->stopped_system_tsc =
+						thread->system_tsc;
+				}
+			}
+			else {
+				counter_mask |= 1UL << counter_id;
+			}
 		}
 	}
 
@@ -3918,8 +4053,7 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 		break;
         case PERF_EVENT_IOC_RESET:
 		// TODO: reset other process
-		ihk_mc_perfctr_set(counter_id, event->attr.sample_freq * -1);
-		event->count = 0L;
+		perf_reset(event);
 		break;
         case PERF_EVENT_IOC_REFRESH:
 		// TODO: refresh other process
@@ -4084,6 +4218,11 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 	event->count = 0L;
 	event->child_count_total = 0;
 	event->parent = NULL;
+
+	if (attr->type == PERF_TYPE_HARDWARE &&
+		attr->config == PERF_COUNT_HW_REF_CPU_CYCLES) {
+		event->use_tsc = 1;
+	}
 
 	switch (attr->type) {
 	case PERF_TYPE_HARDWARE :
