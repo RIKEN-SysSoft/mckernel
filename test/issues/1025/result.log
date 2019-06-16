@@ -1,0 +1,383 @@
+*** C1025T01 ******************************************
+** Linux's result *************************************
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: none]
+REF_CPU_CYCLES         :         48702706
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: user]
+REF_CPU_CYCLES         :           168870
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: kernel]
+REF_CPU_CYCLES         :         49006750
+
+** McKernel's result *************************************
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: none]
+REF_CPU_CYCLES         :         48348888
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: user]
+REF_CPU_CYCLES         :            26376
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: kernel]
+REF_CPU_CYCLES         :         48299336
+check user val: 48299336 is IN 44106075.0 - 53907425.0 [OK]
+check kernel val: 26376 is IN 0 - 482993.36 [OK]
+** C1025T01 PASSED
+
+*** C1025T02 ******************************************
+** Linux's result *************************************
+[ CASE-A , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48278048
+CPU_CYCLES             :         48276800
+[ CASE-A , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :           168220
+CPU_CYCLES             :           167331
+[ CASE-A , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48099844
+CPU_CYCLES             :         48099908
+
+** McKernel's result *************************************
+[ CASE-A , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48055856
+CPU_CYCLES             :         48057653
+[ CASE-A , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :            23228
+CPU_CYCLES             :            24162
+[ CASE-A , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48136760
+CPU_CYCLES             :         48135476
+check user val: 48136760 is IN 43289859.6 - 52909828.4 [OK]
+check kernel val: 23228 is IN 0 - 481367.60 [OK]
+** C1025T02 PASSED
+
+*** C1025T03 ******************************************
+** Linux's result *************************************
+[ CASE-B , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48305764
+CPU_CYCLES             :         48304544
+[ CASE-B , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :           166894
+CPU_CYCLES             :           166143
+[ CASE-B , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48155432
+CPU_CYCLES             :         48155611
+
+** McKernel's result *************************************
+[ CASE-B , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         48210204
+CPU_CYCLES             :         48209812
+[ CASE-B , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :            33752
+CPU_CYCLES             :            34632
+[ CASE-B , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         48186196
+CPU_CYCLES             :         48184922
+check user val: 48186196 is IN 43339888.8 - 52970975.2 [OK]
+check kernel val: 33752 is IN 0 - 481861.96 [OK]
+** C1025T03 PASSED
+
+*** C1025T04 ******************************************
+** Linux's result *************************************
+[ CASE-C , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+
+** McKernel's result *************************************
+[ CASE-C , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+[ CASE-C , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :                0
+CPU_CYCLES             :                0
+check user val: 0 is IN 0 - 0 [OK]
+check kernel val: 0 is IN 0 - 0 [OK]
+** C1025T04 PASSED
+
+*** C1025T05 ******************************************
+** Linux's result *************************************
+[ CASE-D , Leader fd : YES , exclude: none]
+** Result of 1st read
+REF_CPU_CYCLES         :         48485606
+CPU_CYCLES             :         48484681
+** Result of 2nd read
+REF_CPU_CYCLES         :         96799248
+CPU_CYCLES             :         96798188
+[ CASE-D , Leader fd : YES , exclude: user]
+** Result of 1st read
+REF_CPU_CYCLES         :           176124
+CPU_CYCLES             :           175577
+** Result of 2nd read
+REF_CPU_CYCLES         :           228618
+CPU_CYCLES             :           227814
+[ CASE-D , Leader fd : YES , exclude: kernel]
+** Result of 1st read
+REF_CPU_CYCLES         :         48358726
+CPU_CYCLES             :         48358743
+** Result of 2nd read
+REF_CPU_CYCLES         :         96681546
+CPU_CYCLES             :         96681778
+
+** McKernel's result *************************************
+[ CASE-D , Leader fd : YES , exclude: none]
+** Result of 1st read
+REF_CPU_CYCLES         :         48408464
+CPU_CYCLES             :         48409451
+** Result of 2nd read
+REF_CPU_CYCLES         :         96626600
+CPU_CYCLES             :         96626795
+[ CASE-D , Leader fd : YES , exclude: user]
+** Result of 1st read
+REF_CPU_CYCLES         :            63692
+CPU_CYCLES             :            66731
+** Result of 2nd read
+REF_CPU_CYCLES         :            68280
+CPU_CYCLES             :            71180
+[ CASE-D , Leader fd : YES , exclude: kernel]
+** Result of 1st read
+REF_CPU_CYCLES         :         48220760
+CPU_CYCLES             :         48218752
+** Result of 2nd read
+REF_CPU_CYCLES         :         96434132
+CPU_CYCLES             :         96431543
+check user val 1st: 48220760 is IN 43522853.4 - 53194598.6 [OK]
+check kernel val 1st: 63692 is IN 0 - 482207.60 [OK]
+check user val 2nd: 96434132 is IN 87013391.4 - 106349700.6 [OK]
+check kernel val 2nd: 68280 is IN 0 - 964341.32 [OK]
+** C1025T05 PASSED
+
+*** C1025T06 ******************************************
+** Linux's result *************************************
+[ CASE-E , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         96775588
+CPU_CYCLES             :         96773397
+[ CASE-E , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :           215774
+CPU_CYCLES             :           214170
+[ CASE-E , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         96512312
+CPU_CYCLES             :         96512453
+
+** McKernel's result *************************************
+[ CASE-E , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         96513016
+CPU_CYCLES             :         96512043
+[ CASE-E , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :            38668
+CPU_CYCLES             :            39554
+[ CASE-E , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         96485876
+CPU_CYCLES             :         96484030
+check user val: 96485876 is IN 86861080.8 - 106163543.2 [OK]
+check kernel val: 38668 is IN 0 - 964858.76 [OK]
+** C1025T06 PASSED
+
+*** C1025T07 ******************************************
+** Linux's result *************************************
+[ CASE-F , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         96477056
+CPU_CYCLES             :         96476039
+[ CASE-F , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :           230906
+CPU_CYCLES             :           230382
+[ CASE-F , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         97329388
+CPU_CYCLES             :         97329194
+
+** McKernel's result *************************************
+[ CASE-F , Leader fd : YES , exclude: none]
+REF_CPU_CYCLES         :         96566988
+CPU_CYCLES             :         96568136
+[ CASE-F , Leader fd : YES , exclude: user]
+REF_CPU_CYCLES         :            69912
+CPU_CYCLES             :            76826
+[ CASE-F , Leader fd : YES , exclude: kernel]
+REF_CPU_CYCLES         :         96368664
+CPU_CYCLES             :         96368752
+check user val: 96368664 is IN 87596449.2 - 107062326.8 [OK]
+check kernel val: 69912 is IN 0 - 963686.64 [OK]
+** C1025T07 PASSED
+
+*** C1025T08 ******************************************
+** Linux's result *************************************
+[ CASE-A , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         48337903
+REF_CPU_CYCLES         :         48336808
+[ CASE-A , Leader fd : NO , exclude: user]
+CPU_CYCLES             :           155695
+REF_CPU_CYCLES         :           154804
+[ CASE-A , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48066350
+REF_CPU_CYCLES         :         48066460
+
+** McKernel's result *************************************
+[ CASE-A , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         48157250
+REF_CPU_CYCLES         :         48157204
+[ CASE-A , Leader fd : NO , exclude: user]
+CPU_CYCLES             :            26358
+REF_CPU_CYCLES         :            25584
+[ CASE-A , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48112148
+REF_CPU_CYCLES         :         48113420
+check user val: 48113420 is IN 43259814.0 - 52873106.0 [OK]
+check kernel val: 25584 is IN 0 - 481134.20 [OK]
+** C1025T08 PASSED
+
+*** C1025T09 ******************************************
+** Linux's result *************************************
+[ CASE-B , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         48336894
+REF_CPU_CYCLES         :         48335872
+[ CASE-B , Leader fd : NO , exclude: user]
+CPU_CYCLES             :           169183
+REF_CPU_CYCLES         :           168350
+[ CASE-B , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48133748
+REF_CPU_CYCLES         :         48133618
+
+** McKernel's result *************************************
+[ CASE-B , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         48218368
+REF_CPU_CYCLES         :         48218888
+[ CASE-B , Leader fd : NO , exclude: user]
+CPU_CYCLES             :            25696
+REF_CPU_CYCLES         :            24948
+[ CASE-B , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         48184313
+REF_CPU_CYCLES         :         48185588
+check user val: 48185588 is IN 43320256.2 - 52946979.8 [OK]
+check kernel val: 24948 is IN 0 - 481855.88 [OK]
+** C1025T09 PASSED
+
+*** C1025T10 ******************************************
+** Linux's result *************************************
+[ CASE-C , Leader fd : NO , exclude: none]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: user]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+
+** McKernel's result *************************************
+[ CASE-C , Leader fd : NO , exclude: none]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: user]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+[ CASE-C , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :                0
+REF_CPU_CYCLES         :                0
+check user val: 0 is IN 0 - 0 [OK]
+check kernel val: 0 is IN 0 - 0 [OK]
+** C1025T10 PASSED
+
+*** C1025T11 ******************************************
+** Linux's result *************************************
+[ CASE-D , Leader fd : NO , exclude: none]
+** Result of 1st read
+CPU_CYCLES             :         54978176
+REF_CPU_CYCLES         :         54977338
+** Result of 2nd read
+CPU_CYCLES             :        109799402
+REF_CPU_CYCLES         :        109798520
+[ CASE-D , Leader fd : NO , exclude: user]
+** Result of 1st read
+CPU_CYCLES             :           160292
+REF_CPU_CYCLES         :           159432
+** Result of 2nd read
+CPU_CYCLES             :           220020
+REF_CPU_CYCLES         :           219258
+[ CASE-D , Leader fd : NO , exclude: kernel]
+** Result of 1st read
+CPU_CYCLES             :         48259560
+REF_CPU_CYCLES         :         48259562
+** Result of 2nd read
+CPU_CYCLES             :         96483428
+REF_CPU_CYCLES         :         96483348
+
+** McKernel's result *************************************
+[ CASE-D , Leader fd : NO , exclude: none]
+** Result of 1st read
+CPU_CYCLES             :         48409098
+REF_CPU_CYCLES         :         48409892
+** Result of 2nd read
+CPU_CYCLES             :         96626865
+REF_CPU_CYCLES         :         96627904
+[ CASE-D , Leader fd : NO , exclude: user]
+** Result of 1st read
+CPU_CYCLES             :           140114
+REF_CPU_CYCLES         :           138916
+** Result of 2nd read
+CPU_CYCLES             :           144955
+REF_CPU_CYCLES         :           143464
+[ CASE-D , Leader fd : NO , exclude: kernel]
+** Result of 1st read
+CPU_CYCLES             :         48217286
+REF_CPU_CYCLES         :         48219384
+** Result of 2nd read
+CPU_CYCLES             :         96430046
+REF_CPU_CYCLES         :         96432728
+check user val 1st: 48219384 is IN 43433605.8 - 53085518.2 [OK]
+check kernel val 1st: 138916 is IN 0 - 482193.84 [OK]
+check user val 2nd: 96432728 is IN 86835013.2 - 106131682.8 [OK]
+check kernel val 2nd: 143464 is IN 0 - 964327.28 [OK]
+** C1025T11 PASSED
+
+*** C1025T12 ******************************************
+** Linux's result *************************************
+[ CASE-E , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         96944381
+REF_CPU_CYCLES         :         96942274
+[ CASE-E , Leader fd : NO , exclude: user]
+CPU_CYCLES             :           229080
+REF_CPU_CYCLES         :           227370
+[ CASE-E , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         96520054
+REF_CPU_CYCLES         :         96519930
+
+** McKernel's result *************************************
+[ CASE-E , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         96520776
+REF_CPU_CYCLES         :         96521792
+[ CASE-E , Leader fd : NO , exclude: user]
+CPU_CYCLES             :            34244
+REF_CPU_CYCLES         :            33444
+[ CASE-E , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         96484405
+REF_CPU_CYCLES         :         96486260
+check user val: 96486260 is IN 86867937.0 - 106171923.0 [OK]
+check kernel val: 33444 is IN 0 - 964862.60 [OK]
+** C1025T12 PASSED
+
+*** C1025T13 ******************************************
+** Linux's result *************************************
+[ CASE-F , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         96702348
+REF_CPU_CYCLES         :         96701488
+[ CASE-F , Leader fd : NO , exclude: user]
+CPU_CYCLES             :           223611
+REF_CPU_CYCLES         :           223132
+[ CASE-F , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         96422282
+REF_CPU_CYCLES         :         96422040
+
+** McKernel's result *************************************
+[ CASE-F , Leader fd : NO , exclude: none]
+CPU_CYCLES             :         96494500
+REF_CPU_CYCLES         :         96495188
+[ CASE-F , Leader fd : NO , exclude: user]
+CPU_CYCLES             :           130952
+REF_CPU_CYCLES         :           125704
+[ CASE-F , Leader fd : NO , exclude: kernel]
+CPU_CYCLES             :         96371342
+REF_CPU_CYCLES         :         96371192
+check user val: 96371192 is IN 86779836.0 - 106064244.0 [OK]
+check kernel val: 125704 is IN 0 - 963711.92 [OK]
+** C1025T13 PASSED
