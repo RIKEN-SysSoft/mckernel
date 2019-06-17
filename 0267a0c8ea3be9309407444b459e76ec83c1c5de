@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "48bf8217_a2e8a4aa",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 760,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-06-17T07:49:03Z",
+      "side": 1,
+      "message": "(would have been simpler to remove the \u0027l\u0027 in the format string, but I guess this works too)",
+      "revId": "0267a0c8ea3be9309407444b459e76ec83c1c5de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
