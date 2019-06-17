@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "28f03af1_5213f6c6",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1980,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-06-17T07:46:31Z",
+      "side": 1,
+      "message": "(this is getting complicated enough that it is tempting to move this to a subfunction...)",
+      "revId": "86502fa6949244586e737ca4ae20f7e122301dc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
