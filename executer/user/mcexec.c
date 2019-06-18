@@ -194,6 +194,8 @@ static unsigned long heap_extension = -1;
 static int profile = 0;
 static int disable_sched_yield = 0;
 static long stack_premap = (2ULL << 20);
+static size_t heap_pgsize = -1; /* Set later to default hugepage size */
+static size_t stack_pgsize = -1; /* Set later to default hugepage size */
 static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
@@ -1395,9 +1397,9 @@ static int reduce_stack(struct rlimit *orig_rlim, char *argv[])
 void print_usage(char **argv)
 {
 #ifdef ADD_ENVS_OPTION
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [<-e ENV_NAME=value>...] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [-H (--heap-page-size=)size] [-S (--stack-page-size=)size] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
 #else /* ADD_ENVS_OPTION */
-	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield]  [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
+	fprintf(stderr, "usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold=N] [--enable-straight-map] [--extend-heap-by=N] [-s (--stack-premap=)[premap_size][,max]] [-H (--heap-page-size=)size] [-S (--stack-page-size=)size] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield]  [--enable-uti] [--uti-thread-rank=N] [--uti-use-last-cpu] [<mcos-id>] (program) [args...]\n", argv[0]);
 #endif /* ADD_ENVS_OPTION */
 }
 
@@ -1777,6 +1779,18 @@ static struct option mcexec_options[] = {
 		.val =		's',
 	},
 	{
+		.name =		"heap-page-size",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'H',
+	},
+	{
+		.name =		"stack-page-size",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'S',
+	},
+	{
 		.name =		"uti-thread-rank",
 		.has_arg =	required_argument,
 		.flag =		NULL,
@@ -2154,10 +2168,10 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:H:S:",
 				  mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:H:S:",
 				  mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
@@ -2197,6 +2211,14 @@ int main(int argc, char **argv)
 
 			case 'h':
 				heap_extension = atobytes(optarg);
+				break;
+
+			case 'H':
+				heap_pgsize = atobytes(optarg);
+				break;
+
+			case 'S':
+				stack_pgsize = atobytes(optarg);
 				break;
 
 #ifdef ADD_ENVS_OPTION
@@ -2632,6 +2654,8 @@ int main(int argc, char **argv)
 
 	desc->mpol_threshold = mpol_threshold;
 	desc->heap_extension = heap_extension;
+	desc->heap_pgsize = heap_pgsize;
+	desc->stack_pgsize = stack_pgsize;
 
 	desc->mpol_bind_mask = 0;
 	if (mpol_bind_nodes) {

@@ -17,6 +17,7 @@
 #define __HEADER_X86_COMMON_ARCH_MEMORY_H
 
 #include <ihk/types.h>
+#include <errno.h>
 
 #define KERNEL_CS_ENTRY    4
 #define KERNEL_DS_ENTRY    5
@@ -363,6 +364,17 @@ static inline int pgsize_to_tbllv(size_t pgsize)
 #endif
 	}
 	return 0;
+}
+
+static inline int pgsize_to_pgshift(size_t pgsize)
+{
+	switch (pgsize) {
+	case PTL1_SIZE:	return PTL1_SHIFT;
+	case PTL2_SIZE:	return PTL2_SHIFT;
+	case PTL3_SIZE:	return PTL3_SHIFT;
+	case PTL4_SIZE:	return PTL4_SHIFT;
+	default: return -EINVAL;
+	}
 }
 
 static inline size_t tbllv_to_pgsize(int level)
