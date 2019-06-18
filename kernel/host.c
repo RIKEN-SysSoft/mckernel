@@ -94,7 +94,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct vm_range *range;
 	unsigned long ap_flags;
 	enum ihk_mc_pt_attribute ptattr;
-	
+
 	n = p->num_sections;
 
 	vm->region.data_start = ULONG_MAX;
