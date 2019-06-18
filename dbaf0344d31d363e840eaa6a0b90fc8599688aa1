@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6b8cb24f_a58a75d9",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 1400,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-18T06:10:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"usage: %s [-c target_core] [-n nr_partitions] [\u003c-e ENV_NAME\u003dvalue\u003e...] [--mpol-threshold\u003dN] [--enable-straight-map] [--extend-heap-by\u003dN] [-s (--stack-premap\u003d)[premap_size][,max]] [-H (--heap-page-size\u003d)size] [-S (--stack-page-size\u003d)size] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield] [--enable-uti] [--uti-thread-rank\u003dN] [--uti-use-last-cpu] [\u003cmcos-id\u003e] (program) [args...]\\n\", argv[0]);",
+      "revId": "dbaf0344d31d363e840eaa6a0b90fc8599688aa1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2b0a6604_761b54f1",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 1402,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-06-18T06:10:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfprintf(stderr, \"usage: %s [-c target_core] [-n nr_partitions] [--mpol-threshold\u003dN] [--enable-straight-map] [--extend-heap-by\u003dN] [-s (--stack-premap\u003d)[premap_size][,max]] [-H (--heap-page-size\u003d)size] [-S (--stack-page-size\u003d)size] [--mpol-no-heap] [--mpol-no-bss] [--mpol-no-stack] [--mpol-shm-premap] [--disable-sched-yield]  [--enable-uti] [--uti-thread-rank\u003dN] [--uti-use-last-cpu] [\u003cmcos-id\u003e] (program) [args...]\\n\", argv[0]);",
+      "revId": "dbaf0344d31d363e840eaa6a0b90fc8599688aa1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
