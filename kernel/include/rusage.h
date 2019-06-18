@@ -3,6 +3,7 @@
 #ifndef __RUSAGE_H
 #define __RUSAGE_H
 
+#include <memory.h>
 #include <ihk/ihk_rusage.h>
 
 //#define RUSAGE_DEBUG
