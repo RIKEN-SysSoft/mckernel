@@ -9,10 +9,15 @@
 
 extern struct rusage_global rusage;
 
+static inline int rusage_pgsize_to_pgshift(size_t pgsize)
+{
+	return 63 - __builtin_clzl(pgsize);
+}
+
 static inline int rusage_pgsize_to_pgtype(size_t pgsize)
 {
 	int ret = IHK_OS_PGSIZE_4KB;
-	int pgshift = pgsize_to_pgshift(pgsize);
+	int pgshift = rusage_pgsize_to_pgshift(pgsize);
 
 	switch (pgshift) {
 	case 12:
