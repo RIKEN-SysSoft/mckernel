@@ -340,18 +340,6 @@ static const unsigned int  PTL1_CONT_COUNT = __PTL1_CONT_COUNT;
 
 #define PTE_FILEOFF		PTE_SPECIAL
 
-#ifdef CONFIG_ARM64_64K_PAGES
-# define USER_STACK_PREPAGE_SIZE	PAGE_SIZE
-# define USER_STACK_PAGE_MASK		PAGE_MASK
-# define USER_STACK_PAGE_P2ALIGN	PAGE_P2ALIGN
-# define USER_STACK_PAGE_SHIFT		PAGE_SHIFT
-#else
-# define USER_STACK_PREPAGE_SIZE	LARGE_PAGE_SIZE
-# define USER_STACK_PAGE_MASK		LARGE_PAGE_MASK
-# define USER_STACK_PAGE_P2ALIGN	LARGE_PAGE_P2ALIGN
-# define USER_STACK_PAGE_SHIFT		LARGE_PAGE_SHIFT
-#endif
-
 #define PT_ENTRIES		(PAGE_SIZE >> 3)
 
 #ifndef __ASSEMBLY__
@@ -584,6 +572,43 @@ static inline int pgsize_to_tbllv(size_t pgsize)
 		level = 1;
 	}
 	return level;
+}
+
+static inline int pgsize_to_pgshift(size_t pgsize)
+{
+	switch (pgsize) {
+	case PTL4_CONT_SIZE:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			return PLT4_CONT_SHIFT;
+		}
+		goto err;
+	case PTL4_SIZE:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			return PLT4_SHIFT;
+		}
+		goto err;
+	case PTL3_CONT_SIZE:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			return PTL3_CONT_SHIFT;
+		}
+		goto err;
+	case PTL3_SIZE:
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			return PTL3_SHIFT;
+		}
+		goto err;
+	case PTL2_CONT_SIZE:
+		return PTL2_CONT_SHIFT;
+	case PTL2_SIZE:
+		return PTL2_SHIFT;
+	case PTL1_CONT_SIZE:
+		return PTL1_CONT_SHIFT;
+	case PTL1_SIZE:
+		return PTL1_SHIFT;
+	default:
+err:
+		return -EINVAL;
+	}
 }
 
 static inline size_t tbllv_to_pgsize(int level)
