@@ -17,6 +17,7 @@
 #define __HEADER_X86_COMMON_ARCH_MEMORY_H
 
 #include <ihk/types.h>
+#include <errno.h>
 
 #define KERNEL_CS_ENTRY    4
 #define KERNEL_DS_ENTRY    5
@@ -161,11 +162,6 @@ typedef unsigned long pte_t;
 
 #define PM_PRESENT          PM_STATUS(4LL)
 #define PM_SWAP             PM_STATUS(2LL)
-
-#define USER_STACK_PREPAGE_SIZE	LARGE_PAGE_SIZE
-#define USER_STACK_PAGE_MASK	LARGE_PAGE_MASK
-#define USER_STACK_PAGE_P2ALIGN	LARGE_PAGE_P2ALIGN
-#define USER_STACK_PAGE_SHIFT	LARGE_PAGE_SHIFT
 
 /* For easy conversion, it is better to be the same as architecture's ones */
 enum ihk_mc_pt_attribute {
@@ -363,6 +359,17 @@ static inline int pgsize_to_tbllv(size_t pgsize)
 #endif
 	}
 	return 0;
+}
+
+static inline int pgsize_to_pgshift(size_t pgsize)
+{
+	switch (pgsize) {
+	case PTL1_SIZE:	return PTL1_SHIFT;
+	case PTL2_SIZE:	return PTL2_SHIFT;
+	case PTL3_SIZE:	return PTL3_SHIFT;
+	case PTL4_SIZE:	return PTL4_SHIFT;
+	default: return -EINVAL;
+	}
 }
 
 static inline size_t tbllv_to_pgsize(int level)
