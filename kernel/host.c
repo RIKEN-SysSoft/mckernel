@@ -94,12 +94,37 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct vm_range *range;
 	unsigned long ap_flags;
 	enum ihk_mc_pt_attribute ptattr;
-	
+
+	size_t pgsize;
+	unsigned long pgmask;
+	int pgshift;
+	int p2align;
+
 	n = p->num_sections;
 
 	vm->region.data_start = ULONG_MAX;
 	aout_base = (pn->reloc)? vm->region.map_end: 0;
 	for (i = 0; i < n; i++) {
+		if (pn->sections[i].len > PAGE_SIZE) {
+			if (arch_get_smaller_page_size(NULL,
+						       pn->sections[i].len +  1,
+						       &pgsize, &p2align)) {
+				kprintf("%s: Error: arch_get_smaller_page_size failed. size: %ld\n",
+					__func__, pn->sections[i].len);
+				goto err;
+			}
+			pgshift = pgsize_to_pgshift(pgsize);
+			pgmask = ~(pgsize - 1);
+
+			dkprintf("%s: i: %d, len: %ld, pgsize: %ld\n",
+				__func__, i, pn->sections[i].len, pgsize);
+		} else {
+			pgsize = PAGE_SIZE;
+			p2align = PAGE_P2ALIGN;
+			pgshift = PAGE_SHIFT;
+			pgmask = PAGE_MASK;
+		}
+
 		ap_flags = 0;
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
@@ -118,11 +143,15 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			pn->sections[i].vaddr += aout_base;
 			p->sections[i].vaddr = pn->sections[i].vaddr;
 		}
-		s = (pn->sections[i].vaddr) & PAGE_MASK;
+		s = (pn->sections[i].vaddr & pgmask);
 		e = (pn->sections[i].vaddr + pn->sections[i].len
-				+ PAGE_SIZE - 1) & PAGE_MASK;
-		range_npages = ((pn->sections[i].vaddr - s) +
-			pn->sections[i].filesz + PAGE_SIZE - 1) >> PAGE_SHIFT;
+				+ pgsize - 1) & pgmask;
+
+		/* Note that .bss is allocated later */
+		range_npages = (((pn->sections[i].vaddr - s) +
+				 pn->sections[i].filesz + pgsize - 1) >>
+				pgshift) << p2align;
+
 		flags = VR_NONE;
 		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
 		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
@@ -139,15 +168,17 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		}
 
 		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
-					pn->sections[i].len > LARGE_PAGE_SIZE ?
-					LARGE_PAGE_SHIFT : PAGE_SHIFT,
-					&range) != 0) {
+					     pgshift,
+					     &range) != 0) {
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
 		}
 
-		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
-						IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
+		if ((up_v =
+		     ihk_mc_alloc_aligned_pages_user(range_npages,
+						     p2align,
+						     IHK_MC_AP_NOWAIT |
+						     ap_flags, s)) == NULL) {
 			kprintf("ERROR: alloc pages for ELF section %i\n", i);
 			goto err;
 		}
@@ -209,8 +240,10 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 	vm->region.map_start = vm->region.map_end = TASK_UNMAPPED_BASE;
 
+	/* Align heap start to large page */
 	vm->region.brk_start = vm->region.brk_end =
-		(vm->region.data_end + LARGE_PAGE_SIZE - 1) & LARGE_PAGE_MASK;
+		(vm->region.data_end + pn->heap_pgsize - 1) &
+		~(pn->heap_pgsize - 1);
 
 	if (vm->region.brk_start >= vm->region.map_start) {
 		kprintf("%s: ERROR: data section is too large (end addr: %lx)\n",
