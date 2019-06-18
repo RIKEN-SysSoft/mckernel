@@ -16,6 +16,24 @@
       "revId": "0267a0c8ea3be9309407444b459e76ec83c1c5de",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "356476c3_9c5c0dae",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 760,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-06-18T08:28:57Z",
+      "side": 1,
+      "message": "I\u0027m sorry, I merged it already :)",
+      "parentUuid": "48bf8217_a2e8a4aa",
+      "revId": "0267a0c8ea3be9309407444b459e76ec83c1c5de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
