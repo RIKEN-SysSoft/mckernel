@@ -33,6 +33,24 @@
       "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe0af948_ef6efcb4",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2468,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-06-18T08:27:54Z",
+      "side": 1,
+      "message": "I agree with you, waiting for Balazs\u0027s vote.",
+      "parentUuid": "2c56c56c_5d3ff7ca",
+      "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
