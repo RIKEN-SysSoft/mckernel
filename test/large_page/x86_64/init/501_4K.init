@@ -1,2 +1,2 @@
 BOOTPARAM="-c 1-3 -m 4G"
-MCEXECOPT="-s 2M,1G -H 4K -S 2M"
+MCEXECOPT="-s 2M,4G -S 2M"
