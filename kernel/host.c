@@ -34,6 +34,7 @@
 #include <ihk/perfctr.h>
 #include <rusage_private.h>
 #include <ihk/debug.h>
+#include <memory.h>
 
 //#define DEBUG_PRINT_HOST
 
@@ -501,6 +502,30 @@ static int process_msg_prepare_process(unsigned long rphys)
 	memcpy_long(pn, p, sizeof(struct program_load_desc) 
 	            + sizeof(struct program_image_section) * n);
 
+	/* Set and check heap hugepage size */
+	if (pn->heap_pgsize == -1) {
+		pn->heap_pgsize =
+			(1UL << ihk_mc_get_linux_default_huge_page_shift());
+	}
+
+	if (pgsize_to_pgshift(pn->heap_pgsize) == -EINVAL) {
+		kprintf("%s: Error: invalid page size for heap: %ld\n",
+			__func__, pn->heap_pgsize);
+		goto err_wo_thread;
+	}
+
+	/* Set and check stack hugepage size */
+	if (pn->stack_pgsize == -1) {
+		pn->stack_pgsize =
+			(1UL << ihk_mc_get_linux_default_huge_page_shift());
+	}
+
+	if (pgsize_to_pgshift(pn->stack_pgsize) == -EINVAL) {
+		kprintf("%s: Error: invalid page size for heap: %ld\n",
+			__func__, pn->stack_pgsize);
+		goto err_wo_thread;
+	}
+
 	if ((thread = create_thread(p->entry,
 					(unsigned long *)&p->cpu_set,
 					sizeof(p->cpu_set))) == NULL) {
@@ -530,6 +555,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->nr_processes = pn->nr_processes;
 	proc->process_rank = pn->process_rank;
 	proc->heap_extension = pn->heap_extension;
+	proc->heap_pgsize = pn->heap_pgsize;
+	proc->stack_pgsize = pn->stack_pgsize;
 
 	/* Update NUMA binding policy if requested */
 	if (pn->mpol_bind_mask) {
@@ -593,10 +620,11 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	return 0;
 err:
+	destroy_thread(thread);
+err_wo_thread:
 	kfree(pn);
 	ihk_mc_unmap_virtual(p, npages);
 	ihk_mc_unmap_memory(NULL, phys, sz);
-	destroy_thread(thread);
 	return -ENOMEM;
 }
 

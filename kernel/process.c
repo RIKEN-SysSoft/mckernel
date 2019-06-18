@@ -36,6 +36,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
+#include <memory.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -2262,10 +2263,14 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	int stack_populated_size = 0;
 	int stack_align_padding = 0;
 
+	unsigned long pgsize = pn->stack_pgsize;
+	unsigned long pgmask = ~(pgsize - 1);
+	unsigned long pgshift = pgsize_to_pgshift(pgsize);
+	unsigned long p2align = pgshift - PAGE_SHIFT;
+
 	/* Create stack range */
-	end = STACK_TOP(&thread->vm->region) & USER_STACK_PAGE_MASK;
-	minsz = (pn->stack_premap + USER_STACK_PREPAGE_SIZE - 1) &
-		USER_STACK_PAGE_MASK;
+	end = STACK_TOP(&thread->vm->region) & pgmask;
+	minsz = (pn->stack_premap + pgsize - 1) & pgmask;
 	maxsz = (end - thread->vm->region.map_start) / 2;
 	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
 	if (size > maxsz) {
@@ -2274,13 +2279,14 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	else if (size < minsz) {
 		size = minsz;
 	}
-	size = (size + USER_STACK_PREPAGE_SIZE - 1) & USER_STACK_PAGE_MASK;
+	size = (size + pgsize - 1) & pgmask;
+
 	dkprintf("%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu\n",
 			__FUNCTION__,
 			pn->stack_premap,
 			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
 			minsz, size);
-	start = (end - size) & USER_STACK_PAGE_MASK;
+	start = (end - size) & pgmask;
 
 	/* Apply user allocation policy to stacks */
 	/* TODO: make threshold kernel or mcexec argument */
@@ -2291,9 +2297,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
-						USER_STACK_PAGE_P2ALIGN,
-						IHK_MC_AP_NOWAIT | ap_flag,
-						start);
+				p2align, IHK_MC_AP_NOWAIT | ap_flag, start);
 
 	if (!stack) {
 		kprintf("%s: error: couldn't allocate initial stack\n",
@@ -2309,7 +2313,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-			vrflag, NULL, 0, USER_STACK_PAGE_SHIFT, &range)) != 0) {
+			vrflag, NULL, 0, pgshift, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		kprintf("%s: error addding process memory range: %d\n", rc);
 		return rc;
@@ -2321,7 +2325,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 				    (void *)end, virt_to_phys(stack),
 				    arch_vrflag_to_ptattr(vrflag, PF_POPULATE,
 							  NULL),
-				    USER_STACK_PAGE_SHIFT, range, 0);
+				    pgshift, range, 0);
 	if (error) {
 		kprintf("init_process_stack:"
 				"set range %lx-%lx %lx failed. %d\n",
@@ -2430,14 +2434,19 @@ unsigned long extend_process_region(struct process_vm *vm,
 	void *p;
 	int rc;
 
+	size_t pgsize = vm->proc->heap_pgsize;
+	unsigned long pgmask = ~(pgsize - 1);
+	int pgshift = pgsize_to_pgshift(pgsize);
+	unsigned long p2align = pgshift - PAGE_SHIFT;
+
 	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
-		LARGE_PAGE_SIZE : PAGE_SIZE;
+		pgsize : PAGE_SIZE;
 	unsigned long align_mask = vm->proc->heap_extension > PAGE_SIZE ?
-		LARGE_PAGE_MASK : PAGE_MASK;
+		pgmask : PAGE_MASK;
 	unsigned long align_p2align = vm->proc->heap_extension > PAGE_SIZE ?
-		LARGE_PAGE_P2ALIGN : PAGE_P2ALIGN;
+		p2align : PAGE_P2ALIGN;
 	int align_shift = vm->proc->heap_extension > PAGE_SIZE ?
-		LARGE_PAGE_SHIFT : PAGE_SHIFT;
+		pgshift : PAGE_SHIFT;
 
 	new_end_allocated = (address + (PAGE_SIZE - 1)) & PAGE_MASK;
 	if ((new_end_allocated - end_allocated) < vm->proc->heap_extension) {
