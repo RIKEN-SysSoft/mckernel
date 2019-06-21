@@ -10,12 +10,52 @@
 #include <rusage.h>
 #include <ihk/ihk_monitor.h>
 #include <ihk/debug.h>
+#include <memory.h>
 
 #ifdef ENABLE_RUSAGE
 
 #define RUSAGE_OOM_MARGIN (2 * 1024 * 1024) // 2MB
 
 extern void eventfd(int type);
+
+static inline int rusage_pgsize_to_pgtype(size_t pgsize)
+{
+	int ret = IHK_OS_PGSIZE_4KB;
+	int pgshift = pgsize_to_pgshift(pgsize);
+
+	switch (pgshift) {
+	case 12:
+		ret = IHK_OS_PGSIZE_4KB;
+		break;
+	case 16:
+		ret = IHK_OS_PGSIZE_64KB;
+		break;
+	case 21:
+		ret = IHK_OS_PGSIZE_2MB;
+		break;
+	case 25:
+		ret = IHK_OS_PGSIZE_32MB;
+		break;
+	case 30:
+		ret = IHK_OS_PGSIZE_1GB;
+		break;
+	case 34:
+		ret = IHK_OS_PGSIZE_16GB;
+		break;
+	case 29:
+		ret = IHK_OS_PGSIZE_512MB;
+		break;
+	case 42:
+		ret = IHK_OS_PGSIZE_4TB;
+		break;
+	default:
+		kprintf("%s: Error: Unknown pgsize=%ld\n",
+			__func__, pgsize);
+		break;
+	}
+
+	return ret;
+}
 
 static inline void
 rusage_total_memory_add(unsigned long size)

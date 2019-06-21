@@ -586,6 +586,40 @@ static inline int pgsize_to_tbllv(size_t pgsize)
 	return level;
 }
 
+static inline int pgsize_to_pgshift(size_t pgsize)
+{
+	/* We need to use if instead of switch because
+	 * sometimes PTLX_CONT_SIZE == PTLX_SIZE
+	 */
+	if (pgsize == PTL4_CONT_SIZE) {
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			return PTL4_CONT_SHIFT;
+		}
+	} else if (pgsize == PTL4_SIZE) {
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 3) {
+			return PTL4_SHIFT;
+		}
+	} else if (pgsize == PTL3_CONT_SIZE) {
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			return PTL3_CONT_SHIFT;
+		}
+	} else if (pgsize == PTL3_SIZE) {
+		if (CONFIG_ARM64_PGTABLE_LEVELS > 2) {
+			return PTL3_SHIFT;
+		}
+	} else if (pgsize == PTL2_CONT_SIZE) {
+		return PTL2_CONT_SHIFT;
+	} else if (pgsize == PTL2_SIZE) {
+		return PTL2_SHIFT;
+	} else if (pgsize == PTL1_CONT_SIZE) {
+		return PTL1_CONT_SHIFT;
+	} else if (pgsize == PTL1_SIZE) {
+		return PTL1_SHIFT;
+	}
+
+	return -EINVAL;
+}
+
 static inline size_t tbllv_to_pgsize(int level)
 {
 	size_t pgsize = 0;
