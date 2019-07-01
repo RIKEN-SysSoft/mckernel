@@ -174,6 +174,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 	int err = -EIO;
 	struct mckernel_procfs_buffer *buf_top = NULL;
 	struct mckernel_procfs_buffer *buf_cur = NULL;
+	unsigned long irqflags;
 
 	dprintf("process_procfs_request: invoked.\n");
 
@@ -419,7 +420,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 	if (strcmp(p, "maps") == 0) {
 		struct vm_range *range;
 
-		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+		memory_range_read_lock(vm, &irqflags);
 
 		range = lookup_process_memory_range(vm, 0, -1);
 		while (range) {
@@ -455,13 +456,13 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 
 			if (ans < 0 || ans > count ||
 			    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
-				ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+				memory_range_read_unlock(vm, &irqflags);
 				goto err;
 			}
 			range = next_process_memory_range(vm, range);
 		}
 		
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_read_unlock(vm, &irqflags);
 		
 		ans = 0;
 		goto end;
@@ -484,7 +485,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 		start = (offset / sizeof(uint64_t)) << PAGE_SHIFT;
 		end = start + ((count / sizeof(uint64_t)) << PAGE_SHIFT);
 		
-		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+		memory_range_read_lock(vm, &irqflags);
 
 		while (start < end) {
 			*_buf = ihk_mc_pt_virt_to_pagemap(proc->vm->address_space->page_table, start);
@@ -494,7 +495,7 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			++_buf;
 		}
 
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_read_unlock(vm, &irqflags);
 		
 		dprintf("/proc/pagemap: 0x%lx - 0x%lx, count: %d\n", 
 			start, end, count);
@@ -526,14 +527,14 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			goto err;
 		}
 
-		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+		memory_range_read_lock(proc->vm, &irqflags);
 		range = lookup_process_memory_range(vm, 0, -1);
 		while (range) {
 			if(range->flag & VR_LOCKED)
 				lockedsize += range->end - range->start;
 			range = next_process_memory_range(vm, range);
 		}
-		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		memory_range_read_unlock(proc->vm, &irqflags);
 
 		cpu_bitmask = &bitmasks[bitmasks_offset];
 		bitmasks_offset += bitmap_scnprintf(cpu_bitmask,

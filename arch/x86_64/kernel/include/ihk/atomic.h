@@ -126,6 +126,22 @@ static inline void ihk_atomic64_inc(ihk_atomic64_t *v)
 	asm volatile ("lock incq %0" : "+m"(v->counter64));
 }
 
+static inline long ihk_atomic64_add_return(long i, ihk_atomic64_t *v)
+{
+	long __i;
+
+	__i = i;
+	asm volatile("lock xaddq %0, %1"
+		     : "+r" (i), "+m" (v->counter64)
+		     : : "memory");
+	return i + __i;
+}
+
+static inline long ihk_atomic64_sub_return(long i, ihk_atomic64_t *v)
+{
+	return ihk_atomic64_add_return(-i, v);
+}
+
 /***********************************************************************
  * others
  */
