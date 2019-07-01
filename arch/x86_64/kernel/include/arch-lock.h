@@ -592,4 +592,50 @@ static inline int irqflags_can_interrupt(unsigned long flags)
 	return !!(flags & 0x200);
 }
 
+struct ihk_rwlock {
+	union {
+		long lock;
+		struct {
+			unsigned int read;
+			int write;
+		};
+	} lock;
+};
+
+static inline void ihk_mc_rwlock_init(struct ihk_rwlock *rw)
+{
+	rw->lock.read = 0;
+	rw->lock.write = 1;
+}
+
+static inline int ihk_mc_read_trylock(struct ihk_rwlock *rw)
+{
+	ihk_atomic64_t *count = (ihk_atomic64_t *)rw;
+
+	if (ihk_atomic64_sub_return(1, count) >= 0)
+		return 1;
+	ihk_atomic64_inc(count);
+	return 0;
+}
+
+static inline int ihk_mc_write_trylock(struct ihk_rwlock *rw)
+{
+	ihk_atomic_t *count = (ihk_atomic_t *)&rw->lock.write;
+
+	if (ihk_atomic_dec_and_test(count))
+		return 1;
+	ihk_atomic_inc(count);
+	return 0;
+}
+
+static inline void ihk_mc_read_unlock(struct ihk_rwlock *rw)
+{
+	asm volatile("lock; incq %0" : "+m" (rw->lock.lock) : : "memory");
+}
+
+static inline void ihk_mc_write_unlock(struct ihk_rwlock *rw)
+{
+	asm volatile("lock; incl %0"
+		     : "+m" (rw->lock.write) : "i" (((1L) << 32)) : "memory");
+}
 #endif
