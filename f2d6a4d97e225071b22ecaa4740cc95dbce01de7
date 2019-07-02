@@ -51,6 +51,24 @@
       "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d14a6c63_e23db8ba",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2468,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-07-02T05:29:56Z",
+      "side": 1,
+      "message": "I also don\u0027t think printing this is necessary, especially because when you run many processes these messages might be gone anyway, what would be nicer though to have some kind of facility that would let mcexec report this kind of performance related events at termination time.. perhaps transferring profile info by default..?",
+      "parentUuid": "fe0af948_ef6efcb4",
+      "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
