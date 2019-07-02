@@ -16,6 +16,23 @@
       "revId": "db8debec2e0d3ada09d05190ac2ee848da6b8e32",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe1fdb16_2d01e70b",
+        "filename": "kernel/host.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-07-02T05:36:35Z",
+      "side": 1,
+      "message": "let\u0027s skip the .text and do the max_pg_size argument for the bss/data as well!",
+      "revId": "db8debec2e0d3ada09d05190ac2ee848da6b8e32",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
