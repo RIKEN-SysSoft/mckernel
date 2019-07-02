@@ -51,6 +51,24 @@
       "revId": "86502fa6949244586e737ca4ae20f7e122301dc0",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "db05000a_9723a352",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1981,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-07-02T05:57:34Z",
+      "side": 1,
+      "message": "sure using intermediate variables work for me, it\u0027s just kind of a pain with our style of coding with variables declared at the top of function.\nIt\u0027s also easier to have lazy evaluation by using a subfunction but that doesn\u0027t really matter here",
+      "parentUuid": "3c73ae8b_e7176df0",
+      "revId": "86502fa6949244586e737ca4ae20f7e122301dc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
