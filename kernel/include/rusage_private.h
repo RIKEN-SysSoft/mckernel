@@ -301,6 +301,23 @@ rusage_check_oom(int numa_id, unsigned long pages, int is_user)
 	return 0;
 }
 
+static inline int
+rusage_check_overmap(size_t len, int pgshift)
+{
+	int npages = 0, remain_pages = 0;
+
+	npages = (len + (1UL << pgshift) - 1) >> pgshift;
+	remain_pages = (rusage.total_memory - rusage.total_memory_usage)
+			>> pgshift;
+
+	if (npages > remain_pages) {
+		/* overmap */
+		return 1;
+	}
+
+	return 0;
+}
+
 static inline void
 rusage_page_add(int numa_id, unsigned long pages, int is_user)
 {

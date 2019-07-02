@@ -1,0 +1,33 @@
+【Issue#1183 動作確認】
+□ テスト内容
+1. MAP_HUGETLB指定時のmmapの動作確認
+C1183T01: MAP_HUGETLB 指定時、mmapサイズが利用可能メモリサイズを超える場合
+	それぞれのHugePageSize でmmapが失敗することを確認
+
+C1183T02: MAP_HUGETLB 指定時、mmapサイズが利用可能メモリサイズ以内の場合
+	それぞれのHugePageSize でmmapが成功することを確認
+
+C1183T03: MAP_HUGETLB 指定時、複数回mmapの合計サイズが利用可能メモリサイズを超える場合
+	それぞれのmmapが成功することを確認
+
+1. MAP_HUGETLB未指定時のmmapの動作確認
+C1183T04: MAP_HUGETLB 未指定時、mmapサイズが利用可能メモリサイズを超える場合
+	mmapが成功することを確認
+
+C1183T05: MAP_HUGETLB 未指定時、mmapサイズが利用可能メモリサイズ以内の場合
+	mmapが成功することを確認
+
+C1183T03: MAP_HUGETLB 未指定時、複数回mmapの合計サイズが利用可能メモリサイズを超える場合
+	それぞれのmmapが成功することを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。
