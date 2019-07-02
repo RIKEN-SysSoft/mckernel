@@ -69,6 +69,24 @@
       "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "08e0c889_95b55753",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2468,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-07-02T05:55:49Z",
+      "side": 1,
+      "message": "then maybe make this optional and disable by default? I just think this doesn\u0027t go well with what mckernel aims to be so needs to be obvious; some warning at the end of mcexec might be enough if that\u0027s possible but option might be faster to do",
+      "parentUuid": "d14a6c63_e23db8ba",
+      "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
