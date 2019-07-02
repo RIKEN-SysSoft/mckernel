@@ -59,6 +59,23 @@
     },
     {
       "key": {
+        "uuid": "105d1fb9_870d3866",
+        "filename": "kernel/process.c",
+        "patchSetId": 15
+      },
+      "lineNbr": 2301,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-07-02T05:18:33Z",
+      "side": 1,
+      "message": "it would be also nice to consolidate the allocation code for stack,data,bss,heap into a function",
+      "revId": "e571b874e51e5320711feb0e4ea3b5fe40cae5ca",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "fcf9d9fc_cdf829cc",
         "filename": "kernel/process.c",
         "patchSetId": 15
