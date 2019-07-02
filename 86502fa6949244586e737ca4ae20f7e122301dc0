@@ -34,6 +34,23 @@
       "revId": "86502fa6949244586e737ca4ae20f7e122301dc0",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3c73ae8b_e7176df0",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1981,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-07-02T05:22:21Z",
+      "side": 1,
+      "message": "how about just splitting the statement into a smaller number of variables/statements that are more descriptive? I don\u0027t think we need to move this into a function, that wouldn\u0027t help better reading/understanding the code",
+      "revId": "86502fa6949244586e737ca4ae20f7e122301dc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
