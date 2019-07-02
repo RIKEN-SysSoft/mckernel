@@ -33,6 +33,52 @@
       "revId": "e571b874e51e5320711feb0e4ea3b5fe40cae5ca",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e9e727d_487bd8e4",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 15
+      },
+      "lineNbr": 2217,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-07-02T05:14:47Z",
+      "side": 1,
+      "message": "rename to max_heap_pgsize",
+      "range": {
+        "startLine": 2217,
+        "startChar": 4,
+        "endLine": 2217,
+        "endChar": 15
+      },
+      "revId": "e571b874e51e5320711feb0e4ea3b5fe40cae5ca",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fcf9d9fc_cdf829cc",
+        "filename": "kernel/process.c",
+        "patchSetId": 15
+      },
+      "lineNbr": 2466,
+      "author": {
+        "id": 1015205
+      },
+      "writtenOn": "2019-07-02T05:14:47Z",
+      "side": 1,
+      "message": "fall back to smaller page sizes if max requested can not be fulfilled",
+      "range": {
+        "startLine": 2466,
+        "startChar": 6,
+        "endLine": 2466,
+        "endChar": 7
+      },
+      "revId": "e571b874e51e5320711feb0e4ea3b5fe40cae5ca",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
