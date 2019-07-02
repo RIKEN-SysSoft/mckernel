@@ -1,0 +1,126 @@
+*** C1183T01 start *******************************
+** over-mapping with MAP_HUGETLB (expect mmap FAIL)
+pageshift: 0
+*** total_mapsize: 11 GB, mapsize: 11 pgshift: 0
+** mmap 11 GB: failed
+** [OK]
+pageshift: 16
+*** total_mapsize: 11 GB, mapsize: 11 pgshift: 16
+** mmap 11 GB: failed
+** [OK]
+pageshift: 21
+*** total_mapsize: 11 GB, mapsize: 11 pgshift: 21
+** mmap 11 GB: failed
+** [OK]
+pageshift: 25
+*** total_mapsize: 11 GB, mapsize: 11 pgshift: 25
+** mmap 11 GB: failed
+** [OK]
+pageshift: 30
+*** total_mapsize: 11 GB, mapsize: 11 pgshift: 30
+** mmap 11 GB: failed
+** [OK]
+*** C1183T01: PASSED
+
+*** C1183T02 start *******************************
+** within-mapping with MAP_HUGETLB (expect mmap SUCCESS)
+pageshift: 0
+*** total_mapsize: 5 GB, mapsize: 5 pgshift: 0
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+pageshift: 16
+*** total_mapsize: 5 GB, mapsize: 5 pgshift: 16
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+pageshift: 21
+*** total_mapsize: 5 GB, mapsize: 5 pgshift: 21
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+pageshift: 25
+*** total_mapsize: 5 GB, mapsize: 5 pgshift: 25
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+pageshift: 30
+*** total_mapsize: 5 GB, mapsize: 5 pgshift: 30
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+*** C1183T02: PASSED
+
+*** C1183T03 start *******************************
+** multi within-mapping with MAP_HUGETLB
+pageshift: 0
+*** total_mapsize: 40 GB, mapsize: 5 pgshift: 0
+** mmap 5 GB: succeed
+** mmap 5 GB: failed
+** [OK]
+pageshift: 16
+*** total_mapsize: 40 GB, mapsize: 5 pgshift: 16
+** mmap 5 GB: succeed
+** mmap 5 GB: failed
+** [OK]
+pageshift: 21
+*** total_mapsize: 40 GB, mapsize: 5 pgshift: 21
+** mmap 5 GB: succeed
+** mmap 5 GB: failed
+** [OK]
+pageshift: 25
+*** total_mapsize: 40 GB, mapsize: 5 pgshift: 25
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+pageshift: 30
+*** total_mapsize: 40 GB, mapsize: 5 pgshift: 30
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+*** C1183T03: PASSED
+
+*** C1183T04 start *******************************
+** over-mapping without MAP_HUGETLB (expect mmap SUCCESS)
+*** total_mapsize: 11 GB, mapsize: 11 pgshift: -1
+** mmap 11 GB: succeed
+** all mmaps succeeded
+** [OK]
+*** C1183T04: PASSED
+
+*** C1183T05 start *******************************
+** within-mapping without MAP_HUGETLB (expect mmap SUCCESS)
+*** total_mapsize: 5 GB, mapsize: 5 pgshift: -1
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+*** C1183T05: PASSED
+
+*** C1183T06 start *******************************
+** multi within-mapping with MAP_HUGETLB (expect mmap SUCCESS)
+*** total_mapsize: 40 GB, mapsize: 5 pgshift: -1
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** mmap 5 GB: succeed
+** all mmaps succeeded
+** [OK]
+*** C1183T06: PASSED

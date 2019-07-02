@@ -31,6 +31,7 @@
 #include <page.h>
 #include <limits.h>
 #include <syscall.h>
+#include <rusage_private.h>
 #include <ihk/debug.h>
 
 void terminate_mcexec(int, int);
@@ -1701,6 +1702,12 @@ SYSCALL_DECLARE(mmap)
 		}
 
 		pgsize = (size_t)1 << ((flags >> MAP_HUGE_SHIFT) & 0x3F);
+
+		if (rusage_check_overmap(len0,
+				(flags >> MAP_HUGE_SHIFT) & 0x3F)) {
+			error = -ENOMEM;
+			goto out;
+		}
 	}
 
 #define	VALID_DUMMY_ADDR	((region->user_start + PTL3_SIZE - 1) & ~(PTL3_SIZE - 1))
