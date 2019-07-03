@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c6529304_ffa8655b",
+        "filename": "kernel/process.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1858,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-03T08:57:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tint private_range, patching_to_rdonly, memobj_managed_private, memobj_managed_shared;",
+      "revId": "d67f796997302a0699e37b2a7001e8bf1dec04d5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b43e43f4_d29dea1f",
+        "filename": "kernel/process.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1980,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-03T08:57:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: no page and no physical page, %lx-%lx flag: %lx, fault_addr: %lx, reason: %lx)\\n\",",
+      "revId": "d67f796997302a0699e37b2a7001e8bf1dec04d5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ea7a29dd_f3a23daa",
+        "filename": "kernel/process.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1981,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-03T08:57:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__func__, range-\u003estart, range-\u003eend, range-\u003eflag, fault_addr, reason);",
+      "revId": "d67f796997302a0699e37b2a7001e8bf1dec04d5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
