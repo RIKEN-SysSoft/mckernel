@@ -87,6 +87,24 @@
       "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5ab06e50_a40ab7cd",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2468,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-03T07:49:01Z",
+      "side": 1,
+      "message": "I think reporting by mcexec is better. I\u0027ve created https://postpeta.pccluster.org/redmine/issues/1333 and let me go with as is.",
+      "parentUuid": "08e0c889_95b55753",
+      "revId": "f2d6a4d97e225071b22ecaa4740cc95dbce01de7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
