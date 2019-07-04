@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "703ed8b4_34168262",
+        "filename": "test/rusage/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 242,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-04T04:33:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf \"*** ./match.pl ${testname}.log (kmsg) to confirm all adds have the matching subs.\\n\"",
+      "revId": "52198b6e3d9294bd55aafebc98cec567394dc62c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c12d80f9_e325ce42",
+        "filename": "test/rusage/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-04T04:33:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf \"*** Look at ${testname}.log (kmsg) to confirm memory_stat_*[*] returned to zero when the last thread exits.\\n\"",
+      "revId": "52198b6e3d9294bd55aafebc98cec567394dc62c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
