@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0e2b0129_a1b5650b",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2010,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-04T04:33:11Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (rusage_memory_stat_add(range, phys, pgsize, pgsize)) {",
+      "revId": "0b485d02a49bc74a6a27b2b2ef4c705b4c185b72",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "211b614b_0d29f4cc",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2011,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-04T04:33:11Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%lx+,%s: COW-source pointed-to by only fileobj, calling memory_stat_rss_add(),pgsize\u003d%ld\\n\",",
+      "revId": "0b485d02a49bc74a6a27b2b2ef4c705b4c185b72",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
