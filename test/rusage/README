@@ -119,3 +119,5 @@ file map,num_threads=1 [OK]
 anon mmap@numa#1 [OK]
 
 200: Test ihk_os_getrusage(), user time per CPU
+
+300: Private-map /dev/fb0
