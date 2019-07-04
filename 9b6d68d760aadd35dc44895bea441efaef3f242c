@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e6f9016f_c07d0bfd",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3727,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-04T09:17:30Z",
+      "side": 1,
+      "message": "sample_freqの使われ方を教えて下さい。",
+      "range": {
+        "startLine": 3727,
+        "startChar": 0,
+        "endLine": 3727,
+        "endChar": 32
+      },
+      "revId": "9b6d68d760aadd35dc44895bea441efaef3f242c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
