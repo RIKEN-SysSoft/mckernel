@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "aeecd875_dfa659fb",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 261,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-04T06:33:16Z",
+      "side": 1,
+      "message": "p-\u003eargs_lenは、argv[]を含んでいるのではなかったでしょうか。\nflatten_stringで以下のフォーマットになっているので。\noffset to string0:offset to string1:...:0:string0:string1:...",
+      "range": {
+        "startLine": 261,
+        "startChar": 0,
+        "endLine": 261,
+        "endChar": 66
+      },
+      "revId": "a94e63a655509b0ae9e12c55610ad138846c02b7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
