@@ -9,6 +9,7 @@ testopt=""
 kill="n"
 dryrun="n"
 sleepopt="0.4"
+sudo=
 
 echo Executing ${testname}
 
@@ -95,9 +96,9 @@ case ${testname} in
 	cp $bn_mck ./file
 	;;
     005)
-	echo ssh wallaby15.aics-sys.riken.jp ${HOME}/project/src/verbs/rdma_wr -p 10000&
+	echo ssh wallaby15 ${HOME}/project/src/verbs/rdma_wr -p 10000&
 	read -p "Run rdma_wr on wallaby15 and enter the port number." port
-	testopt="-s wallaby15.aics-sys.riken.jp -p ${port}"
+	testopt="-s wallaby15 -p ${port}"
 	;;
     006)
 	mcexecopt="--mpol-shm-premap"
@@ -145,6 +146,10 @@ case ${testname} in
 	;;
     200)
 	bootopt="-c 1,2,3 -m 256M"
+	;;
+    300)
+	bootopt="-c 1,2,3 -m 256M"
+	sudo="sudo"
 	;;
     *)
 	echo Unknown test case
@@ -211,7 +216,7 @@ else
 	    grep user ./${testname}.log
 	    ;;
 	*)
-	    ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_mck} ${testopt}
+	    ${sudo} ${MCK_DIR}/bin/mcexec ${mcexecopt} ./${bn_mck} ${testopt}
 	    sudo ${MCK_DIR}/sbin/ihkosctl 0 kmsg > ./${testname}.log
     esac
 fi
@@ -234,8 +239,8 @@ case ${testname} in
 	printf "\"All tests finished\" is shown\n"
 	;;
     *)
-	printf "*** cat ${testname}.log (kmsg) > ./match.pl to confirm there's no stray add/sub.\n"
-	printf "*** Look ${testname}.log (kmsg) to confirm memory_stat_*[*] returned to zero when the last thread exits.\n"
+	printf "*** ./match.pl ${testname}.log (kmsg) to confirm all adds have the matching subs.\n"
+	printf "*** Look at ${testname}.log (kmsg) to confirm memory_stat_*[*] returned to zero when the last thread exits.\n"
 	;;
 esac
 
