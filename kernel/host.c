@@ -80,6 +80,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	int i, n, argc, envc, args_envs_npages = 0;
 	char **env;
 	int range_npages;
+	int argenv_page_count = 0;
 	void *up_v;
 	unsigned long addr;
 	unsigned long flags;
@@ -256,10 +257,24 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	/* Map, copy and update args and envs */
 	flags = VR_PROT_READ | VR_PROT_WRITE | VR_PRIVATE;
 	flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-	addr = vm->region.map_start - PAGE_SIZE * SCD_RESERVED_COUNT;
-	e = addr + PAGE_SIZE * ARGENV_PAGE_COUNT;
+	if (!args) {
+		map_size = ((uintptr_t)p->args & (PAGE_SIZE - 1)) + p->args_len;
+		argenv_page_count += (map_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	}
+	else {
+		argenv_page_count += (args_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	}
+	if (!envs) {
+		map_size = ((uintptr_t)p->envs & (PAGE_SIZE - 1)) + p->envs_len;
+		argenv_page_count += (map_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	}
+	else {
+		argenv_page_count = (envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	}
+	addr = vm->region.map_start - PAGE_SIZE * argenv_page_count;
+	e = addr + PAGE_SIZE * argenv_page_count;
 
-	if((args_envs = ihk_mc_alloc_pages_user(ARGENV_PAGE_COUNT,
+	if ((args_envs = ihk_mc_alloc_pages_user(argenv_page_count,
 	                                        IHK_MC_AP_NOWAIT, -1)) == NULL){
 		kprintf("ERROR: allocating pages for args/envs\n");
 		goto err;
@@ -267,10 +282,10 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	args_envs_p = virt_to_phys(args_envs);
 
 	dkprintf("%s: args_envs: %d pages\n",
-			 __FUNCTION__, ARGENV_PAGE_COUNT);
+			__func__, argenv_page_count);
 	if(add_process_memory_range(vm, addr, e, args_envs_p,
 				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
-		ihk_mc_free_pages_user(args_envs, ARGENV_PAGE_COUNT);
+		ihk_mc_free_pages_user(args_envs, argenv_page_count);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
 	}

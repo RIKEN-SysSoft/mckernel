@@ -26,8 +26,6 @@
 #define REQUEST_PAGE_COUNT              16
 #define RESPONSE_PAGE_COUNT             16
 #define DOORBELL_PAGE_COUNT             1
-#define ARGENV_PAGE_COUNT               8
-#define SCD_RESERVED_COUNT              ARGENV_PAGE_COUNT
 
 #define SCD_MSG_PREPARE_PROCESS         0x1
 #define SCD_MSG_PREPARE_PROCESS_ACKED   0x2
