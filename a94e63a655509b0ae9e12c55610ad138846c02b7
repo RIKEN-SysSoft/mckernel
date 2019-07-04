@@ -22,6 +22,30 @@
       "revId": "a94e63a655509b0ae9e12c55610ad138846c02b7",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "90f22406_3cfc3362",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 261,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-04T06:36:38Z",
+      "side": 1,
+      "message": "すみません。自己完結しました。elseの方を見るべきでした。",
+      "parentUuid": "aeecd875_dfa659fb",
+      "range": {
+        "startLine": 261,
+        "startChar": 0,
+        "endLine": 261,
+        "endChar": 66
+      },
+      "revId": "a94e63a655509b0ae9e12c55610ad138846c02b7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
