@@ -1,0 +1,33 @@
+*** C01 start *******************************
+execute:  mcexec ls -ld /proc/*/* &> /dev/null
+*** C117401: PASSED
+
+*** C02 start *******************************
+execl01_child    1  TPASS  :  execve01_child executed
+execve01    0  TINFO  :  Child process returned TPASS
+*** C1174T02: PASSED (ok:2)
+
+*** C03 start *******************************
+execve02    1  TPASS  :  execve() failed expectedly: TEST_ERRNO=EACCES(13): Permission denied
+execve02    0  TINFO  :  Child process returned TPASS
+*** C1174T03: PASSED (ok:2)
+
+*** C04 start *******************************
+execve03    1  TPASS  :  execve failed as expected: TEST_ERRNO=ENAMETOOLONG(36): File name too long
+execve03    2  TPASS  :  execve failed as expected: TEST_ERRNO=ENOENT(2): No such file or directory
+execve03    3  TPASS  :  execve failed as expected: TEST_ERRNO=ENOTDIR(20): Not a directory
+execve03    4  TPASS  :  execve failed as expected: TEST_ERRNO=EFAULT(14): Bad address
+execve03    5  TPASS  :  execve failed as expected: TEST_ERRNO=EACCES(13): Permission denied
+execve03    6  TPASS  :  execve failed as expected: TEST_ERRNO=ENOEXEC(8): Exec format error
+*** C1174T04: PASSED (ok:6)
+
+*** C05 start *******************************
+execve05    1  TPASS  :  Test DONE, pid 2663, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 2694, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 2724, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 2754, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 2784, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 2814, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 2844, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+execve05    1  TPASS  :  Test DONE, pid 2874, -- /home/satoken/ltp/testcases/bin/execve05 0 /home/satoken/ltp/testcases/bin/execve05 /home/satoken/ltp/testcases/bin/execve05
+*** C1174T05: PASSED (ok:8)
