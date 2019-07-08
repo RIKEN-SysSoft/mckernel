@@ -85,7 +85,7 @@ sudo reboot
 You will need the following packages installed:
 
 ~~~~
-sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel
+sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git
 ~~~~
 
 Grant read permission to the System.map file of your kernel version:
@@ -101,7 +101,7 @@ Clone the source code:
 ~~~~
 mkdir -p ~/src/ihk+mckernel/
 cd ~/src/ihk+mckernel/
-git clone --recursive git@github.com:RIKEN-SysSoft/mckernel.git
+git clone --recursive https://github.com/RIKEN-SysSoft/mckernel.git
 ~~~~
 
 Configure and compile:
