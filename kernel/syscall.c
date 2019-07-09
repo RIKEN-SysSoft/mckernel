@@ -4103,7 +4103,7 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 		goto out;
 	}
 
-	if (val == 0) {
+	if (!ihk_mc_validate_event(val)) {
 		ret = -EINVAL;
 		goto out;
 	}
