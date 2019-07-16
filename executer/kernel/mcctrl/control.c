@@ -585,6 +585,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	struct process_list_item *pli;
 	struct process_list_item *pli_next = NULL;
 	struct process_list_item *pli_iter;
+	int *order = NULL;
 
 	if (!udp) {
 		return -EINVAL;
@@ -604,6 +605,22 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		printk("%s: error copying user request\n", __FUNCTION__);
 		ret = -EINVAL;
 		goto put_and_unlock_out;
+	}
+
+	if (req.order) {
+		order = kmalloc(sizeof(int) * req.nr_processes, GFP_KERNEL);
+		if (!order) {
+			printk("%s: error allocating order\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
+		if (copy_from_user(order, (void *)req.order,
+					sizeof(int) * req.nr_processes)) {
+			printk("%s: error copying order\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
 	}
 
 	/* First process to enter CPU partitioning */
@@ -685,6 +702,44 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 
 	/* Last process? Wake up first in list */
 	if (pe->nr_processes_left == 0) {
+		/* Re-order if required */
+		if (order) {
+			int i;
+			struct process_list_item **plis_ordered;
+
+			plis_ordered = kmalloc(sizeof(*plis_ordered) * req.nr_processes,
+				GFP_KERNEL);
+			if (!plis_ordered) {
+				printk("%s: error allocating order plis\n", __FUNCTION__);
+				ret = -EINVAL;
+				goto put_and_unlock_out;
+			}
+
+			/* Collect processes in new order */
+			for (i = 0; i < req.nr_processes; ++i) {
+				int j = 0;
+
+				list_for_each_entry(pli_next, &pe->pli_list, list) {
+					if (j == order[i])
+						break;
+
+					++j;
+				}
+
+				plis_ordered[i] = pli_next;
+			}
+
+			/* Add them one-by-one to the end of the list */
+			for (i = 0; i < req.nr_processes; ++i) {
+				pli_next = plis_ordered[i];
+				list_del(&pli_next->list);
+				list_add_tail(&pli_next->list, &pe->pli_list);
+			}
+
+			kfree(plis_ordered);
+		}
+
+
 		pli_next = list_first_entry(&pe->pli_list,
 			struct process_list_item, list);
 		list_del(&pli_next->list);

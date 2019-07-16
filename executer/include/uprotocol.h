@@ -99,6 +99,7 @@ struct get_cpu_set_arg {
 	void *mcexec_cpu_set;
 	size_t mcexec_cpu_set_size;	// Size in bytes
 	int *ikc_mapped;
+	int *order;
 };
 
 #define PLD_CPU_SET_MAX_CPUS 1024

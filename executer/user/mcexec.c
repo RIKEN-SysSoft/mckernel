@@ -230,6 +230,7 @@ static long stack_premap = (2ULL << 20);
 static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
+static char *rank_order = NULL;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1772,6 +1773,12 @@ static struct option mcexec_options[] = {
 		.flag =		NULL,
 		.val =		's',
 	},
+	{
+		.name =		"rank-order",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'r',
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2001,9 +2008,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:r:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:r:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -2038,6 +2045,10 @@ int main(int argc, char **argv)
 
 			case 'm':
 				mpol_bind_nodes = optarg;
+				break;
+
+			case 'r':
+				rank_order = optarg;
 				break;
 
 			case 'h':
@@ -2446,6 +2457,49 @@ int main(int argc, char **argv)
 		cpu_set_arg.mcexec_cpu_set = &mcexec_cpu_set;
 		cpu_set_arg.mcexec_cpu_set_size = sizeof(mcexec_cpu_set);
 		cpu_set_arg.ikc_mapped = &ikc_mapped;
+		cpu_set_arg.order = NULL;
+
+		if (rank_order) {
+			char *saveptr;
+			char *token;
+			int i = 0, rank = 0;
+			int *order = malloc(sizeof(int) * nr_processes);
+			if (!order) {
+				fprintf(stderr, "error: allocating rank order\n");
+				return 1;
+			}
+
+			memset(order, 0, sizeof(int) * nr_processes);
+
+			token = strtok_r(rank_order, ",", &saveptr);
+			if (!token) {
+				fprintf(stderr, "error: failed to parse rank_order\n");
+				return 1;
+			}
+
+			while (token) {
+				rank = atoi(token);
+
+				if (i == nr_processes) {
+					fprintf(stderr, "error: incorrect rank_order"
+							" string (too long)\n");
+					return 1;
+				}
+
+				order[i] = rank;
+				++i;
+
+				token = strtok_r(NULL, ",", &saveptr);
+			}
+
+			if (i < nr_processes) {
+				fprintf(stderr, "error: incorrect rank_order"
+						" string (too short)\n");
+				return 1;
+			}
+
+			cpu_set_arg.order = order;
+		}
 
 		if (ioctl(fd, MCEXEC_UP_GET_CPUSET, (void *)&cpu_set_arg) != 0) {
 			perror("getting CPU set for partitioned execution");
