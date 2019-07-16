@@ -5,6 +5,8 @@
 #include <sys/ioctl.h>
 #include <linux/perf_event.h>
 #include <asm/unistd.h>
+#include <signal.h>
+#include <fcntl.h>
 
 //#include "perftool.h"
 
@@ -21,6 +23,12 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 	ret = syscall(__NR_perf_event_open, hw_event, pid, cpu,
 		group_fd, flags);
 	return ret;
+}
+
+void
+usr1_handler(int signum)
+{
+	puts("perf counter overflow.");
 }
 
 long
@@ -53,7 +61,23 @@ pe_opener(long group_fd, int mode, int type, unsigned long config)
 	}
 
 	fd = perf_event_open(&pe, 0, -1, group_fd, 0);
+	if (fd != -1) {
+		struct sigaction act = {
+			.sa_handler = usr1_handler,
+		};
 
+		if (sigaction(SIGUSR1, &act, NULL)) {
+			close(fd);
+			fd = -1;
+		};
+	}
+
+	if (fd != -1) {
+		if (fcntl(fd, F_SETSIG, SIGUSR1)) {
+			close(fd);
+			fd = -1;
+		}
+	}
 	return fd;
 }
 
