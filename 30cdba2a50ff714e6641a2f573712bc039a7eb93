@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8308fb56_698c8acf",
+        "filename": "test/issues/1025/C1025.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 285,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T06:16:03Z",
+      "side": 1,
+      "message": "pass/fail判定コードを挿入して下さい。",
+      "range": {
+        "startLine": 285,
+        "startChar": 24,
+        "endLine": 285,
+        "endChar": 52
+      },
+      "revId": "30cdba2a50ff714e6641a2f573712bc039a7eb93",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "29263fb7_aa8aba75",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T06:16:03Z",
+      "side": 1,
+      "message": "start-\u003e演算-\u003estop-\u003e演算-\u003estart-\u003e演算-\u003estop-\u003ereadも追加しましょう。",
+      "range": {
+        "startLine": 19,
+        "startChar": 0,
+        "endLine": 19,
+        "endChar": 35
+      },
+      "revId": "30cdba2a50ff714e6641a2f573712bc039a7eb93",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e58d6d29_d1234ce6",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T06:16:03Z",
+      "side": 1,
+      "message": "OSの基準は以下にしましょう：\nユーザ時間：Linux時間*1.1未満\nカーネル時間：ユーザ時間*0.01未満",
+      "range": {
+        "startLine": 40,
+        "startChar": 0,
+        "endLine": 40,
+        "endChar": 52
+      },
+      "revId": "30cdba2a50ff714e6641a2f573712bc039a7eb93",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
