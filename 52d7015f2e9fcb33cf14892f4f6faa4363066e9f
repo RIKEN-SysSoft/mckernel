@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a2b3fb91_16c7ecde",
+        "filename": "test/issues/1183/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T06:33:11Z",
+      "side": 1,
+      "message": "一回のmmapでの要求サイズが、メモリ総容量ーマップされたページの合計サイズを超える場合、失敗することを確認する。",
+      "range": {
+        "startLine": 4,
+        "startChar": 30,
+        "endLine": 4,
+        "endChar": 33
+      },
+      "revId": "52d7015f2e9fcb33cf14892f4f6faa4363066e9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5a3b9369_fb436378",
+        "filename": "test/issues/1183/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T06:33:11Z",
+      "side": 1,
+      "message": "各回のmmapでの要求サイズが、メモリ総容量ーマップされたページの合計サイズ（利用可能サイズと呼ぶ）を超えない場合成功し、超えた場合失敗することを確認する。なお、anonymous mmapは物理連続が確保できた場合はプリマップをするため、2MB要求時は利用可能サイズは減っていき、1GB要求時は減らない。",
+      "range": {
+        "startLine": 11,
+        "startChar": 17,
+        "endLine": 11,
+        "endChar": 18
+      },
+      "revId": "52d7015f2e9fcb33cf14892f4f6faa4363066e9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
