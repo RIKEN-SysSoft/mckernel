@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7fc25c86_e8c6c032",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3848,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T02:36:27Z",
+      "side": 1,
+      "message": "{user,system}_ref_countの目的は何？",
+      "range": {
+        "startLine": 3848,
+        "startChar": 0,
+        "endLine": 3848,
+        "endChar": 27
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b46527c0_ff6efc3c",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T02:36:27Z",
+      "side": 1,
+      "message": "start -\u003e 演算 -\u003e read -\u003e 演算 -\u003e read\nというケースも追加して下さい。",
+      "range": {
+        "startLine": 10,
+        "startChar": 0,
+        "endLine": 10,
+        "endChar": 16
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4dd17471_897bb19c",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T02:36:27Z",
+      "side": 1,
+      "message": "テストがOKと判定できる基準を書いて下さい。",
+      "range": {
+        "startLine": 26,
+        "startChar": 0,
+        "endLine": 26,
+        "endChar": 43
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
