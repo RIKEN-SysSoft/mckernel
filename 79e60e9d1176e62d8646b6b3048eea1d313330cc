@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "0bfd4c3e_8e337d56",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3848,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-17T05:25:01Z",
+      "side": 1,
+      "message": "start -\u003e stop -\u003e start -\u003e stop などのように、stop後に再startする場合に、\nそれまでのstart - stop 間のカウント値を保持しておくための変数です。",
+      "parentUuid": "7fc25c86_e8c6c032",
+      "range": {
+        "startLine": 3848,
+        "startChar": 0,
+        "endLine": 3848,
+        "endChar": 27
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "b46527c0_ff6efc3c",
         "filename": "test/issues/1025/README",
         "patchSetId": 2
@@ -48,6 +72,30 @@
     },
     {
       "key": {
+        "uuid": "e0d9ac48_35afc530",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-17T05:25:01Z",
+      "side": 1,
+      "message": "case_d として、上記のケースを追加しました。",
+      "parentUuid": "b46527c0_ff6efc3c",
+      "range": {
+        "startLine": 10,
+        "startChar": 0,
+        "endLine": 10,
+        "endChar": 16
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "4dd17471_897bb19c",
         "filename": "test/issues/1025/README",
         "patchSetId": 2
@@ -59,6 +107,30 @@
       "writtenOn": "2019-07-17T02:36:27Z",
       "side": 1,
       "message": "テストがOKと判定できる基準を書いて下さい。",
+      "range": {
+        "startLine": 26,
+        "startChar": 0,
+        "endLine": 26,
+        "endChar": 43
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b2479646_133aac27",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-17T05:25:01Z",
+      "side": 1,
+      "message": "REF_CPU_CYCLES の計測値が、CPU_CYCLESの計測値の±10%以内に収まることとし、記載しました。",
+      "parentUuid": "4dd17471_897bb19c",
       "range": {
         "startLine": 26,
         "startChar": 0,
