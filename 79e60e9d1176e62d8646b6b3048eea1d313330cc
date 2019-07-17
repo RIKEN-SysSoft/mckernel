@@ -49,6 +49,30 @@
     },
     {
       "key": {
+        "uuid": "cf16b15c_ccdb0375",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3848,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-17T06:19:53Z",
+      "side": 1,
+      "message": "参照しているstatementが見当たらないので、再確認をお願いします。",
+      "parentUuid": "0bfd4c3e_8e337d56",
+      "range": {
+        "startLine": 3848,
+        "startChar": 0,
+        "endLine": 3848,
+        "endChar": 27
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "b46527c0_ff6efc3c",
         "filename": "test/issues/1025/README",
         "patchSetId": 2
