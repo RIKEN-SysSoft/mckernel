@@ -456,9 +456,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	memcpy_long(pn, p, sizeof(struct program_load_desc) 
 	            + sizeof(struct program_image_section) * n);
 
-	if ((thread = create_thread(p->entry,
-					(unsigned long *)&p->cpu_set,
-					sizeof(p->cpu_set))) == NULL) {
+	if (!(thread = create_thread(p))) {
 		kfree(pn);
 		ihk_mc_unmap_virtual(p, npages, 1);
 		ihk_mc_unmap_memory(NULL, phys, sz);

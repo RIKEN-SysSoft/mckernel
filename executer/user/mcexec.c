@@ -231,6 +231,7 @@ static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
 static char *rank_order = NULL;
+static char *util_cpus_s = NULL;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1779,6 +1780,12 @@ static struct option mcexec_options[] = {
 		.flag =		NULL,
 		.val =		'r',
 	},
+	{
+		.name =		"util-cpus",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'u',
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2008,9 +2015,9 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:r:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:r:u:", mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:r:", mcexec_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:r:u:", mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
 			char *tmp;
@@ -2049,6 +2056,10 @@ int main(int argc, char **argv)
 
 			case 'r':
 				rank_order = optarg;
+				break;
+
+			case 'u':
+				util_cpus_s = optarg;
 				break;
 
 			case 'h':
@@ -2458,6 +2469,9 @@ int main(int argc, char **argv)
 		cpu_set_arg.mcexec_cpu_set_size = sizeof(mcexec_cpu_set);
 		cpu_set_arg.ikc_mapped = &ikc_mapped;
 		cpu_set_arg.order = NULL;
+		cpu_set_arg.util_cpus_s = util_cpus_s;
+		cpu_set_arg.util_cpus = (void *)&desc->util_cpu_set;
+		cpu_set_arg.util_cpus_size = sizeof(desc->util_cpu_set);
 
 		if (rank_order) {
 			char *saveptr;

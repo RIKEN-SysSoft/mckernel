@@ -316,6 +316,7 @@ struct mcctrl_part_exec {
 	int nr_processes_left;
 	int process_rank;
 	cpumask_t cpus_used;
+	cpumask_t util_cpus_left;
 	struct list_head pli_list;
 };
 

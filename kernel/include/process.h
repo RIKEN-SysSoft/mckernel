@@ -522,6 +522,7 @@ struct process {
 	char *saved_cmdline;
 	long saved_cmdline_len;
 	cpu_set_t cpu_set;
+	cpu_set_t util_cpu_set;
 
 	/* Store ptrace flags.
 	 * The lower 8 bits are PTRACE_O_xxx of the PTRACE_SETOPTIONS request.
@@ -790,8 +791,7 @@ static inline int has_cap_sys_admin(struct thread *th)
 
 void hold_address_space(struct address_space *);
 void release_address_space(struct address_space *);
-struct thread *create_thread(unsigned long user_pc,
-		unsigned long *__cpu_set, size_t cpu_set_size);
+struct thread *create_thread(struct program_load_desc *p);
 struct thread *clone_thread(struct thread *org, unsigned long pc,
                               unsigned long sp, int clone_flags);
 void destroy_thread(struct thread *thread);

@@ -6865,10 +6865,16 @@ SYSCALL_DECLARE(sched_setaffinity)
 	CPU_ZERO(&cpu_set);
 	for (cpu_id = 0; cpu_id < num_processors; cpu_id++) {
 		if (CPU_ISSET(cpu_id, &k_cpu_set) &&
-			CPU_ISSET(cpu_id, &thread->proc->cpu_set)) {
+			(CPU_ISSET(cpu_id, &thread->proc->cpu_set) ||
+				 CPU_ISSET(cpu_id, &thread->proc->util_cpu_set))) {
 			CPU_SET(cpu_id, &cpu_set);
 			dkprintf("sched_setaffinity(): tid %d: setting target core %d\n",
 					cpu_local_var(current)->tid, cpu_id);
+			if (CPU_ISSET(cpu_id, &thread->proc->util_cpu_set) ||
+					CPU_ISSET(ihk_mc_get_processor_id(), &thread->proc->util_cpu_set)) {
+				kprintf("%s: moving TID %d from CPU %d to CPU %d\n",
+						__func__, thread->tid, ihk_mc_get_processor_id(), cpu_id);
+			}
 			empty_set = 0;
 		}
 	}

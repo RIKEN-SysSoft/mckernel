@@ -290,8 +290,7 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	return 0;
 }
 
-struct thread *create_thread(unsigned long user_pc,
-		unsigned long *__cpu_set, size_t cpu_set_size)
+struct thread *create_thread(struct program_load_desc *p)
 {
 	struct thread *thread;
 	struct process *proc;
@@ -315,7 +314,8 @@ struct thread *create_thread(unsigned long user_pc,
 	init_process(proc, cpu_local_var(resource_set)->pid1);
 
 	/* Use requested CPU cores */
-	for_each_set_bit(cpu, __cpu_set, cpu_set_size * BITS_PER_BYTE) {
+	for_each_set_bit(cpu, (unsigned long *)&p->cpu_set,
+			sizeof(p->cpu_set) * BITS_PER_BYTE) {
 		if (cpu >= num_processors) {
 			kprintf("%s: invalid CPU requested in initial cpu_set\n",
 				__FUNCTION__);
@@ -327,6 +327,22 @@ struct thread *create_thread(unsigned long user_pc,
 		CPU_SET(cpu, &thread->cpu_set);
 		CPU_SET(cpu, &proc->cpu_set);
 		cpu_set_empty = 0;
+	}
+
+	/* Check and fill in util CPUs if any */
+	if (!cpu_set_empty) {
+		for_each_set_bit(cpu, (unsigned long *)&p->util_cpu_set,
+				num_processors) {
+			if (cpu >= num_processors) {
+				kprintf("%s: invalid CPU requested in utility cpu_set: %d\n",
+						__FUNCTION__, cpu);
+				goto err;
+			}
+
+			kprintf("%s: pid: %d, util CPU: %d\n",
+					__FUNCTION__, proc->pid, cpu);
+			CPU_SET(cpu, &proc->util_cpu_set);
+		}
 	}
 
 	/* Default allows all cores */
@@ -364,7 +380,7 @@ struct thread *create_thread(unsigned long user_pc,
 	thread->sigstack.ss_size = 0;
 
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
-	                       KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc, 0);
+	                       KERNEL_STACK_NR_PAGES * PAGE_SIZE, p->entry, 0);
 
 	thread->vm = vm;
 	thread->proc = proc;

@@ -100,6 +100,9 @@ struct get_cpu_set_arg {
 	size_t mcexec_cpu_set_size;	// Size in bytes
 	int *ikc_mapped;
 	int *order;
+	char *util_cpus_s; // CPU list string
+	void *util_cpus;
+	size_t util_cpus_size;	// Size in bytes
 };
 
 #define PLD_CPU_SET_MAX_CPUS 1024
@@ -151,6 +154,7 @@ struct program_load_desc {
 	int process_rank;
 	char shell_path[SHELL_PATH_MAX_LEN];
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
+	__cpu_set_unit util_cpu_set[PLD_CPU_SET_SIZE];
 	int profile;
 	struct program_image_section sections[0];
 };

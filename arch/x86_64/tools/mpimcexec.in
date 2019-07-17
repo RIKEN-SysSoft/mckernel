@@ -20,6 +20,7 @@ MPI_ENV=""
 COMMAND=""
 NUMA=""
 HOSTFILE=""
+UTIL_CPUS=""
 
 if [ ! -z "${PJM_PROC_BY_NODE}" ]; then
 	PPN=${PJM_PROC_BY_NODE}
@@ -59,6 +60,14 @@ while true; do
 			    help_exit
 			fi
 			RANKS=$2
+			shift 2
+			;;
+		-u | --util-cpus )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -u or --util-cpus"
+			    help_exit
+			fi
+			UTIL_CPUS="--util-cpus $2"
 			shift 2
 			;;
 		-m | --numa )
@@ -143,5 +152,5 @@ export PSM2_MQ_RNDV_HFI_WINDOW=4194304
 export PSM2_MQ_EAGER_SDMA_SZ=65536
 export PSM2_MQ_RNDV_HFI_THRESH=200000
 
-mpirun ${HOSTFILE} -n ${RANKS} -ppn ${PPN} ${MPI_ENV} ${BINDIR}/mcexec -n ${PPN} ${NUMA} --enable-hfi1 --mpol-threshold=1M --stack-premap=4M,4G --extend-heap-by=8M --disable-sched-yield --mpol-shm-premap ${COMMAND}
+mpirun ${HOSTFILE} -n ${RANKS} -ppn ${PPN} ${MPI_ENV} ${BINDIR}/mcexec -n ${PPN} ${NUMA} ${UTIL_CPUS} --enable-hfi1 --mpol-threshold=1M --stack-premap=4M,4G --extend-heap-by=8M --disable-sched-yield --mpol-shm-premap ${COMMAND}
 

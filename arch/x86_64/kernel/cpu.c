@@ -1010,6 +1010,7 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	set_cputime(interrupt_from_user(regs)? 0: 1);
 
 	--v->in_interrupt;
+	check_need_resched();
 }
 
 void gpe_handler(struct x86_user_context *regs)

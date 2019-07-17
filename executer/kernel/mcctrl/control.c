@@ -581,11 +581,14 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	cpumask_t *mcexec_cpu_set = NULL;
 	cpumask_t *cpus_used = NULL;
 	cpumask_t *cpus_to_use = NULL;
+	cpumask_t *util_cpus = NULL;
 	struct mcctrl_per_proc_data *ppd;
 	struct process_list_item *pli;
 	struct process_list_item *pli_next = NULL;
 	struct process_list_item *pli_iter;
 	int *order = NULL;
+	char util_cpus_s[512];
+	int nr_util_cpus = 0;
 
 	if (!udp) {
 		return -EINVAL;
@@ -618,6 +621,37 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		if (copy_from_user(order, (void *)req.order,
 					sizeof(int) * req.nr_processes)) {
 			printk("%s: error copying order\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+	}
+
+	if (req.util_cpus_s) {
+		util_cpus = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+		if (!util_cpus) {
+			printk("%s: error allocating util CPU mask\n", __FUNCTION__);
+			ret = -ENOMEM;
+			goto put_and_unlock_out;
+		}
+
+		if (copy_from_user(util_cpus_s, req.util_cpus_s,
+					strnlen_user(req.util_cpus_s, sizeof(util_cpus_s)))) {
+			printk("%s: error copying util CPU list\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
+		if (bitmap_parselist(util_cpus_s, (unsigned long*)util_cpus,
+					sizeof(*util_cpus)) < 0) {
+			printk("%s: error: parsing util CPU list\n", __FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+
+		nr_util_cpus = cpumask_weight(util_cpus);
+		if (nr_util_cpus < req.nr_processes) {
+			printk("%s: error: # of util CPUs must be at least # of processes\n",
+					__FUNCTION__);
 			ret = -EINVAL;
 			goto put_and_unlock_out;
 		}
@@ -804,10 +838,26 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 				__FUNCTION__, task_tgid_vnr(current));
 	}
 
+	/* First process stores global util CPU mask */
+	if (pe->nr_processes_left == pe->nr_processes &&
+			util_cpus) {
+		memcpy(&pe->util_cpus_left, util_cpus, sizeof(cpumask_t));
+
+		/* And mark them as used */
+		for_each_cpu(cpu, util_cpus) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+			cpumask_set_cpu(cpu, &pe->cpus_used);
+#else
+			cpu_set(cpu, pe->cpus_used);
+#endif
+		}
+	}
+
 	--pe->nr_processes_left;
 	kfree(pli);
 
-	cpus_to_assign = udp->cpu_info->n_cpus / req.nr_processes;
+	cpus_to_assign = (udp->cpu_info->n_cpus - nr_util_cpus) /
+		req.nr_processes;
 	cpus_used = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
 	cpus_to_use = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
 	mcexec_cpu_set = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
@@ -817,8 +867,25 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		goto put_and_unlock_out;
 	}
 	memcpy(cpus_used, &pe->cpus_used, sizeof(cpumask_t));
+
 	memset(cpus_to_use, 0, sizeof(cpumask_t));
 	memset(mcexec_cpu_set, 0, sizeof(cpumask_t));
+
+	/* Reserve first available util CPU */
+	if (util_cpus) {
+		memset(util_cpus, 0, sizeof(cpumask_t));
+
+		for_each_cpu(cpu, &pe->util_cpus_left) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+			cpumask_set_cpu(cpu, util_cpus);
+			cpumask_clear_cpu(cpu, &pe->util_cpus_left);
+#else
+			cpu_set(cpu, *util_cpus);
+			cpu_clear(cpu, pe->util_cpus_left);
+#endif
+			break;
+		}
+	}
 
 	/* Find the first unused CPU */
 	cpu = cpumask_next_zero(-1, cpus_used);
@@ -970,6 +1037,18 @@ next_cpu:
 		goto put_and_unlock_out;
 	}
 
+	/* Copy util CPUs mask */
+	if (req.util_cpus_s && req.util_cpus) {
+		if (copy_to_user(req.util_cpus, util_cpus,
+					(req.util_cpus_size < sizeof(cpumask_t) ?
+					 req.util_cpus_size : sizeof(cpumask_t)))) {
+			printk("%s: error copying util CPUs mask to user\n",
+					__FUNCTION__);
+			ret = -EINVAL;
+			goto put_and_unlock_out;
+		}
+	}
+
 	/* Copy IKC target core */
 	cpu = cpumask_next(-1, cpus_to_use);
 	if (copy_to_user(req.target_core, &cpu, sizeof(cpu))) {
@@ -1050,6 +1129,7 @@ put_and_unlock_out:
 	kfree(cpus_to_use);
 	kfree(cpus_used);
 	kfree(mcexec_cpu_set);
+	kfree(util_cpus);
 	mcctrl_put_per_proc_data(ppd);
 	mutex_unlock(&pe->lock);
 
