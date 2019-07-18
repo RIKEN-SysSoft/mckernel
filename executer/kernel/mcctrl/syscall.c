@@ -280,15 +280,16 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	unsigned long phys;
-	struct syscall_request _request[2];
-	struct syscall_request *request;
+	struct syscall_request *request = NULL;
 	int retry;
 
-	if (((unsigned long)_request ^ (unsigned long)(_request + 1)) &
-	    ~(PAGE_SIZE -1))
-		request = _request + 1;
-	else
-		request = _request;
+	request = kmalloc(sizeof(struct syscall_request), GFP_ATOMIC);
+	if (!request) {
+		printk("%s: ERROR: allocating request\n", __func__);
+		syscall_ret = -ENOMEM;
+		goto no_ppd;
+	}
+
 	request->number = num;
 	request->args[0] = arg1;
 	request->args[1] = arg2;
@@ -303,8 +304,9 @@ long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
 
 	if (!ppd) {
 		kprintf("%s: ERROR: no per-process structure for PID %d??\n", 
-				__FUNCTION__, task_tgid_vnr(current));
-		return -EINVAL;
+			__func__, task_tgid_vnr(current));
+		syscall_ret = -EINVAL;
+		goto no_ppd;
 	}
 
 	ptd = mcctrl_get_per_thread_data(ppd, current);
@@ -452,11 +454,13 @@ out:
 out_put_ppd:
 	mcctrl_put_per_thread_data(ptd);
 	pr_ptd("put", task_pid_vnr(current), ptd);
- no_ptd:
+no_ptd:
 	dprintk("%s: tid: %d, syscall: %d, syscall_ret: %lx\n",
 		__FUNCTION__, task_pid_vnr(current), num, syscall_ret);
 
 	mcctrl_put_per_proc_data(ppd);
+no_ppd:
+	kfree(request);
 	return syscall_ret;
 }
 
