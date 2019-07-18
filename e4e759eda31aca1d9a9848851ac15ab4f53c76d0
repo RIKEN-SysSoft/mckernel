@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "72292f82_e6d64d78",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 121,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-18T09:16:56Z",
+      "side": 1,
+      "message": "(1) pmc_*をアーキ依存部に移動\n(2) arm64でpmc_*とihk_mc_perfctr_init（と、pmc_*のみから呼ばれている関数を）削除\nとしていただけないでしょうか。",
+      "range": {
+        "startLine": 121,
+        "startChar": 0,
+        "endLine": 121,
+        "endChar": 63
+      },
+      "revId": "e4e759eda31aca1d9a9848851ac15ab4f53c76d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1abc564b_6054c1ae",
         "filename": "arch/arm64/kernel/perfctr.c",
         "patchSetId": 2
