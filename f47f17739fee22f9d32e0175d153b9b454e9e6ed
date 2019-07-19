@@ -1,0 +1,96 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a3ff5d4b_9e310697",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3746,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-19T06:32:05Z",
+      "side": 1,
+      "message": "/* Add sum of counts in the previous start-stop periods to the current count in the start-read period */\nのようなコメントを入れておいて下さい。",
+      "range": {
+        "startLine": 3746,
+        "startChar": 0,
+        "endLine": 3746,
+        "endChar": 29
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f5b8e877_2e1882f6",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3847,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-19T06:32:05Z",
+      "side": 1,
+      "message": "/* Record sum of counts in the previous start-stop periods because only the count at the last start is recorded */\nのようなコメントを入れておいて下さい。",
+      "range": {
+        "startLine": 3847,
+        "startChar": 0,
+        "endLine": 3847,
+        "endChar": 34
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e2b2a8d8_db3b552f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3853,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-19T06:32:05Z",
+      "side": 1,
+      "message": "(1)start-\u003e(2)start-\u003e(3)readすると、Linuxでは(3)-(2)が返るのか確認して下さい。",
+      "range": {
+        "startLine": 3853,
+        "startChar": 0,
+        "endLine": 3853,
+        "endChar": 44
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e637f709_707f00fc",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3912,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-19T06:32:05Z",
+      "side": 1,
+      "message": "/* Let perf_event_read_value return zero when stopped */\nのようなコメントを入れておいて下さい。",
+      "range": {
+        "startLine": 3912,
+        "startChar": 0,
+        "endLine": 3912,
+        "endChar": 34
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
