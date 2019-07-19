@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "cc6a0808_9761337d",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 121,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-19T04:43:56Z",
+      "side": 1,
+      "message": "上記から方針を変更して、pmc_*と、それからのみ呼ばれている関数を除去していただけないでしょうか。",
+      "parentUuid": "72292f82_e6d64d78",
+      "range": {
+        "startLine": 121,
+        "startChar": 0,
+        "endLine": 121,
+        "endChar": 63
+      },
+      "revId": "e4e759eda31aca1d9a9848851ac15ab4f53c76d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1abc564b_6054c1ae",
         "filename": "arch/arm64/kernel/perfctr.c",
         "patchSetId": 2
