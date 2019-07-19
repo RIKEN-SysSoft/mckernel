@@ -73,6 +73,30 @@
     },
     {
       "key": {
+        "uuid": "daf1f353_41b3bc2e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3848,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-19T00:12:11Z",
+      "side": 1,
+      "message": "read_value 時にカウント値に加算する処理を追加しました。\nテストに追加した CASE-E で動作を確認しました。",
+      "parentUuid": "cf16b15c_ccdb0375",
+      "range": {
+        "startLine": 3848,
+        "startChar": 0,
+        "endLine": 3848,
+        "endChar": 27
+      },
+      "revId": "79e60e9d1176e62d8646b6b3048eea1d313330cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "b46527c0_ff6efc3c",
         "filename": "test/issues/1025/README",
         "patchSetId": 2

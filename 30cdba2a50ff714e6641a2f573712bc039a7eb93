@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "f0955aa6_26eeda60",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 4224,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-19T00:12:11Z",
+      "side": 1,
+      "message": "use_invariant_tscに名前を変更しました。",
+      "parentUuid": "fd8f12dc_a29fdfe5",
+      "range": {
+        "startLine": 4224,
+        "startChar": 9,
+        "endLine": 4224,
+        "endChar": 16
+      },
+      "revId": "30cdba2a50ff714e6641a2f573712bc039a7eb93",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "8308fb56_698c8acf",
         "filename": "test/issues/1025/C1025.sh",
         "patchSetId": 3
@@ -36,6 +60,30 @@
       "writtenOn": "2019-07-17T06:16:03Z",
       "side": 1,
       "message": "pass/fail判定コードを挿入して下さい。",
+      "range": {
+        "startLine": 285,
+        "startChar": 24,
+        "endLine": 285,
+        "endChar": 52
+      },
+      "revId": "30cdba2a50ff714e6641a2f573712bc039a7eb93",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5a4e6f96_b604e1b2",
+        "filename": "test/issues/1025/C1025.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 285,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-19T00:12:11Z",
+      "side": 1,
+      "message": "pass/fail を判定するコードを追加し、自動で判定するようにしました",
+      "parentUuid": "8308fb56_698c8acf",
       "range": {
         "startLine": 285,
         "startChar": 24,
@@ -71,6 +119,30 @@
     },
     {
       "key": {
+        "uuid": "27ef363b_475b5a44",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-19T00:12:11Z",
+      "side": 1,
+      "message": "start-\u003e演算-\u003estop-\u003e演算-\u003estart-\u003e演算-\u003estop-\u003eread　のケースをCASE-E として追加しました。",
+      "parentUuid": "29263fb7_aa8aba75",
+      "range": {
+        "startLine": 19,
+        "startChar": 0,
+        "endLine": 19,
+        "endChar": 35
+      },
+      "revId": "30cdba2a50ff714e6641a2f573712bc039a7eb93",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "e58d6d29_d1234ce6",
         "filename": "test/issues/1025/README",
         "patchSetId": 3
@@ -82,6 +154,30 @@
       "writtenOn": "2019-07-17T06:16:03Z",
       "side": 1,
       "message": "OSの基準は以下にしましょう：\nユーザ時間：Linux時間*1.1未満\nカーネル時間：ユーザ時間*0.01未満",
+      "range": {
+        "startLine": 40,
+        "startChar": 0,
+        "endLine": 40,
+        "endChar": 52
+      },
+      "revId": "30cdba2a50ff714e6641a2f573712bc039a7eb93",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fe1f81e0_6da78df7",
+        "filename": "test/issues/1025/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-19T00:12:11Z",
+      "side": 1,
+      "message": "PASSの判定基準を以下のようにしました。\nユーザ時間：Linuxの結果 * 0.9 より大きく、Linux結果 * 1.1未満\nカーネル時間：ユーザ時間 * 0.01未満",
+      "parentUuid": "e58d6d29_d1234ce6",
       "range": {
         "startLine": 40,
         "startChar": 0,
