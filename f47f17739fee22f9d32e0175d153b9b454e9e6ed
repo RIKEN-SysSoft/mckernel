@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "2b8d6a43_c4c11d77",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3746,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-22T05:25:18Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "a3ff5d4b_9e310697",
+      "range": {
+        "startLine": 3746,
+        "startChar": 0,
+        "endLine": 3746,
+        "endChar": 29
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "f5b8e877_2e1882f6",
         "filename": "kernel/syscall.c",
         "patchSetId": 4
@@ -48,6 +72,30 @@
     },
     {
       "key": {
+        "uuid": "ef8d909c_21969e04",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3847,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-22T05:25:18Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "f5b8e877_2e1882f6",
+      "range": {
+        "startLine": 3847,
+        "startChar": 0,
+        "endLine": 3847,
+        "endChar": 34
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "e2b2a8d8_db3b552f",
         "filename": "kernel/syscall.c",
         "patchSetId": 4
@@ -59,6 +107,30 @@
       "writtenOn": "2019-07-19T06:32:05Z",
       "side": 1,
       "message": "(1)start-\u003e(2)start-\u003e(3)readすると、Linuxでは(3)-(2)が返るのか確認して下さい。",
+      "range": {
+        "startLine": 3853,
+        "startChar": 0,
+        "endLine": 3853,
+        "endChar": 44
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a95060dc_7e8c60ca",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3853,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-22T05:25:18Z",
+      "side": 1,
+      "message": "(3)-(1)が返るのが正しい動作でした。\nコードを修正し、start -\u003e 演算 -\u003e start -\u003e 演算 -\u003e read のテストを追加し、\n動作を確認しました。",
+      "parentUuid": "e2b2a8d8_db3b552f",
       "range": {
         "startLine": 3853,
         "startChar": 0,
@@ -91,6 +163,30 @@
       "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fcd4c67e_252392a4",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3912,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-07-22T05:25:18Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "e637f709_707f00fc",
+      "range": {
+        "startLine": 3912,
+        "startChar": 0,
+        "endLine": 3912,
+        "endChar": 34
+      },
+      "revId": "f47f17739fee22f9d32e0175d153b9b454e9e6ed",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
