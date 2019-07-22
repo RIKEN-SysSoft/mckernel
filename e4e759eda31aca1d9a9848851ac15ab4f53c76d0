@@ -49,6 +49,30 @@
     },
     {
       "key": {
+        "uuid": "c65748c6_93d6536f",
+        "filename": "arch/arm64/kernel/perfctr.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 121,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-22T00:57:21Z",
+      "side": 1,
+      "message": "度々すみません。これはこのままでOKです。後で理研がpmc_*を削除いたします。",
+      "parentUuid": "cc6a0808_9761337d",
+      "range": {
+        "startLine": 121,
+        "startChar": 0,
+        "endLine": 121,
+        "endChar": 63
+      },
+      "revId": "e4e759eda31aca1d9a9848851ac15ab4f53c76d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "1abc564b_6054c1ae",
         "filename": "arch/arm64/kernel/perfctr.c",
         "patchSetId": 2
