@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a6fb572c_ac631c72",
+        "filename": "kernel/futex.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 823,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-22T06:28:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tq-\u003euti_futex_resp \u003d cpu_local_var_with_override(uti_futex_resp, clv_override);",
+      "revId": "594a9207d3c5b8dae471e0d8de4f9d19f1192084",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
