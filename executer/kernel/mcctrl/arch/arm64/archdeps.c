@@ -98,6 +98,74 @@ reserve_user_space(struct mcctrl_usrdata *usrdata, unsigned long *startp, unsign
 	return 0;
 }
 
+#if KERNEL_VERSION(4, 0, 0) <= LINUX_VERSION_CODE
+static long elf_search_vdso_sigtramp(void)
+{
+	int i = 0;
+	long ans = -1;
+	char *shstr = NULL, *dynstr = NULL;
+	Elf64_Ehdr *eh = NULL;
+	Elf64_Shdr *tmp_sh = NULL, *sym_sh = NULL;
+	Elf64_Sym *sym = NULL;
+
+	/* ELF header */
+	eh = (Elf64_Ehdr *)vdso_start;
+	if (eh == NULL) {
+		D("vdso_start is NULL.\n");
+		goto out;
+	}
+
+	/* ELF magic check */
+	if (eh->e_ident[EI_MAG0] != ELFMAG0 &&
+	    eh->e_ident[EI_MAG1] != ELFMAG1 &&
+	    eh->e_ident[EI_MAG2] != ELFMAG2 &&
+	    eh->e_ident[EI_MAG3] != ELFMAG3) {
+		D("vdso_start ELF MAGIC Mismatch.\n"
+		  "e_ident[EI_MAG0 - EI_MAG3]: %02x %02x %02x %02x\n",
+		  eh->e_ident[EI_MAG0], eh->e_ident[EI_MAG1],
+		  eh->e_ident[EI_MAG2], eh->e_ident[EI_MAG3]);
+		goto out;
+	}
+
+	/* Search dynsym-table and dynstr-table offset
+	 * from section header table
+	 */
+	tmp_sh = (Elf64_Shdr *)(vdso_start + eh->e_shoff);
+	shstr = vdso_start + (tmp_sh + eh->e_shstrndx)->sh_offset;
+	for (i = 0; i < eh->e_shnum; i++, tmp_sh++) {
+		if (tmp_sh->sh_type == SHT_DYNSYM) {
+			sym_sh = tmp_sh;
+		}
+
+		if (tmp_sh->sh_type == SHT_STRTAB &&
+		    !strcmp(&shstr[tmp_sh->sh_name], ".dynstr")) {
+			dynstr = vdso_start + tmp_sh->sh_offset;
+		}
+	}
+
+	if (sym_sh == NULL) {
+		D("dynsym-table not found.\n");
+		goto out;
+	}
+
+	if (dynstr == 0) {
+		D("dynstr-table not found.\n");
+		goto out;
+	}
+
+	/* Search __kernel_rt_sigreturn offset from dynsym-table */
+	sym = (Elf64_Sym *)(vdso_start + sym_sh->sh_offset);
+	for (i = 0; (i * sym_sh->sh_entsize) < sym_sh->sh_size; i++, sym++) {
+		if (!strcmp(dynstr + sym->st_name, "__kernel_rt_sigreturn")) {
+			ans = sym->st_value;
+		}
+	}
+
+out:
+	return ans;
+}
+#endif /*LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)*/
+
 void get_vdso_info(ihk_os_t os, long vdso_rpa)
 {
 	ihk_device_t dev = ihk_os_to_dev(os);
@@ -131,7 +199,12 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 
 	/* offsets */
 	vdso->lbase = VDSO_LBASE;
-	vdso->offset_sigtramp = vdso_offset_sigtramp;
+	vdso->offset_sigtramp = elf_search_vdso_sigtramp();
+
+	if (unlikely(vdso->offset_sigtramp == -1)) {
+		D("Use vdso_offset_sigtramp in header-file.\n");
+		vdso->offset_sigtramp = vdso_offset_sigtramp;
+	}
 #endif /*LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)*/
 out:
 	wmb();
