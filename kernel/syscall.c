@@ -4104,7 +4104,7 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 	}
 
 	if (val == 0) {
-		ret = -EINVAL;
+		ret = -ENOENT;
 		goto out;
 	}
 	
