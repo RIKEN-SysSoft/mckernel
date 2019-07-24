@@ -737,7 +737,7 @@ struct process_vm {
 	void *vvar_addr;
  	
 	ihk_spinlock_t page_table_lock;
-	ihk_spinlock_t memory_range_lock;
+	struct ihk_rwlock memory_range_lock;
     // to protect the followings:
     // 1. addition of process "memory range" (extend_process_region, add_process_memory_range)
     // 2. addition of process page table (allocate_pages, update_process_page_table)
@@ -769,6 +769,50 @@ static inline int has_cap_sys_admin(struct thread *th)
 {
 	/* CAP_SYS_ADMIN (= 21) */
 	return !(th->proc->euid);
+}
+
+static inline void  memory_range_read_lock(struct process_vm *vm,
+					   unsigned long *flags)
+{
+	for (;;) {
+		*flags = cpu_disable_interrupt_save();
+		if (ihk_mc_read_trylock(&vm->memory_range_lock)) {
+			break;
+		}
+		cpu_restore_interrupt(*flags);
+		while (!ihk_mc_read_can_lock(&vm->memory_range_lock)) {
+			cpu_pause();
+		}
+	}
+}
+
+static inline void  memory_range_write_lock(struct process_vm *vm,
+					    unsigned long *flags)
+{
+	for (;;) {
+		*flags = cpu_disable_interrupt_save();
+		if (ihk_mc_write_trylock(&vm->memory_range_lock)) {
+			break;
+		}
+		cpu_restore_interrupt(*flags);
+		while (!ihk_mc_write_can_lock(&vm->memory_range_lock)) {
+			cpu_pause();
+		}
+	}
+}
+
+static inline void  memory_range_read_unlock(struct process_vm *vm,
+					     unsigned long *flags)
+{
+	ihk_mc_read_unlock(&vm->memory_range_lock);
+	cpu_restore_interrupt(*flags);
+}
+
+static inline void  memory_range_write_unlock(struct process_vm *vm,
+					      unsigned long *flags)
+{
+	ihk_mc_write_unlock(&vm->memory_range_lock);
+	cpu_restore_interrupt(*flags);
 }
 
 void hold_address_space(struct address_space *);
