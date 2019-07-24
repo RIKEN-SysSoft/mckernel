@@ -1,0 +1,14 @@
+Script started on Wed Jul 24 10:55:01 2019
+bash-4.2$ make test
+gcc -g -Wall -o rwlock rwlock.c -lpthread
+sh ./rwlock.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 2-7,9-15 -m 1G@0 ... done
+rwlock test 1 PASS
+rwlock test 2 PASS
+rwlock test 3 PASS
+rwlock test 4 PASS
+bash-4.2$ exit
+exit
+
+Script done on Wed Jul 24 10:55:20 2019

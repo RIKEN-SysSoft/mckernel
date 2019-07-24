@@ -1,0 +1,19 @@
+【read/write lock 動作確認】
+□ テスト内容
+rwlock test 1: write_lock のテストを行う
+rwlock test 2: write_trylock のテストを行う
+rwlock test 3: write_lock と read_lock のテストを行う
+rwlock test 4: write_trylock と read_trylock のテストを行う
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+尚、テスト実行には rwlock.patch を適用した McKernel を使用すること。
+
+□ 実行結果
+rwlock.txt 参照。
+全ての項目が PASS していることを確認。

@@ -1,0 +1,239 @@
+diff --git a/arch/arm64/kernel/include/syscall_list.h b/arch/arm64/kernel/include/syscall_list.h
+index f911674..fe089fc 100644
+--- a/arch/arm64/kernel/include/syscall_list.h
++++ b/arch/arm64/kernel/include/syscall_list.h
+@@ -134,6 +134,8 @@ SYSCALL_HANDLED(731, util_indicate_clone)
+ SYSCALL_HANDLED(732, get_system)
+ SYSCALL_HANDLED(733, util_register_desc)
+ 
++SYSCALL_HANDLED(750, rwlock_test)
++
+ /* McKernel Specific */
+ SYSCALL_HANDLED(801, swapout)
+ SYSCALL_HANDLED(802, linux_mlock)
+diff --git a/arch/x86_64/kernel/include/syscall_list.h b/arch/x86_64/kernel/include/syscall_list.h
+index 79eda7f..4fac75c 100644
+--- a/arch/x86_64/kernel/include/syscall_list.h
++++ b/arch/x86_64/kernel/include/syscall_list.h
+@@ -174,6 +174,8 @@ SYSCALL_HANDLED(731, util_indicate_clone)
+ SYSCALL_HANDLED(732, get_system)
+ SYSCALL_HANDLED(733, util_register_desc)
+ 
++SYSCALL_HANDLED(750, rwlock_test)
++
+ /* McKernel Specific */
+ SYSCALL_HANDLED(801, swapout)
+ SYSCALL_HANDLED(802, linux_mlock)
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 06d3d48..acdd702 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -9482,6 +9482,208 @@ SYSCALL_DECLARE(util_register_desc)
+ 	return 0;
+ }
+ 
++SYSCALL_DECLARE(rwlock_test)
++{
++	int cmd = (int)ihk_mc_syscall_arg0(ctx);
++	int procs = (int)ihk_mc_syscall_arg1(ctx);
++	static ihk_atomic_t barrier;
++	static int counter;
++	static struct ihk_rwlock lock;
++	int i;
++	int bsp;
++	union {
++		int rcint;
++		long rclong;
++	} retval;
++
++	switch(cmd) {
++	case 0:
++		ihk_mc_rwlock_init(&lock);
++		return 0;
++
++	case 1:
++		bsp = ihk_atomic_inc_return(&barrier) == 1;
++		if (bsp) {
++			kprintf("rwlock_test 1 start\n");
++			counter = 0;
++		}
++		while (ihk_atomic_read(&barrier) != procs) {
++			cpu_pause();
++		}
++
++		for (i = 0; i < 100000; i++) {
++			ihk_mc_write_lock(&lock);
++			counter++;
++			ihk_mc_write_unlock(&lock);
++		}
++		ihk_atomic_dec(&barrier);
++		while (ihk_atomic_read(&barrier) != 0) {
++			cpu_pause();
++		}
++
++		if (bsp) {
++			if (counter == 100000 * procs) {
++				kprintf("rwlock_test 1 OK\n");
++			}
++			else {
++				kprintf("rwlock_test 1 NG %d != %d\n",
++					ihk_atomic_read(&barrier),
++					100000 * procs);
++			}
++		}
++		break;
++
++	case 2:
++		bsp = ihk_atomic_inc_return(&barrier) == 1;
++		if (bsp) {
++			kprintf("rwlock_test 2 start\n");
++			counter = 0;
++		}
++		while (ihk_atomic_read(&barrier) != procs) {
++			cpu_pause();
++		}
++
++		for (i = 0; i < 100000; i++) {
++			while (!ihk_mc_write_trylock(&lock)) {
++				while (!ihk_mc_write_can_lock(&lock)) {
++					cpu_pause();
++				}
++			}
++			counter++;
++			ihk_mc_write_unlock(&lock);
++		}
++		ihk_atomic_dec(&barrier);
++		while (ihk_atomic_read(&barrier) != 0) {
++			cpu_pause();
++		}
++
++		if (bsp) {
++			if (counter == 100000 * procs) {
++				kprintf("rwlock_test 2 OK\n");
++			}
++			else {
++				kprintf("rwlock_test 2 NG %d != %d\n",
++					ihk_atomic_read(&barrier),
++					100000 * procs);
++			}
++		}
++		break;
++
++	case 3:
++		bsp = ihk_atomic_inc_return(&barrier) == 1;
++		if (bsp) {
++			kprintf("rwlock_test 3 start\n");
++			counter = 0;
++		}
++		while (ihk_atomic_read(&barrier) != procs) {
++			cpu_pause();
++		}
++
++		for (i = 0; i < 100000; i++) {
++			int tmp;
++			ihk_mc_write_lock(&lock);
++			counter++;
++			ihk_mc_write_unlock(&lock);
++			ihk_mc_read_lock(&lock);
++			tmp = counter;
++			ihk_mc_read_unlock(&lock);
++			if (tmp >= 100000 * procs) {
++				kprintf("rwlock_test 3 break OK\n");
++				break;
++			}
++		}
++		ihk_atomic_dec(&barrier);
++		while (ihk_atomic_read(&barrier) != 0) {
++			cpu_pause();
++		}
++
++		if (bsp) {
++			if (counter == 100000 * procs) {
++				kprintf("rwlock_test 3 OK\n");
++			}
++			else {
++				kprintf("rwlock_test 3 NG %d != %d\n",
++					ihk_atomic_read(&barrier),
++					100000 * procs);
++			}
++		}
++		break;
++
++	case 4:
++		bsp = ihk_atomic_inc_return(&barrier) == 1;
++		if (bsp) {
++			kprintf("rwlock_test 4 start\n");
++			counter = 0;
++		}
++		while (ihk_atomic_read(&barrier) != procs) {
++			cpu_pause();
++		}
++
++		for (i = 0; i < 100000; i++) {
++			int brk = 0;
++
++			for (;;) {
++				int tmp;
++
++				if (ihk_mc_write_trylock(&lock)) {
++					counter++;
++					ihk_mc_write_unlock(&lock);
++					brk = 1;
++				}
++				if (ihk_mc_read_trylock(&lock)) {
++					tmp = counter;
++					ihk_mc_read_unlock(&lock);
++					if (tmp >= 100000 * procs) {
++						kprintf("rwlock_test 4 break OK\n");
++						break;
++					}
++				}
++				if (brk) {
++					break;
++				}
++				while (!ihk_mc_write_can_lock(&lock) &&
++				       !ihk_mc_read_can_lock(&lock)) {
++					cpu_pause();
++				}
++			}
++		}
++		ihk_atomic_dec(&barrier);
++		while (ihk_atomic_read(&barrier) != 0) {
++			cpu_pause();
++		}
++
++		if (bsp) {
++			if (counter == 100000 * procs) {
++				kprintf("rwlock_test 4 OK\n");
++			}
++			else {
++				kprintf("rwlock_test 4 NG %d != %d\n",
++					ihk_atomic_read(&barrier),
++					100000 * procs);
++			}
++		}
++		break;
++
++	case 10:
++		return counter;
++
++	case 11:
++		return ihk_atomic_read(&barrier);
++
++	case 12:
++		memcpy(&retval, &lock, sizeof(struct ihk_rwlock));
++		if (sizeof(struct ihk_rwlock) == 8) {
++			return retval.rclong;
++		}
++		return retval.rcint;
++
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ void
+ reset_cputime()
+ {

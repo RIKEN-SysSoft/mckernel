@@ -659,5 +659,102 @@ static inline int irqflags_can_interrupt(unsigned long flags)
 }
 #endif /* CONFIG_HAS_NMI */
 
+struct ihk_rwlock {
+	unsigned int lock;
+};
 
+static inline void ihk_mc_rwlock_init(struct ihk_rwlock *rw)
+{
+	rw->lock = 0;
+}
+
+static inline void ihk_mc_read_lock(struct ihk_rwlock *rw)
+{
+	unsigned int tmp, tmp2;
+
+	asm volatile(
+	"       sevl\n"
+	"1:     wfe\n"
+	"2:     ldaxr   %w0, %2\n"
+	"       add     %w0, %w0, #1\n"
+	"       tbnz    %w0, #31, 1b\n"
+	"       stxr    %w1, %w0, %2\n"
+	"       cbnz    %w1, 2b\n"
+	: "=&r" (tmp), "=&r" (tmp2), "+Q" (rw->lock)
+	:
+	: "cc", "memory");
+}
+
+static inline int ihk_mc_read_trylock(struct ihk_rwlock *rw)
+{
+	unsigned int tmp, tmp2 = 1;
+
+	asm volatile(
+	"       ldaxr   %w0, %2\n"
+	"       add     %w0, %w0, #1\n"
+	"       tbnz    %w0, #31, 1f\n"
+	"       stxr    %w1, %w0, %2\n"
+	"1:\n"
+	: "=&r" (tmp), "+r" (tmp2), "+Q" (rw->lock)
+	:
+	: "cc", "memory");
+
+	return !tmp2;
+}
+
+static inline void ihk_mc_read_unlock(struct ihk_rwlock *rw)
+{
+	unsigned int tmp, tmp2;
+
+	asm volatile(
+	"1:     ldxr    %w0, %2\n"
+	"       sub     %w0, %w0, #1\n"
+	"       stlxr   %w1, %w0, %2\n"
+	"       cbnz    %w1, 1b\n"
+	: "=&r" (tmp), "=&r" (tmp2), "+Q" (rw->lock)
+	:
+	: "cc", "memory");
+}
+
+static inline void ihk_mc_write_lock(struct ihk_rwlock *rw)
+{
+	unsigned int tmp;
+
+	asm volatile(
+	"       sevl\n"
+	"1:     wfe\n"
+	"2:     ldaxr   %w0, %1\n"
+	"       cbnz    %w0, 1b\n"
+	"       stxr    %w0, %w2, %1\n"
+	"       cbnz    %w0, 2b\n"
+	: "=&r" (tmp), "+Q" (rw->lock)
+	: "r" (0x80000000)
+	: "cc", "memory");
+}
+
+static inline int ihk_mc_write_trylock(struct ihk_rwlock *rw)
+{
+	unsigned int tmp;
+
+	asm volatile(
+	"       ldaxr   %w0, %1\n"
+	"       cbnz    %w0, 1f\n"
+	"       stxr    %w0, %w2, %1\n"
+	"1:\n"
+	: "=&r" (tmp), "+Q" (rw->lock)
+	: "r" (0x80000000)
+	: "cc", "memory");
+
+	return !tmp;
+}
+
+static inline void ihk_mc_write_unlock(struct ihk_rwlock *rw)
+{
+	asm volatile(
+	"       stlr    %w1, %0\n"
+	: "=Q" (rw->lock) : "r" (0) : "memory");
+}
+
+#define ihk_mc_read_can_lock(rw) ((rw)->lock < 0x80000000)
+#define ihk_mc_write_can_lock(rw) ((rw)->lock == 0)
 #endif /* !__HEADER_ARM64_COMMON_ARCH_LOCK_H */
