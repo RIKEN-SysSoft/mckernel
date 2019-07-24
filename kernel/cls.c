@@ -42,7 +42,9 @@ void cpu_local_var_init(void)
 		clv[i].monitor = monitor->cpu + i;
 		clv[i].rusage = rusage.cpu + i;
 		INIT_LIST_HEAD(&clv[i].smp_func_req_list);
+#ifdef ENABLE_PER_CPU_ALLOC_CACHE
 		clv[i].free_chunks.rb_node = NULL;
+#endif
 	}
 
 	cpu_local_var_initialized = 1;

@@ -609,6 +609,7 @@ unsigned long ihk_numa_alloc_pages(struct ihk_mc_numa_node *node,
 	unsigned long addr = 0;
 	mcs_lock_node_t mcs_node;
 
+#ifdef ENABLE_PER_CPU_ALLOC_CACHE
 	/* Check CPU local cache first */
 	if (cpu_local_var_initialized) {
 		unsigned long irqflags;
@@ -624,6 +625,7 @@ unsigned long ihk_numa_alloc_pages(struct ihk_mc_numa_node *node,
 			return addr;
 		}
 	}
+#endif
 
 	mcs_lock_lock(&node->lock, &mcs_node);
 
@@ -652,6 +654,7 @@ void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
 {
 	mcs_lock_node_t mcs_node;
 
+#ifdef ENABLE_PER_CPU_ALLOC_CACHE
 	/* CPU local cache */
 	if (cpu_local_var_initialized) {
 		unsigned long irqflags;
@@ -670,6 +673,7 @@ void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
 			return;
 		}
 	}
+#endif
 
 	if (addr < node->min_addr ||
 			(addr + (npages << PAGE_SHIFT)) > node->max_addr) {
