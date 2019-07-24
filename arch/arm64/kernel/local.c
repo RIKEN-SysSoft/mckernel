@@ -35,16 +35,20 @@ void init_processors_local(int max_id)
 	locals = (union arm64_cpu_local_variables *)ALIGN_UP((unsigned long)locals, KERNEL_STACK_SIZE);
 
 	/* clear struct process, struct process_vm, struct thread_info area */
-	for (i = 0, tmp = locals; i < max_id; i++, tmp++) {
+	for (i = 0, tmp = locals; i < max_id;
+	     i++, tmp = (void *)tmp + KERNEL_STACK_SIZE) {
 		memset(tmp, 0, sizeof(struct thread_info));
 	}
-	kprintf("locals = %p\n", locals);
+
+	kprintf("max_id: %d, KERNEL_STACK_SIZE: %lx, locals: %p - %p\n",
+		max_id, KERNEL_STACK_SIZE, locals,
+		(void *)locals + KERNEL_STACK_SIZE * max_id);
 }
 
 /* get id (logical processor id) local variable address */
 union arm64_cpu_local_variables *get_arm64_cpu_local_variable(int id)
 {
-	return locals + id;
+	return (void *)locals + KERNEL_STACK_SIZE * id;
 }
 
 /* get id (logical processor id) kernel stack address */
