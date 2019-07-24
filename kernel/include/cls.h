@@ -15,6 +15,7 @@
 
 #include <process.h>
 #include <syscall.h>
+#include <config.h>
 /*
  * CPU Local Storage (cls)
  */
@@ -103,8 +104,10 @@ struct cpu_local_var {
 
 	/* UTI */
 	void *uti_futex_resp;
+#ifdef ENABLE_PER_CPU_ALLOC_CACHE
 	/* Per-CPU memory allocator cache */
 	struct rb_root free_chunks;
+#endif
 } __attribute__((aligned(64)));
 
 extern int cpu_local_var_initialized;
