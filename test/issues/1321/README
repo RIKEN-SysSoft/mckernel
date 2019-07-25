@@ -1,0 +1,37 @@
+【Issue#1321 動作確認】
+□ テスト内容
+プロセス終了時に先に終了しているmcexecに対してシステムコールオフロードの発行を
+抑止していたため、以下のメッセージがkmsgに出力されていた。
+fileobj_free(xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx): free failed. -32
+
+しかし、システムコールオフロードはmcctrlが処理するものも存在するため、単純に
+抑止することはできない。上記メッセージはmcctrlが処理しないため出力されていた。
+Issue#1321 の対策では既にmcexecが終了していた場合でもシステムコールオフロードを
+発行するようにした。尚、mcexecが処理すべきシステムコールオフロードはmcctrlに
+よってエラーリターンするため、抑止しなくて問題無い。
+
+このため、動作確認としてプロセス関連のLTPを使用して、プロセス終了が正常に行わ
+れることと、file_objfreeのメッセージがkmsgに出力されないことを確認する。
+
+C1321T01 fork01がPASSし、fileobj_freeのログが出力されないこと。
+C1321T02 fork02がPASSし、fileobj_freeのログが出力されないこと。
+C1321T03 fork03がPASSし、fileobj_freeのログが出力されないこと。
+C1321T04 exit01がPASSし、fileobj_freeのログが出力されないこと。
+C1321T05 exit02がPASSし、fileobj_freeのログが出力されないこと。
+C1321T06 exit_group01がPASSし、fileobj_freeのログが出力されないこと。
+C1321T07 wait401がPASSし、fileobj_freeのログが出力されないこと。
+C1321T08 waitpid01がPASSし、fileobj_freeのログが出力されないこと。
+C1321T09 waitpid02がPASSし、fileobj_freeのログが出力されないこと。
+C1321T10 waitpid03がPASSし、fileobj_freeのログが出力されないこと。
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先やLTPの配置場所は、$HOME/.mck_test_config を
+参照している。
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample
+ファイルを $HOME にコピーし、適宜編集する
+
+□ 実行結果
+C1321.txt 参照。
+すべての項目をPASSしていることを確認。
