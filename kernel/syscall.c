@@ -204,9 +204,6 @@ long do_syscall(struct syscall_request *req, int cpu)
 	barrier();
 
 	if(req->number != __NR_exit_group){
-		if (proc->nohost) {// host is down
-			return -EPIPE;
-		}
 		++thread->in_syscall_offload;
 	}
 
