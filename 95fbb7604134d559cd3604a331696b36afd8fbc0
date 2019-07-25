@@ -1,0 +1,225 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a07d1432_48dc68dd",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1317,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: INFO: coredump not performed, try ulimit -c \u003cnon-zero\u003e\\n\",",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e32d7e3_e5561220",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1022,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: INFO: coredump not performed, try ulimit -c \u003cnon-zero\u003e\\n\",",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30fcaf04_933a796d",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 316,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(vm-\u003eaddress_space-\u003epage_table,",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6411d58a_160b02b1",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 470,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tif (ihk_mc_pt_virt_to_phys(vm-\u003eaddress_space-\u003epage_table,",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b1ad6e0_ddce3019",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 511,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\terror \u003d ihk_mc_pt_virt_to_phys(vm-\u003eaddress_space-\u003epage_table,",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99ab0515_7a43b77f",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 512,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t       (void *)range-\u003estart,",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4b0b1cf8_d350a11c",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 516,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tkprintf(\"%s: error: ihk_mc_pt_virt_to_phys for %lx failed (%d)\\n\",",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c0ada0a_6ededd85",
+        "filename": "kernel/mem.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 960,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+int gencore(struct process *proc, struct coretable **coretable, int *chunks,",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b0c5137_0199bda5",
+        "filename": "kernel/mem.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 964,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct siginfo siginfo_t;",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "44227510_e1cbabc6",
+        "filename": "kernel/mem.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 965,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+unsigned long do_kill(struct thread *thread, int pid, int tid,",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a4b4b6d4_a196c39d",
+        "filename": "kernel/mem.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1041,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: Prefer kmalloc_array over kmalloc with multiply\n+\t\t\tids \u003d kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb579e5a_f162f42c",
+        "filename": "kernel/mem.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027coredump\u0027, this function\u0027s name, in a string\n+\t\tkprintf(\"%s: INFO: coredump done\\n\", __func__);",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ade93fba_f1555479",
+        "filename": "test/issues/1219/segv_in_main.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-25T16:53:41Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027main\u0027, this function\u0027s name, in a string\n+\tprintf(\"SEGV in main thread!!\\n\");",
+      "revId": "95fbb7604134d559cd3604a331696b36afd8fbc0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
