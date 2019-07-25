@@ -181,7 +181,6 @@ long do_syscall(struct syscall_request *req, int cpu)
 	struct syscall_response res;
 	long rc;
 	struct thread *thread = cpu_local_var(current);
-	struct process *proc = thread->proc;
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 	int mstatus = 0;
 
@@ -204,9 +203,6 @@ long do_syscall(struct syscall_request *req, int cpu)
 	barrier();
 
 	if(req->number != __NR_exit_group){
-		if (proc->nohost) {// host is down
-			return -EPIPE;
-		}
 		++thread->in_syscall_offload;
 	}
 
