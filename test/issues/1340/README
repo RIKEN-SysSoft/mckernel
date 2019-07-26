@@ -1,0 +1,39 @@
+【Issue#1340 動作確認】
+□ テスト内容
+1. coredumpに契機となったシグナル情報が含まれていることを確認
+
+C1340T01: プログラム中でSEGVが発生した場合
+	gdbでcoredumpを読み込んだ際、下記が出力されることを確認
+	Program terminated with signal 11
+
+C1340T02: raise() で自身にシグナル3 (SIGQUIT) を送信した場合
+	gdbでcoredumpを読み込んだ際、下記が出力されることを確認
+	Program terminated with signal 3
+
+C1340T03: raise() で自身にシグナル4 (SIGILL) を送信した場合
+	gdbでcoredumpを読み込んだ際、下記が出力されることを確認
+	Program terminated with signal 4
+
+C1340T04: raise() で自身にシグナル6 (SIGABRT) を送信した場合
+	gdbでcoredumpを読み込んだ際、下記が出力されることを確認
+	Program terminated with signal 6
+
+C1340T05: raise() で自身にシグナル8 (SIGFPE) を送信した場合
+	gdbでcoredumpを読み込んだ際、下記が出力されることを確認
+	Program terminated with signal 8
+
+C1340T06: raise() で自身にシグナル11 (SIGSEGV) を送信した場合
+	gdbでcoredumpを読み込んだ際、下記が出力されることを確認
+	Program terminated with signal 11
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result_x86_64.log および result_aarch64.log 参照。
+すべての項目をPASSしていることを確認。
