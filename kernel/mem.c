@@ -958,7 +958,7 @@ static struct ihk_mc_interrupt_handler query_free_mem_handler = {
 };
 
 int gencore(struct process *proc, struct coretable **coretable, int *chunks,
-	    char *cmdline);
+	    char *cmdline, int sig);
 void freecore(struct coretable **);
 struct siginfo;
 typedef struct siginfo siginfo_t;
@@ -1093,7 +1093,8 @@ int coredump(struct thread *thread, void *regs, int sig)
 		goto skip;
 	}
 
-	if ((ret = gencore(proc, &coretable, &chunks, proc->saved_cmdline))) {
+	if ((ret = gencore(proc, &coretable, &chunks,
+			proc->saved_cmdline, sig))) {
 		kprintf("%s: ERROR: gencore returned %d\n", __func__, ret);
 		goto out;
 	}

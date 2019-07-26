@@ -108,7 +108,8 @@ struct note {
 
 /* functions */
 struct thread;
-extern void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, void *regs0);
+extern void arch_fill_prstatus(struct elf_prstatus64 *prstatus,
+		struct thread *thread, void *regs0, int sig);
 extern int arch_get_thread_core_info_size(void);
 extern void arch_fill_thread_core_info(struct note *head,
 		struct thread *thread, void *regs);
