@@ -1,0 +1,86 @@
+diff --git arch/arm64/kernel/include/syscall_list.h arch/arm64/kernel/include/syscall_list.h
+index 5dd6243..cef0005 100644
+--- arch/arm64/kernel/include/syscall_list.h
++++ arch/arm64/kernel/include/syscall_list.h
+@@ -134,6 +134,7 @@ SYSCALL_HANDLED(802, linux_mlock)
+ SYSCALL_HANDLED(803, suspend_threads)
+ SYSCALL_HANDLED(804, resume_threads)
+ SYSCALL_HANDLED(811, linux_spawn)
++SYSCALL_HANDLED(899, get_vma_prot)
+ 
+ SYSCALL_DELEGATED(1024, open)
+ SYSCALL_DELEGATED(1035, readlink)
+diff --git arch/x86_64/kernel/include/syscall_list.h arch/x86_64/kernel/include/syscall_list.h
+index 8ef9bd0..f130dbb 100644
+--- arch/x86_64/kernel/include/syscall_list.h
++++ arch/x86_64/kernel/include/syscall_list.h
+@@ -176,4 +176,5 @@ SYSCALL_HANDLED(802, linux_mlock)
+ SYSCALL_HANDLED(803, suspend_threads)
+ SYSCALL_HANDLED(804, resume_threads)
+ SYSCALL_HANDLED(811, linux_spawn)
++SYSCALL_HANDLED(899, get_vma_prot)
+ /**** End of File ****/
+diff --git executer/kernel/mcctrl/syscall.c executer/kernel/mcctrl/syscall.c
+index d742875..02fc0ef 100644
+--- executer/kernel/mcctrl/syscall.c
++++ executer/kernel/mcctrl/syscall.c
+@@ -1777,6 +1777,28 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
+ 	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, sizeof(*res));
+ }
+ 
++static int get_vma_prot(uintptr_t rva)
++{
++	struct mm_struct *mm = current->mm;
++	struct vm_area_struct *vma;
++	int prot;
++
++	down_write(&mm->mmap_sem);
++	vma = find_vma(mm, rva);
++	if (!vma || (rva < vma->vm_start)) {
++		printk("%s: find_vma failed.\n", __func__);
++		prot = -1;
++		goto out;
++	}
++
++	prot = (int)(vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC));
++
++out:
++	up_write(&mm->mmap_sem);
++
++	return prot;
++}
++
+ static int remap_user_space(uintptr_t rva, size_t len, int prot)
+ {
+ 	struct mm_struct *mm = current->mm;
+@@ -2080,6 +2102,10 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
+ 
+ 	dprintk("%s: system call: %lx\n", __FUNCTION__, sc->args[0]);
+ 	switch (sc->number) {
++	case 899:
++		ret = get_vma_prot(sc->args[0]);
++		break;
++
+ 	case __NR_mmap:
+ 		ret = pager_call(os, sc);
+ 		break;
+diff --git kernel/syscall.c kernel/syscall.c
+index 6517f84..a27c6b6 100644
+--- kernel/syscall.c
++++ kernel/syscall.c
+@@ -2021,6 +2021,15 @@ out:
+ 	return error;
+ }
+ 
++SYSCALL_DECLARE(get_vma_prot)
++{
++	ihk_mc_user_context_t ctx0;
++	const unsigned long vaddr = ihk_mc_syscall_arg0(ctx);
++
++	ihk_mc_syscall_arg0(&ctx0) = vaddr;
++	return syscall_generic_forwarding(899, &ctx0);
++}
++
+ SYSCALL_DECLARE(mprotect)
+ {
+ 	const intptr_t start = ihk_mc_syscall_arg0(ctx);
