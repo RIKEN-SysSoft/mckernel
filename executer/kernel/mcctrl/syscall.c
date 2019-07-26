@@ -1850,6 +1850,8 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 		}
 		if (addr < end) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
+			/* Revert permission */
+			vma->vm_flags |= VM_READ | VM_WRITE | VM_EXEC;
 			error = zap_vma_ptes(vma, addr, end-addr);
 			if (error) {
 				mcctrl_zap_page_range(vma, addr, end-addr,
@@ -1867,6 +1869,8 @@ int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 						      NULL);
 			}
 			else {
+				/* Revert permission */
+				vma->vm_flags |= VM_READ | VM_WRITE | VM_EXEC;
 				zap_vma_ptes(vma, addr, end-addr);
 			}
 #endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0) */
