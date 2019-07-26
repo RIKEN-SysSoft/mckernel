@@ -91,7 +91,7 @@ int get_prpsinfo_size(void)
  * \param proc A pointer to the current process structure.
  * \param regs0 A pointer to a ihk_mc_user_context_t structure.
  */
-void fill_prstatus(struct note *head, struct thread *thread)
+void fill_prstatus(struct note *head, struct thread *thread, int sig)
 {
 	void *name;
 	struct elf_prstatus64 *prstatus;
@@ -103,7 +103,7 @@ void fill_prstatus(struct note *head, struct thread *thread)
 	memcpy(name, "CORE", sizeof("CORE"));
 	prstatus = (struct elf_prstatus64 *)(name + align32(sizeof("CORE")));
 
-	arch_fill_prstatus(prstatus, thread, thread->coredump_regs);
+	arch_fill_prstatus(prstatus, thread, thread->coredump_regs, sig);
 }
 
 /**
@@ -212,14 +212,14 @@ int get_note_size(struct process *proc)
  * \param regs A pointer to a ihk_mc_user_context_t structure.
  */
 
-void fill_note(void *note, struct process *proc, char *cmdline)
+void fill_note(void *note, struct process *proc, char *cmdline, int sig)
 {
 	struct thread *thread_iter;
 	struct mcs_rwlock_node lock;
 
 	mcs_rwlock_reader_lock_noirq(&proc->threads_lock, &lock);
 	list_for_each_entry(thread_iter, &proc->threads_list, siblings_list) {
-		fill_prstatus(note, thread_iter);
+		fill_prstatus(note, thread_iter, sig);
 		note += get_prstatus_size();
 
 		arch_fill_thread_core_info(note, thread_iter,
@@ -272,7 +272,7 @@ void fill_note(void *note, struct process *proc, char *cmdline)
  */
 
 int gencore(struct process *proc, struct coretable **coretable, int *chunks,
-	    char *cmdline)
+	    char *cmdline, int sig)
 {
 	int error = 0;
 	struct coretable *ct = NULL;
@@ -385,7 +385,7 @@ int gencore(struct process *proc, struct coretable **coretable, int *chunks,
 		goto fail;
 	}
 	memset(note, 0, alignednotesize);
-	fill_note(note, proc, cmdline);
+	fill_note(note, proc, cmdline, sig);
 
 	/* prgram header for NOTE segment is exceptional */
 	ph[0].p_type = PT_NOTE;

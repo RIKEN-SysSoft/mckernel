@@ -8,7 +8,8 @@
 
 #define	align32(x) ((((x) + 3) / 4) * 4)
 
-void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, void *regs0)
+void arch_fill_prstatus(struct elf_prstatus64 *prstatus,
+	struct thread *thread, void *regs0, int sig)
 {
 	struct pt_regs *regs = regs0;
 	struct elf_prstatus64 tmp_prstatus;
@@ -38,6 +39,9 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	if (thread->proc->parent) {
 		prstatus->pr_ppid = thread->proc->parent->pid;
 	}
+
+	prstatus->pr_info.si_signo = sig;
+	prstatus->pr_cursig = sig;
 }
 
 int arch_get_thread_core_info_size(void)
