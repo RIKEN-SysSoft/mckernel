@@ -2,7 +2,8 @@
 #include <process.h>
 #include <elfcore.h>
 
-void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, void *regs0)
+void arch_fill_prstatus(struct elf_prstatus64 *prstatus,
+	struct thread *thread, void *regs0, int sig)
 {
 	struct x86_user_context *uctx = regs0;
 	struct x86_basic_regs *regs = &uctx->gpr;
@@ -30,6 +31,9 @@ void arch_fill_prstatus(struct elf_prstatus64 *prstatus, struct thread *thread, 
 	if (thread->proc->parent) {
 		prstatus->pr_ppid = thread->proc->parent->pid;
 	}
+
+	prstatus->pr_info.si_signo = sig;
+	prstatus->pr_cursig = sig;
 
 	prstatus->pr_reg[0] = _r15;
 	prstatus->pr_reg[1] = _r14;
