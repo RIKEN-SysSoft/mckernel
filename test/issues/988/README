@@ -1,0 +1,54 @@
+【Issue#988 動作確認】
+□ 前提
+	・本Issueで修正したmcctrl_pte_clear_range() は、WRITE権限を持つmmap領域を
+	unmapした場合に呼び出される
+	なお、WRITE権限を持たない領域のunmapの際には、set_host_vma()によって
+	パーミッションの初期化が行われる
+	・McKernelでは、PROT_WRITEを含む権限でのmprotectを行った場合、
+	ホスト側のVMAの権限は変更されない
+
+□ テスト内容
+1. unmapしたホスト側のVMAの権限がRWX(デフォルト)になっていることを確認
+C988T01:
+	以下の流れでmmap, mprotect, munmapを行い、munmap後のホスト側のVMAの
+	パーミッションを確認する
+	 1. mmapでメモリ領域を確保
+	 2. 確保した領域のVMAの権限がRWXであることを確認
+	 3. 確保した領域にmprotect(PROT_WRITE)を行う
+	 4. 確保した領域のVMAの権限がRWXであることを確認
+	    (McKernel では、PROT_WRITE を含むmprotectでは変更されない)
+	 5. 確保した領域をmunmapで解放する
+	 6. 解放後の領域のVMAの権限がRWXであることを確認
+	 7. mmapで再びメモリ領域を確保
+	 8. 確保した領域にmprotect(PROT_NONE)を行う
+	 9. 確保した領域のVMAの権限がNONE(0)であることを確認
+	10. 確保した領域をmunmapで解放する
+	11. 解放後の領域のVMAの権限がRWXであることを確認
+
+2. 以下のLTPを用いて既存のmmap機能に影響が無いことを確認
+	- mmap01
+	- mmap02
+	- mmap03
+	- mmap04
+	- mmap05
+	- mmap06
+	- mmap07
+	- mmap08
+	- mmap09
+	- mmap12
+	- mmap14
+	- mmap15
+
+□ 実行手順
+(1) cd <mckernel> && patch -p0 < <mckernel>/test/issues/988/get_vma_prot.patch
+(2) McKernelをビルドする
+(3) cd <mckernel>/test/issues/1181/<arch> && make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result_x86_64.log および result_aarch64.log 参照。
+すべての項目をPASSしていることを確認。
