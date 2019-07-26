@@ -1,0 +1,45 @@
+【Issue#988 動作確認】
+□ テスト内容
+1. ファイルマップを介したファイル書き込みが正常に行えることを確認
+C988T01:
+	以下の流れでファイルマップを介したファイル書き込みを行い、
+	それぞれ想定した内容の書き込みが出来ていることを確認
+	 1. MapFile1 をopenし、メモリ上にマップする
+	 2. マップしたメモリ領域上にテスト用文字列を書き込む
+	 3. マップしたメモリ領域に対してmprotect(PROT_NONE) を行う
+	 4. マップしたメモリ領域をunmapする
+	 5. MapFile2 をopenし、メモリ上にマップする
+	 6. マップしたメモリ領域上にテスト用文字列を書き込む
+	 7. マップしたメモリ領域をunmapする
+	 8. MapFile1, MapFile2 の内容がテスト用文字列になっていることを確認する
+
+2. 以下のLTPを用いて既存のmmap機能に影響が無いことを確認
+	- mmap00
+	- mmap01
+	- mmap02
+	- mmap03
+	- mmap04
+	- mmap05
+	- mmap06
+	- mmap07
+	- mmap08
+	- mmap09
+	- mmap10
+	- mmap11
+	- mmap12
+	- mmap13
+	- mmap14
+	- mmap15
+	- mmap16
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result_x86_64.log および result_aarch64.log 参照。
+すべての項目をPASSしていることを確認。

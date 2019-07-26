@@ -1,0 +1,63 @@
+*** C988T01 start *******************************
+** mprotect PROT_NONE: Succeed
+** 1st file map and write: Done
+** 2nd file map and write: Done
+*** C988T01 PASSED ******************************
+
+*** C988T02 start *******************************
+mmap01      1  TPASS  :  Functionality of mmap() successful
+*** C988T02 PASSED (1)
+
+*** C988T03 start *******************************
+mmap02      1  TPASS  :  Functionality of mmap() successful
+*** C988T03 PASSED (1)
+
+*** C988T04 start *******************************
+mmap03      1  TPASS  :  mmap() functionality is correct
+*** C988T04 PASSED (1)
+
+*** C988T05 start *******************************
+mmap04      1  TPASS  :  Functionality of mmap() successful
+*** C988T05 PASSED (1)
+
+*** C988T06 start *******************************
+mmap05      1  TPASS  :  Got SIGSEGV as expected
+*** C988T06 PASSED (1)
+
+*** C988T07 start *******************************
+mmap06      1  TPASS  :  mmap failed with EACCES
+*** C988T07 PASSED (1)
+
+*** C988T08 start *******************************
+mmap07      1  TPASS  :  mmap failed with EACCES
+*** C988T08 PASSED (1)
+
+*** C988T09 start *******************************
+mmap08      1  TPASS  :  mmap failed with EBADF
+*** C988T09 PASSED (1)
+
+*** C988T10 start *******************************
+mmap09      1  TPASS  :  ftruncate mmaped file to a smaller size
+mmap09      2  TPASS  :  ftruncate mmaped file to a larger size
+mmap09      3  TPASS  :  ftruncate mmaped file to 0 size
+*** C988T10 PASSED (3)
+
+*** C988T11 start *******************************
+tst_test.c:934: INFO: Timeout per run is 0h 05m 00s
+mmap12.c:103: INFO: All pages are present
+mmap12.c:127: PASS: File mapped properly
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C988T11 PASSED (0)
+
+*** C988T12 start *******************************
+mmap14      1  TPASS  :  Functionality of mmap() successful
+*** C988T12 PASSED (1)
+
+*** C988T13 start *******************************
+mmap15      1  TPASS  :  mmap into high region failed as expected: errno=ENOMEM(12): Cannot allocate memory
+*** C988T13 PASSED (1)
