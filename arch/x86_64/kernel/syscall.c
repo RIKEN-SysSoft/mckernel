@@ -2227,6 +2227,7 @@ int do_process_vm_read_writev(int pid,
 	struct vm_range *range;
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node update_lock;
+	unsigned long irqflags;
 
 	/* Sanity checks */
 	if (flags) {
@@ -2238,7 +2239,7 @@ int do_process_vm_read_writev(int pid,
 	}
 
 	/* Check if parameters are okay */
-	ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
+	memory_range_read_lock(lthread->vm, &irqflags);
 
 	range = lookup_process_memory_range(lthread->vm, 
 			(uintptr_t)local_iov, 
@@ -2260,7 +2261,7 @@ int do_process_vm_read_writev(int pid,
 
 	ret = 0;
 arg_out:
-	ihk_mc_spinlock_unlock_noirq(&lthread->vm->memory_range_lock);
+	memory_range_read_unlock(lthread->vm, &irqflags);
 
 	if (ret != 0) {
 		goto out;
@@ -2329,7 +2330,7 @@ arg_out:
 		if (pli != li) {
 			struct vm_range *range;
 
-			ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
+			memory_range_read_lock(lthread->vm, &irqflags);
 
 			/* Is base valid? */
 			range = lookup_process_memory_range(lthread->vm,
@@ -2359,7 +2360,7 @@ arg_out:
 
 			ret = 0;
 pli_out:
-			ihk_mc_spinlock_unlock_noirq(&lthread->vm->memory_range_lock);
+			memory_range_read_unlock(lthread->vm, &irqflags);
 
 			if (ret != 0) {
 				goto out;
@@ -2372,7 +2373,7 @@ pli_out:
 		if (pri != ri) {
 			struct vm_range *range;
 
-			ihk_mc_spinlock_lock_noirq(&rvm->memory_range_lock);
+			memory_range_read_lock(rvm, &irqflags);
 
 			/* Is base valid? */
 			range = lookup_process_memory_range(rvm,
@@ -2402,7 +2403,7 @@ pli_out:
 
 			ret = 0;
 pri_out:
-			ihk_mc_spinlock_unlock_noirq(&rvm->memory_range_lock);
+			memory_range_read_unlock(rvm, &irqflags);
 
 			if (ret != 0) {
 				goto out;
