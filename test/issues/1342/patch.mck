@@ -1,0 +1,260 @@
+diff --git a/arch/arm64/kernel/memory.c b/arch/arm64/kernel/memory.c
+index 30ec5eed..97d814b3 100644
+--- a/arch/arm64/kernel/memory.c
++++ b/arch/arm64/kernel/memory.c
+@@ -1715,7 +1715,7 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
+ 		}
+ 		tt[i] = pte;
+ 		if (pgsize == PTL3_SIZE) {
+-			dkprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n",
++			kprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n",
+ 				 pte_is_fileoff(ptep, pgsize) ?
+ 				 pte_get_off(&pte, pgsize) :
+ 				 pte_get_phys(&pte),
+@@ -1723,7 +1723,7 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
+ 			memory_stat_rss_add(PTL2_SIZE, PTL2_SIZE);
+ 		}
+ 		else if (pgsize == PTL2_SIZE) {
+-			dkprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n",
++			kprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n",
+ 				 pte_is_fileoff(ptep, pgsize) ?
+ 				 pte_get_off(&pte, pgsize) :
+ 				 pte_get_phys(&pte),
+@@ -1737,7 +1737,7 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
+ 		PFL_PDIR_TBL_ATTR;
+ 	ptl_set(ptep, d_table, table_level);
+ 
+-	dkprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n",
++	kprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n",
+ 		 phys_base, __func__, pgsize, pgsize);
+ 	memory_stat_rss_sub(pgsize, pgsize);
+ 
+@@ -2147,7 +2147,7 @@ static void unmap_free_stat(struct page *page, unsigned long phys,
+ 	if (!page || page_unmap(page)) {
+ 		ihk_mc_free_pages_user(phys_to_virt(phys),
+ 				       free_size >> PAGE_SHIFT);
+-		dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
++		kprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+ 			 phys, func, phys, free_size, free_size);
+ 		memory_stat_rss_sub(free_size, free_size);
+ 	}
+@@ -2708,7 +2708,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
+ 	if (cont_pte_state != CONT_PTE_TAIL) {
+ 		if (rusage_memory_stat_add(args->range, phys,
+ 					   set_size, set_size)) {
+-			dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
++			kprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+ 				phys, __func__, base, phys,
+ 				set_size, set_size);
+ 		} else {
+@@ -2819,7 +2819,7 @@ retry:
+ 								   phys,
+ 								   set_size,
+ 								   set_size)) {
+-						dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
++						kprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+ 							phys, __func__, base,
+ 							phys, set_size,
+ 							set_size);
+diff --git a/arch/x86_64/kernel/memory.c b/arch/x86_64/kernel/memory.c
+index df545e1b..c99db31e 100644
+--- a/arch/x86_64/kernel/memory.c
++++ b/arch/x86_64/kernel/memory.c
+@@ -893,11 +893,11 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
+ 		pt->entry[i] = pte;
+ 		switch(pgsize) {
+ 		case PTL3_SIZE:
+-			dkprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n", pte_is_fileoff(ptep, pgsize) ? pte_get_off(&pte, pgsize) : pte_get_phys(&pte), __FUNCTION__, PTL2_SIZE, PTL2_SIZE);
++			kprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n", pte_is_fileoff(ptep, pgsize) ? pte_get_off(&pte, pgsize) : pte_get_phys(&pte), __FUNCTION__, PTL2_SIZE, PTL2_SIZE);
+ 			memory_stat_rss_add(PTL2_SIZE, PTL2_SIZE);
+ 			break;
+ 		case PTL2_SIZE:
+-			dkprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n", pte_is_fileoff(ptep, pgsize) ? pte_get_off(&pte, pgsize) : pte_get_phys(&pte), __FUNCTION__, PTL1_SIZE, PTL1_SIZE);
++			kprintf("%lx+,%s: calling memory_stat_rss_add(),size=%ld,pgsize=%ld\n", pte_is_fileoff(ptep, pgsize) ? pte_get_off(&pte, pgsize) : pte_get_phys(&pte), __FUNCTION__, PTL1_SIZE, PTL1_SIZE);
+ 			memory_stat_rss_add(PTL1_SIZE, PTL1_SIZE);
+ 			break;
+ 		}
+@@ -906,7 +906,7 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
+ 
+ 	*ptep = (virt_to_phys(pt) & PT_PHYSMASK) | PFL2_PDIR_ATTR;
+ 
+-	dkprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys_base, __FUNCTION__, pgsize, pgsize);
++	kprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys_base, __FUNCTION__, pgsize, pgsize);
+ 	memory_stat_rss_sub(pgsize, pgsize);
+ 
+ 	/* Do not do this check for large pages as they don't come from the zeroobj
+@@ -1410,7 +1410,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
+ 				if (!args->memobj || !(args->memobj->flags & MF_XPMEM)) {
+ 					ihk_mc_free_pages_user(phys_to_virt(phys), 1);
+ 					dkprintf("%s: freeing regular page at 0x%lx\n", __FUNCTION__, base);
+-					dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL1_SIZE, PTL1_SIZE);
++					kprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL1_SIZE, PTL1_SIZE);
+ 					memory_stat_rss_sub(PTL1_SIZE, PTL1_SIZE); 
+ 				} else {
+ 					dkprintf("%s: XPMEM attach,phys=%lx\n", __FUNCTION__, phys);
+@@ -1419,7 +1419,7 @@ static int clear_range_l1(void *args0, pte_t *ptep, uint64_t base,
+ 				ihk_mc_free_pages_user(phys_to_virt(phys), 1);
+ 				dkprintf("%s: freeing file-backed page at 0x%lx\n", __FUNCTION__, base);
+ 				/* Track page->count for !MF_PREMAP pages */
+-				dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL1_SIZE, PTL1_SIZE);
++				kprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL1_SIZE, PTL1_SIZE);
+ 				rusage_memory_stat_sub(args->memobj, PTL1_SIZE, PTL1_SIZE); 
+ 			}
+ 		}  else {
+@@ -1479,7 +1479,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
+ 						ihk_mc_free_pages_user(phys_to_virt(phys),
+ 											   PTL2_SIZE/PTL1_SIZE);
+ 						dkprintf("%s: freeing large page at 0x%lx\n", __FUNCTION__, base);
+-						dkprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old),__FUNCTION__, pte_get_phys(&old), PTL2_SIZE, PTL2_SIZE);
++						kprintf("%lx-,%s: memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old),__FUNCTION__, pte_get_phys(&old), PTL2_SIZE, PTL2_SIZE);
+ 						memory_stat_rss_sub(PTL2_SIZE, PTL2_SIZE); 
+ 					} else {
+ 						dkprintf("%s: XPMEM attach,phys=%lx\n", __FUNCTION__, phys);
+@@ -1489,7 +1489,7 @@ static int clear_range_l2(void *args0, pte_t *ptep, uint64_t base,
+ 				                           PTL2_SIZE/PTL1_SIZE);
+ 					dkprintf("%s: having unmapped page-struct, freeing large page at 0x%lx\n", __FUNCTION__, base);
+ 					/* Track page->count for !MF_PREMAP pages */
+-					dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL2_SIZE, PTL2_SIZE);
++					kprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL2_SIZE, PTL2_SIZE);
+ 					rusage_memory_stat_sub(args->memobj, PTL2_SIZE, PTL2_SIZE); 
+ 				}
+ 			}
+@@ -1563,7 +1563,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
+ 					if (!args->memobj || !(args->memobj->flags & MF_XPMEM)) {
+ 						ihk_mc_free_pages_user(phys_to_virt(phys),
+ 											   PTL3_SIZE/PTL1_SIZE);
+-						dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%ld,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL3_SIZE, PTL3_SIZE);
++						kprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%ld,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL3_SIZE, PTL3_SIZE);
+ 						memory_stat_rss_sub(PTL3_SIZE, PTL3_SIZE); 
+ 					} else {
+ 						dkprintf("%s: XPMEM attach,phys=%lx\n", __FUNCTION__, phys);
+@@ -1572,7 +1572,7 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
+ 					ihk_mc_free_pages_user(phys_to_virt(phys),
+ 				                           PTL3_SIZE/PTL1_SIZE);
+ 					/* Track page->count for !MF_PREMAP pages */
+-					dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL3_SIZE, PTL3_SIZE);
++					kprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n", pte_get_phys(&old), __FUNCTION__, pte_get_phys(&old), PTL3_SIZE, PTL3_SIZE);
+ 					rusage_memory_stat_sub(args->memobj, PTL3_SIZE, PTL3_SIZE); 
+ 				}
+ 			}
+@@ -1895,7 +1895,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
+ 	error = 0;
+ 	// call memory_stat_rss_add() here because pgshift is resolved here
+ 	if (rusage_memory_stat_add(args->range, phys, PTL1_SIZE, PTL1_SIZE)) {
+-		dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL1_SIZE, PTL1_SIZE);
++		kprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL1_SIZE, PTL1_SIZE);
+ 	} else {
+ 		dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", __FUNCTION__, base, phys, PTL1_SIZE, PTL1_SIZE);
+ 	}
+@@ -1933,7 +1933,7 @@ retry:
+ 					base, start, end, error, *ptep);
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL2_SIZE, PTL2_SIZE)) {
+-				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
++				kprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
+ 			} else {
+ 				dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
+ 			}
+@@ -2022,7 +2022,7 @@ retry:
+ 
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL3_SIZE, PTL3_SIZE)) {
+-				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
++				kprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
+ 			} else {
+ 				dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
+ 			}
+diff --git a/ihk b/ihk
+--- a/ihk
++++ b/ihk
+@@ -1 +1 @@
+-Subproject commit 9a15ade2abc344b37797a6124769992cb7d80226
++Subproject commit 9a15ade2abc344b37797a6124769992cb7d80226-dirty
+diff --git a/kernel/fileobj.c b/kernel/fileobj.c
+index ed6dd1df..a3c7b6f5 100644
+--- a/kernel/fileobj.c
++++ b/kernel/fileobj.c
+@@ -300,7 +300,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, int flags,
+ 						goto error_cleanup;
+ 					}
+ 					// Track change in memobj->pages[] for MF_PREMAP pages (MPOL_SHM_PREMAP case)
+-					dkprintf("%lx+,%s: MF_PREMAP&&MPOL_SHM_PREMAP,memory_stat_rss_add,phys=%lx,size=%ld,pgsize=%ld\n", virt_to_phys(mo->pages[j]), __FUNCTION__, virt_to_phys(mo->pages[j]), PAGE_SIZE, PAGE_SIZE);
++					kprintf("%lx+,%s: MF_PREMAP&&MPOL_SHM_PREMAP,memory_stat_rss_add,phys=%lx,size=%ld,pgsize=%ld\n", virt_to_phys(mo->pages[j]), __FUNCTION__, virt_to_phys(mo->pages[j]), PAGE_SIZE, PAGE_SIZE);
+ 					rusage_memory_stat_mapped_file_add(PAGE_SIZE, PAGE_SIZE);
+ 
+ 					memset(mo->pages[j], 0, PAGE_SIZE);
+@@ -390,7 +390,7 @@ static void fileobj_free(struct memobj *memobj)
+ 			/* Track change in page->count for !MF_PREMAP pages.
+ 			 * It is decremented here or in clear_range()
+ 			 */
+-			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
++			kprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
+ 				 phys, __func__, phys, PAGE_SIZE, PAGE_SIZE);
+ 			rusage_memory_stat_mapped_file_sub(PAGE_SIZE,
+ 							   PAGE_SIZE);
+@@ -409,7 +409,7 @@ static void fileobj_free(struct memobj *memobj)
+ 				// Track change in fileobj->pages[] for MF_PREMAP pages
+ 				// Note that page_unmap() isn't called for MF_PREMAP in
+ 				// free_process_memory_range() --> ihk_mc_pt_free_range()
+-				dkprintf("%lx-,%s: memory_stat_rss_sub,phys=%lx,size=%ld,pgsize=%ld\n",
++				kprintf("%lx-,%s: memory_stat_rss_sub,phys=%lx,size=%ld,pgsize=%ld\n",
+ 					 virt_to_phys(to_memobj(obj)->pages[i]),
+ 					 __func__,
+ 					 virt_to_phys(to_memobj(obj)->pages[i]),
+@@ -595,7 +595,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
+ 				dkprintf("%s: MF_ZEROFILL: off: %lu -> 0x%lx allocated\n",
+ 						__FUNCTION__, off, virt_to_phys(virt));
+ 				// Track change in memobj->pages[] for MF_PREMAP pages (!MPOL_SHM_PREMAP case)
+-				dkprintf("%lx+,%s: MF_PREMAP&&!MPOL_SHM_PREMAP,memory_stat_rss_add,phys=%lx,size=%ld,pgsize=%ld\n", virt_to_phys(virt), __FUNCTION__, virt_to_phys(virt), PAGE_SIZE, PAGE_SIZE);
++				kprintf("%lx+,%s: MF_PREMAP&&!MPOL_SHM_PREMAP,memory_stat_rss_add,phys=%lx,size=%ld,pgsize=%ld\n", virt_to_phys(virt), __FUNCTION__, virt_to_phys(virt), PAGE_SIZE, PAGE_SIZE);
+ 				rusage_memory_stat_mapped_file_add(PAGE_SIZE, PAGE_SIZE);
+ 			}
+ 		}
+diff --git a/kernel/process.c b/kernel/process.c
+index b63dba69..7e1fce7c 100644
+--- a/kernel/process.c
++++ b/kernel/process.c
+@@ -1558,7 +1558,7 @@ static int remap_one_page(void *arg0, page_table_t pt, pte_t *ptep,
+ 	page = phys_to_page(phys);
+ 	if (page && page_unmap(page)) {
+ 		ihk_mc_free_pages_user(phys_to_virt(phys), pgsize/PAGE_SIZE);
+-		dkprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys, __FUNCTION__, pgsize, pgsize);
++		kprintf("%lx-,%s: calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys, __FUNCTION__, pgsize, pgsize);
+ 		rusage_memory_stat_sub(args->memobj, pgsize, pgsize); 
+ 	}
+ 
+@@ -2022,12 +2022,12 @@ retry:
+ 			 *  (5) Reach here
+ 			 */
+ 			if (rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
+-				dkprintf("%lx+,%s: COW-source pointed-to by only fileobj, calling memory_stat_rss_add(),pgsize=%ld\n",
++				kprintf("%lx+,%s: COW-source pointed-to by only fileobj, calling memory_stat_rss_add(),pgsize=%ld\n",
+ 						phys, __FUNCTION__, pgsize);
+ 			}
+ 			if (page) {
+ 				if (page_unmap(page)) {
+-					dkprintf("%lx-,%s: cow,calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys, __FUNCTION__, pgsize, pgsize);
++					kprintf("%lx-,%s: cow,calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", phys, __FUNCTION__, pgsize, pgsize);
+ 					rusage_memory_stat_sub(range->memobj, pgsize, pgsize); 
+ 				}
+ 			}
+@@ -2048,8 +2048,8 @@ retry:
+ 		if (!(reason & PF_PATCH) &&
+ 		    rusage_memory_stat_add(range, phys, pgsize, pgsize)) {
+ 			/* on-demand paging, phys pages are obtained by ihk_mc_alloc_aligned_pages_user() or get_page() */
+-			dkprintf("%lx+,%s: (on-demand paging && first map) || cow,calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
+-					 phys, __FUNCTION__, phys, pgsize);
++			kprintf("%lx+,%s: paging or cow,calling memory_stat_rss_add(),base=%lx,phys=%lx,pgsize=%ld\n",
++				phys, __FUNCTION__, fault_addr, phys, pgsize);
+ 		} else {
+ 			dkprintf("%s: !calling memory_stat_rss_add(),phys=%lx,pgsize=%ld\n",
+ 					 __FUNCTION__, phys, pgsize);
+@@ -2087,7 +2087,7 @@ out:
+ 				 __FUNCTION__, page_to_phys(page),
+ 				 range->start, range->end, range->flag, fault_addr, reason);
+ 		if (page_unmap(page)) {
+-			dkprintf("%lx-,%s: out,calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", page_to_phys(page), __FUNCTION__, pgsize, pgsize);
++			kprintf("%lx-,%s: out,calling memory_stat_rss_sub(),size=%ld,pgsize=%ld\n", page_to_phys(page), __FUNCTION__, pgsize, pgsize);
+ 			rusage_memory_stat_sub(range->memobj, pgsize, pgsize); 
+ 		}
+ 	}

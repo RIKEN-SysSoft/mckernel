@@ -37,6 +37,12 @@ extern unsigned long arm64_st_phys_size;
 
 int safe_kernel_map;
 
+enum cont_pte_state {
+	CONT_PTE_NONE, /* Not a contiguous PTE */
+	CONT_PTE_HEAD,
+	CONT_PTE_TAIL
+};
+
 /* Arch specific early allocation routine */
 void *early_alloc_pages(int nr_pages)
 {
@@ -2659,6 +2665,9 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 	int error;
 	uintptr_t phys;
 	pte_t pte;
+	enum cont_pte_state cont_pte_state =
+		(args->attr[0] & PTE_CONT) ? CONT_PTE_TAIL : CONT_PTE_NONE;
+	ssize_t set_size;
 
 	dkprintf("set_range_l1(%lx,%lx,%lx)\n", base, start, end);
 
@@ -2682,21 +2691,30 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 		// if phys is aligned and range does not end early.
 		if (__page_offset(phys | next_addr, PTL1_CONT_SIZE) == 0) {
 			args->attr[0] |= PTE_CONT;
+			cont_pte_state = CONT_PTE_HEAD;
 		} else {
 			args->attr[0] &= ~PTE_CONT;
+			cont_pte_state = CONT_PTE_NONE;
 		}
 	}
 	pte = phys | args->attr[0];
 	ptl1_set(ptep, pte);
 
+	set_size = (cont_pte_state == CONT_PTE_HEAD) ?
+		PTL1_CONT_SIZE : PTL1_SIZE;
+
 	error = 0;
 	// call memory_stat_rss_add() here because pgshift is resolved here
-	if (rusage_memory_stat_add(args->range, phys, PTL1_SIZE, PTL1_SIZE)) {
-		dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-			 phys, __func__, base, phys, PTL1_SIZE, PTL1_SIZE);
-	} else {
-		dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-			 __func__, base, phys, PTL1_SIZE, PTL1_SIZE);
+	if (cont_pte_state != CONT_PTE_TAIL) {
+		if (rusage_memory_stat_add(args->range, phys,
+					   set_size, set_size)) {
+			dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+				phys, __func__, base, phys,
+				set_size, set_size);
+		} else {
+			dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+				 __func__, base, phys, set_size, set_size);
+		}
 	}
 
 out:
@@ -2745,6 +2763,10 @@ int set_range_middle(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 	translation_table_t* tt;
 	translation_table_t* tt_pa = NULL;
 
+	enum cont_pte_state cont_pte_state =
+		(args->attr[0] & PTE_CONT) ? CONT_PTE_TAIL : CONT_PTE_NONE;
+	ssize_t set_size;
+
 	dkprintf("set_range_middle(%lx,%lx,%lx,%d)\n", base, start, end, level);
 
 retry:
@@ -2774,28 +2796,38 @@ retry:
 					// and range does not end early.
 					if (__page_offset(phys | next_addr, tbl.cont_pgsize) == 0) {
 						args->attr[level-1] |= PTE_CONT;
+						cont_pte_state = CONT_PTE_HEAD;
 					} else {
 						args->attr[level-1] &= ~PTE_CONT;
+						cont_pte_state = CONT_PTE_NONE;
 					}
 				}
 
 				ptl_set(ptep, phys | args->attr[level-1],
 					level);
+
+				set_size = (cont_pte_state == CONT_PTE_HEAD) ?
+					tbl.cont_pgsize : tbl.pgsize;
+
 				error = 0;
 				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
 					 "large page. %d %lx\n",
 					 base, start, end, level, error, *ptep);
 				// Call memory_stat_rss_add() here because pgshift is resolved here
-				if (rusage_memory_stat_add(args->range, phys,
-							   tbl.pgsize,
-							   tbl.pgsize)) {
-					dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-						 phys, __func__, base, phys,
-						 tbl.pgsize, tbl.pgsize);
-				} else {
-					dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-						 __func__, base, phys,
-						 tbl.pgsize, tbl.pgsize);
+				if (cont_pte_state != CONT_PTE_TAIL) {
+					if (rusage_memory_stat_add(args->range,
+								   phys,
+								   set_size,
+								   set_size)) {
+						dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+							phys, __func__, base,
+							phys, set_size,
+							set_size);
+					} else {
+						dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+							 __func__, base, phys,
+							 set_size, set_size);
+					}
 				}
 				goto out;
 			}
