@@ -1,0 +1,395 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c13e3383_567b8b11",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2711,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%lx+,%s: calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2460fd29_a0548d05",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2715,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: !calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d4a12f9_698b0e38",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2822,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"%lx+,%s: calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5393d226_9ae57b50",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2827,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tdkprintf(\"%s: !calling memory_stat_rss_add(),base\u003d%lx,phys\u003d%lx,size\u003d%ld,pgsize\u003d%ld\\n\",",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "01bbc1b3_e167e4e4",
+        "filename": "test/issues/1342/patch.ihk",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e120022_ccfc0c9f",
+        "filename": "test/issues/1342/patch.ihk",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3819bc54_b29b85f0",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72d5cf52_013d0e59",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eade9592_a4ec5969",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2104507f_23d299ac",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c4675b32_b3c11229",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "477b2fc1_94b01976",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^I^I^Imemory_stat_rss_sub(PTL1_SIZE, PTL1_SIZE); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c41a8b72_33ef1dac",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^I^Irusage_memory_stat_sub(args-\u003ememobj, PTL1_SIZE, PTL1_SIZE); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25b1e4a4_e67311c2",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^I^I^I^Imemory_stat_rss_sub(PTL2_SIZE, PTL2_SIZE); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d1145644_61b82b63",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^I^I^Irusage_memory_stat_sub(args-\u003ememobj, PTL2_SIZE, PTL2_SIZE); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5d3cdbee_384e5612",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^I^I^I^Imemory_stat_rss_sub(PTL3_SIZE, PTL3_SIZE); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8cdd2e89_52abb6ec",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 137,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^I^I^Irusage_memory_stat_sub(args-\u003ememobj, PTL3_SIZE, PTL3_SIZE); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da00aae2_a5db0807",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "253f3e76_14834fc5",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 184,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "59ef8748_2acb193f",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 223,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^Irusage_memory_stat_sub(args-\u003ememobj, pgsize, pgsize); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87462dd5_a4490cdd",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 225,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "480452ad_3023b6d8",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^I^I^Irusage_memory_stat_sub(range-\u003ememobj, pgsize, pgsize); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f0946323_64e07f04",
+        "filename": "test/issues/1342/patch.mck",
+        "patchSetId": 1
+      },
+      "lineNbr": 258,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-30T03:02:18Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ ^I^I^Irusage_memory_stat_sub(range-\u003ememobj, pgsize, pgsize); $",
+      "revId": "6cb182706a33bcc8fe7166aaa047c2673a9d8324",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
