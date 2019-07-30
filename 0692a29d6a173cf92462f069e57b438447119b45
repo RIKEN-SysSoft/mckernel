@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "9ea81fbd_ea56b77d",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 563,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-30T00:31:21Z",
+      "side": 0,
+      "message": "これは、select-\u003ereadから、\u003cN\u003eのreadに変えたchangeにマージすべきでは？",
+      "parentUuid": "8598e927_2f25e8fe",
+      "range": {
+        "startLine": 563,
+        "startChar": 18,
+        "endLine": 563,
+        "endChar": 41
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c0aff536_51d226b8",
         "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
         "patchSetId": 5
@@ -36,6 +60,30 @@
       "writtenOn": "2019-07-19T04:04:38Z",
       "side": 0,
       "message": "これは、別の目的の修正では？その場合、切り出して独立したcommitとすべき。",
+      "range": {
+        "startLine": 592,
+        "startChar": 0,
+        "endLine": 592,
+        "endChar": 7
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2afef932_07828f89",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 592,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-30T00:31:21Z",
+      "side": 0,
+      "message": "これは、select-\u003ereadから、\u003cN\u003eのreadに変えたchangeにマージすべきでは？",
+      "parentUuid": "c0aff536_51d226b8",
       "range": {
         "startLine": 592,
         "startChar": 0,
@@ -71,6 +119,30 @@
     },
     {
       "key": {
+        "uuid": "d1340607_4769062b",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 618,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-30T00:31:21Z",
+      "side": 0,
+      "message": "これは、select-\u003ereadから、\u003cN\u003eのreadに変えたchangeにマージすべきでは？",
+      "parentUuid": "3f583f9e_4c0ffb99",
+      "range": {
+        "startLine": 618,
+        "startChar": 0,
+        "endLine": 618,
+        "endChar": 7
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "288e04cf_0b95b26e",
         "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
         "patchSetId": 5
@@ -94,6 +166,30 @@
     },
     {
       "key": {
+        "uuid": "70e60d41_803f6672",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 691,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-30T00:31:21Z",
+      "side": 0,
+      "message": "これは、select-\u003ereadから、\u003cN\u003eのreadに変えたchangeにマージすべきでは？",
+      "parentUuid": "288e04cf_0b95b26e",
+      "range": {
+        "startLine": 691,
+        "startChar": 0,
+        "endLine": 691,
+        "endChar": 45
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "b67f6b8a_be6a3637",
         "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
         "patchSetId": 5
@@ -105,6 +201,30 @@
       "writtenOn": "2019-07-19T04:04:38Z",
       "side": 0,
       "message": "これは、別の目的の修正では？その場合、切り出して独立したcommitとすべき。",
+      "range": {
+        "startLine": 755,
+        "startChar": 0,
+        "endLine": 755,
+        "endChar": 62
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "69f688a2_88b61dc2",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 755,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-07-30T00:31:21Z",
+      "side": 0,
+      "message": "これは、armv8pmu_disable_counterがあるため不要になった？",
+      "parentUuid": "b67f6b8a_be6a3637",
       "range": {
         "startLine": 755,
         "startChar": 0,
