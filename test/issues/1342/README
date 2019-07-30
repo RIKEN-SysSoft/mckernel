@@ -1,0 +1,18 @@
+==========
+How to run
+==========
+$ (cd <mckernel>; patch -p1 < test/issues/1342/patch.mck)
+$ (cd <ihk>; patch -p1 < test/issues/1342/patch.ihk)
+Build McKernel
+$ make test
+Check if "log" file contains "<address>+,..." and the size of "diff"
+file is zero.
+
+================
+Test description
+================
+(1) Show memory_stat_rss[]
+(2) malloc 350 MB, touch the region, free it
+(3) malloc 400 MB, touch the region, free it
+(4) Show memory_stat_rss[], expecting the amounts are the same as in
+    (1)
