@@ -2671,17 +2671,28 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 	}
 
 	phys = args->phys + (base - start);
-	if (__page_offset(base, PTL1_CONT_SIZE) == 0) { //check head pte
+
+	/* Check if we can begin / end a series of contiguous PTEs */
+	if (__page_offset(base, PTL1_CONT_SIZE) == 0) {
 		uintptr_t next_addr = base + PTL1_CONT_SIZE;
 
 		if (end < next_addr) {
 			next_addr = end;
 		}
 
-		// set contiguous bit until the next head pte
-		// if phys is aligned and range does not end early.
+		/* Start the series if physical address is also aligned and
+		 * the range covers the series. Don't start or end it if
+		 * physical address is not aligned or the range ends early.
+		 */
 		if (__page_offset(phys | next_addr, PTL1_CONT_SIZE) == 0) {
 			args->attr[0] |= PTE_CONT;
+			if (rusage_memory_stat_add(args->range, phys,
+						   PTL1_CONT_SIZE,
+						   PTL1_CONT_SIZE)) {
+				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+					 phys, __func__, base, phys,
+					 PTL1_CONT_SIZE, PTL1_CONT_SIZE);
+			}
 		} else {
 			args->attr[0] &= ~PTE_CONT;
 		}
@@ -2691,12 +2702,13 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 
 	error = 0;
 	// call memory_stat_rss_add() here because pgshift is resolved here
-	if (rusage_memory_stat_add(args->range, phys, PTL1_SIZE, PTL1_SIZE)) {
-		dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-			 phys, __func__, base, phys, PTL1_SIZE, PTL1_SIZE);
-	} else {
-		dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-			 __func__, base, phys, PTL1_SIZE, PTL1_SIZE);
+	if (!(args->attr[0] & PTE_CONT)) {
+		if (rusage_memory_stat_add(args->range, phys,
+					   PTL1_SIZE, PTL1_SIZE)) {
+			dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+				phys, __func__, base, phys,
+				PTL1_SIZE, PTL1_SIZE);
+		}
 	}
 
 out:
@@ -2760,7 +2772,9 @@ retry:
 
 				phys = args->phys + (base - start);
 
-				//check head pte
+				/* Check if we can begin / end a series of
+				 * contiguous PTEs
+				 */
 				if (__page_offset(base, tbl.cont_pgsize) == 0) {
 					uintptr_t next_addr = base +
 						tbl.cont_pgsize;
@@ -2769,11 +2783,24 @@ retry:
 						next_addr = end;
 					}
 
-					// set contiguous bit until the
-					// next head pte if phys is aligned
-					// and range does not end early.
+					/* Start the series if physical address
+					 * is also aligned and the range covers
+					 * the series. Don't start or end it if
+					 * physical address is not aligned or
+					 * the range ends early.
+					 */
 					if (__page_offset(phys | next_addr, tbl.cont_pgsize) == 0) {
 						args->attr[level-1] |= PTE_CONT;
+						if (rusage_memory_stat_add(args->range,
+									   phys,
+									   tbl.cont_pgsize,
+									   tbl.cont_pgsize)) {
+							dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+								 phys, __func__,
+								 base, phys,
+								 tbl.cont_pgsize,
+								 tbl.cont_pgsize);
+						}
 					} else {
 						args->attr[level-1] &= ~PTE_CONT;
 					}
@@ -2781,21 +2808,23 @@ retry:
 
 				ptl_set(ptep, phys | args->attr[level-1],
 					level);
+
 				error = 0;
 				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
 					 "large page. %d %lx\n",
 					 base, start, end, level, error, *ptep);
 				// Call memory_stat_rss_add() here because pgshift is resolved here
-				if (rusage_memory_stat_add(args->range, phys,
-							   tbl.pgsize,
-							   tbl.pgsize)) {
-					dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-						 phys, __func__, base, phys,
-						 tbl.pgsize, tbl.pgsize);
-				} else {
-					dkprintf("%s: !calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
-						 __func__, base, phys,
-						 tbl.pgsize, tbl.pgsize);
+				if (!(args->attr[level-1] & PTE_CONT)) {
+					if (rusage_memory_stat_add(args->range,
+								   phys,
+								   tbl.pgsize,
+								   tbl.pgsize)) {
+						dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n",
+							 phys, __func__, base,
+							 phys,
+							 tbl.pgsize,
+							 tbl.pgsize);
+					}
 				}
 				goto out;
 			}
