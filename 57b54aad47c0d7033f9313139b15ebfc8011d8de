@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "57ef778f_c83fe3dd",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1317,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: INFO: coredump not performed, try ulimit -c \u003cnon-zero\u003e\\n\",",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07c904f8_66c58e62",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1022,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: INFO: coredump not performed, try ulimit -c \u003cnon-zero\u003e\\n\",",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b7a190a8_156abc1d",
+        "filename": "kernel/gencore.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 518,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tkprintf(\"%s: error: ihk_mc_pt_virt_to_phys for %lx failed (%d)\\n\",",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d463c39_18cbcaf3",
+        "filename": "kernel/mem.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 960,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+int gencore(struct process *proc, struct coretable **coretable,",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08389ce3_2f929664",
+        "filename": "kernel/mem.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 964,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct siginfo siginfo_t;",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e9d5f0f_b2bd24ee",
+        "filename": "kernel/mem.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1039,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: Prefer kmalloc_array over kmalloc with multiply\n+\t\t\tids \u003d kmalloc(sizeof(int) * n, IHK_MC_AP_NOWAIT);",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c237e78_4886bd87",
+        "filename": "kernel/mem.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1108,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027coredump\u0027, this function\u0027s name, in a string\n+\t\tkprintf(\"%s: INFO: coredump done\\n\", __func__);",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8089b72c_f2adf09c",
+        "filename": "test/issues/1219/segv_in_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-07-31T05:59:33Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027main\u0027, this function\u0027s name, in a string\n+\tprintf(\"SEGV in main thread!!\\n\");",
+      "revId": "57b54aad47c0d7033f9313139b15ebfc8011d8de",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
