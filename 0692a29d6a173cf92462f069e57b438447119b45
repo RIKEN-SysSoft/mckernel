@@ -49,6 +49,30 @@
     },
     {
       "key": {
+        "uuid": "ae3f3869_0f956553",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 563,
+      "author": {
+        "id": 1014941
+      },
+      "writtenOn": "2019-07-31T07:43:17Z",
+      "side": 0,
+      "message": "patchset５のとき下記のコメントを書いたのですが、saveした状態になってました。申し訳ありません。\n---\nご指摘の通りです。「pmu: change to atomic register access.」に移します。",
+      "parentUuid": "8598e927_2f25e8fe",
+      "range": {
+        "startLine": 563,
+        "startChar": 18,
+        "endLine": 563,
+        "endChar": 41
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c0aff536_51d226b8",
         "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
         "patchSetId": 5
@@ -117,6 +141,30 @@
       "revId": "0692a29d6a173cf92462f069e57b438447119b45",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2a11cc96_89b2f52c",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 592,
+      "author": {
+        "id": 1014941
+      },
+      "writtenOn": "2019-07-31T07:43:17Z",
+      "side": 0,
+      "message": "patchset５のとき下記のコメントを書いたのですが、saveした状態になってました。申し訳ありません。\n---\nここも、マスク値のレイアウトを変更に伴う修正です。\n（次の指摘のreplyで詳細を書いてあります）",
+      "parentUuid": "c0aff536_51d226b8",
+      "range": {
+        "startLine": 592,
+        "startChar": 0,
+        "endLine": 592,
+        "endChar": 7
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
@@ -191,6 +239,30 @@
     },
     {
       "key": {
+        "uuid": "231a95bf_d47b9aef",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 618,
+      "author": {
+        "id": 1014941
+      },
+      "writtenOn": "2019-07-31T07:43:17Z",
+      "side": 0,
+      "message": "patchset５のとき下記のコメントを書いたのですが、saveした状態になってました。申し訳ありません。\n---\nこのコミットでは、マスク値のレイアウトを変更しています。\n\n今までは次のようになってました。\n　 [0]     cycle\n　 [1...]  event\n\nそれを次のように変更してます。\n  [0..30] event\n  [31]    cycle\n\nなのでeventが0オリジンになっていて、変換が不要になり削除しています。",
+      "parentUuid": "3f583f9e_4c0ffb99",
+      "range": {
+        "startLine": 618,
+        "startChar": 0,
+        "endLine": 618,
+        "endChar": 7
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "288e04cf_0b95b26e",
         "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
         "patchSetId": 5
@@ -262,6 +334,30 @@
     },
     {
       "key": {
+        "uuid": "b5ca8e65_f05fbaa5",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 691,
+      "author": {
+        "id": 1014941
+      },
+      "writtenOn": "2019-07-31T07:43:17Z",
+      "side": 0,
+      "message": "patchset５のとき下記のコメントを書いたのですが、saveした状態になってました。申し訳ありません。\n---\nここも、マスク値のレイアウトを変更に伴う修正です。",
+      "parentUuid": "288e04cf_0b95b26e",
+      "range": {
+        "startLine": 691,
+        "startChar": 0,
+        "endLine": 691,
+        "endChar": 45
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "b67f6b8a_be6a3637",
         "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
         "patchSetId": 5
@@ -321,6 +417,30 @@
       "side": 0,
       "message": "自己解決しました。このままでOKです。",
       "parentUuid": "69f688a2_88b61dc2",
+      "range": {
+        "startLine": 755,
+        "startChar": 0,
+        "endLine": 755,
+        "endChar": 62
+      },
+      "revId": "0692a29d6a173cf92462f069e57b438447119b45",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "04a1ffea_0ca28fc3",
+        "filename": "arch/arm64/kernel/perfctr_armv8pmu.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 755,
+      "author": {
+        "id": 1014941
+      },
+      "writtenOn": "2019-07-31T07:43:17Z",
+      "side": 0,
+      "message": "patchset５のとき下記のコメントを書いたのですが、saveした状態になってました。申し訳ありません。\n---\nここも、マスク値のレイアウトを変更に伴う修正です。",
+      "parentUuid": "b67f6b8a_be6a3637",
       "range": {
         "startLine": 755,
         "startChar": 0,
