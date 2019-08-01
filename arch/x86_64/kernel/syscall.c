@@ -1469,6 +1469,7 @@ set_signal(int sig, void *regs0, siginfo_t *info)
 	do_kill(thread, thread->proc->pid, thread->tid, sig, info, 0);
 }
 
+#define USE_NOCACHE_MMAP
 SYSCALL_DECLARE(mmap)
 {
 	const int supported_flags = 0
