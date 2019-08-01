@@ -43,8 +43,6 @@ extern void mcctrl_syscall_init(void);
 extern void procfs_init(int);
 extern void procfs_exit(int);
 
-extern void rus_page_hash_init(void);
-extern void rus_page_hash_put_pages(void);
 extern void uti_attr_finalize(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
@@ -185,9 +183,6 @@ int mcctrl_os_shutdown_notifier(int os_index)
 		destroy_ikc_channels(os[os_index]);
 		procfs_exit(os_index);
 	}
-#ifdef POSTK_DEBUG_TEMP_FIX_35 /* in shutdown phase, rus_page_hash_put_pages() call added. */
-	rus_page_hash_put_pages();
-#endif /* POSTK_DEBUG_TEMP_FIX_35 */
 
 	os[os_index] = NULL;
 
@@ -227,8 +222,6 @@ static int __init mcctrl_init(void)
 		os[i] = NULL;
 	}
 
-	rus_page_hash_init();
-
 	binfmt_mcexec_init();
 
 	if ((ret = ihk_host_register_os_notifier(&mcctrl_os_notifier)) != 0) {
@@ -241,7 +234,6 @@ static int __init mcctrl_init(void)
 
 error:
 	binfmt_mcexec_exit();
-	rus_page_hash_put_pages();
 
 	return ret;
 }
@@ -253,7 +245,6 @@ static void __exit mcctrl_exit(void)
 	}
 
 	binfmt_mcexec_exit();
-	rus_page_hash_put_pages();
 	uti_attr_finalize();
 
 	printk("mcctrl: unregistered.\n");

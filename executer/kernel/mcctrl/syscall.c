@@ -643,111 +643,6 @@ out_put_ppd:
 	return error;
 }
 
-#define RUS_PAGE_HASH_SHIFT	8
-#define RUS_PAGE_HASH_SIZE	(1UL << RUS_PAGE_HASH_SHIFT)
-#define RUS_PAGE_HASH_MASK	(RUS_PAGE_HASH_SIZE - 1)
-
-struct list_head rus_page_hash[RUS_PAGE_HASH_SIZE];
-spinlock_t rus_page_hash_lock;
-
-struct rus_page {
-	struct list_head hash;
-	struct page *page;
-	int refcount;
-	int put_page;
-};
-
-void rus_page_hash_init(void)
-{
-	int i;
-
-	spin_lock_init(&rus_page_hash_lock);
-	for (i = 0; i < RUS_PAGE_HASH_SIZE; ++i) {
-		INIT_LIST_HEAD(&rus_page_hash[i]);
-	}
-}
-
-/* rus_page_hash_lock must be held */
-struct rus_page *_rus_page_hash_lookup(struct page *page)
-{
-	struct rus_page *rp = NULL;
-	struct rus_page *rp_iter;
-
-	list_for_each_entry(rp_iter,
-			&rus_page_hash[page_to_pfn(page) & RUS_PAGE_HASH_MASK], hash) {
-
-		if (rp_iter->page != page)
-			continue;
-
-		rp = rp_iter;
-		break;
-	}
-
-	return rp;
-}
-
-
-static int rus_page_hash_insert(struct page *page)
-{
-	int ret = 0;
-	struct rus_page *rp;
-	unsigned long flags;
-
-	spin_lock_irqsave(&rus_page_hash_lock, flags);
-
-	rp = _rus_page_hash_lookup(page);
-	if (!rp) {
-		rp = kmalloc(sizeof(*rp), GFP_ATOMIC);
-
-		if (!rp) {
-			printk("rus_page_add_hash(): error allocating rp\n");
-			ret = -ENOMEM;
-			goto out;
-		}
-
-		rp->page = page;
-		rp->put_page = 0;
-
-		get_page(page);
-
-		rp->refcount = 0; /* Will be increased below */
-
-		list_add_tail(&rp->hash,
-				&rus_page_hash[page_to_pfn(page) & RUS_PAGE_HASH_MASK]);
-	}
-
-	++rp->refcount;
-
-
-out:
-	spin_unlock_irqrestore(&rus_page_hash_lock, flags);
-	return ret;
-}
-
-void rus_page_hash_put_pages(void)
-{
-	int i;
-	struct rus_page *rp_iter;
-	struct rus_page *rp_iter_next;
-	unsigned long flags;
-
-	spin_lock_irqsave(&rus_page_hash_lock, flags);
-
-	for (i = 0; i < RUS_PAGE_HASH_SIZE; ++i) {
-
-		list_for_each_entry_safe(rp_iter, rp_iter_next,
-				&rus_page_hash[i], hash) {
-			list_del(&rp_iter->hash);
-
-			put_page(rp_iter->page);
-			kfree(rp_iter);
-		}
-	}
-
-	spin_unlock_irqrestore(&rus_page_hash_lock, flags);
-}
-
-
 /*
  * By remap_pfn_range(), VM_PFN_AT_MMAP may be raised.
  * VM_PFN_AT_MMAP cause the following problems.
@@ -920,27 +815,6 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 		if (pfn_valid(pfn+pix)) {
 			page = pfn_to_page(pfn+pix);
-
-			if ((error = rus_page_hash_insert(page)) < 0) {
-#ifdef POSTK_DEBUG_ARCH_DEP_41 /* HOST-Linux version switch add */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-				printk("%s: error adding page to RUS hash for 0x%#lx "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->address,
-						packet->req.rtid, packet->req.number);
-#else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-				printk("%s: error adding page to RUS hash for 0x%p "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-#else /* POSTK_DEBUG_ARCH_DEP_41 */
-				printk("%s: error adding page to RUS hash for 0x%p "
-						"(req: TID: %d, syscall: %lu)\n",
-						__FUNCTION__, vmf->virtual_address,
-						packet->req.rtid, packet->req.number);
-#endif /* POSTK_DEBUG_ARCH_DEP_41 */
-			}
 
 			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
 			if (error) {
@@ -1169,9 +1043,6 @@ void pager_remove_process(struct mcctrl_per_proc_data *ppd)
 		dprintk("%s: pager 0x%p removed\n", __FUNCTION__, pager);
 		kfree(pager);
 	}
-
-	/* Flush page hash as well */
-	rus_page_hash_put_pages();
 
 out:
 	up(&pager_sem);
