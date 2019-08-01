@@ -244,6 +244,7 @@ enum mpol_rebind_step {
 #define SPAWN_TO_LOCAL 0
 #define SPAWN_TO_REMOTE 1
 #define SPAWNING_TO_REMOTE 1001
+#define SPAWNED_TO_REMOTE 1002
 
 #include <waitq.h>
 #include <futex.h>

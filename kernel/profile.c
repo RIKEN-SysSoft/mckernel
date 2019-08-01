@@ -97,6 +97,9 @@ void profile_event_add(enum profile_event_type type, uint64_t tsc)
 	if (!cpu_local_var(current)->profile)
 		return;
 
+	if (ihk_mc_get_processor_id() < 256)
+		return;
+
 	if (!cpu_local_var(current)->profile_events) {
 		if (profile_alloc_events(cpu_local_var(current)) < 0)
 			return;

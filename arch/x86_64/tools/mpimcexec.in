@@ -145,7 +145,10 @@ if [ -z ${PJM_VNODES} ]; then
 fi
 
 export I_MPI_PIN=off
-export PSM2_RCVTHREAD=0
+BINARY=`echo $COMMAND | awk '{print $1}'`
+if [ -z "`ldd $BINARY | grep release_mt`" ]; then
+	export PSM2_RCVTHREAD=0
+fi
 export HFI_NO_CPUAFFINITY=1
 export I_MPI_COLL_INTRANODE_SHM_THRESHOLD=4194304
 export PSM2_MQ_RNDV_HFI_WINDOW=4194304

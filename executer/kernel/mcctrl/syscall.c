@@ -1188,7 +1188,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {
-						if (!strncmp("/dev/shm/Intel_MPI", fullpath, 18)) {
+						if (!strncmp("/dev/shm/", fullpath, 9)) {
 							mf_flags = (MF_PREMAP | MF_ZEROFILL);
 							dprintk("%s: filename: %s, premap & zerofill\n",
 									__FUNCTION__, fullpath);

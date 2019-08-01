@@ -369,6 +369,8 @@ void process_procfs_request(struct ikc_scd_packet *rpacket)
 					0UL,
 					0UL,
 					0,
+					range->memobj && range->memobj->path ?
+						range->memobj->path :
 					range->start ==
 						(unsigned long)vm->vdso_addr ? "[vdso]" :
 					range->start ==

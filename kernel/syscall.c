@@ -1583,6 +1583,8 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 		}
 		else {
 		kprintf("%s: big ANON mapping!!: %lu\n", __FUNCTION__, len);
+			pgshift = PAGE_SHIFT;	/* basic page size */
+			p2align = PAGE_P2ALIGN;
 			/* Give demand paging a chance */
 			vrflags |= VR_DEMAND_PAGING;
 			populated_mapping = 0;
@@ -2433,7 +2435,14 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
         return -EINVAL;
 	}
 
-	cpuid = obtain_clone_cpuid(&old->cpu_set);
+	/* Spawn to util CPUs if requested */
+	if (old->mod_clone == SPAWN_TO_REMOTE) {
+		cpuid = obtain_clone_cpuid(&old->proc->util_cpu_set);
+	}
+	else {
+		cpuid = obtain_clone_cpuid(&old->proc->cpu_set);
+	}
+
     if (cpuid == -1) {
 		kprintf("do_fork,core not available\n");
         return -EAGAIN;
@@ -2441,10 +2450,15 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	new = clone_thread(old, curpc,
 	                    newsp ? newsp : cursp, clone_flags);
-	
+
 	if (!new) {
 		release_cpuid(cpuid);
 		return -ENOMEM;
+	}
+
+	if (old->mod_clone == SPAWN_TO_REMOTE) {
+		new->mod_clone = SPAWNED_TO_REMOTE;
+		old->mod_clone = 0;
 	}
 
 	newproc = new->proc;
@@ -5457,7 +5471,7 @@ SYSCALL_DECLARE(futex)
 		fshared = 0;
 	}
 	op = (op & FUTEX_CMD_MASK);
-	
+
 	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
 			flags,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
@@ -6837,6 +6851,14 @@ SYSCALL_DECLARE(sched_setaffinity)
 	if (tid == 0) {
 		tid = cpu_local_var(current)->tid;
 		thread = cpu_local_var(current);
+
+		/* Utility thread? */
+		if (thread->mod_clone == SPAWNED_TO_REMOTE) {
+			kprintf("%s: declining util thread movement for TID %d\n",
+					__func__, thread->tid);
+			return 0;
+		}
+
 		cpu_id = ihk_mc_get_processor_id();
 		hold_thread(thread);
 	}
@@ -9205,6 +9227,9 @@ SYSCALL_DECLARE(util_indicate_clone)
 	struct uti_attr *arg = (void *)ihk_mc_syscall_arg1(ctx);
 	struct thread *thread = cpu_local_var(current);
 	struct uti_attr *kattr = NULL;
+
+	thread->mod_clone = SPAWN_TO_REMOTE;
+	return 0;
 
 	if (mod != SPAWN_TO_LOCAL &&
 	    mod != SPAWN_TO_REMOTE)

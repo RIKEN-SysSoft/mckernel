@@ -97,7 +97,7 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set) {
 	int cpu, min_cpu = -1;
 
 	/* Find the first allowed core with the shortest run queue */
-	for (cpu = 0; cpu < num_processors; ++cpu) {
+	for (cpu = num_processors; cpu >= 0; --cpu) {
 		struct cpu_local_var *v;
 		unsigned long irqstate;
 
