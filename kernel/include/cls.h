@@ -72,6 +72,7 @@ struct cpu_local_var {
 	ihk_spinlock_t runq_lock;
 	unsigned long runq_irqstate;
 	struct thread *current;
+	int prevpid;
 	struct list_head runq;
 	size_t runq_len;
 	size_t runq_reserved; /* Number of threads which are about to be added to runq */

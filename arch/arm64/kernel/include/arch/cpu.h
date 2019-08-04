@@ -102,4 +102,6 @@ static inline void cpu_disable_nmi(void)
 
 #endif	/* __ASSEMBLY__ */
 
+void arch_flush_icache_all(void);
+
 #endif /* !__HEADER_ARM64_ARCH_CPU_H */

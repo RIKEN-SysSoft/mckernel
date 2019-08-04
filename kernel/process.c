@@ -3324,6 +3324,7 @@ void schedule(void)
 	struct thread *next, *prev, *thread, *tmp = NULL;
 	int switch_ctx = 0;
 	struct thread *last;
+	int prevpid;
 
 	if (cpu_local_var(no_preempt)) {
 		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
@@ -3337,6 +3338,7 @@ void schedule(void)
 
 	next = NULL;
 	prev = v->current;
+	prevpid = v->prevpid;
 	
 	v->flags &= ~CPU_FLAG_NEED_RESCHED;
 
@@ -3381,6 +3383,8 @@ void schedule(void)
 
 	if (prev != next) {
 		switch_ctx = 1;
+		v->prevpid = v->current && v->current->proc ?
+			v->current->proc->pid : 0;
 		v->current = next;
 		reset_cputime();
 	}
@@ -3420,6 +3424,18 @@ void schedule(void)
 				next->vm->address_space->page_table)
 			ihk_mc_load_page_table(next->vm->address_space->page_table);
 
+		/*
+		 * Unless switching to a thread in the same process,
+		 * to the idle thread, or to the same process that ran
+		 * before the idle, clear the instruction cache.
+		 */
+		if ((prev && prev->proc != next->proc) &&
+				next != &cpu_local_var(idle) &&
+				(prevpid != next->proc->pid ||
+					prev != &cpu_local_var(idle))) {
+			arch_flush_icache_all();
+		}
+
 		last = arch_switch_context(prev, next);
 
 		/*
@@ -3433,6 +3449,8 @@ void schedule(void)
 			cpu_local_var(runq_irqstate));
 
 		if ((last != NULL) && (last->status == PS_EXITED)) {
+			v->prevpid = 0;
+			arch_flush_icache_all();
 			release_thread(last);
 			rusage_num_threads_dec();
 #ifdef RUSAGE_DEBUG

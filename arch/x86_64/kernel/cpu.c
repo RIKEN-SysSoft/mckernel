@@ -1821,6 +1821,10 @@ ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
 	do_arch_prctl(ARCH_SET_FS, tls_base_addr);
 }
 
+void arch_flush_icache_all(void)
+{
+	return;
+}
 
 /*@
   @ assigns \nothing;
