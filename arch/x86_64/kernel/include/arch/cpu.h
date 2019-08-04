@@ -47,5 +47,6 @@ static inline unsigned long read_tsc(void)
 	WRITE_ONCE(*p, v);					\
 })
 
+void arch_flush_icache_all(void);
 
 #endif /* ARCH_CPU_H */

@@ -3199,6 +3199,7 @@ void load_page_table(struct page_table *pt)
 {
 	if (pt == NULL) {
 		// load page table for idle(EL1) process.
+		switch_mm(init_pt);
 		return;
 	}
 	// load page table for user(EL0) thread.
