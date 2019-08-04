@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b1fa10a4_de883efb",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1827,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-04T23:41:03Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "aa170512be6dcd1e2d5807889fa1cd183d8110b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
