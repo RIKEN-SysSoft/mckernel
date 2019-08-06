@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "717d31b6_e03a4aff",
+        "filename": "test/issues/1321/C1321.txt",
+        "patchSetId": 4
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-06T07:51:49Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid01    1  TPASS  :  recieved expected pid",
+      "revId": "69be32bc12fad05d705fe3d0415cf8de1d6c2fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1ecefbf9_f9fcadb0",
+        "filename": "test/issues/1321/C1321.txt",
+        "patchSetId": 4
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-06T07:51:49Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid01    2  TPASS  :  recieved expected signal",
+      "revId": "69be32bc12fad05d705fe3d0415cf8de1d6c2fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "636485da_d5ca53b6",
+        "filename": "test/issues/1321/C1321.txt",
+        "patchSetId": 4
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-06T07:51:49Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid02    1  TPASS  :  recieved expected pid",
+      "revId": "69be32bc12fad05d705fe3d0415cf8de1d6c2fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30a08477_45558767",
+        "filename": "test/issues/1321/C1321.txt",
+        "patchSetId": 4
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-06T07:51:49Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid02    2  TPASS  :  recieved expected signal",
+      "revId": "69be32bc12fad05d705fe3d0415cf8de1d6c2fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c2a2a76_5a13f0b1",
+        "filename": "test/issues/1321/C1321.txt",
+        "patchSetId": 4
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-06T07:51:49Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid02    3  TPASS  :  recieved expected exit value",
+      "revId": "69be32bc12fad05d705fe3d0415cf8de1d6c2fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
