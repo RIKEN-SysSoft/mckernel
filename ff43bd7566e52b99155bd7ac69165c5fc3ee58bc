@@ -2,6 +2,52 @@
   "comments": [
     {
       "key": {
+        "uuid": "7b384556_2dd2d926",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1157,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-07T09:08:50Z",
+      "side": 1,
+      "message": "vm_rangeが複数のページサイズを持つ場合にも対応できるようにして下さい。",
+      "range": {
+        "startLine": 1157,
+        "startChar": 0,
+        "endLine": 1157,
+        "endChar": 2
+      },
+      "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dc933559_1bba13b2",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1195,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-07T09:08:50Z",
+      "side": 1,
+      "message": "update_process_page_tableを呼んで、pre-mapして下さい。また、pre-mapされていることを、テストで確かめて下さい。",
+      "range": {
+        "startLine": 1195,
+        "startChar": 0,
+        "endLine": 1195,
+        "endChar": 19
+      },
+      "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "3e3fc112_e2eb5810",
         "filename": "test/issues/1259/C1259.sh",
         "patchSetId": 3
@@ -169,6 +215,40 @@
       "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc075650_4cf4baee",
+        "filename": "test/issues/1259/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-07T09:08:50Z",
+      "side": 1,
+      "message": "large pageの確認がもう一つあると思いますので、C1259T02の説明を追加して、下のsmall pageの確認はC1259T03としてください。",
+      "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b0115e65_0cdbb9c7",
+        "filename": "test/issues/1259/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-07T09:08:50Z",
+      "side": 1,
+      "message": "vm_rangeが複数のページサイズを持つ場合に、attachmentも同じ構成になっていることを確かめて下さい。なお、anonymous-mmapの場合は、do_mmap--\u003eadd_process_memory_range--\u003eupdate_process_page_tableによってそのようなvm_rangeが生成されます。また、そのときpgshiftはゼロになっています。",
+      "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     },
     {
       "key": {
