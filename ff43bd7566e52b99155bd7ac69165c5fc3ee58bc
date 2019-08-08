@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "480fcd3e_f0b52958",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1064,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-08T02:03:08Z",
+      "side": 1,
+      "message": "または、set_range_*にVPTEF_SKIP_EXISTENTフラグを追加して、PTEが存在したらスキップするようにしてから、xpmem_makeでupdate_process_page_tableを呼びましょう。",
+      "range": {
+        "startLine": 1064,
+        "startChar": 0,
+        "endLine": 1064,
+        "endChar": 0
+      },
+      "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "7b384556_2dd2d926",
         "filename": "kernel/xpmem.c",
         "patchSetId": 3
@@ -42,6 +65,29 @@
         "startChar": 0,
         "endLine": 1157,
         "endChar": 2
+      },
+      "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e22f7148_d8f8d50d",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1166,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-08T02:03:08Z",
+      "side": 1,
+      "message": "do_mmapに以下の処理をする関数のポインタを渡しましょう。\n(1) vmr-\u003ememobj-\u003eflags |\u003d MF_XPMEM;\n(2) vmr-\u003eprivate_data \u003d att;\n(3) att-\u003eat_vmr \u003d vmr;\nさらに、XPMEMのときは\ndo_mmapの以下の場所でMAP_ANONYMOUS|MAP_SHAREDもvrflags \u0026\u003d ~VR_DEMAND_PAGING;するようにしましょう。\n\tif (flags \u0026 MAP_ANONYMOUS) {\n                if (!anon_on_demand) {\n\t\t\tvrflags \u0026\u003d ~VR_DEMAND_PAGING;\n                }\n\t}\n＊影響範囲：MAP_ANONYMOUS | MAP_SHAREDと、shmobjがpre-mapになる。\nさらに、update_process_page_tableで、xpmemのvm_rangeであることを検知して、xpmem_fault_process_memory_range相当の処理をするようにしましょう。",
+      "range": {
+        "startLine": 1166,
+        "startChar": 17,
+        "endLine": 1166,
+        "endChar": 18
       },
       "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
