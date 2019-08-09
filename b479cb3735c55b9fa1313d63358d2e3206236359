@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "bca2ba25_4ec8ad97",
+        "filename": "test/issues/1340/C1340.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-09T04:06:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tnum\u003d`grep \"Program terminated with signal ${NAME_LIST[${idx}]}\" ./${tname}.txt | wc -l`",
+      "revId": "b479cb3735c55b9fa1313d63358d2e3206236359",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "578de95b_9511a53c",
+        "filename": "test/issues/1340/C1340.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 121,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-09T04:06:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+num\u003d`grep \"Program terminated with signal ${signum}\" ./C${issue}T${tid}.txt | wc -l`",
+      "revId": "b479cb3735c55b9fa1313d63358d2e3206236359",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb6b715f_74e799c6",
+        "filename": "test/issues/1340/C1340.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 151,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-09T04:06:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+num\u003d`grep \"Program terminated with signal ${signum}\" ./C${issue}T${tid}.txt | wc -l`",
+      "revId": "b479cb3735c55b9fa1313d63358d2e3206236359",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09ebe32e_eddbd2fd",
+        "filename": "test/issues/1340/C1340.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 181,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-09T04:06:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+num\u003d`grep \"Program terminated with signal ${signum}\" ./C${issue}T${tid}.txt | wc -l`",
+      "revId": "b479cb3735c55b9fa1313d63358d2e3206236359",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c30cf9e3_cfd8e506",
+        "filename": "test/issues/1340/C1340.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 211,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-09T04:06:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+num\u003d`grep \"Program terminated with signal ${signum}\" ./C${issue}T${tid}.txt | wc -l`",
+      "revId": "b479cb3735c55b9fa1313d63358d2e3206236359",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
