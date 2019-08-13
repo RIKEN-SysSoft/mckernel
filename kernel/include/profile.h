@@ -5,10 +5,9 @@
 #define PROFILE_ENABLE
 
 #ifdef PROFILE_ENABLE
-#define PROFILE_SYSCALL_MAX                          300
+#define PROFILE_SYSCALL_MAX                          2000
 #define PROFILE_OFFLOAD_MAX   (PROFILE_SYSCALL_MAX << 1)
 #define PROFILE_EVENT_MIN            PROFILE_OFFLOAD_MAX
-#define __NR_profile                                 701
 
 #define PROF_JOB                       0x40000000
 #define PROF_PROC                      0x80000000
@@ -46,6 +45,8 @@ enum profile_event_type {
 	PROFILE_mmap_device_file,
 	PROFILE_EVENT_MAX	/* Should be the last event type */
 };
+
+#define __NR_profile                   PROFILE_EVENT_MAX
 
 struct thread;
 struct process;
