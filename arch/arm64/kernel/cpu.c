@@ -1408,6 +1408,19 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 		}
 	}
 #endif /*ENABLE_PERF*/
+
+#ifdef PROFILE_ENABLE
+	if (prev && prev->profile && prev->profile_start_ts != 0) {
+		prev->profile_elapsed_ts +=
+			(rdtsc() - prev->profile_start_ts);
+		prev->profile_start_ts = 0;
+	}
+
+	if (next->profile && next->profile_start_ts == 0) {
+		next->profile_start_ts = rdtsc();
+	}
+#endif
+
 	if (likely(prev)) {
 		tls_thread_switch(prev, next);
 

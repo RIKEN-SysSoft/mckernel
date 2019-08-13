@@ -106,153 +106,108 @@ void profile_event_add(enum profile_event_type type, uint64_t tsc)
 	event->tsc += tsc;
 }
 
-void profile_print_thread_stats(struct thread *thread)
+static void print_profile_events(struct profile_event *profile_events,
+	char *full_hdr_fmt,
+	char *hdr_prefix,
+	int id,
+	unsigned long elapsed_ts)
 {
 	int i;
 	unsigned long flags;
 
+	flags = kprintf_lock();
+	__kprintf(full_hdr_fmt, id, elapsed_ts / 1000);
+
+	__kprintf("%3s: %5s (%3s,%20s): %6s %7s offl: %6s %7s (%6s)\n",
+		"ID", "<num>", "num", "(syscall/event) name", "cnt",
+		"cycles", "cnt", "cycles", "perc");
+
+	for (i = 0; i < PROFILE_SYSCALL_MAX; ++i) {
+		if (!profile_events[i].cnt &&
+				!profile_events[i + PROFILE_SYSCALL_MAX].cnt)
+			continue;
+
+		__kprintf("%s: %4d (%3d,%20s): %6u %6luk "
+				"offl: %6u %6luk (%2d.%2d%%)\n",
+				hdr_prefix,
+				id,
+				i,
+				syscall_name[i],
+				profile_events[i].cnt,
+				profile_events[i].tsc / 1000,
+				profile_events[i + PROFILE_SYSCALL_MAX].cnt,
+				profile_events[i + PROFILE_SYSCALL_MAX].tsc /
+					1000,
+				(profile_events[i].tsc ?
+				 profile_events[i].tsc * 100
+				 / elapsed_ts : 0),
+				(profile_events[i].tsc ?
+				 (profile_events[i].tsc * 10000
+				  / elapsed_ts) % 100 : 0)
+				);
+	}
+
+	for (i = PROFILE_EVENT_MIN; i < PROFILE_EVENT_MAX; ++i) {
+		if (!profile_events[i].cnt)
+			continue;
+
+		__kprintf("%s: %4d (%24s): %6u %6lu\n",
+				hdr_prefix,
+				id,
+				profile_event_names[i - PROFILE_EVENT_MIN],
+				profile_events[i].cnt,
+				(profile_events[i].tsc /
+				 (profile_events[i].cnt ?
+				  profile_events[i].cnt : 1))
+				,
+				(profile_events[i].tsc &&
+				 elapsed_ts ?
+				 profile_events[i].tsc * 100
+				 / elapsed_ts : 0),
+				(profile_events[i].tsc &&
+				 elapsed_ts ?
+				 (profile_events[i].tsc * 10000
+				  / elapsed_ts) % 100 : 0)
+				);
+	}
+
+	kprintf_unlock(flags);
+}
+
+
+void profile_print_thread_stats(struct thread *thread)
+{
 	if (!thread->profile_events)
 		return;
 
 	/* Not yet accumulated period? */
 	if (thread->profile_start_ts) {
-		thread->profile_elapsed_ts += (rdtsc() - thread->profile_start_ts);
+		thread->profile_elapsed_ts += (rdtsc() -
+			thread->profile_start_ts);
 	}
 
-	flags = kprintf_lock();
-
-	__kprintf("TID: %4d elapsed cycles (excluding idle): %luk\n",
-			thread->tid,
-			thread->profile_elapsed_ts / 1000);
-
-	for (i = 0; i < PROFILE_SYSCALL_MAX; ++i) {
-		if (!thread->profile_events[i].cnt &&
-				!thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt)
-			continue;
-
-		__kprintf("TID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk (%2d.%2d%%)\n",
-				thread->tid,
-				i,
-				syscall_name[i],
-				thread->profile_events[i].cnt,
-				(thread->profile_events[i].tsc /
-				 (thread->profile_events[i].cnt ?
-				  thread->profile_events[i].cnt : 1))
-				/ 1000,
-				thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt,
-				(thread->profile_events[i + PROFILE_SYSCALL_MAX].tsc /
-				 (thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt ?
-				  thread->profile_events[i + PROFILE_SYSCALL_MAX].cnt : 1))
-				/ 1000,
-				 (thread->profile_events[i].tsc ?
-				  thread->profile_events[i].tsc * 100
-				  / thread->profile_elapsed_ts : 0),
-				 (thread->profile_events[i].tsc ?
-				  (thread->profile_events[i].tsc * 10000
-				  / thread->profile_elapsed_ts) % 100 : 0)
-				);
-	}
-
-	for (i = PROFILE_EVENT_MIN; i < PROFILE_EVENT_MAX; ++i) {
-
-		if (!thread->profile_events[i].cnt)
-			continue;
-
-		__kprintf("TID: %4d (%24s): %6u %6luk \n",
-				thread->tid,
-				profile_event_names[i - PROFILE_EVENT_MIN],
-				thread->profile_events[i].cnt,
-				(thread->profile_events[i].tsc /
-				 (thread->profile_events[i].cnt ?
-				  thread->profile_events[i].cnt : 1))
-				/ 1000,
-				(thread->profile_events[i].tsc ?
-				 thread->profile_events[i].tsc * 100
-				 / thread->profile_elapsed_ts : 0),
-				(thread->profile_events[i].tsc ?
-				 (thread->profile_events[i].tsc * 10000
-				  / thread->profile_elapsed_ts) % 100 : 0)
-				);
-	}
-
-
-	kprintf_unlock(flags);
+	print_profile_events(thread->profile_events,
+		"TID: %4d elapsed cycles (excluding idle): %luk\n",
+		"TID",
+		thread->tid,
+		thread->profile_elapsed_ts);
 }
 
 void profile_print_proc_stats(struct process *proc)
 {
-	int i;
-	unsigned long flags;
-
 	if (!proc->profile_events || !proc->profile_elapsed_ts)
 		return;
 
-	flags = kprintf_lock();
-	__kprintf("PID: %4d elapsed cycles for all threads (excluding idle): %luk\n",
-			proc->pid,
-			proc->profile_elapsed_ts / 1000);
-
-	for (i = 0; i < PROFILE_SYSCALL_MAX; ++i) {
-		if (!proc->profile_events[i].cnt &&
-				!proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt)
-			continue;
-
-		__kprintf("PID: %4d (%3d,%20s): %6u %6luk offl: %6u %6luk (%2d.%2d%%)\n",
-				proc->pid,
-				i,
-				syscall_name[i],
-				proc->profile_events[i].cnt,
-				(proc->profile_events[i].tsc /
-				 (proc->profile_events[i].cnt ?
-				  proc->profile_events[i].cnt : 1))
-				/ 1000,
-				proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt,
-				(proc->profile_events[i + PROFILE_SYSCALL_MAX].tsc /
-				 (proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt ?
-				  proc->profile_events[i + PROFILE_SYSCALL_MAX].cnt : 1))
-				/ 1000,
-				(proc->profile_events[i].tsc ?
-				 proc->profile_events[i].tsc * 100
-				 / proc->profile_elapsed_ts : 0),
-				(proc->profile_events[i].tsc ?
-				 (proc->profile_events[i].tsc * 10000
-				  / proc->profile_elapsed_ts) % 100 : 0)
-				);
-	}
-
-	for (i = PROFILE_EVENT_MIN; i < PROFILE_EVENT_MAX; ++i) {
-
-		if (!proc->profile_events[i].cnt)
-			continue;
-
-//		__kprintf("PID: %4d (%24s): %6u %6luk \n",
-		__kprintf("PID: %4d (%24s): %6u %6lu \n",
-				proc->pid,
-				profile_event_names[i - PROFILE_EVENT_MIN],
-				proc->profile_events[i].cnt,
-				(proc->profile_events[i].tsc /
-				 (proc->profile_events[i].cnt ?
-				  proc->profile_events[i].cnt : 1))
-//				/ 1000
-				,
-				(proc->profile_events[i].tsc &&
-				 proc->profile_elapsed_ts ?
-				 proc->profile_events[i].tsc * 100
-				 / proc->profile_elapsed_ts : 0),
-				(proc->profile_events[i].tsc &&
-				 proc->profile_elapsed_ts ?
-				 (proc->profile_events[i].tsc * 10000
-				  / proc->profile_elapsed_ts) % 100 : 0)
-				);
-	}
-
-	kprintf_unlock(flags);
+	print_profile_events(proc->profile_events,
+		"PID: %4d elapsed cycles for all threads (excluding idle): %luk\n",
+		"PID",
+		proc->pid,
+		proc->profile_elapsed_ts);
 }
 
 int profile_accumulate_and_print_job_events(struct process *proc)
 {
 	int i;
-	unsigned long flags;
 	struct mcs_lock_node mcs_node;
 
 	mcs_lock_lock(&job_profile_lock, &mcs_node);
@@ -297,68 +252,20 @@ int profile_accumulate_and_print_job_events(struct process *proc)
 
 	/* Last process? */
 	if (job_nr_processes_left == 0) {
-		flags = kprintf_lock();
-		__kprintf("JOB: (%2d) elapsed cycles for all threads (excluding idle): %luk\n",
-				job_nr_processes,
-				job_elapsed_ts / 1000);
 
-		for (i = 0; i < PROFILE_SYSCALL_MAX; ++i) {
-			if (!job_profile_events[i].cnt &&
-					!job_profile_events[i + PROFILE_SYSCALL_MAX].cnt)
-				continue;
-
-			__kprintf("JOB: (%2d) (%3d,%20s): %6u %6luk offl: %6u %6luk (%2d.%2d%%)\n",
-					job_nr_processes,
-					i,
-					syscall_name[i],
-					job_profile_events[i].cnt,
-					(job_profile_events[i].tsc /
-					 (job_profile_events[i].cnt ?
-					  job_profile_events[i].cnt : 1))
-					/ 1000,
-					job_profile_events[i + PROFILE_SYSCALL_MAX].cnt,
-					(job_profile_events[i + PROFILE_SYSCALL_MAX].tsc /
-					 (job_profile_events[i + PROFILE_SYSCALL_MAX].cnt ?
-					  job_profile_events[i + PROFILE_SYSCALL_MAX].cnt : 1))
-					/ 1000,
-					(job_profile_events[i].tsc ?
-					 job_profile_events[i].tsc * 100
-					 / job_elapsed_ts : 0),
-					(job_profile_events[i].tsc ?
-					 (job_profile_events[i].tsc * 10000
-					  / job_elapsed_ts) % 100 : 0)
-					);
-
-			job_profile_events[i].tsc = 0;
-			job_profile_events[i].cnt = 0;
-			job_profile_events[i + PROFILE_SYSCALL_MAX].tsc = 0;
-			job_profile_events[i + PROFILE_SYSCALL_MAX].cnt = 0;
-		}
-
-		for (i = PROFILE_EVENT_MIN; i < PROFILE_EVENT_MAX; ++i) {
-
-			if (!job_profile_events[i].cnt)
-				continue;
-
-			__kprintf("JOB: (%2d) (%24s): %6u %6luk \n",
-					job_nr_processes,
-					profile_event_names[i - PROFILE_EVENT_MIN],
-					job_profile_events[i].cnt,
-					(job_profile_events[i].tsc /
-					 (job_profile_events[i].cnt ?
-					  job_profile_events[i].cnt : 1))
-					/ 1000);
-
-			job_profile_events[i].tsc = 0;
-			job_profile_events[i].cnt = 0;
-		}
-
-		kprintf_unlock(flags);
+		print_profile_events(job_profile_events,
+			"JOB: (%2d) elapsed cycles for all threads (excluding idle): %luk\n",
+			"JOB",
+			job_nr_processes,
+			job_elapsed_ts);
 
 		/* Reset job process indicators */
 		job_nr_processes = -1;
 		job_nr_processes_left = -1;
 		job_elapsed_ts = 0;
+
+		memset(job_profile_events, 0, sizeof(*job_profile_events) *
+			PROFILE_EVENT_MAX);
 	}
 
 	mcs_lock_unlock(&job_profile_lock, &mcs_node);
