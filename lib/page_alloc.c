@@ -329,6 +329,21 @@ kprintf("\nzeroing done\n");
  * of their corresponding memory (i.e., they are on the free memory chunk itself).
  */
 
+size_t __count_free_bytes(struct rb_root *root)
+{
+	struct free_chunk *chunk;
+	struct rb_node *node;
+	size_t size = 0;
+
+	for (node = rb_first(root); node; node = rb_next(node)) {
+		chunk = container_of(node, struct free_chunk, node);
+
+		size += chunk->size;
+	}
+
+	return size;
+}
+
 /*
  * Free pages.
  * NOTE: locking must be managed by the caller.
@@ -639,6 +654,16 @@ unsigned long ihk_numa_alloc_pages(struct ihk_mc_numa_node *node,
 	/* Does not necessarily succeed due to alignment */
 	if (addr) {
 		node->nr_free_pages -= npages;
+#if 0
+		{
+			size_t free_bytes = __count_free_bytes(&node->free_chunks);
+			if (free_bytes != node->nr_free_pages * PAGE_SIZE) {
+				kprintf("%s: inconsistent free count? node: %lu vs. cnt: %lu\n",
+						__func__, node->nr_free_pages * PAGE_SIZE, free_bytes);
+				panic("");
+			}
+		}
+#endif
 		dkprintf("%s: allocated pages 0x%lx:%lu\n",
 				__FUNCTION__, addr, npages << PAGE_SHIFT);
 	}
@@ -692,6 +717,16 @@ void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
 	}
 	else {
 		node->nr_free_pages += npages;
+#if 0
+		{
+			size_t free_bytes = __count_free_bytes(&node->free_chunks);
+			if (free_bytes != node->nr_free_pages * PAGE_SIZE) {
+				kprintf("%s: inconsistent free count? node: %lu vs. cnt: %lu\n",
+						__func__, node->nr_free_pages * PAGE_SIZE, free_bytes);
+				panic("");
+			}
+		}
+#endif
 		dkprintf("%s: freed pages 0x%lx:%lu\n",
 				__FUNCTION__, addr, npages << PAGE_SHIFT);
 	}
