@@ -465,7 +465,7 @@ int prepare_ikc_channels(ihk_os_t os)
 	int i;
 	int ret = 0;
 
-	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_KERNEL);
+	usrdata = kzalloc(sizeof(struct mcctrl_usrdata), GFP_ATOMIC);
 	if (!usrdata) {
 		printk("%s: error: allocating mcctrl_usrdata\n", __FUNCTION__);
 		ret = -ENOMEM;
@@ -491,7 +491,7 @@ int prepare_ikc_channels(ihk_os_t os)
 	usrdata->num_channels = usrdata->cpu_info->n_cpus;
 	usrdata->channels = kzalloc(sizeof(struct mcctrl_channel) *
 			usrdata->num_channels,
-			GFP_KERNEL);
+			GFP_ATOMIC);
 
 	if (!usrdata->channels) {
 		printk("Error: cannot allocate channels.\n");
@@ -500,7 +500,7 @@ int prepare_ikc_channels(ihk_os_t os)
 	}
 
 	usrdata->ikc2linux = kzalloc(sizeof(struct ihk_ikc_channel_desc *) *
-			nr_cpu_ids, GFP_KERNEL);
+			nr_cpu_ids, GFP_ATOMIC);
 
 	if (!usrdata->ikc2linux) {
 		printk("Error: cannot allocate ikc2linux channels.\n");
