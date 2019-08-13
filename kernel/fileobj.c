@@ -587,8 +587,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 
 			/* Update the array but see if someone did it already and use
 			 * that if so */
-			if (!__sync_bool_compare_and_swap(&memobj->pages[page_ind],
-						NULL, virt)) {
+			if (cmpxchg(&memobj->pages[page_ind], NULL, virt) != NULL) {
 				ihk_mc_free_pages_user(virt, 1);
 			}
 			else {

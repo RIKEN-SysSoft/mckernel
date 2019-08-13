@@ -1402,7 +1402,7 @@ retry_alloc:
 			__FUNCTION__, task_pid_vnr(current), packet->ref);
 
 	mb();
-	if (!packet->req.valid) {
+	if (!smp_load_acquire(&packet->req.valid)) {
 		printk("%s: ERROR: stray wakeup pid: %d, tid: %d: SC %lu\n",
 				__FUNCTION__,
 				task_tgid_vnr(current),
@@ -1412,7 +1412,7 @@ retry_alloc:
 		goto retry;
 	}
 
-	packet->req.valid = 0; /* ack */
+	smp_store_release(&packet->req.valid,  0); /* ack */
 	dprintk("%s: system call: %d, args[0]: %lu, args[1]: %lu, args[2]: %lu, "
 			"args[3]: %lu, args[4]: %lu, args[5]: %lu\n",
 			__FUNCTION__,

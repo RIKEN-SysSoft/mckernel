@@ -226,18 +226,19 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 	c = (usrdata->channels + packet->ref)->c;
 
 	/* If spinning, no need for IKC message */
-	if (__sync_bool_compare_and_swap(&res->req_thread_status,
+	if (cmpxchg(&res->req_thread_status,
 				IHK_SCD_REQ_THREAD_SPINNING,
-				IHK_SCD_REQ_THREAD_TO_BE_WOKEN)) {
+				IHK_SCD_REQ_THREAD_TO_BE_WOKEN) ==
+			IHK_SCD_REQ_THREAD_SPINNING) {
 		dprintk("%s: no need to send IKC message for PID %d\n",
-			   __FUNCTION__, packet->pid);
+				__FUNCTION__, packet->pid);
 		return ret;
 	}
 
 	/* Wait until the status goes back to IHK_SCD_REQ_THREAD_SPINNING or
 	   IHK_SCD_REQ_THREAD_DESCHEDULED because two wake-up attempts are competing.
 	   Note that mcexec_terminate_thread() and returning EINTR would compete. */
-	if (res->req_thread_status == IHK_SCD_REQ_THREAD_TO_BE_WOKEN) {
+	if (smp_load_acquire(&res->req_thread_status) == IHK_SCD_REQ_THREAD_TO_BE_WOKEN) {
 		printk("%s: INFO: someone else is waking up the McKernel thread, "
 				"pid: %d, req status: %lu, syscall nr: %lu\n",
 				__FUNCTION__, packet->pid,
@@ -245,9 +246,10 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 	}
 
 	/* The thread is not spinning any more, make sure it's descheduled */
-	if (!__sync_bool_compare_and_swap(&res->req_thread_status,
+	if (cmpxchg(&res->req_thread_status,
 				IHK_SCD_REQ_THREAD_DESCHEDULED,
-				IHK_SCD_REQ_THREAD_TO_BE_WOKEN)) {
+				IHK_SCD_REQ_THREAD_TO_BE_WOKEN) !=
+			IHK_SCD_REQ_THREAD_DESCHEDULED) {
 		printk("%s: WARNING: inconsistent requester status, "
 				"pid: %d, req status: %lu, syscall nr: %lu\n",
 				__FUNCTION__, packet->pid,

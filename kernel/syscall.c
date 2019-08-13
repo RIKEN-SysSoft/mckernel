@@ -160,7 +160,7 @@ static void send_syscall(struct syscall_request *req, int cpu,
 	memcpy(&packet.req, req, sizeof(*req));
 
 	barrier();
-	packet.req.valid = 1;
+	smp_store_release(&packet.req.valid, 1);
 
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
@@ -235,8 +235,8 @@ long do_syscall(struct syscall_request *req, int cpu)
 #define	STATUS_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
 #define	STATUS_SYSCALL		4
-	while (res.status != STATUS_COMPLETED) {
-		while (res.status == STATUS_IN_PROGRESS) {
+	while (smp_load_acquire(&res.status) != STATUS_COMPLETED) {
+		while (smp_load_acquire(&res.status) == STATUS_IN_PROGRESS) {
 			struct cpu_local_var *v;
 			int do_schedule = 0;
 			long runq_irqstate;
@@ -271,10 +271,12 @@ long do_syscall(struct syscall_request *req, int cpu)
 			flags = cpu_disable_interrupt_save();
 
 			/* Try to sleep until notified */
-			if (res.req_thread_status == IHK_SCD_REQ_THREAD_DESCHEDULED ||
-				__sync_bool_compare_and_swap(&res.req_thread_status,
-											 IHK_SCD_REQ_THREAD_SPINNING,
-											 IHK_SCD_REQ_THREAD_DESCHEDULED)) {
+			if (smp_load_acquire(&res.req_thread_status) ==
+					IHK_SCD_REQ_THREAD_DESCHEDULED ||
+					(cmpxchg(&res.req_thread_status,
+							 IHK_SCD_REQ_THREAD_SPINNING,
+							 IHK_SCD_REQ_THREAD_DESCHEDULED) ==
+					 IHK_SCD_REQ_THREAD_SPINNING)) {
 				dkprintf("%s: tid %d waiting for syscall reply...\n",
 						__FUNCTION__, thread->tid);
 				waitq_init(&thread->scd_wq);
@@ -288,7 +290,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			cpu_restore_interrupt(flags);
 		}
 
-		if (res.status == STATUS_SYSCALL) {
+		if (smp_load_acquire(&res.status) == STATUS_SYSCALL) {
 			struct syscall_request *requestp;
 			struct syscall_request request;
 			int num;
@@ -1113,8 +1115,8 @@ void terminate_mcexec(int rc, int sig)
 	if ((old_exit_status = proc->group_exit_status) & 0x0000000100000000L)
 		return;
 	exit_status = 0x0000000100000000L | ((rc & 0x00ff) << 8) | (sig & 0xff);
-	if (!__sync_bool_compare_and_swap(&proc->group_exit_status,
-	                                  old_exit_status, exit_status))
+	if (cmpxchg(&proc->group_exit_status,
+				old_exit_status, exit_status) != old_exit_status)
 		return;
 	if (!proc->nohost) {
 		request.number = __NR_exit_group;
@@ -1897,8 +1899,8 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	populate_len = memobj ? min(len, memobj->size) : len;
 
 	if (!(flags & MAP_ANONYMOUS)) {
-		if (atomic_cmpxchg4(&memobj->status, MEMOBJ_TO_BE_PREFETCHED,
-				    MEMOBJ_READY)) {
+		if (cmpxchg(&memobj->status, MEMOBJ_TO_BE_PREFETCHED,
+					MEMOBJ_READY) == MEMOBJ_TO_BE_PREFETCHED) {
 			populated_mapping = 1;
 		}
 
@@ -2793,8 +2795,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 retry_tid:
 		for (i = 0; i < newproc->nr_tids; ++i) {
 			if (!newproc->tids[i].thread) {
-				if (!__sync_bool_compare_and_swap(
-					&newproc->tids[i].thread, NULL, new)) {
+				if (cmpxchg(&newproc->tids[i].thread,
+							NULL, new) != NULL) {
 					goto retry_tid;
 				}
 				new->tid = newproc->tids[i].tid;
@@ -2896,7 +2898,8 @@ retry_tid:
 	new->status = PS_RUNNING;
 	
 	/* Only the first do_fork() call creates a thread on a Linux CPU */
-	if (__sync_bool_compare_and_swap(&old->mod_clone, SPAWN_TO_REMOTE, SPAWN_TO_LOCAL)) {
+	if (cmpxchg(&old->mod_clone, SPAWN_TO_REMOTE, SPAWN_TO_LOCAL) ==
+			SPAWN_TO_REMOTE) {
 		new->mod_clone = SPAWNING_TO_REMOTE;
 		if (old->mod_clone_arg) {
 			new->mod_clone_arg = kmalloc(sizeof(struct uti_attr),
@@ -9677,7 +9680,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
-	if (v->flags & CPU_FLAG_NEED_RESCHED) {
+	if (smp_load_acquire(&v->flags) & CPU_FLAG_NEED_RESCHED) {
 		check_need_resched();
 	}
 
