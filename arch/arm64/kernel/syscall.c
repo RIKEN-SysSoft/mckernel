@@ -58,9 +58,11 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 {
 	int min_queue_len = -1;
 	int cpu, min_cpu = -1, uti_cpu = -1;
-	unsigned long irqstate;
+	unsigned long irqstate = 0;
 
-	irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
+	if (!cpu_local_var(current)->proc->nr_processes) {
+		irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
+	}
 
 	/* Find the first allowed core with the shortest run queue */
 	for (cpu = 0; cpu < num_processors; ++cpu) {
@@ -103,7 +105,10 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 		__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved,
 				     1);
 	}
-	ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
+
+	if (!cpu_local_var(current)->proc->nr_processes) {
+		ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
+	}
 
 	return min_cpu;
 }
