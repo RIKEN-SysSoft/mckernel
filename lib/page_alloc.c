@@ -332,6 +332,21 @@ int deferred_zero_at_free = 1;
  * of their corresponding memory (i.e., they are on the free memory chunk itself).
  */
 
+size_t __count_free_bytes(struct rb_root *root)
+{
+	struct free_chunk *chunk;
+	struct rb_node *node;
+	size_t size = 0;
+
+	for (node = rb_first(root); node; node = rb_next(node)) {
+		chunk = container_of(node, struct free_chunk, node);
+
+		size += chunk->size;
+	}
+
+	return size;
+}
+
 /*
  * Free pages.
  * NOTE: locking must be managed by the caller.
