@@ -1187,7 +1187,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 	ppd = mcctrl_get_per_proc_data(ud, pid);
 
 	if (unlikely(!ppd)) {
-		kprintf("%s: ERROR: no per-process structure for PID %d, "
+		dprintk("%s: ERROR: no per-process structure for PID %d, "
 				"syscall nr: %lu\n",
 				__FUNCTION__, pid, packet->req.number);
 
