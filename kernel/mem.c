@@ -1617,9 +1617,11 @@ static void numa_distances_init()
 static ssize_t numa_sysfs_show_meminfo(struct sysfs_ops *ops,
 		void *instance, void *buf, size_t size)
 {
+#ifdef IHK_RBTREE_ALLOCATOR
 	struct ihk_mc_numa_node *node =
 		(struct ihk_mc_numa_node *)instance;
 	char *sbuf = (char *)buf;
+#endif
 	int len = 0;
 
 #ifdef IHK_RBTREE_ALLOCATOR
@@ -2564,7 +2566,7 @@ void ihk_mc_query_mem_user_page(void *dump_pase_info) {
 }
 
 void ihk_mc_query_mem_free_page(void *dump_pase_info) {
-
+#ifdef IHK_RBTREE_ALLOCATOR
 	struct free_chunk *chunk;
 	struct rb_node *node;
 	struct rb_root *free_chunks;
@@ -2634,7 +2636,7 @@ void ihk_mc_query_mem_free_page(void *dump_pase_info) {
 			}
 		}
 	}
-
+#endif
 	return;
 }
 
