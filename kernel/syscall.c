@@ -1,4 +1,4 @@
-/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2018 */
+/* syscall.c COPYRIGHT FUJITSU LIMITED 2015-2019 */
 /**
  * \file syscall.c
  *  License details are found in the file LICENSE.
@@ -120,7 +120,6 @@ extern int num_processors;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern int ptrace_detach(int pid, int data);
 extern void debug_log(unsigned long);
-extern void free_all_process_memory_range(struct process_vm *vm);
 extern int arch_clear_host_user_space();
 extern long arch_ptrace(long request, int pid, long addr, long data);
 extern struct cpu_local_var *clv;
