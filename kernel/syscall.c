@@ -2669,9 +2669,12 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	int ptrace_event = 0;
 	int termsig = clone_flags & 0x000000ff;
 	const struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
+	int err = 0;
 
-    dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
-            clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
+	dkprintf("%s,flags=%08x,newsp=%lx,ptidptr=%lx,"
+		"ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
+		__func__, clone_flags, newsp, parent_tidptr,
+		child_tidptr, tlsblock_base, curpc, cursp);
 
 	dkprintf("do_fork(): stack_pointr passed in: 0x%lX, stack pointer of caller: 0x%lx\n",
 			 newsp, cursp);
@@ -2710,7 +2713,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	if (!allow_oversubscribe && rusage.num_threads >= cpu_info->ncpus) {
 		kprintf("%s: ERROR: CPU oversubscription is not allowed. Specify -O option in mcreboot.sh to allow it.\n", __FUNCTION__);
-        return -EINVAL;
+		return -EINVAL;
 	}
 
 	if (oldproc->coredump_barrier_count) {
@@ -2730,17 +2733,17 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	}
 
 	cpuid = obtain_clone_cpuid(&old->cpu_set, old->mod_clone == SPAWN_TO_REMOTE && oldproc->uti_use_last_cpu);
-    if (cpuid == -1) {
+	if (cpuid == -1) {
 		kprintf("do_fork,core not available\n");
-        return -EAGAIN;
-    }
+		return -EAGAIN;
+	}
 
 	new = clone_thread(old, curpc,
 	                    newsp ? newsp : cursp, clone_flags);
 	
 	if (!new) {
-		release_cpuid(cpuid);
-		return -ENOMEM;
+		err =  -ENOMEM;
+		goto release_cpuid;
 	}
 
 	newproc = new->proc;
@@ -2759,8 +2762,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 			tids = kmalloc(sizeof(int) * NR_TIDS, IHK_MC_AP_NOWAIT);
 			if (!tids) {
 				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
-				release_cpuid(cpuid);
-				return -ENOMEM;
+				err =  -ENOMEM;
+				goto destroy_thread;
 			}
 
 			newproc->tids = kmalloc(sizeof(struct mcexec_tid) *
@@ -2768,11 +2771,16 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 			if (!newproc->tids) {
 				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
 				kfree(tids);
-				release_cpuid(cpuid);
-				return -ENOMEM;
+				err =  -ENOMEM;
+				goto destroy_thread;
 			}
 
-			settid(new, NR_TIDS, tids);
+			if ((err = settid(new, NR_TIDS, tids)) < 0) {
+				mcs_rwlock_writer_unlock(&newproc->threads_lock,
+							&lock);
+				kfree(tids);
+				goto release_ids;
+			}
 
 			for (i = 0; (i < NR_TIDS) && tids[i]; ++i) {
 				dkprintf("%s: tids[%d]: %d\n",
@@ -2804,14 +2812,14 @@ retry_tid:
 
 		/* TODO: spawn more mcexec threads */
 		if (!new->tid) {
-			release_cpuid(cpuid);
 			kprintf("%s: no more TIDs available\n", __func__);
 			for (i = 0; i < newproc->nr_tids; ++i) {
 				kprintf("%s: i=%d,tid=%d,thread=%p\n",
 					__func__, i, newproc->tids[i].tid,
 					newproc->tids[i].thread);
 			}
-			return -ENOMEM;
+			err = -ENOMEM;
+			goto release_ids;
 		}
 	}
 	/* fork() a new process on the host */
@@ -2830,10 +2838,8 @@ retry_tid:
 		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id());
 		if (newproc->pid < 0) {
 			kprintf("ERROR: forking host process\n");
-			
-			/* TODO: clean-up new */
-			release_cpuid(cpuid);
-			return newproc->pid;
+			err = newproc->pid;
+			goto destroy_thread;
 		}
 
 		/* In a single threaded process TID equals to PID */
@@ -2851,7 +2857,10 @@ retry_tid:
 		dkprintf("clone_flags & CLONE_PARENT_SETTID: 0x%lX\n",
 		         parent_tidptr);
 		
-		setint_user((int*)parent_tidptr, new->tid);
+		err = setint_user((int *)parent_tidptr, new->tid);
+		if (err) {
+			goto release_ids;
+		}
 	}
 	
 	if (clone_flags & CLONE_CHILD_CLEARTID) {
@@ -2869,8 +2878,8 @@ retry_tid:
 		if (ihk_mc_pt_virt_to_phys(new->vm->address_space->page_table, 
 					(void *)child_tidptr, &phys)) { 
 			kprintf("ERROR: looking up physical addr for child process\n");
-			release_cpuid(cpuid);
-			return -EFAULT; 
+			err = -EFAULT;
+			goto release_ids;
 		}
 	
 		*((int*)phys_to_virt(phys)) = new->tid;
@@ -2901,7 +2910,8 @@ retry_tid:
 			if (!new->mod_clone_arg) {
 				kprintf("%s: error: allocating mod_clone_arg\n",
 					__func__);
-				return -ENOMEM;
+				err = -ENOMEM;
+				goto release_ids;
 			}
 			memcpy(new->mod_clone_arg, old->mod_clone_arg,
 			       sizeof(struct uti_attr));
@@ -2950,7 +2960,10 @@ retry_tid:
 		request1.number = __NR_clone;
 		request1.args[0] = 1;
 		request1.args[1] = new->tid;
-		do_syscall(&request1, ihk_mc_get_processor_id());
+		err = do_syscall(&request1, ihk_mc_get_processor_id());
+		if (err) {
+			goto free_mod_clone_arg;
+		}
 	}
 	else if (termsig && termsig != SIGCHLD) {
 		struct mcs_rwlock_node_irqsave lock;
@@ -2971,6 +2984,37 @@ retry_tid:
 	}
 
 	return new->tid;
+
+free_mod_clone_arg:
+	kfree(new->mod_clone_arg);
+	new->mod_clone_arg = NULL;
+
+	ihk_atomic_dec(&new->vm->refcount);
+
+release_ids:
+	if (clone_flags & CLONE_VM) {
+		kfree(newproc->tids);
+		newproc->tids = NULL;
+	} else {
+		request1.number = __NR_kill;
+		request1.args[0] = newproc->pid;
+		request1.args[1] = SIGKILL;
+		do_syscall(&request1, ihk_mc_get_processor_id());
+	}
+
+destroy_thread:
+	if (!(clone_flags & CLONE_VM)) {
+		/* in case of fork, destroy struct process */
+		ihk_atomic_set(&new->proc->refcount, 1);
+		kfree(newproc->saved_cmdline);
+		newproc->saved_cmdline = NULL;
+	}
+	ihk_atomic_set(&new->refcount, 1);
+	release_thread(new);
+
+release_cpuid:
+	release_cpuid(cpuid);
+	return err;
 }
 
 SYSCALL_DECLARE(set_tid_address)
