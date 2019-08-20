@@ -2237,7 +2237,7 @@ SYSCALL_DECLARE(getppid)
 	return thread->proc->ppid_parent->pid;
 }
 
-static void settid(struct thread *thread, int nr_tids, int *tids)
+static int settid(struct thread *thread, int nr_tids, int *tids)
 {
 	int ret;
 	struct syscall_request request IHK_DMA_ALIGN;
@@ -2255,6 +2255,7 @@ static void settid(struct thread *thread, int nr_tids, int *tids)
 		kprintf("%s: WARNING: do_syscall returns %d\n",
 			__FUNCTION__, ret);
 	}
+	return ret;
 }
 
 SYSCALL_DECLARE(gettid)
