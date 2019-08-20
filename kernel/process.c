@@ -84,6 +84,7 @@ extern void procfs_delete_thread(struct thread *);
 
 static int free_process_memory_range(struct process_vm *vm,
 					struct vm_range *range);
+static void free_thread_pages(struct thread *thread);
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -407,8 +408,12 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
 
 	/* copy fp_regs from parent */
-	save_fp_regs(org);
-	copy_fp_regs(org, thread);
+	if (save_fp_regs(org)) {
+		goto free_thread;
+	}
+	if (copy_fp_regs(org, thread)) {
+		goto free_fp_regs;
+	}
 	arch_clone_thread(org, pc, sp, thread);
 
 	memcpy(thread->uctx, org->uctx, sizeof(*org->uctx));
@@ -432,24 +437,20 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	else {
 		proc = kmalloc(sizeof(struct process), IHK_MC_AP_NOWAIT);
 		if(!proc)
-			goto err_free_proc;
+			goto free_fp_regs;
 		memset(proc, '\0', sizeof(struct process));
 		init_process(proc, org->proc);
 #ifdef PROFILE_ENABLE
 		proc->profile = org->proc->profile;
 #endif
-
 		proc->termsig = termsig;
 		asp = create_address_space(cpu_local_var(resource_set), 1);
 		if (!asp) {
-			kfree(proc);
-			goto err_free_proc;
+			goto free_fork_process_proc;
 		}
 		proc->vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
 		if (!proc->vm) {
-			release_address_space(asp);
-			kfree(proc);
-			goto err_free_proc;
+			goto free_fork_process_asp;
 		}
 		memset(proc->vm, '\0', sizeof(struct process_vm));
 
@@ -457,20 +458,14 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		proc->saved_cmdline = kmalloc(proc->saved_cmdline_len,
 					      IHK_MC_AP_NOWAIT);
 		if (!proc->saved_cmdline) {
-			release_address_space(asp);
-			kfree(proc->vm);
-			kfree(proc);
-			goto err_free_proc;
+			goto free_fork_process_vm;
 		}
 		memcpy(proc->saved_cmdline, org->proc->saved_cmdline,
 		       proc->saved_cmdline_len);
 
 		dkprintf("fork(): init_process_vm()\n");
 		if (init_process_vm(proc, asp, proc->vm) != 0) {
-			release_address_space(asp);
-			kfree(proc->vm);
-			kfree(proc);
-			goto err_free_proc;
+			goto free_fork_process_cmdline;
 		}
 		memcpy(&proc->vm->numa_mask, &org->vm->numa_mask,
 				sizeof(proc->vm->numa_mask));
@@ -488,11 +483,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		 * TODO: do this with COW later? */
 		v->on_fork_vm = proc->vm;
 		if (copy_user_ranges(proc->vm, org->vm) != 0) {
-			release_address_space(asp);
-			v->on_fork_vm = NULL;
-			kfree(proc->vm);
-			kfree(proc);
-			goto err_free_proc;
+			goto free_fork_process_cmdline;
 		}
 		v->on_fork_vm = NULL;
 
@@ -503,10 +494,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		for (cur = org->proc->mckfd; cur; cur = cur->next) {
 			struct mckfd *mckfd = kmalloc(sizeof(struct mckfd), IHK_MC_AP_NOWAIT);
 			if(!mckfd) {
-				release_address_space(asp);
-				kfree(proc->vm);
-				kfree(proc);
-				goto err_free_proc;
+				ihk_mc_spinlock_unlock(&proc->mckfd_lock,
+							irqstate);
+				goto free_fork_process_mckfd;
 			}
 			memcpy(mckfd, cur, sizeof(struct mckfd));
 			
@@ -546,7 +536,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		thread->sigcommon = kmalloc(sizeof(struct sig_common),
 		                             IHK_MC_AP_NOWAIT);
 		if (!thread->sigcommon) {
-			goto err_free_proc;
+			if (clone_flags & CLONE_VM) {
+				goto free_clone_process;
+			}
+			goto free_fork_process_mckfd;
 		}
 		memset(thread->sigcommon, '\0', sizeof(struct sig_common));
 
@@ -572,8 +565,52 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 	return thread;
 
-err_free_proc:
-	ihk_mc_free_pages(thread, KERNEL_STACK_NR_PAGES);
+	/*
+	 * free process(clone)
+	 * case of (clone_flags & CLONE_VM)
+	 */
+free_clone_process:
+	goto  free_fp_regs;
+
+	/*
+	 * free process(fork)
+	 * case of !(clone_flags & CLONE_VM)
+	 */
+free_fork_process_mckfd:
+	{
+		long irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+		struct mckfd *cur = proc->mckfd;
+
+		while (cur) {
+			struct mckfd *next = cur->next;
+
+			kfree(cur);
+			cur = next;
+		}
+		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+	}
+	free_all_process_memory_range(proc->vm);
+free_fork_process_cmdline:
+	kfree(proc->saved_cmdline);
+free_fork_process_vm:
+	kfree(proc->vm);
+free_fork_process_asp:
+	ihk_mc_pt_destroy(asp->page_table);
+	kfree(asp);
+free_fork_process_proc:
+	kfree(proc);
+
+	/*
+	 * free fp_regs
+	 */
+free_fp_regs:
+	release_fp_regs(thread);
+
+	/*
+	 * free thread
+	 */
+free_thread:
+	free_thread_pages(thread);
 	return NULL;
 }
 
