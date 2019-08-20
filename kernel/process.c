@@ -82,6 +82,9 @@ int ptrace_detach(int pid, int data);
 extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
 
+static int free_process_memory_range(struct process_vm *vm,
+					struct vm_range *range);
+
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
 ihk_spinlock_t runq_reservation_lock;
@@ -740,12 +743,14 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 	int error;
 	struct vm_range *src_range;
 	struct vm_range *range;
+	struct vm_range *last_insert;
 	struct copy_args args;
 	unsigned long irqflags;
 
 	memory_range_write_lock(orgvm, &irqflags);
 
 	/* Iterate original process' vm_range list and take a copy one-by-one */
+	last_insert = NULL;
 	src_range = NULL;
 	for (;;) {
 		if (!src_range) {
@@ -778,6 +783,9 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 			memobj_ref(range->memobj);
 		}
 
+		vm_range_insert(vm, range);
+		last_insert = src_range;
+
 		/* Copy actual mappings */
 		args.new_vrflag = range->flag;
 		args.new_vm = vm;
@@ -796,27 +804,39 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 						range->start, range->end,
 						range->flag, args.fault_addr);
 			}
-			goto err_free_range_rollback;
+			goto err_rollback;
 		}
 		// memory_stat_rss_add() is called in child-node, i.e. copy_user_pte()
-
-		vm_range_insert(vm, range);
 	}
 
 	memory_range_write_unlock(orgvm, &irqflags);
 
 	return 0;
 
-err_free_range_rollback:
-	kfree(range);
-
 err_rollback:
+	if (last_insert) {
+		src_range = lookup_process_memory_range(orgvm, 0, -1);
+		while (src_range) {
+			struct vm_range *dest_range;
 
-	/* TODO: implement rollback */
+			if (src_range->flag & VR_DONTFORK)
+				continue;
 
 
+			dest_range = lookup_process_memory_range(vm,
+							src_range->start,
+							src_range->end);
+			if (dest_range) {
+				free_process_memory_range(vm, dest_range);
+			}
+
+			if (src_range == last_insert) {
+				break;
+			}
+			src_range = next_process_memory_range(orgvm, src_range);
+		}
+	}
 	memory_range_write_unlock(orgvm, &irqflags);
-
 	return -1;
 }
 
@@ -953,7 +973,8 @@ out:
 	return error;
 }
 
-int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
+static int free_process_memory_range(struct process_vm *vm,
+					struct vm_range *range)
 {
 	const intptr_t start0 = range->start;
 	const intptr_t end0 = range->end;
