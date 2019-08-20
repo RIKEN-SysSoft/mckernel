@@ -1240,7 +1240,6 @@ err:
 }
 
 static int check_and_allocate_fp_regs(struct thread *thread);
-void save_fp_regs(struct thread *thread);
 
 void arch_clone_thread(struct thread *othread, unsigned long pc,
 			unsigned long sp, struct thread *nthread)
@@ -1481,8 +1480,7 @@ check_and_allocate_fp_regs(struct thread *thread)
 
 		if (!thread->fp_regs) {
 			kprintf("error: allocating fp_regs pages\n");
-			result = 1;
-			panic("panic: error allocating fp_regs pages");
+			result = -ENOMEM;
 			goto out;
 		}
 
@@ -1491,37 +1489,51 @@ check_and_allocate_fp_regs(struct thread *thread)
 
 #ifdef CONFIG_ARM64_SVE
 	if (likely(elf_hwcap & HWCAP_SVE)) {
-		sve_alloc(thread);
+		result = sve_alloc(thread);
 	}
 #endif /* CONFIG_ARM64_SVE */
 out:
+	if (result) {
+		release_fp_regs(thread);
+	}
 	return result;
 }
 
 /*@
   @ requires \valid(thread);
   @*/
-void
+int
 save_fp_regs(struct thread *thread)
 {
+	int ret = 0;
 	if (thread == &cpu_local_var(idle)) {
-		return;
+		goto out;
 	}
 
 	if (likely(elf_hwcap & (HWCAP_FP | HWCAP_ASIMD))) {
-		if (check_and_allocate_fp_regs(thread) != 0) {
-			// alloc error.
-			return;
+		ret = check_and_allocate_fp_regs(thread);
+		if (ret) {
+			goto out;
 		}
 		thread_fpsimd_save(thread);
 	}
+out:
+	return ret;
 }
 
-void copy_fp_regs(struct thread *from, struct thread *to)
+int copy_fp_regs(struct thread *from, struct thread *to)
 {
-	if ((from->fp_regs != NULL) && (check_and_allocate_fp_regs(to) == 0)) {
-		memcpy(to->fp_regs, from->fp_regs, sizeof(fp_regs_struct));
+	int ret = 0;
+
+	if (from->fp_regs != NULL) {
+		ret = check_and_allocate_fp_regs(to);
+		if (!ret) {
+			memcpy(to->fp_regs,
+			       from->fp_regs,
+			       sizeof(fp_regs_struct));
+		}
 	}
+	return ret;
 }
 
 void clear_fp_regs(void)

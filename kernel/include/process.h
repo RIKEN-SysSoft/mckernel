@@ -914,8 +914,8 @@ extern void check_sig_pending(void);
 void clear_single_step(struct thread *thread);
 
 void release_fp_regs(struct thread *proc);
-void save_fp_regs(struct thread *proc);
-void copy_fp_regs(struct thread *from, struct thread *to);
+int save_fp_regs(struct thread *proc);
+int copy_fp_regs(struct thread *from, struct thread *to);
 void restore_fp_regs(struct thread *proc);
 void clear_fp_regs(void);
 
