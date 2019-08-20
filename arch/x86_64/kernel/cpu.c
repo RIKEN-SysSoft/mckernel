@@ -1,4 +1,4 @@
-/* cpu.c COPYRIGHT FUJITSU LIMITED 2018 */
+/* cpu.c COPYRIGHT FUJITSU LIMITED 2018-2019 */
 /**
  * \file cpu.c
  *  License details are found in the file LICENSE.
@@ -1709,7 +1709,7 @@ check_and_allocate_fp_regs(struct thread *thread)
 
 		if (!thread->fp_regs) {
 			kprintf("error: allocating fp_regs pages\n");
-			result = 1;
+			result = -ENOMEM;
 			goto out;
 		}
 
@@ -1722,12 +1722,14 @@ out:
 /*@
   @ requires \valid(thread);
   @*/
-void
+int
 save_fp_regs(struct thread *thread)
 {
-	if (check_and_allocate_fp_regs(thread) != 0) {
-		// alloc error
-		return;
+	int ret = 0;
+
+	ret = check_and_allocate_fp_regs(thread);
+	if (ret) {
+		goto out;
 	}
 
 	if (xsave_available) {
@@ -1742,13 +1744,23 @@ save_fp_regs(struct thread *thread)
 
 		dkprintf("fp_regs for TID %d saved\n", thread->tid);
 	}
+out:
+	return ret;
 }
 
-void copy_fp_regs(struct thread *from, struct thread *to)
+int copy_fp_regs(struct thread *from, struct thread *to)
 {
-	if ((from->fp_regs != NULL) && (check_and_allocate_fp_regs(to) == 0)) {
-		memcpy(to->fp_regs, from->fp_regs, sizeof(fp_regs_struct));
+	int ret = 0;
+
+	if (from->fp_regs != NULL) {
+		ret = check_and_allocate_fp_regs(to);
+		if (!ret) {
+			memcpy(to->fp_regs,
+				from->fp_regs,
+				sizeof(fp_regs_struct));
+		}
 	}
+	return ret;
 }
 
 /*@
