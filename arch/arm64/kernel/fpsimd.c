@@ -119,17 +119,19 @@ void sve_free(struct thread *thread)
 	}
 }
 
-void sve_alloc(struct thread *thread)
+int sve_alloc(struct thread *thread)
 {
 	if (thread->ctx.thread->sve_state) {
-		return;
+		return 0;
 	}
 
 	thread->ctx.thread->sve_state =
 		kmalloc(sve_state_size(thread), IHK_MC_AP_NOWAIT);
-	BUG_ON(!thread->ctx.thread->sve_state);
-
+	if (thread->ctx.thread->sve_state == NULL) {
+		return -ENOMEM;
+	}
 	memset(thread->ctx.thread->sve_state, 0, sve_state_size(thread));
+	return 0;
 }
 
 static int get_nr_threads(struct process *proc)

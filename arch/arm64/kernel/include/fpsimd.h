@@ -42,7 +42,7 @@ extern void thread_sve_to_fpsimd(struct thread *thread, fp_regs_struct *fp_regs)
 
 extern size_t sve_state_size(struct thread const *thread);
 extern void sve_free(struct thread *thread);
-extern void sve_alloc(struct thread *thread);
+extern int sve_alloc(struct thread *thread);
 extern void sve_save_state(void *state, unsigned int *pfpsr);
 extern void sve_load_state(void const *state, unsigned int const *pfpsr, unsigned long vq_minus_1);
 extern unsigned int sve_get_vl(void);
