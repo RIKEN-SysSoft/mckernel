@@ -397,6 +397,8 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	}
 
 	memset(thread, 0, sizeof(struct thread));
+	INIT_LIST_HEAD(&thread->hash_list);
+	INIT_LIST_HEAD(&thread->siblings_list);
 	ihk_atomic_set(&thread->refcount, 2);
 	memcpy(&thread->cpu_set, &org->cpu_set, sizeof(thread->cpu_set));
 
@@ -2666,21 +2668,21 @@ release_process(struct process *proc)
 {
 	struct process *parent;
 	struct mcs_rwlock_node_irqsave lock;
-	struct process_hash *phash;
 	struct resource_set *rset;
-	int hash;
 
 	if (!ihk_atomic_dec_and_test(&proc->refcount)) {
 		return;
 	}
 
 	rset = cpu_local_var(resource_set);
-	phash = rset->process_hash;
-	hash = process_hash(proc->pid);
+	if (!list_empty(&proc->hash_list)) {
+		struct process_hash *phash = rset->process_hash;
+		int hash = process_hash(proc->pid);
 
-	mcs_rwlock_writer_lock(&phash->lock[hash], &lock);
-	list_del(&proc->hash_list);
-	mcs_rwlock_writer_unlock(&phash->lock[hash], &lock);
+		mcs_rwlock_writer_lock(&phash->lock[hash], &lock);
+		list_del(&proc->hash_list);
+		mcs_rwlock_writer_unlock(&phash->lock[hash], &lock);
+	}
 
 	parent = proc->parent;
 	mcs_rwlock_writer_lock(&parent->children_lock, &lock);
@@ -2700,6 +2702,20 @@ release_process(struct process *proc)
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
 	free_thread_pages(proc->main_thread);
+
+	{
+		long irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+		struct mckfd *cur = proc->mckfd;
+
+		while (cur) {
+			struct mckfd *next = cur->next;
+
+			kfree(cur);
+			cur = next;
+		}
+		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+	}
+
 	kfree(proc);
 
 	/* no process left */
@@ -2870,14 +2886,18 @@ void destroy_thread(struct thread *thread)
 	struct sig_pending *signext;
 	struct mcs_rwlock_node_irqsave lock, updatelock;
 	struct process *proc = thread->proc;
-	struct resource_set *resource_set = cpu_local_var(resource_set);
-	int hash;
 	struct timespec ats;
 
-	hash = thread_hash(thread->tid);
-	mcs_rwlock_writer_lock(&resource_set->thread_hash->lock[hash], &lock);
-	list_del(&thread->hash_list);
-	mcs_rwlock_writer_unlock(&resource_set->thread_hash->lock[hash], &lock);
+	if (!list_empty(&thread->hash_list)) {
+		struct resource_set *resource_set = cpu_local_var(resource_set);
+		int hash = thread_hash(thread->tid);
+
+		mcs_rwlock_writer_lock(&resource_set->thread_hash->lock[hash],
+					&lock);
+		list_del(&thread->hash_list);
+		mcs_rwlock_writer_unlock(&resource_set->thread_hash->lock[hash],
+					&lock);
+	}
 
 	mcs_rwlock_writer_lock(&proc->update_lock, &updatelock);
 	tsc_to_ts(thread->system_tsc, &ats);
