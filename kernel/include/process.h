@@ -832,6 +832,7 @@ void hold_process_vm(struct process_vm *vm);
 void release_process_vm(struct process_vm *vm);
 void hold_process(struct process *);
 void release_process(struct process *);
+void free_all_process_memory_range(struct process_vm *vm);
 void free_process_memory_ranges(struct process_vm *vm);
 int populate_process_memory(struct process_vm *vm, void *start, size_t len);
 
