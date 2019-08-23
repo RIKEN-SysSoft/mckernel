@@ -4373,9 +4373,11 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 
 			cpu_pause();
 		}
-#ifdef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
+		/*
+		 * Sending signal here is detected
+		 * by the following list check
+		 */
 		thread->sigevent = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_33 */
 
 		thread->status = PS_RUNNING;
 		lock = &thread->sigcommon->lock;
@@ -4434,9 +4436,6 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 			return -EINTR;
 		}
 		mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
-#ifndef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
-		thread->sigevent = 0;
-#endif /* !POSTK_DEBUG_TEMP_FIX_33 */
 	}
 
 	if(info){
@@ -4511,9 +4510,12 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 				cpu_pause();
 			}
 		}
-#ifdef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
+
+		/*
+		 * Sending signal here is detected
+		 * by the following list check
+		 */
 		thread->sigevent = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_33 */
 
 		thread->status = PS_RUNNING;
 		lock = &thread->sigcommon->lock;
@@ -4537,9 +4539,6 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 		}
 		if(&pending->list == head){
 			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
-#ifndef POSTK_DEBUG_TEMP_FIX_33 /* sigevent missed fix */
-			thread->sigevent = 0;
-#endif /* POSTK_DEBUG_TEMP_FIX_33 */
 			continue;
 		}
 

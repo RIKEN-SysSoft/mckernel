@@ -1,0 +1,35 @@
+【Issue#1350 動作確認】
+□ テスト内容
+1. Issueで報告された現象が再現しないことを確認
+C1350T01:
+	Issueで報告されたRace-conditionが発生するよう、do_sigsuspendの復帰後、
+	thread->sigevent = 0の前に10秒間のsleep処理を行うパッチを適用し、
+	以下の処理を確認する
+	 (1) 第1のプロセスがsigsuspendを呼ぶ
+	 (2) 第1のプロセスがsigsuspendの、sigevent = 0;の直前に10秒sleepする
+	 (3) 第2のプロセスが第1のプロセスにマスクされていないシグナルを送る
+	 (4) 第1のプロセスがsigsuspendから返ることを確認する
+
+2. 以下のLTPを用いて既存のsigsuspend機能に影響が無いことを確認
+	- rt_sigsuspend01
+	- sigsuspend01
+	- pause01
+	- pause02
+	- pause03
+
+□ 実行手順
+・下記の手順でテストを実行する
+$ cd <mckernel>
+$ patch -p0 < test/issues/1350/delay_sigsuspend.patch
+(build mckernel)
+$ cd test/issues/1350
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64result.log, aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。

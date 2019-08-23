@@ -1,0 +1,43 @@
+*** C1350T01 start *******************************
+parent is waiting SIGUSR1
+child is sending SIGUSR1 (should be caught)
+suspender caught SIGUSR1
+sigsuspend return -1 as expected
+[OK] caught SIGUSR1
+*** C1350T01 PASSED ******************************
+
+*** C1350T02 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+rt_sigsuspend01.c:53: PASS: rt_sigsuspend() returned with -1 and EINTR
+rt_sigsuspend01.c:62: PASS: signal mask preserved
+
+Summary:
+passed   2
+failed   0
+skipped  0
+warnings 0
+*** C1350T02 PASSED (0)
+
+*** C1350T03 start *******************************
+sigsuspend01    1  TPASS  :  Functionality of sigsuspend() successful
+*** C1350T03 PASSED (1)
+
+*** C1350T04 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+pause01.c:35: PASS: pause() interrupted with EINTR
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1350T04 PASSED (0)
+
+*** C1350T05 start *******************************
+pause02     1  TPASS  :  pause was interrupted correctly
+*** C1350T05 PASSED (1)
+
+*** C1350T06 start *******************************
+pause03     1  TPASS  :  pause() did not return after SIGKILL
+*** C1350T06 PASSED (1)
+
