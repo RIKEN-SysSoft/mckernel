@@ -1,0 +1,34 @@
+【Issue#1351 動作確認】
+□ テスト内容
+1. 複数のvm_rangeから構成されるメモリ領域に対するmadviseの動作を確認
+C1351T01:
+	以下の流れでmadviseの設定が複数のvm_rangeに適用されたことを確認
+	1. 複数回のmmapで連続したメモリ領域を確保する
+	2. 1.で確保したメモリ領域にMADV_DODUMPを設定する (初期化)
+	3. 1.で確保したメモリ領域にMADV_DONTDUMPを設定する 
+	4. テスト用のmadvise(MADV_SHOW_ATTR) を実行し、
+	  すべてのvm_rangeにMADV_DONTDUMPが設定されていることを確認する
+
+2. LTP を用いてmadviseの既存処理に影響しないことを確認
+	以下のLTPがPASSすることを確認
+	 - madvise01
+	 - madvise02
+	 - madvise03
+	 - madvise04
+
+□ 実行手順
+1. 下記の手順でテストを実行する
+$ cd <mckernel>
+$ patch -p0 < test/issues/1351/show_attr.patch
+(build mckernel)
+$ cd test/issues/1351
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log, aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。

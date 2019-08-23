@@ -1,0 +1,39 @@
+*** C1351T01 start *******************************
+** mmap continuous areas: Done
+** madvise MADV_DONTDUMP: Done
+** madvise MADV_SHOW_ATTR: Done
+[  0]: range 0x2aaaaade9000 - 0x2aaaaadeb000  attr: 0x20731000
+[  0]: range 0x2aaaaadeb000 - 0x2aaaaaded000  attr: 0x20731000
+[  0]: range 0x2aaaaaded000 - 0x2aaaaadef000  attr: 0x20731000
+
+*** C1351T01 PASSED ******************************
+
+*** C1351T02 start *******************************
+madvise01    1  TPASS  :  madvise test for MADV_NORMAL PASSED
+madvise01    2  TPASS  :  madvise test for MADV_RANDOM PASSED
+madvise01    3  TPASS  :  madvise test for MADV_SEQUENTIAL PASSED
+madvise01    4  TPASS  :  madvise test for MADV_WILLNEED PASSED
+madvise01    5  TPASS  :  madvise test for MADV_DONTNEED PASSED
+*** C1351T02 PASSED (5)
+
+*** C1351T03 start *******************************
+madvise02    1  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
+madvise02    2  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
+madvise02    3  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
+madvise02    4  TCONF  :  madvise02.c:216: kernel configured with CONFIG_KSM, skip EINVAL test for MADV_MERGEABLE.
+madvise02    5  TCONF  :  madvise02.c:237: kernel configured with CONFIG_KSM, skip EINVAL test for MADV_UNMERGEABLE.
+madvise02    6  TPASS  :  failed as expected: TEST_ERRNO=ENOMEM(12): Cannot allocate memory
+madvise02    7  TPASS  :  madvise succeeded as expected, see kernel commit 1998cc0 for details.
+*** C1351T03 PASSED (5)
+
+*** C1351T04 start *******************************
+madvise03    1  TPASS  :  madvise test for MADV_REMOVE PASSED
+madvise03    2  TPASS  :  madvise test for MADV_DONTFORK PASSED
+madvise03    3  TPASS  :  madvise test for MADV_DOFORK PASSED
+*** C1351T04 PASSED (3)
+
+*** C1351T05 start *******************************
+madvise04    1  TPASS  :  madvise test for MADV_DONTDUMP PASSED
+madvise04    2  TPASS  :  madvise test for MADV_DODUMP PASSED
+*** C1351T05 PASSED (2)
+

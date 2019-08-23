@@ -1,0 +1,54 @@
+diff --git kernel/include/mman.h kernel/include/mman.h
+index e7d3526..3b8b0f3 100644
+--- kernel/include/mman.h
++++ kernel/include/mman.h
+@@ -56,6 +56,7 @@
+ #define	MADV_DODUMP		17
+ #define	MADV_HWPOISON		100
+ #define	MADV_SOFT_OFFLINE	101
++#define MADV_SHOW_ATTR		201 /* for TEST */
+ 
+ /*
+  * for mremap()
+diff --git kernel/syscall.c kernel/syscall.c
+index 564c103..9e2c56f 100644
+--- kernel/syscall.c
++++ kernel/syscall.c
+@@ -4651,6 +4651,14 @@ clear_memory_range_flag(struct vm_range *range, unsigned long arg)
+ }
+ 
+ static int
++show_memory_range_flag(struct vm_range *range, unsigned long arg)
++{
++	kprintf("range 0x%lx - 0x%lx  attr: 0x%lx\n",
++			range->start, range->end, range->flag);
++	return 0;
++}
++
++static int
+ change_attr_process_memory_range(struct process_vm *vm,
+                                  uintptr_t start, uintptr_t end,
+                                  int (*change_proc)(struct vm_range *,
+@@ -4779,6 +4787,7 @@ SYSCALL_DECLARE(madvise)
+ 	case MADV_REMOVE:
+ 	case MADV_DONTDUMP:
+ 	case MADV_DODUMP:
++	case MADV_SHOW_ATTR:
+ 		break;
+ 
+ 	case MADV_HWPOISON:
+@@ -4919,6 +4928,14 @@ SYSCALL_DECLARE(madvise)
+ 		error = syscall_generic_forwarding(__NR_madvise, ctx);
+ 	}
+ 
++	if (advice == MADV_SHOW_ATTR) {
++		error = change_attr_process_memory_range(thread->vm,
++				start, end, show_memory_range_flag, 0);
++		if (error) {
++			goto out;
++		}
++	}
++
+ 	error = 0;
+ out:
+ 	memory_range_write_unlock(thread->vm, &irqflags);
