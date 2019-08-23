@@ -1,0 +1,27 @@
+【Issue#1350 動作確認】
+□ テスト内容
+1. Issueで報告された現象が再現しないことを確認
+C1350T01:
+	gdbのtestsuiteの gdb.base/gdb1555.exp を実行し、
+	# of expected passes  が 2になることを確認する
+	なお、テスト中のgdbコマンドはmcexecコマンドから実行する
+
+2. 以下のLTPを用いて既存のsigsuspend機能に影響が無いことを確認
+	- rt_sigsuspend01
+	- sigsuspend01
+	- pause01
+	- pause02
+	- pause03
+
+□ 実行手順
+1. gdbのビルドディレクトリをC1350.sh 中のGDB_BUILD_DIRに記載する
+2. $ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。
