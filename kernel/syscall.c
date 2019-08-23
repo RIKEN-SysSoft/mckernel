@@ -4686,21 +4686,13 @@ change_attr_process_memory_range(struct process_vm *vm,
 			}
 		}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_37
 		if((error = change_proc(range, arg)) != 0){
-#else
-		if(!(error = change_proc(range, arg))){
-#endif /*POSTK_DEBUG_TEMP_FIX_37*/
 			break;
 		}
 		range = next_process_memory_range(vm, range);
 	}
 
-#ifdef POSTK_DEBUG_TEMP_FIX_37
 	if(error == 0){
-#else
-	if(error){
-#endif /*POSTK_DEBUG_TEMP_FIX_37*/
 		next = next_process_memory_range(vm, range);
 		if(!next)
 			next = range;
