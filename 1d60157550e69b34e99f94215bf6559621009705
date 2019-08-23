@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "55c93947_59492a84",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-08-23T06:30:35Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieve\u0027 may be misspelled - perhaps \u0027receive\u0027?\nSubject: [PATCH] sigsuspend: Make sure recieve correct sigevent from do_kill",
+      "revId": "1d60157550e69b34e99f94215bf6559621009705",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
