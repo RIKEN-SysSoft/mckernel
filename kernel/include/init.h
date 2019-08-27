@@ -9,6 +9,7 @@
 /*
  * HISTORY:
  */
+/* init.h COPYRIGHT FUJITSU LIMITED 2019 */
 
 #ifndef INIT_H
 #define INIT_H
@@ -38,5 +39,6 @@ extern void dynamic_debug_sysfs_setup(void);
 extern char *find_command_line(char *name);
 
 extern int num_processors;
+extern int multi_intr_mode;
 
 #endif
