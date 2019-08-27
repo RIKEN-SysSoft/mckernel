@@ -38,5 +38,6 @@ extern void dynamic_debug_sysfs_setup(void);
 extern char *find_command_line(char *name);
 
 extern int num_processors;
+extern int multi_intr_mode;
 
 #endif
