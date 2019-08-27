@@ -4,8 +4,8 @@
 #include <ihk/debug.h>
 #include <cls.h>
 #include <ihk/monitor.h>
+#include <init.h>
 
-extern int nmi_mode;
 extern void mod_nmi_ctx(void *, void(*)());
 extern void lapic_ack();
 extern void __freeze();
@@ -29,7 +29,7 @@ freeze_thaw(void *nmi_ctx)
 {
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
-	if (nmi_mode == 1) {
+	if (multi_intr_mode == 1) {
 		if (monitor->status != IHK_OS_MONITOR_KERNEL_FROZEN) {
 #if 1
 			mod_nmi_ctx(nmi_ctx, __freeze);
@@ -48,7 +48,7 @@ freeze_thaw(void *nmi_ctx)
 #endif
 		}
 	}
-	else if(nmi_mode == 2) {
+	else if (multi_intr_mode == 2) {
 		if (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
 			monitor->status = IHK_OS_MONITOR_KERNEL_THAW;
 		}

@@ -14,7 +14,8 @@
 #define INTRID_QUERY_FREE_MEM	2
 #define INTRID_CPU_STOP		3
 #define INTRID_TLB_FLUSH	4
-#define INTRID_STACK_TRACE	6
+#define INTRID_STACK_TRACE	5
+#define INTRID_MULTI_INTR	6
 #define INTRID_MULTI_NMI	7
 
 /* use PPI interrupt number */
