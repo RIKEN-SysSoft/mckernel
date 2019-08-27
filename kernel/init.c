@@ -230,7 +230,16 @@ void monitor_init(void)
 	return;
 }
 
+int multi_intr_mode;
 int nmi_mode;
+
+static void multi_intr_init(void)
+{
+	unsigned long phys;
+
+	phys = virt_to_phys(&multi_intr_mode);
+	ihk_set_multi_intr_mode_addr(phys);
+}
 
 static void nmi_init()
 {
@@ -256,6 +265,7 @@ static void rest_init(void)
 
 	ap_init();
 	cpu_local_var_init();
+	multi_intr_init();
 	nmi_init();
 	uti_init();
 	time_init();
