@@ -119,6 +119,22 @@ static struct ihk_mc_interrupt_handler cpu_stop_handler = {
 };
 
 extern long freeze_thaw(void *nmi_ctx);
+static void multi_interrupt_handler(void *priv)
+{
+	switch (multi_intr_mode) {
+	case 1:
+	case 2: /* mode == 1or2, for FREEZER intr */
+		dkprintf("%s: freeze mode intr catch. (multi_intr_mode=%d)\n",
+			 __func__, multi_intr_mode);
+		freeze_thaw(NULL);
+		break;
+	default:
+		ekprintf("%s: Unknown multi-intr-mode(%d) detected.\n",
+			 __func__, multi_intr_mode);
+		break;
+	}
+}
+
 static void multi_nm_interrupt_handler(void *priv)
 {
 	extern int nmi_mode;
@@ -126,14 +142,6 @@ static void multi_nm_interrupt_handler(void *priv)
 	union arm64_cpu_local_variables *clv;
 
 	switch (nmi_mode) {
-	case 1:
-	case 2:
-		/* mode == 1or2, for FREEZER NMI */
-		dkprintf("%s: freeze mode NMI catch. (nmi_mode=%d)\n",
-			 __func__, nmi_mode);
-		freeze_thaw(NULL);
-		break;
-
 	case 0:
 		/* mode == 0,    for MEMDUMP NMI */
 		clv = get_arm64_this_cpu_local();
@@ -163,6 +171,11 @@ static void multi_nm_interrupt_handler(void *priv)
 		break;
 	}
 }
+
+static struct ihk_mc_interrupt_handler multi_intr_handler = {
+	.func = multi_interrupt_handler,
+	.priv = NULL,
+};
 
 static struct ihk_mc_interrupt_handler multi_nmi_handler = {
 	.func = multi_nm_interrupt_handler,
@@ -428,6 +441,8 @@ void ihk_mc_init_ap(void)
 
 	ihk_mc_register_interrupt_handler(INTRID_CPU_STOP, &cpu_stop_handler);
 	ihk_mc_register_interrupt_handler(INTRID_MULTI_NMI, &multi_nmi_handler);
+	ihk_mc_register_interrupt_handler(INTRID_MULTI_INTR,
+					&multi_intr_handler);
 	ihk_mc_register_interrupt_handler(
 		ihk_mc_get_vector(IHK_TLB_FLUSH_IRQ_VECTOR_START),
 		&remote_tlb_flush_handler);

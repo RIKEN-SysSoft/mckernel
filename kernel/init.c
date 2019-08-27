@@ -18,6 +18,7 @@
  *  2013/06/02 balazs resolved merge conflicts with futex code
  *  2013/05/20 simin exchange the dcfa stuff init/exit order in mcexec
  */
+/* init.c COPYRIGHT FUJITSU LIMITED 2019 */
 #include <types.h>
 #include <kmsg.h>
 #include <kmalloc.h>
@@ -230,7 +231,16 @@ void monitor_init(void)
 	return;
 }
 
+int multi_intr_mode;
 int nmi_mode;
+
+static void multi_intr_init(void)
+{
+	unsigned long phys;
+
+	phys = virt_to_phys(&multi_intr_mode);
+	ihk_set_multi_intr_mode_addr(phys);
+}
 
 static void nmi_init()
 {
@@ -256,6 +266,7 @@ static void rest_init(void)
 
 	ap_init();
 	cpu_local_var_init();
+	multi_intr_init();
 	nmi_init();
 	uti_init();
 	time_init();
