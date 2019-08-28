@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b74d5398_c570b813",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 4335,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-28T03:46:08Z",
+      "side": 1,
+      "message": "/* Sending signal here is detected by the following list check */\nのようなコメントを入れておいてください。",
+      "range": {
+        "startLine": 4335,
+        "startChar": 0,
+        "endLine": 4335,
+        "endChar": 3
+      },
+      "revId": "62f93f33a47bdbbb5e2662fa7ea7d95e74bec8e4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
