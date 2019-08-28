@@ -14,14 +14,17 @@ extern void __freeze();
 void
 freeze()
 {
+	unsigned long flags;
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
 	monitor->status_bak = monitor->status;
 	monitor->status = IHK_OS_MONITOR_KERNEL_FROZEN;
+	flags = cpu_enable_interrupt_save();
 	while (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
 		cpu_halt();
 		cpu_pause();
 	}
+	cpu_restore_interrupt(flags);
 	monitor->status = monitor->status_bak;
 }
 
