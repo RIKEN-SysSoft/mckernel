@@ -28,6 +28,7 @@ void cpu_restore_interrupt(unsigned long);
 void cpu_pause(void);
 
 unsigned long cpu_disable_interrupt_save(void);
+unsigned long cpu_enable_interrupt_save(void);
 
 struct ihk_mc_interrupt_handler {
 	struct list_head list;
