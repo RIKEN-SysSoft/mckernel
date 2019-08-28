@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "40e99a1d_8a8f99ed",
+        "filename": "test/issues/988/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-08-28T03:05:10Z",
+      "side": 1,
+      "message": "以下のテストを追加してください。\n(1) Linux側の[mckernel]のVMAのパーミッションがデフォルトであることを確認\n(2) mmapして、mprotectでパーミッションを変えて、Linux側の[mckernel]のVMAでパーミッションが変わっているか確認\n(3) munmapして、Linux側の[mckernel]のVMAでパーミッションがデフォルトに戻っていることを確認",
+      "range": {
+        "startLine": 2,
+        "startChar": 0,
+        "endLine": 2,
+        "endChar": 7
+      },
+      "revId": "a74a00bb3bfe7bd90e9dbece3e96bff30966e7a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
