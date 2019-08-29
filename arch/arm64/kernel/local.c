@@ -27,6 +27,12 @@ void init_processors_local(int max_id)
 		panic("idle kernel stack allocation failed.");
 	}
 
+	/* Sanity check for UTI */
+	if (ihk_mc_get_thread_size() != KERNEL_STACK_SIZE) {
+		kprintf("%s: WARNING: Linux THREAD_SIZE (%ld) != KERNEL_STACK_SIZE(%ld)\n",
+			__func__, ihk_mc_get_thread_size(), KERNEL_STACK_SIZE);
+	}
+
 	/* allocate one more for alignment */
 	locals = ihk_mc_alloc_pages(npages, IHK_MC_AP_CRITICAL);
 	if (locals == NULL) {

@@ -34,4 +34,11 @@
 /* for non-RHEL kernels */
 #ifndef RHEL_RELEASE_VERSION
 #define RHEL_RELEASE_VERSION(a,b) (((a) << 8) + (b))
+
+/* Linux CONFIG_KASAN */
+#cmakedefine CONFIG_KASAN ${CONFIG_KASAN}
+
+/* Linux PAGE_SIZE */
+#cmakedefine LINUX_PAGE_SHIFT ${LINUX_PAGE_SHIFT}
+
 #endif

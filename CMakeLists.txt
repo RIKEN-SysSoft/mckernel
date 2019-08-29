@@ -105,6 +105,16 @@ if (ENABLE_UTI)
 	link_directories(${LIBSYSCALL_INTERCEPT_LIBRARY_DIRS})
 endif()
 
+# for UTI
+execute_process(COMMAND awk -F= "$1 == \"CONFIG_KASAN\" { print $2; exit; }" "${KERNEL_DIR}/.config"
+  OUTPUT_VARIABLE CONFIG_KASAN OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process(COMMAND perl -e "$pgsize = `getconf PAGE_SIZE`; for ($i = 0; $pgsize != 0; $pgsize >>= 1, $i++) {} printf $i - 1;"
+  OUTPUT_VARIABLE LINUX_PAGE_SHIFT OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+message("Host Kernel CONFIG_KASAN=${CONFIG_KASAN}")
+message("Host Kernel PAGE_SHIFT=${LINUX_PAGE_SHIFT}")
+
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([0-9]+)(.*))?" "\\1;\\2;\\3;\\5;\\6" LINUX_VERSION ${UNAME_R})
 list(GET LINUX_VERSION 0 LINUX_VERSION_MAJOR)
 list(GET LINUX_VERSION 1 LINUX_VERSION_MINOR)

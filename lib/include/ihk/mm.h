@@ -217,6 +217,8 @@ int ihk_mc_get_memory_chunk(int id,
 	unsigned long *end,
 	int *numa_id);
 
+size_t ihk_mc_get_thread_size(void);
+
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);
 void remote_flush_tlb_array_cpumask(struct process_vm *vm,
