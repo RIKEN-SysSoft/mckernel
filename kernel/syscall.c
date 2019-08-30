@@ -5734,7 +5734,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
 		val2 = (uint32_t) (unsigned long) arg3;
 
-	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared, uti_clv);
+	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared, 0/*uti_clv*/);
 
 	uti_dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d, ret: %d\n", 
 			op,
@@ -5756,6 +5756,29 @@ SYSCALL_DECLARE(futex)
 					ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
 					ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx),
 					0UL, NULL, NULL, NULL, NULL);
+}
+
+/* processor_id: processor_id in McKernel
+ */
+long uti_futex(int n,
+	       unsigned long arg0, unsigned long arg1,
+	       unsigned long arg2, unsigned long arg3,
+	       unsigned long arg4, unsigned long arg5,
+	       unsigned long _uti_clv,
+	       void *uti_futex_resp, void *_linux_wait_event,
+	       void *_linux_printk, void *_linux_clock_gettime,
+	       unsigned long current, int processor_id)
+{
+	struct cpu_local_var *clv = get_cpu_local_var(processor_id);
+
+	/* Fill fields used by futex() */
+	clv->current = (struct thread *)current;
+
+	return do_futex(n, arg0, arg1, arg2, arg3, arg4, arg5,
+			_uti_clv, uti_futex_resp,
+			_linux_wait_event,
+			_linux_printk,
+			_linux_clock_gettime);
 }
 
 static void
@@ -9253,7 +9276,8 @@ int util_thread(struct uti_attr *arg)
 		request.args[2] = virt_to_phys(&kattr);
 	}
 	request.args[3] = (unsigned long)uti_clv;
-	request.args[4] = uti_desc;
+	request.args[4] = (unsigned long)uti_desc;
+	request.args[5] = (unsigned long)thread;
 	thread->uti_state = UTI_STATE_RUNNING_IN_LINUX;
 	rc = do_syscall(&request, ihk_mc_get_processor_id());
 	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);

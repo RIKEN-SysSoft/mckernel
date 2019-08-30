@@ -552,4 +552,21 @@ struct uti_futex_resp {
 	int done;
 	wait_queue_head_t wq;
 };
+
+struct mck_thread_info {
+	unsigned long		flags;		/* low level flags */
+//	mm_segment_t		addr_limit;	/* address limit */
+//	struct task_struct	*task;		/* main task structure */
+//	struct exec_domain	*exec_domain;	/* execution domain */
+//	struct restart_block	restart_block;
+//	int			preempt_count;	/* 0 => preemptable, <0 => bug */
+	int			cpu;		/* cpu */
+	struct cpu_context	cpu_context;	/* kernel_context */
+	void			*sve_state;	/* SVE registers, if any */
+	unsigned int		sve_vl;		/* SVE vector length */
+	unsigned int		sve_vl_onexec;	/* SVE vl after next exec */
+	unsigned long		sve_flags;	/* SVE related flags */
+	unsigned long		fault_address;	/* fault info */
+	unsigned long		fault_code;	/* ESR_EL1 value */
+};
 #endif

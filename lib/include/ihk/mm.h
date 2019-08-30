@@ -232,7 +232,7 @@ char *ihk_get_kargs(void);
 int ihk_set_monitor(unsigned long addr, unsigned long size);
 int ihk_set_rusage(unsigned long addr, unsigned long size);
 int ihk_set_nmi_mode_addr(unsigned long addr);
-int ihk_set_mckernel_do_futex(unsigned long addr);
+int ihk_set_mckernel_uti_futex(unsigned long addr);
 
 extern void (*__tlb_flush_handler)(int vector);
 

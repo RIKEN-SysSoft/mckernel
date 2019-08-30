@@ -77,6 +77,7 @@ hook(long syscall_number,
 		uti_desc.syscall_stack[stack_top].args[4] = arg4;
 		uti_desc.syscall_stack[stack_top].args[5] = arg5;
 		uti_desc.syscall_stack[stack_top].uti_clv = uti_desc.uti_clv;
+		uti_desc.syscall_stack[stack_top].uti_current = uti_desc.uti_current;
 		uti_desc.syscall_stack[stack_top].ret = -EINVAL;
 
 		ret = uti_syscall3(__NR_ioctl, uti_desc.fd,

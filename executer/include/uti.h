@@ -6,6 +6,7 @@ struct syscall_struct {
 	unsigned long args[6];
 	unsigned long ret;
 	unsigned long uti_clv; /* copy of a clv in McKernel */
+	unsigned long uti_current; /* current in McKernel */
 };
 
 #define UTI_SZ_SYSCALL_STACK 16
@@ -24,6 +25,7 @@ struct uti_desc {
 	int syscall_stack_top; /* stack-pointer of syscall arguments list */
 	long syscalls[512], syscalls2[512]; /* Syscall profile counters */
 	int start_syscall_intercept; /* Used to sync between mcexec.c and syscall_intercept.c */
+	unsigned long uti_current;
 };
 
 

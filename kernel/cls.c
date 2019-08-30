@@ -32,7 +32,10 @@ void cpu_local_var_init(void)
 	int z;
 	int i;
 
-	z = sizeof(struct cpu_local_var) * num_processors;
+	kprintf("# of Linux cpus : %d\n", ihk_mc_get_nr_linux_cores());
+
+	z = sizeof(struct cpu_local_var) *
+		(num_processors + ihk_mc_get_nr_linux_cores());
 	z = (z + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
 	clv = ihk_mc_alloc_pages(z, IHK_MC_AP_CRITICAL);

@@ -2491,7 +2491,9 @@ long mcctrl_switch_ctx(ihk_os_t os, struct uti_switch_ctx_desc __user *udesc,
 	unsigned long flags;
 	struct uti_switch_ctx_desc desc;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct ihk_cpu_info *cpu_info = ihk_os_get_cpu_info(os);
 	struct mcctrl_per_proc_data *ppd;
+	struct mck_thread_info *thread_info;
 
 	if (!usrdata) {
 		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
@@ -2509,6 +2511,16 @@ long mcctrl_switch_ctx(ihk_os_t os, struct uti_switch_ctx_desc __user *udesc,
 	if (rc < 0) {
 		goto out;
 	}
+
+	/* Save index to clv to head of the kernel stack */
+	thread_info = (struct mck_thread_info *)
+		((unsigned long)current_stack_pointer & ~(THREAD_SIZE - 1));
+	thread_info->cpu = cpu_info->clv_index[smp_processor_id()];
+	pr_info("%s: thread_info: %lx, smp_processor_id: %d, processor_id: %d\n",
+		__func__,
+		(unsigned long)thread_info,
+		smp_processor_id(),
+		cpu_info->clv_index[smp_processor_id()]);
 
 	save_tls_ctx(desc.lctx);
 	info = ihk_os_get_mcos_private_data(file);
@@ -2699,14 +2711,14 @@ static long mcexec_release_user_space(struct release_user_space_desc *__user arg
 #endif
 }
 
- static long (*mckernel_do_futex)(int n, unsigned long arg0, unsigned long arg1,
-			  unsigned long arg2, unsigned long arg3,
-			  unsigned long arg4, unsigned long arg5,
+ static long (*mckernel_uti_futex)(int n,
+				   unsigned long arg0, unsigned long arg1,
+				   unsigned long arg2, unsigned long arg3,
+				   unsigned long arg4, unsigned long arg5,
 				   unsigned long _uti_clv,
-				   void *uti_futex_resp,
-				   void *_linux_wait_event,
-							  void *_linux_printk,
-							  void *_linux_clock_gettime);
+				   void *uti_futex_resp, void *_linux_wait_event,
+				   void *_linux_printk, void *_linux_clock_gettime,
+				   unsigned long uti_current, int processor_id);
 
  long uti_wait_event(void *_resp, unsigned long nsec_timeout) {
 	 struct uti_futex_resp *resp = _resp;
@@ -2759,6 +2771,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 		unsigned long args[6];
 		unsigned long ret;
 		unsigned long uti_clv; /* copy of a clv in McKernel */
+		unsigned long uti_current; /* current in McKernel */
 	};
 	struct syscall_struct param;
 	struct syscall_struct __user *uparam =
@@ -2770,24 +2783,34 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 		return -EFAULT;
 	}
 
-	if (param.number == __NR_futex) {
+	if (1 && param.number == __NR_futex) {
 		struct uti_futex_resp resp = {
 			.done = 0
 		};
 		init_waitqueue_head(&resp.wq);
 		
- 		if (!mckernel_do_futex) {
-			if (ihk_os_get_special_address(os, IHK_SPADDR_MCKERNEL_DO_FUTEX,
-										   (unsigned long *)&mckernel_do_futex,
-										   NULL)) {
+		if (!mckernel_uti_futex) {
+
+			if (ihk_os_get_special_address(os, IHK_SPADDR_MCKERNEL_UTI_FUTEX,
+						       (unsigned long *)&mckernel_uti_futex,
+						       NULL)) {
 				kprintf("%s: ihk_os_get_special_address failed\n", __FUNCTION__);
 				return -EINVAL;
 			}
 			dprintk("%s: mckernel_do_futex=%p\n", __FUNCTION__, mckernel_do_futex);
 		}
 
-		rc = (*mckernel_do_futex)(param.number, param.args[0], param.args[1], param.args[2],
-							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
+		pr_info("%s: current: %lx, processor_id: %d\n",
+			__func__, param.uti_current, smp_processor_id());
+
+		rc = (*mckernel_uti_futex)
+			(param.number,
+			 param.args[0], param.args[1], param.args[2],
+			 param.args[3], param.args[4], param.args[5],
+			 param.uti_clv,
+			 (void *)&resp, (void *)uti_wait_event,
+			 (void *)uti_printk, (void *)uti_clock_gettime,
+			 param.uti_current, smp_processor_id());
 		param.ret = rc;
 	} else {
 		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
