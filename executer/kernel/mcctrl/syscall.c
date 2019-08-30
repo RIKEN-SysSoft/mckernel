@@ -1153,7 +1153,7 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
-	loff_t pos;
+	loff_t pos, fsize;
 	unsigned long flags;
 
 	dprintk("pager_req_read(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
@@ -1173,6 +1173,15 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 		ss = -EBADF;
 		pr_warn("%s(%lx,%lx,%lx,%lx):pager not found. %ld\n",
 			__func__, handle, off, size, rpa, ss);
+		goto out;
+	}
+
+	/*
+	 * Check if the target page fits in the file
+	 */
+	fsize = i_size_read(file->f_mapping->host);
+	if (off > fsize) {
+		ss = 0;
 		goto out;
 	}
 
