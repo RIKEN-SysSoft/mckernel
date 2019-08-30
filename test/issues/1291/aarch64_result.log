@@ -1,0 +1,77 @@
+*** C1291T01 start *******************************
+mmap13      1  TPASS  :  Got SIGBUS as expected
+*** C1291T01 PASSED (1)
+
+*** C1291T02 start *******************************
+/dev/mem is not exist
+*** C1291T02 SKIP
+
+*** C1291T03 start *******************************
+** FileMap(2pages) /dev/zero and read
+value: 0x0
+Touch head of 1st page: OK
+value: 0x0
+Touch middle of 1st page: OK
+value: 0x0
+Touch middle of 2nd page: OK
+*** C1291T03 PASSED
+
+*** C1291T04 start *******************************
+sh: line 1: 26262 Segmentation fault      grep XYZ /tmp/mmaADcyci/mmapfile > /dev/null
+mmap01      1  TPASS  :  Functionality of mmap() successful
+*** C1291T04 PASSED (1)
+
+*** C1291T05 start *******************************
+mmap02      1  TPASS  :  Functionality of mmap() successful
+*** C1291T05 PASSED (1)
+
+*** C1291T06 start *******************************
+mmap03      1  TPASS  :  mmap() functionality is correct
+*** C1291T06 PASSED (1)
+
+*** C1291T07 start *******************************
+mmap04      1  TPASS  :  Functionality of mmap() successful
+*** C1291T07 PASSED (1)
+
+*** C1291T08 start *******************************
+mmap05      1  TPASS  :  Got SIGSEGV as expected
+*** C1291T08 PASSED (1)
+
+*** C1291T09 start *******************************
+mmap06      1  TPASS  :  mmap failed with EACCES
+*** C1291T09 PASSED (1)
+
+*** C1291T10 start *******************************
+mmap07      1  TPASS  :  mmap failed with EACCES
+*** C1291T10 PASSED (1)
+
+*** C1291T11 start *******************************
+mmap08      1  TPASS  :  mmap failed with EBADF
+*** C1291T11 PASSED (1)
+
+*** C1291T12 start *******************************
+mmap09      1  TPASS  :  ftruncate mmaped file to a smaller size
+mmap09      2  TPASS  :  ftruncate mmaped file to a larger size
+mmap09      3  TPASS  :  ftruncate mmaped file to 0 size
+*** C1291T12 PASSED (3)
+
+*** C1291T13 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+mmap12.c:103: INFO: All pages are present
+mmap12.c:127: PASS: File mapped properly
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1291T13 PASSED (0)
+
+*** C1291T14 start *******************************
+mmap14      1  TPASS  :  Functionality of mmap() successful
+*** C1291T14 PASSED (1)
+
+*** C1291T15 start *******************************
+mmap15      1  TPASS  :  mmap into high region failed as expected: errno=ENOMEM(12): Cannot allocate memory
+*** C1291T15 PASSED (1)
+

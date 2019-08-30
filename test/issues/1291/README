@@ -1,0 +1,41 @@
+【Issue#1291 動作確認】
+□ テスト内容
+1. Issueで報告された再現プログラムで現象が再現しないことを確認
+C1291T01: LTP mmap13
+	ファイルマップした後、EOFが存在するページより後のページにアクセスした際に
+	SIGBUSが発生することを確認するテスト
+	mmap13がPASSすることを確認する
+
+2. デバイスファイルではSIGBUSが発生しないことを確認
+	ファイルマップ可能な/dev/mem, /dev/zero について、
+	2ページ分のファイルマップを行う。
+	その後、それぞれのページにアクセスしてもSIGBUSが
+	発生しないことを確認する
+C1291T02: /dev/mem での確認
+C1291T03: /dev/zero での確認
+
+3. 以下のLTPを用いて既存のmmap機能に影響が無いことを確認
+	- mmap01
+	- mmap02
+	- mmap03
+	- mmap04
+	- mmap05
+	- mmap06
+	- mmap07
+	- mmap08
+	- mmap09
+	- mmap12
+	- mmap14
+	- mmap15
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+result_x86_64.log および result_aarch64.log 参照。
+すべての項目をPASSしていることを確認。

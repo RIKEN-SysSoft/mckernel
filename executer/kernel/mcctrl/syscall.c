@@ -43,6 +43,7 @@
 #include <linux/semaphore.h>
 #include <linux/spinlock.h>
 #include <linux/mount.h>
+#include <linux/kdev_t.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -1153,8 +1154,9 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 	uintptr_t phys = -1;
 	ihk_device_t dev = ihk_os_to_dev(os);
 	void *buf = NULL;
-	loff_t pos;
+	loff_t pos, fsize;
 	unsigned long flags;
+	unsigned int major, minor;
 
 	dprintk("pager_req_read(%lx,%lx,%lx,%lx)\n", handle, off, size, rpa);
 
@@ -1174,6 +1176,21 @@ static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size,
 		pr_warn("%s(%lx,%lx,%lx,%lx):pager not found. %ld\n",
 			__func__, handle, off, size, rpa, ss);
 		goto out;
+	}
+
+	major = MAJOR(file->f_mapping->host->i_rdev);
+	minor = MINOR(file->f_mapping->host->i_rdev);
+	if ((major == 1 && minor == 1) || // /dev/mem
+		(major == 1 && minor == 5)) { // /dev/zero
+		/* Nothing to check */
+	}
+	else {
+		/* Check if the target page fits in the file */
+		fsize = i_size_read(file->f_mapping->host);
+		if (off > fsize) {
+			ss = 0;
+			goto out;
+		}
 	}
 
 	phys = ihk_device_map_memory(dev, rpa, size);
