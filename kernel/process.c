@@ -36,6 +36,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -278,6 +279,7 @@ struct thread *create_thread(unsigned long user_pc,
 	struct address_space *asp = NULL;
 	int cpu;
 	int cpu_set_empty = 1;
+	struct cpu_local_var *clv = get_this_cpu_local_var();
 
 	thread = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES, IHK_MC_AP_NOWAIT);
 	if (!thread)
@@ -285,6 +287,16 @@ struct thread *create_thread(unsigned long user_pc,
 	memset(thread, 0, sizeof(struct thread));
 	ihk_atomic_set(&thread->refcount, 2);
 	ihk_atomic_set(&thread->generating_thread, 1);
+
+retry_monitor_lock:
+	if (!ihk_mc_spinlock_trylock_noirq(&clv->monitor_lock)) {
+		cpu_enable_interrupt();
+		cpu_halt();
+		cpu_pause();
+		cpu_disable_interrupt();
+		goto retry_monitor_lock;
+	}
+
 	proc = kmalloc(sizeof(struct process), IHK_MC_AP_NOWAIT);
 	vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
 	asp = create_address_space(cpu_local_var(resource_set), 1);
@@ -396,6 +408,16 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	memset(thread, 0, sizeof(struct thread));
 	ihk_atomic_set(&thread->refcount, 2);
 	ihk_atomic_set(&thread->generating_thread, 1);
+
+retry_monitor_lock:
+	if (!ihk_mc_spinlock_trylock_noirq(&v->monitor_lock)) {
+		cpu_enable_interrupt();
+		cpu_halt();
+		cpu_pause();
+		cpu_disable_interrupt();
+		goto retry_monitor_lock;
+	}
+
 	memcpy(&thread->cpu_set, &org->cpu_set, sizeof(thread->cpu_set));
 
 	/* New thread is in kernel until jumping to enter_user_mode */
@@ -2642,7 +2664,11 @@ release_process(struct process *proc)
 	}
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
-	ihk_atomic_set(&proc->main_thread->generating_thread, 0);
+	if (ihk_atomic_read(&proc->main_thread->generating_thread)) {
+		struct cpu_local_var *clv = get_this_cpu_local_var();
+
+		ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
+	}
 	free_thread_pages(proc->main_thread);
 	kfree(proc);
 
@@ -2863,7 +2889,11 @@ void destroy_thread(struct thread *thread)
 	release_sigcommon(thread->sigcommon);
 
 	if (thread != proc->main_thread) {
-		ihk_atomic_set(&thread->generating_thread, 0);
+		if (ihk_atomic_read(&thread->generating_thread)) {
+			struct cpu_local_var *clv = get_this_cpu_local_var();
+
+			ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
+		}
 		free_thread_pages(thread);
 	}
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);

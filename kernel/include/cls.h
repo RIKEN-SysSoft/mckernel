@@ -16,6 +16,7 @@
 #include <process.h>
 #include <syscall.h>
 #include <config.h>
+#include <arch-lock.h>
 /*
  * CPU Local Storage (cls)
  */
@@ -96,6 +97,7 @@ struct cpu_local_var {
 	int timer_enabled;
 	int kmalloc_initialized;
 	struct ihk_os_cpu_monitor *monitor;
+	ihk_spinlock_t monitor_lock;
 	struct rusage_percpu *rusage;
 
 	ihk_spinlock_t smp_func_req_lock;

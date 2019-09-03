@@ -59,6 +59,7 @@
 #include <ihk/monitor.h>
 #include <profile.h>
 #include <ihk/debug.h>
+#include <init.h>
 #include "../executer/include/uti.h"
 
 /* Headers taken from kitten LWK */
@@ -1177,6 +1178,9 @@ void terminate(int rc, int sig)
 	struct timespec ats;
 	int found;
 
+	struct cpu_local_var *clv = get_this_cpu_local_var();
+	unsigned long flags;
+
 	// sync perf info
 	if (proc->monitoring_event)
 		sync_child_event(proc->monitoring_event);
@@ -1187,6 +1191,12 @@ void terminate(int rc, int sig)
 	if (proc->status == PS_EXITED) {
 		dkprintf("%s: PID: %d, TID: %d PS_EXITED already\n",
 				__FUNCTION__, proc->pid, mythread->tid);
+
+		flags = cpu_enable_interrupt_save();
+		ihk_mc_spinlock_lock_noirq(&clv->monitor_lock);
+		cpu_restore_interrupt(flags);
+		ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
+
 		preempt_disable();
 		tsc_to_ts(mythread->user_tsc, &ats);
 		ts_add(&proc->utime, &ats);
@@ -1375,6 +1385,10 @@ void terminate(int rc, int sig)
 #endif
 
 	// clean up memory
+	flags = cpu_enable_interrupt_save();
+	ihk_mc_spinlock_lock_noirq(&clv->monitor_lock);
+	cpu_restore_interrupt(flags);
+	ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
 
 	finalize_process(proc);
 
@@ -2669,6 +2683,7 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	int ptrace_event = 0;
 	int termsig = clone_flags & 0x000000ff;
 	const struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
+	struct cpu_local_var *clv = get_this_cpu_local_var();
 
     dkprintf("do_fork,flags=%08x,newsp=%lx,ptidptr=%lx,ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
             clone_flags, newsp, parent_tidptr, child_tidptr, tlsblock_base, curpc, cursp);
@@ -2966,6 +2981,7 @@ retry_tid:
 
 	runq_add_thread(new, cpuid);
 	ihk_atomic_set(&new->generating_thread, 0);
+	ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
 
 	if (ptrace_event) {
 		schedule();

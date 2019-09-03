@@ -614,6 +614,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	struct perf_ctrl_desc *pcd;
 	unsigned int mode = 0;
 	unsigned long t_s = 0;
+	struct cpu_local_var *clv = NULL;
 
 	switch (packet->msg) {
 	case SCD_MSG_INIT_CHANNEL_ACKED:
@@ -651,6 +652,9 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		chain_thread(thread);
 		chain_process(proc);
 		runq_add_thread(thread, cpuid);
+		clv = get_this_cpu_local_var();
+
+		ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
 		ihk_atomic_set(&thread->generating_thread, 0);
 
 		ret = 0;
