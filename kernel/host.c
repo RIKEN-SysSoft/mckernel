@@ -651,6 +651,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		chain_thread(thread);
 		chain_process(proc);
 		runq_add_thread(thread, cpuid);
+		ihk_atomic_set(&thread->generating_flag, 0);
 
 		ret = 0;
 		break;

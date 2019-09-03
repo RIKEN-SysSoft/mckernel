@@ -729,6 +729,9 @@ struct thread {
 	void *coredump_regs;
 	struct waitq coredump_wq;
 	int coredump_status;
+
+	// mark during generation of thread structure
+	ihk_atomic_t generating_flag;
 };
 
 #define VM_RANGE_CACHE_SIZE	4

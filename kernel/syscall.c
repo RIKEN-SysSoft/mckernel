@@ -2965,6 +2965,7 @@ retry_tid:
 	}
 
 	runq_add_thread(new, cpuid);
+	ihk_atomic_set(&new->generating_flag, 0);
 
 	if (ptrace_event) {
 		schedule();
