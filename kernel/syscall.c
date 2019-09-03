@@ -59,6 +59,7 @@
 #include <ihk/monitor.h>
 #include <profile.h>
 #include <ihk/debug.h>
+#include <init.h>
 #include "../executer/include/uti.h"
 
 /* Headers taken from kitten LWK */
@@ -2966,6 +2967,7 @@ retry_tid:
 
 	runq_add_thread(new, cpuid);
 	ihk_atomic_set(&new->generating_thread, 0);
+	mcs_rwlock_reader_unlock_noirq(&monitor_lock, &new->generating_lock);
 
 	if (ptrace_event) {
 		schedule();

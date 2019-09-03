@@ -732,6 +732,7 @@ struct thread {
 
 	// mark during generation of thread structure
 	ihk_atomic_t generating_thread;
+	struct mcs_rwlock_node generating_lock;
 };
 
 #define VM_RANGE_CACHE_SIZE	4

@@ -36,6 +36,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -285,6 +286,8 @@ struct thread *create_thread(unsigned long user_pc,
 	memset(thread, 0, sizeof(struct thread));
 	ihk_atomic_set(&thread->refcount, 2);
 	ihk_atomic_set(&thread->generating_thread, 1);
+	mcs_rwlock_reader_lock_noirq(&monitor_lock, &thread->generating_lock);
+
 	proc = kmalloc(sizeof(struct process), IHK_MC_AP_NOWAIT);
 	vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
 	asp = create_address_space(cpu_local_var(resource_set), 1);
@@ -396,6 +399,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	memset(thread, 0, sizeof(struct thread));
 	ihk_atomic_set(&thread->refcount, 2);
 	ihk_atomic_set(&thread->generating_thread, 1);
+	mcs_rwlock_reader_lock_noirq(&monitor_lock, &thread->generating_lock);
 	memcpy(&thread->cpu_set, &org->cpu_set, sizeof(thread->cpu_set));
 
 	/* New thread is in kernel until jumping to enter_user_mode */
@@ -2642,7 +2646,11 @@ release_process(struct process *proc)
 	}
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
-	ihk_atomic_set(&proc->main_thread->generating_thread, 0);
+	if (ihk_atomic_read(&proc->main_thread->generating_thread)) {
+		mcs_rwlock_reader_unlock_noirq(
+			&monitor_lock,
+			&proc->main_thread->generating_lock);
+	}
 	free_thread_pages(proc->main_thread);
 	kfree(proc);
 
@@ -2863,7 +2871,11 @@ void destroy_thread(struct thread *thread)
 	release_sigcommon(thread->sigcommon);
 
 	if (thread != proc->main_thread) {
-		ihk_atomic_set(&thread->generating_thread, 0);
+		if (ihk_atomic_read(&thread->generating_thread)) {
+			mcs_rwlock_reader_unlock_noirq(
+				&monitor_lock,
+				&thread->generating_lock);
+		}
 		free_thread_pages(thread);
 	}
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);

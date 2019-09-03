@@ -651,6 +651,9 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		chain_thread(thread);
 		chain_process(proc);
 		runq_add_thread(thread, cpuid);
+		mcs_rwlock_reader_unlock_noirq(
+			&monitor_lock,
+			&thread->generating_lock);
 		ihk_atomic_set(&thread->generating_thread, 0);
 
 		ret = 0;
