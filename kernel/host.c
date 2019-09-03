@@ -445,7 +445,16 @@ static int process_msg_prepare_process(unsigned long rphys)
 	struct process *proc;
 	struct process_vm *vm;
 	enum ihk_mc_pt_attribute attr;
+	struct cpu_local_var *clv;
+	int i;
 
+	for (i = 0; i < num_processors; i++) {
+		clv = get_cpu_local_var(i);
+		if (clv->monitor->status == IHK_OS_MONITOR_KERNEL_FREEZING ||
+		    clv->monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
+			return -EAGAIN;
+		}
+	}
 	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
 
 	sz = sizeof(struct program_load_desc)
