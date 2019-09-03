@@ -36,6 +36,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -400,6 +401,15 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	INIT_LIST_HEAD(&thread->hash_list);
 	INIT_LIST_HEAD(&thread->siblings_list);
 	ihk_atomic_set(&thread->refcount, 2);
+retry_monitor_lock:
+	if (!ihk_mc_spinlock_trylock_noirq(&v->monitor_lock)) {
+		cpu_enable_interrupt();
+		cpu_halt();
+		cpu_pause();
+		cpu_disable_interrupt();
+		goto retry_monitor_lock;
+	}
+	ihk_mc_spinlock_unlock_noirq(&v->monitor_lock);
 	memcpy(&thread->cpu_set, &org->cpu_set, sizeof(thread->cpu_set));
 
 	/* New thread is in kernel until jumping to enter_user_mode */

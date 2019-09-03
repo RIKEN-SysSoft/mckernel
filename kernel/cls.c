@@ -1,3 +1,4 @@
+/* cls.c COPYRIGHT FUJITSU LIMITED 2019 */
 /**
  * \file cls.c
  *  License details are found in the file LICENSE.
@@ -40,6 +41,7 @@ void cpu_local_var_init(void)
 
 	for (i = 0; i < num_processors; i++) {
 		clv[i].monitor = monitor->cpu + i;
+		ihk_mc_spinlock_init(&clv[i].monitor_lock);
 		clv[i].rusage = rusage.cpu + i;
 		INIT_LIST_HEAD(&clv[i].smp_func_req_list);
 #ifdef ENABLE_PER_CPU_ALLOC_CACHE

@@ -445,6 +445,12 @@ static int process_msg_prepare_process(unsigned long rphys)
 	struct process *proc;
 	struct process_vm *vm;
 	enum ihk_mc_pt_attribute attr;
+	struct cpu_local_var *clv = get_this_cpu_local_var();
+
+	if (!ihk_mc_spinlock_trylock_noirq(&clv->monitor_lock)) {
+		return -EAGAIN;
+	}
+	ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
 
 	attr = PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER;
 
