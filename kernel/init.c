@@ -51,6 +51,7 @@
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern long syscall(int, ihk_mc_user_context_t *);
 
+mcs_rwlock_lock_t monitor_lock;
 struct ihk_os_monitor *monitor;
 struct rusage_global rusage;
 
@@ -217,6 +218,7 @@ void monitor_init(void)
 		panic("PANIC: in monitor_init() ihk_mc_cpu_info is NULL.");
 		return;
 	}
+	mcs_rwlock_init(&monitor_lock);
 
 	z = sizeof(struct ihk_os_monitor) +
 	    sizeof(struct ihk_os_cpu_monitor) * cpu_info->ncpus;

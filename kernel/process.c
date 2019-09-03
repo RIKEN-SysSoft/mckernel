@@ -36,6 +36,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
+#include <init.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -81,6 +82,7 @@ extern ihk_spinlock_t cpuid_head_lock;
 int ptrace_detach(int pid, int data);
 extern void procfs_create_thread(struct thread *);
 extern void procfs_delete_thread(struct thread *);
+static void free_thread_pages(struct thread *thread);
 
 struct list_head resource_set_list;
 mcs_rwlock_lock_t    resource_set_lock;
@@ -285,6 +287,21 @@ struct thread *create_thread(unsigned long user_pc,
 	memset(thread, 0, sizeof(struct thread));
 	ihk_atomic_set(&thread->refcount, 2);
 	ihk_atomic_set(&thread->generating_flag, 1);
+
+	mcs_rwlock_reader_lock_noirq(&monitor_lock, &thread->generating_lock);
+	for (cpu = 0; cpu < monitor->num_processors; cpu++) {
+		const struct ihk_os_cpu_monitor *mon = &monitor->cpu[cpu];
+
+		if (mon->status == IHK_OS_MONITOR_KERNEL_FROZEN ||
+		    mon->status == IHK_OS_MONITOR_KERNEL_FREEZING) {
+			mcs_rwlock_reader_unlock_noirq(
+				&monitor_lock,
+				&thread->generating_lock);
+			free_thread_pages(thread);
+			return NULL;
+		}
+	}
+
 	proc = kmalloc(sizeof(struct process), IHK_MC_AP_NOWAIT);
 	vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
 	asp = create_address_space(cpu_local_var(resource_set), 1);
@@ -387,6 +404,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	struct process *proc = NULL;
 	struct address_space *asp = NULL;
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	int cpu;
 
 	if ((thread = ihk_mc_alloc_pages(KERNEL_STACK_NR_PAGES,
 					IHK_MC_AP_NOWAIT)) == NULL) {
@@ -396,6 +414,21 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 	memset(thread, 0, sizeof(struct thread));
 	ihk_atomic_set(&thread->refcount, 2);
 	ihk_atomic_set(&thread->generating_flag, 1);
+
+	mcs_rwlock_reader_lock_noirq(&monitor_lock, &thread->generating_lock);
+	for (cpu = 0; cpu < monitor->num_processors; cpu++) {
+		const struct ihk_os_cpu_monitor *mon = &monitor->cpu[cpu];
+
+		if (mon->status == IHK_OS_MONITOR_KERNEL_FROZEN ||
+		    mon->status == IHK_OS_MONITOR_KERNEL_FREEZING) {
+			mcs_rwlock_reader_unlock_noirq(
+				&monitor_lock,
+				&thread->generating_lock);
+			free_thread_pages(thread);
+			return NULL;
+		}
+	}
+
 	memcpy(&thread->cpu_set, &org->cpu_set, sizeof(thread->cpu_set));
 
 	/* New thread is in kernel until jumping to enter_user_mode */
@@ -2642,7 +2675,11 @@ release_process(struct process *proc)
 	}
 	profile_dealloc_proc_events(proc);
 #endif // PROFILE_ENABLE
-	ihk_atomic_set(&proc->main_thread->generating_flag, 0);
+	if (ihk_atomic_read(&proc->main_thread->generating_flag)) {
+		mcs_rwlock_reader_unlock_noirq(
+			&monitor_lock,
+			&proc->main_thread->generating_lock);
+	}
 	free_thread_pages(proc->main_thread);
 	kfree(proc);
 
@@ -2863,7 +2900,11 @@ void destroy_thread(struct thread *thread)
 	release_sigcommon(thread->sigcommon);
 
 	if (thread != proc->main_thread) {
-		ihk_atomic_set(&thread->generating_flag, 0);
+		if (ihk_atomic_read(&thread->generating_flag)) {
+			mcs_rwlock_reader_unlock_noirq(
+				&monitor_lock,
+				&thread->generating_lock);
+		}
 		free_thread_pages(thread);
 	}
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);

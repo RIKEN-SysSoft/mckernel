@@ -13,6 +13,8 @@
 #ifndef INIT_H
 #define INIT_H
 
+#include <arch-lock.h>
+
 extern void arch_init(void);
 extern void mem_init(void);
 extern void ihk_ikc_master_init(void);
@@ -37,6 +39,7 @@ extern void dynamic_debug_sysfs_setup(void);
 
 extern char *find_command_line(char *name);
 
+extern mcs_rwlock_lock_t monitor_lock;
 extern int num_processors;
 extern int multi_intr_mode;
 
