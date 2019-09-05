@@ -1499,14 +1499,15 @@ out:
 	return (int)lerror;
 }
 
-int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
+static int do_munmap(void *addr, size_t len, int holding_memory_range_lock,
+	struct rb_root *free)
 {
 	int error;
 	int ro_freed;
 
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
-			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
+			(intptr_t)addr, (intptr_t)addr+len, &ro_freed, free);
 	if (error || !ro_freed) {
 		clear_host_pte((uintptr_t)addr, len);
 	}
@@ -1599,6 +1600,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	int pgshift;
 	struct vm_range *range = NULL;
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 	
 	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			addr0, len0, prot, flags, fd, off0);
@@ -1656,7 +1658,8 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
-		error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */);
+		error = do_munmap((void *)addr, len,
+				1/* holding memory_range_lock */, &free);
 		if (error) {
 			ekprintf("do_mmap:do_munmap(%lx,%lx) failed. %d\n",
 					addr, len, error);
@@ -1942,7 +1945,10 @@ out:
 	if (ro_vma_mapped) {
 		(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 	}
+	ihk_mc_spinlock_lock_noirq(&thread->vm->page_table_lock);
 	memory_range_write_unlock(thread->vm, &irqflags);
+	free_ranges_pt(thread->vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->page_table_lock);
 
 	if (!error && populated_mapping && !((vrflags & VR_PROT_MASK) == VR_PROT_NONE)) {
 		error = populate_process_memory(thread->vm,
@@ -1996,6 +2002,7 @@ SYSCALL_DECLARE(munmap)
 	size_t len;
 	int error;
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 
 	dkprintf("[%d]sys_munmap(%lx,%lx)\n",
 			ihk_mc_get_processor_id(), addr, len0);
@@ -2012,8 +2019,12 @@ SYSCALL_DECLARE(munmap)
 	}
 
 	memory_range_write_lock(thread->vm, &irqflags);
-	error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */);
+	error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */,
+			&free);
+	ihk_mc_spinlock_lock_noirq(&thread->vm->page_table_lock);
 	memory_range_write_unlock(thread->vm, &irqflags);
+	free_ranges_pt(thread->vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&thread->vm->page_table_lock);
 
 out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
@@ -2433,6 +2444,7 @@ static void munmap_all(void)
 	size_t size;
 	int error;
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 
 	memory_range_write_lock(vm, &irqflags);
 	next = lookup_process_memory_range(vm, 0, -1);
@@ -2441,14 +2453,18 @@ static void munmap_all(void)
 
 		addr = (void *)range->start;
 		size = range->end - range->start;
-		error = do_munmap(addr, size, 1/* holding memory_range_lock */);
+		error = do_munmap(addr, size, 1/* holding memory_range_lock */,
+				&free);
 		if (error) {
 			kprintf("munmap_all():do_munmap(%p,%lx) failed. %d\n",
 					addr, size, error);
 			/* through */
 		}
 	}
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memory_range_write_unlock(vm, &irqflags);
+	free_ranges_pt(vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 
 	/* free vm_ranges which do_munmap() failed to remove. */
 	free_process_memory_ranges(thread->vm);
@@ -5579,6 +5595,7 @@ SYSCALL_DECLARE(shmdt)
 	struct vm_range *range;
 	int error;
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 
 	dkprintf("shmdt(%p)\n", shmaddr);
 	memory_range_write_lock(vm, &irqflags);
@@ -5590,14 +5607,18 @@ SYSCALL_DECLARE(shmdt)
 		return -EINVAL;
 	}
 
-	error = do_munmap((void *)range->start, (range->end - range->start), 1/* holding memory_range_lock */);
+	error = do_munmap((void *)range->start, (range->end - range->start),
+			1/* holding memory_range_lock */, &free);
 	if (error) {
 		memory_range_write_unlock(vm, &irqflags);
 		dkprintf("shmdt(%p): %d\n", shmaddr, error);
 		return error;
 	}
 
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memory_range_write_unlock(vm, &irqflags);
+	free_ranges_pt(vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	dkprintf("shmdt(%p): 0\n", shmaddr);
 	return 0;
 } /* sys_shmdt() */
@@ -7909,6 +7930,7 @@ SYSCALL_DECLARE(mremap)
 	uintptr_t lckstart = -1;
 	uintptr_t lckend = -1;
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 
 	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx)\n",
 			oldaddr, oldsize0, newsize0, flags, newaddr);
@@ -8035,7 +8057,8 @@ SYSCALL_DECLARE(mremap)
 	/* do the remap */
 	if (need_relocate) {
 		if (flags & MREMAP_FIXED) {
-			error = do_munmap((void *)newstart, newsize, 1/* holding memory_range_lock */);
+			error = do_munmap((void *)newstart, newsize,
+				1/* holding memory_range_lock */, &free);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 						"fixed:munmap failed. %d\n",
@@ -8082,7 +8105,9 @@ SYSCALL_DECLARE(mremap)
 				goto out;
 			}
 
-			error = do_munmap((void *)oldstart, oldsize, 1/* holding memory_range_lock */);
+			error = do_munmap((void *)oldstart, oldsize,
+					1/* holding memory_range_lock */,
+					&free);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 						"relocate:munmap failed. %d\n",
@@ -8093,7 +8118,8 @@ SYSCALL_DECLARE(mremap)
 		}
 	}
 	else if (newsize < oldsize) {
-		error = do_munmap((void *)newend, (oldend - newend), 1/* holding memory_range_lock */);
+		error = do_munmap((void *)newend, (oldend - newend),
+				1/* holding memory_range_lock */, &free);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"shrink:munmap failed. %d\n",
@@ -8108,7 +8134,10 @@ SYSCALL_DECLARE(mremap)
 
 	error = 0;
 out:
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memory_range_write_unlock(vm, &irqflags);
+	free_ranges_pt(vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (!error && (lckstart < lckend)) {
 		error = populate_process_memory(thread->vm, (void *)lckstart, (lckend - lckstart));
 		if (error) {

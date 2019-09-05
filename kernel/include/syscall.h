@@ -483,7 +483,6 @@ enum set_cputime_mode {
 	CPUTIME_MODE_K2K_OUT,
 };
 void set_cputime(enum set_cputime_mode mode);
-int do_munmap(void *addr, size_t len, int holding_memory_range_lock);
 intptr_t do_mmap(uintptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
 void clear_host_pte(uintptr_t addr, size_t len);
