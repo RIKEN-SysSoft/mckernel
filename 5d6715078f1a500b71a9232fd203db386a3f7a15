@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fc387686_6c53bf37",
+        "filename": "test/issues/1351/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-08T05:23:07Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I3. 1.で確保したメモリ領域にMADV_DONTDUMPを設定する $",
+      "revId": "5d6715078f1a500b71a9232fd203db386a3f7a15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "21506298_be427d97",
+        "filename": "test/issues/1351/show_attr.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-08T05:23:07Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "5d6715078f1a500b71a9232fd203db386a3f7a15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "230762cd_efec7844",
+        "filename": "test/issues/1351/show_attr.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-08T05:23:07Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "5d6715078f1a500b71a9232fd203db386a3f7a15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86b97438_faac9f4a",
+        "filename": "test/issues/1351/show_attr.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-08T05:23:07Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "5d6715078f1a500b71a9232fd203db386a3f7a15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e13b625e_efbcbb8f",
+        "filename": "test/issues/1351/show_attr.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-08T05:23:07Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "5d6715078f1a500b71a9232fd203db386a3f7a15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
