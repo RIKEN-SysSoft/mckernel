@@ -3416,15 +3416,11 @@ void schedule(void)
 		}
 
 		/* Take care of floating point registers except for idle process */
-#ifdef POSTK_DEBUG_ARCH_DEP_66 /* Fixed not to save fp_regs when the process ends */
-		if (prev && (prev != &cpu_local_var(idle) && prev->status != PS_EXITED)) {
+		/* Not to save fp_regs when the process ends */
+		if (prev && (prev != &cpu_local_var(idle)
+				&& prev->status != PS_EXITED)) {
 			save_fp_regs(prev);
 		}
-#else  /* POSTK_DEBUG_ARCH_DEP_66 */
-		if (prev && prev != &cpu_local_var(idle)) {
-			save_fp_regs(prev);
-		}
-#endif  /* POSTK_DEBUG_ARCH_DEP_66 */
 
 		if (next != &cpu_local_var(idle)) {
 			restore_fp_regs(next);
