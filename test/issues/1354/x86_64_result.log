@@ -1,0 +1,81 @@
+*** C1354T01 start *******************************
+futex_wait01    1  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+futex_wait01    2  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+futex_wait01    3  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+futex_wait01    4  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+*** C1354T01 PASSED (4)
+
+*** C1354T02 start *******************************
+futex_wait02    1  TPASS  :  futex_wait() woken up
+*** C1354T02 PASSED (1)
+
+*** C1354T03 start *******************************
+futex_wait03    1  TPASS  :  futex_wait() woken up
+*** C1354T03 PASSED (1)
+
+*** C1354T04 start *******************************
+futex_wait04    1  TPASS  :  futex_wait() returned -1: errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+*** C1354T04 PASSED (1)
+
+*** C1354T05 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+futex_wait_bitset.h:17: INFO: testing futex_wait_bitset() timeout with CLOCK_MONOTONIC
+futex_wait_bitset.h:59: PASS: futex_wait_bitset() waited 144790us, expected 100010us
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1354T05 PASSED (0)
+
+*** C1354T06 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+futex_wait_bitset.h:17: INFO: testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset.h:59: PASS: futex_wait_bitset() waited 144805us, expected 100010us
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1354T06 PASSED (0)
+
+*** C1354T07 start *******************************
+futex_wake01    1  TPASS  :  futex_wake() returned 0
+futex_wake01    2  TPASS  :  futex_wake() returned 0
+futex_wake01    3  TPASS  :  futex_wake() returned 0
+futex_wake01    4  TPASS  :  futex_wake() returned 0
+futex_wake01    5  TPASS  :  futex_wake() returned 0
+futex_wake01    6  TPASS  :  futex_wake() returned 0
+*** C1354T07 PASSED (6)
+
+*** C1354T08 start *******************************
+futex_wake02    1  TPASS  :  futex_wake() woken up 1 threads
+futex_wake02    2  TPASS  :  futex_wake() woken up 2 threads
+futex_wake02    3  TPASS  :  futex_wake() woken up 3 threads
+futex_wake02    4  TPASS  :  futex_wake() woken up 4 threads
+futex_wake02    5  TPASS  :  futex_wake() woken up 5 threads
+futex_wake02    6  TPASS  :  futex_wake() woken up 6 threads
+futex_wake02    7  TPASS  :  futex_wake() woken up 7 threads
+futex_wake02    8  TPASS  :  futex_wake() woken up 8 threads
+futex_wake02    9  TPASS  :  futex_wake() woken up 9 threads
+futex_wake02   10  TPASS  :  futex_wake() woken up 10 threads
+futex_wake02   11  TPASS  :  futex_wake() woken up 0 threads
+futex_wake02    0  TINFO  :  Child process returned TPASS
+*** C1354T08 PASSED (12)
+
+*** C1354T09 start *******************************
+futex_wake03    1  TPASS  :  futex_wake() woken up 1 childs
+futex_wake03    2  TPASS  :  futex_wake() woken up 2 childs
+futex_wake03    3  TPASS  :  futex_wake() woken up 3 childs
+futex_wake03    4  TPASS  :  futex_wake() woken up 4 childs
+futex_wake03    5  TPASS  :  futex_wake() woken up 5 childs
+futex_wake03    6  TPASS  :  futex_wake() woken up 6 childs
+futex_wake03    7  TPASS  :  futex_wake() woken up 7 childs
+futex_wake03    8  TPASS  :  futex_wake() woken up 8 childs
+futex_wake03    9  TPASS  :  futex_wake() woken up 9 childs
+futex_wake03   10  TPASS  :  futex_wake() woken up 10 childs
+futex_wake03   11  TPASS  :  futex_wake() woken up 0 children
+*** C1354T09 PASSED (11)
+
