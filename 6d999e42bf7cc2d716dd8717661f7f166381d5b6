@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "75f283cd_f3856f2f",
+        "filename": "test/issues/988/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T07:15:49Z",
+      "side": 1,
+      "message": "今後LTPを使う場合は、postpeta/masterではなくてpostpeta/developmentを使ってください。",
+      "parentUuid": "81598ee1_52e64d29",
+      "range": {
+        "startLine": 28,
+        "startChar": 0,
+        "endLine": 28,
+        "endChar": 33
+      },
+      "revId": "6d999e42bf7cc2d716dd8717661f7f166381d5b6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "fb1c2123_bc03cf58",
         "filename": "test/issues/988/get_vma_prot.patch",
         "patchSetId": 3
