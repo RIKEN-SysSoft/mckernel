@@ -1,0 +1,61 @@
+【Issue#1355 動作確認】
+□ テスト内容
+1. 複数ノードによるMPIプログラムを実行し、修正が既存機能に影響していないことを確認
+・x86_64 環境でIntel MPIが動作することの確認
+	wallaby7, 13 の2台を用いて、Intel MPI benchmarkのpingpong を実行し、
+	下記を確認する
+C1355T01: benchmarkのpingpong が正常に終了していることを確認
+C1355T02: pingpongのMPIプロセスが、それぞれのノードで正常に終了していることを確認
+
+・aarch64 環境でIntel MPIが動作することの確認
+	apollo15, 16 の2台を用いて、Intel MPI benchmarkのpingpong を実行し、
+	下記を確認する
+C1355T03: benchmarkのpingpong が正常に終了していることを確認
+C1355T04: pingpongのMPIプロセスが、それぞれのノードで正常に終了していることを確認
+
+・aarch64 環境でMVAPICH が動作することの確認
+	apollo15, 16 の2台を用いて、MVAPCHのMPIプログラムを実行し、
+	下記を確認する
+C1355T05: それぞれのノードでrank情報の表示が行えていることを確認
+
+□ 実行手順
+本テストは複数ノードによるMPIプログラム実行を行うため、自動化はしていない
+それぞれのMPIプログラムの実行方法を示す
+
+<wallaby7, 13 での Intel MPI benchmark>
+$ ssh wallaby7
+$ sudo su mcktest
+$ sudo systemctl stop tasksched
+$ cd /work/mcktest/work_development_development
+$ (cwd=$(pwd); cd <mck_src>; rm -rf build; mkdir build; cd build; cmake ../mckernel -DCMAKE_INSTALL_PREFIX=${cwd}/mck && make -j install)
+$ bash -x ../bin/init-config.sh
+AUTOTEST_HOME=/work/mcktest bash -x /work/mcktest/bin/syncdir-all.sh
+AUTOTEST_HOME=/work/mcktest bash -x /work/mcktest/bin/boot-all.sh
+AUTOTEST_HOME=/work/mcktest MCEXEC=mcexec bash -x /work/mcktest/perf/bin/pingpong-1x2 > x86_64_intel_bench.txt
+cat /work/mcktest/work_development_development/perflog/mckernel/pingpong-1x2 > x86_64_pingpong.txt
+sudo systemctl start tasksched
+
+<apollo15, 16 での Intel MPI benchmark>
+$ ssh apollo15
+$ sudo su mcktest
+$ cd /work/mcktest/work_development_development
+$ (cwd=$(pwd); cd <mck_src>; rm -rf build; mkdir build; cd build; cmake ../mckernel -DCMAKE_INSTALL_PREFIX=${cwd}/mck && make -j install)
+$ bash -x ../bin/init-config.sh
+AUTOTEST_HOME=/work/mcktest bash -x /work/mcktest/bin/syncdir-all.sh
+AUTOTEST_HOME=/work/mcktest bash -x /work/mcktest/bin/boot-all.sh
+AUTOTEST_HOME=/work/mcktest MCEXEC=mcexec bash -x /work/mcktest/perf/bin/pingpong-1x2 > aarch64_intel_bench.txt
+cat /work/mcktest/work_development_development/perflog/mckernel/pingpong-1x2 > aarch64_pingpong.txt
+
+<apollo15, 16 での MVAPICH>
+$ export MODULEPATH=/home/bgerofi/modulefiles:/opt/arm/modulefiles/:$MODULEPATH
+$ module load MVAPICH
+$ module load gcc
+$ mpicc -o mpi_hello ./mpi_hello.c
+$ mpirun -hostfile ./hostfile ./mpi_hello > aarch64_mvapich.txt
+
+これらの出力結果ファイルを同ディレクトリを配置し、下記を実行する
+$ make test
+
+□ 実行結果
+result.log 参照。
+すべての項目をPASSしていることを確認。

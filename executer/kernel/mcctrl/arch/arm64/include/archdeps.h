@@ -9,8 +9,6 @@
 extern int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 				unsigned long *rpap, unsigned long *pgsizep);
 
-#ifdef POSTK_DEBUG_ARCH_DEP_12
-
 #define PFN_WRITE_COMBINED PTE_ATTRINDX(MT_NORMAL_NC)
 static inline bool pte_is_write_combined(pte_t pte)
 {
@@ -31,7 +29,6 @@ static inline bool pte_is_write_combined(pte_t pte)
 #endif
 	return ((pte_val(pte) & PTE_ATTRINDX_MASK) == PFN_WRITE_COMBINED);
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
 #define ARMV8_IDX_COUNTER0	0
 #define ARCH_PERF_COUNTER_START	ARMV8_IDX_COUNTER0

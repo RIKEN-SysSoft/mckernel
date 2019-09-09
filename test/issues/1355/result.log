@@ -1,0 +1,21 @@
+*** C1355T01 start *******************************
++ result=0
+*** C1355T01 PASSED ******************************
+
+*** C1355T02 start *******************************
+# All processes entering MPI_Finalize
+*** C1355T02 PASSED ******************************
+
+*** C1355T03 start *******************************
++ result=0
+*** C1355T03 PASSED ******************************
+
+*** C1355T04 start *******************************
+# All processes entering MPI_Finalize
+*** C1355T04 PASSED ******************************
+
+*** C1355T05 start *******************************
+Hello world from processor apollo15.postk.local.r-ccs.riken.jp, rank 0 out of 2 processors
+Hello world from processor apollo16.postk.local.r-ccs.riken.jp, rank 1 out of 2 processors
+*** C1355T05 PASSED ******************************
+

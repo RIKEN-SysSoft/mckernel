@@ -1,0 +1,2 @@
+Hello world from processor apollo15.postk.local.r-ccs.riken.jp, rank 0 out of 2 processors
+Hello world from processor apollo16.postk.local.r-ccs.riken.jp, rank 1 out of 2 processors

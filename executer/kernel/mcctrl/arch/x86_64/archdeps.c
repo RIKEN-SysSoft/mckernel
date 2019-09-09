@@ -370,13 +370,11 @@ out:
 	return error;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_12
 #define PFN_WRITE_COMBINED _PAGE_PWT
 static inline bool pte_is_write_combined(pte_t pte)
 {
 	return ((pte_flags(pte) & _PAGE_PWT) && !(pte_flags(pte) & _PAGE_PCD));
 }
-#endif /* POSTK_DEBUG_ARCH_DEP_12 */
 
 /*
  * The assembler switch_ctx is save/load registers in the context.

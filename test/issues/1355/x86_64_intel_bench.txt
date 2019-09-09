@@ -1,0 +1,98 @@
+++ basename /work/mcktest/perf/bin/pingpong-1x2
++ TESTCASE=pingpong-1x2
++ '[' /work/mcktest == '' ']'
++ export AUTOTEST_HOME
+++ pwd -P
++ CWD=/work/mcktest/work_development_development
+++ dirname /work/mcktest/perf/bin/pingpong-1x2
++ cd /work/mcktest/perf/bin
++ app_dir=/work/mcktest/perf/mpi-benchmarks/src
++ . ./config.sh
+++++ dirname /work/mcktest/perf/bin/pingpong-1x2
++++ cd /work/mcktest/perf/bin/../..
++++ pwd -P
+++ export AUTOTEST_HOME=/work/mcktest
+++ AUTOTEST_HOME=/work/mcktest
+++ . /work/mcktest/bin/config.sh
++++ export NODETYPE=wallaby
++++ NODETYPE=wallaby
++++ export WGETSSHPROXY=ofp05
++++ WGETSSHPROXY=ofp05
++++ export 'WGETPROXYOPTS=-e use_proxy=yes -e http_proxy=wallaby -e https_proxy=wallaby:80'
++++ WGETPROXYOPTS='-e use_proxy=yes -e http_proxy=wallaby -e https_proxy=wallaby:80'
++++ MCKERNELBRANCH=development
++++ IHKBRANCH=development
++++ export WORKDIR=/work/mcktest/work_development_development
++++ WORKDIR=/work/mcktest/work_development_development
++++ SRC=/work/mcktest/work_development_development/src
++++ MCKBUILD=/work/mcktest/work_development_development/build
++++ MCKINSTALL=/work/mcktest/work_development_development/mck
++++ BUILDID_DIR=/work/mcktest/buildids
++++ GITS=/work/mcktest/git
++++ LTPINSTALL=/work/mcktest/ltp/install
++++ STRESS_TEST_DIR=/work/mcktest/stress_test/install
++++ MCKBUILDSCRIPT=/work/mcktest/bin/config_and_build_smp_x86.sh
++++ MPICH=/usr/lib64/mpich-3.2
++++ export LTPDIR=/work/mcktest/ltp/install
++++ LTPDIR=/work/mcktest/ltp/install
++++ export LTPROOT=/work/mcktest/ltp/install
++++ LTPROOT=/work/mcktest/ltp/install
++++ export 'MAIL_TO=mckernel@www.pccluster.org toshi@metahack.jp'
++++ MAIL_TO='mckernel@www.pccluster.org toshi@metahack.jp'
++++ export 'MCKERNELCONFIGOPTION=--enable-rusage --with-mpi=/usr/lib64/mpich-3.2 --enable-qlmpi'
++++ MCKERNELCONFIGOPTION='--enable-rusage --with-mpi=/usr/lib64/mpich-3.2 --enable-qlmpi'
++++ export IHKCONFIGOPTION=--enable-rusage
++++ IHKCONFIGOPTION=--enable-rusage
++++ MCREBOOTOPTION='-k 0 -f LOG_LOCAL6  -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -o root -O'
++++ export PATH=/work/mcktest/bin:/work/mcktest/work_development_development/mck/bin:/work/mcktest/work_development_development/mck/sbin:/usr/lib64/mpich-3.2/bin:/usr/bin:/bin:/usr/sbin:/sbin
++++ PATH=/work/mcktest/bin:/work/mcktest/work_development_development/mck/bin:/work/mcktest/work_development_development/mck/sbin:/usr/lib64/mpich-3.2/bin:/usr/bin:/bin:/usr/sbin:/sbin
++++ export DATADIR=/work/mcktest/data
++++ DATADIR=/work/mcktest/data
++++ export BINDIR=/work/mcktest/bin
++++ BINDIR=/work/mcktest/bin
++++ export LOGDIR=/work/mcktest/log
++++ LOGDIR=/work/mcktest/log
++++ STRESS_TEST_TIMEOUT=60
++++ export OMP_NUM_THREADS_1=1
++++ OMP_NUM_THREADS_1=1
++++ export OMP_NUM_THREADS_2=2
++++ OMP_NUM_THREADS_2=2
++++ export OMP_NUM_THREADS_4=4
++++ OMP_NUM_THREADS_4=4
++++ export OMP_NUM_THREADS_8=8
++++ OMP_NUM_THREADS_8=8
++++ export OMP_NUM_THREADS_16=16
++++ OMP_NUM_THREADS_16=16
++++ export OMP_NUM_THREADS_24=24
++++ OMP_NUM_THREADS_24=24
++++ export OMP_NUM_THREADS_32=32
++++ OMP_NUM_THREADS_32=32
++++ export 'MPI_HOSTS=wallaby7 wallaby13'
++++ MPI_HOSTS='wallaby7 wallaby13'
++++ [[ -e /work/mcktest/bin/gerrit-creds ]]
++++ . /work/mcktest/bin/gerrit-creds
+++++ GERRITUSER=riken-syssoft-gerrit:ogzuCUSBrLM5gpUoECTKZya52oWf7Bu0fvO+oEeFNg
++++ export GERRITSERVER=review.gerrithub.io
++++ GERRITSERVER=review.gerrithub.io
++++ export 'GERRITCURL=curl -s --proxy http://wallaby:80 https://riken-syssoft-gerrit:ogzuCUSBrLM5gpUoECTKZya52oWf7Bu0fvO+oEeFNg@review.gerrithub.io'
++++ GERRITCURL='curl -s --proxy http://wallaby:80 https://riken-syssoft-gerrit:ogzuCUSBrLM5gpUoECTKZya52oWf7Bu0fvO+oEeFNg@review.gerrithub.io'
++ . ./perf-mpi-config.sh
++++ echo wallaby7 wallaby13
++++ tr ' ' ,
+++ COMMAHOSTS=wallaby7,wallaby13
+++ MPIHOSTS='-hosts wallaby7,wallaby13'
+++ MPIRUNOPTS='-genv I_MPI_DAPL_PROVIDER=ofa-v2-ib0 -genv I_MPI_DEBUG=2 -genv I_MPI_PIN=0 -genv I_MPI_COLL_INTRANODE_SHM_THRESHOLD=4194304'
+++ '[' xmcexec = xmcexec ']'
+++ MPIRUN='timeout 300 mpirun'
+++ MCEXECPATH=/work/mcktest/work_development_development/mck/bin/mcexec
+++ MCEXECN1='-n 1'
+++ MCEXECN2='-n 2'
+++ MCEXECN4='-n 4'
+++ MCEXECN8='-n 8'
+++ MCEXECN16='-n 16'
+++ OUTDIR=/work/mcktest/work_development_development/perflog/mckernel
++ mkdir -p /work/mcktest/work_development_development/perflog/mckernel
++ timeout 300 mpirun -hosts wallaby7,wallaby13 -genv I_MPI_DAPL_PROVIDER=ofa-v2-ib0 -genv I_MPI_DEBUG=2 -genv I_MPI_PIN=0 -genv I_MPI_COLL_INTRANODE_SHM_THRESHOLD=4194304 -n 2 -ppn 1 /work/mcktest/work_development_development/mck/bin/mcexec -n 1 /work/mcktest/perf/mpi-benchmarks/src/IMB-MPI1 PingPong
++ result=0
++ '[' 0 '!=' 0 ']'
++ ./ex-pingpong.awk /work/mcktest/work_development_development/perflog/mckernel/pingpong-1x2

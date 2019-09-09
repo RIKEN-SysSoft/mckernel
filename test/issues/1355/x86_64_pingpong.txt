@@ -1,0 +1,65 @@
+MPI startup(): Imported environment partly inaccesible. Map=0 Info=0
+MPI startup(): Imported environment partly inaccesible. Map=0 Info=0
+[0] MPI startup(): libfabric version: 1.7.2a-impi
+[0] MPI startup(): libfabric provider: verbs;ofi_rxm
+#------------------------------------------------------------
+#    Intel (R) MPI Benchmarks 2018, MPI-1 part
+#------------------------------------------------------------
+# Date                  : Sun Sep 22 15:14:41 2019
+# Machine               : x86_64
+# System                : Linux
+# Release               : 3.10.0-693.2.2.el7.x86_64
+# Version               : #1 SMP Tue Sep 12 22:26:13 UTC 2017
+# MPI Version           : 3.1
+# MPI Thread Environment:
+
+
+# Calling sequence was:
+
+# /work/mcktest/perf/mpi-benchmarks/src/IMB-MPI1 PingPong
+
+# Minimum message length in bytes:   0
+# Maximum message length in bytes:   4194304
+#
+# MPI_Datatype                   :   MPI_BYTE
+# MPI_Datatype for reductions    :   MPI_FLOAT
+# MPI_Op                         :   MPI_SUM
+#
+#
+
+# List of Benchmarks to run:
+
+# PingPong
+
+#---------------------------------------------------
+# Benchmarking PingPong
+# #processes = 2
+#---------------------------------------------------
+       #bytes #repetitions      t[usec]   Mbytes/sec
+            0         1000         2.17         0.00
+            1         1000         2.14         0.47
+            2         1000         2.19         0.91
+            4         1000         2.17         1.84
+            8         1000         2.13         3.75
+           16         1000         2.34         6.83
+           32         1000         2.50        12.79
+           64         1000         2.86        22.40
+          128         1000         3.60        35.54
+          256         1000         2.21       116.09
+          512         1000         2.36       216.96
+         1024         1000         2.65       385.94
+         2048         1000         3.22       636.06
+         4096         1000         4.49       912.60
+         8192         1000         5.80      1412.38
+        16384         1000         8.61      1902.95
+        32768         1000        11.70      2800.47
+        65536          640        17.92      3656.26
+       131072          320        30.26      4331.35
+       262144          160       181.29      1446.01
+       524288           80       248.00      2114.06
+      1048576           40       380.09      2758.73
+      2097152           20       643.60      3258.48
+      4194304           10      1207.54      3473.41
+
+
+# All processes entering MPI_Finalize
