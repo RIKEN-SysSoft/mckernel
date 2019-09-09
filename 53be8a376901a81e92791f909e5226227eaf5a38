@@ -71,6 +71,30 @@
     },
     {
       "key": {
+        "uuid": "6a2c0055_7788985e",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 292,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T04:58:11Z",
+      "side": 1,
+      "message": "上記は間違っていました。\nこちらも、writer_lock--\u003efrozenのwhile loop--\u003ewriter_unlockにした場合、ここは必ずFROZEN/FREEZING以外になるので、削除してください。",
+      "parentUuid": "ba2a488e_86303000",
+      "range": {
+        "startLine": 292,
+        "startChar": 0,
+        "endLine": 292,
+        "endChar": 54
+      },
+      "revId": "53be8a376901a81e92791f909e5226227eaf5a38",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "22b72fa7_6925e0a3",
         "filename": "kernel/process.c",
         "patchSetId": 1
