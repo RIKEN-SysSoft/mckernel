@@ -22,6 +22,75 @@
       "revId": "53be8a376901a81e92791f909e5226227eaf5a38",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c0d2c377_41125538",
+        "filename": "kernel/freeze.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T04:54:59Z",
+      "side": 1,
+      "message": "これを、monitor-\u003estatus \u003d の後に移動してください。",
+      "range": {
+        "startLine": 23,
+        "startChar": 0,
+        "endLine": 23,
+        "endChar": 54
+      },
+      "revId": "53be8a376901a81e92791f909e5226227eaf5a38",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ba2a488e_86303000",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 292,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T04:54:59Z",
+      "side": 1,
+      "message": "この判定はmcs_rwlock_reader_lock_noirqの前に持っていってください。",
+      "range": {
+        "startLine": 292,
+        "startChar": 0,
+        "endLine": 292,
+        "endChar": 54
+      },
+      "revId": "53be8a376901a81e92791f909e5226227eaf5a38",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "22b72fa7_6925e0a3",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 419,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T04:54:59Z",
+      "side": 1,
+      "message": "こちらは、writer_lock--\u003efrozenのwhile loop--\u003ewriter_unlockにした場合、ここは必ずFROZEN/FREEZING以外になるので、削除してください。",
+      "range": {
+        "startLine": 419,
+        "startChar": 10,
+        "endLine": 419,
+        "endChar": 11
+      },
+      "revId": "53be8a376901a81e92791f909e5226227eaf5a38",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
