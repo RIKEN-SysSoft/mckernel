@@ -1,0 +1,29 @@
+【Issue#1356 動作確認】
+□ テスト内容
+1. eclairの基本操作が正常に動作することを確認
+McKernelの起動後、ihkosctl dump によってコアダンプを作成し、
+以下の操作について動作を確認する
+C1356T01:
+	eclairでダンプファイルを開き、mckernel.img のsymobolsを
+	読み取れることを確認
+C1356T02:
+	info threadコマンドを実行し、McKernelが利用しているCPU数と
+	同じ数のthreadが認識できていることを確認
+C1356T03:
+	threadコマンドを実行し、threadの変更が可能なことを確認
+C1356T04:
+	info registerコマンドを実行し、レジスタの情報を表示できることを確認
+C1356T05:
+	btコマンドを実行し、バックトレースを表示できることを確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log, aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。

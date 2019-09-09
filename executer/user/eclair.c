@@ -678,7 +678,6 @@ static ssize_t print_hex(char *buf, size_t buf_size, char *str) {
 
 	q = buf;
 	for (p = str; *p != '\0'; ++p) {
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 		int ret;
 
 		ret = snprintf(q, buf_size, "%02x", *p);
@@ -687,9 +686,6 @@ static ssize_t print_hex(char *buf, size_t buf_size, char *str) {
 		}
 		q += ret;
 		buf_size -= ret;
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-		q += sprintf(q, "%02x", *p);
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 	}
 	*q = '\0';
 
@@ -704,7 +700,6 @@ ssize_t print_bin(char *buf, size_t buf_size, void *data, size_t size) {
 	p = data;
 	q = buf;
 	for (i = 0; i < size; ++i) {
-#ifdef POSTK_DEBUG_ARCH_DEP_38
 		int ret;
 
 		ret = snprintf(q, buf_size, "%02x", *p);
@@ -713,9 +708,6 @@ ssize_t print_bin(char *buf, size_t buf_size, void *data, size_t size) {
 		}
 		q += ret;
 		buf_size -= ret;
-#else	/* POSTK_DEBUG_ARCH_DEP_38 */
-		q += sprintf(q, "%02x", *p);
-#endif	/* POSTK_DEBUG_ARCH_DEP_38 */
 		++p;
 	}
 	*q = '\0';
