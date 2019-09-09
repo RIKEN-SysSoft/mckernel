@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "bc51b0f5_a2e5b05d",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T02:48:08Z",
+      "side": 1,
+      "message": "freeze: Raise flag while in clone_thread() to mutex with freeze request\nなどのほうが良いと思います。",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 7,
+        "endChar": 46
+      },
+      "revId": "0a343454268d1959165bf379d8a792b250415949",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "d2d3b570_a9c55006",
         "filename": "kernel/include/process.h",
         "patchSetId": 1
