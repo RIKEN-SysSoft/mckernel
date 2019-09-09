@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4e6f00a3_455465c6",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1181,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T07:47:08Z",
+      "side": 1,
+      "message": "specialで\u003cmajor, minor\u003eが\u003c1, 3\u003eと\u003c1, 5\u003eはこのチェックをしない、としてください。\n他にもないか確認してください。",
+      "range": {
+        "startLine": 1181,
+        "startChar": 0,
+        "endLine": 1181,
+        "endChar": 4
+      },
+      "revId": "32b469a226991a75ddf1e2dd8e43cfd745808791",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
