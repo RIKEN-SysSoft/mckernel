@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1b76fd17_90405bcc",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T04:07:58Z",
+      "side": 1,
+      "message": "freeze: Mutex create_thread() and freeze request\nなどのほうが良いと思います。",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 7,
+        "endChar": 44
+      },
+      "revId": "53be8a376901a81e92791f909e5226227eaf5a38",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
