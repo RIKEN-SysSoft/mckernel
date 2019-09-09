@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0b6a2275_915725c4",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 799,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T02:09:55Z",
+      "side": 1,
+      "message": "/* save ICC_PMR_EL1 \u0026 enable interrupt (ICC_PMR_EL1 :\u003d ICC_PMR_EL1_UNMASKED) */\nの間違い？",
+      "range": {
+        "startLine": 799,
+        "startChar": 0,
+        "endLine": 799,
+        "endChar": 77
+      },
+      "revId": "cd0283a55b0f00185e7aa6a1858fca5ceba1a706",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
