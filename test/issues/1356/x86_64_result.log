@@ -1,0 +1,92 @@
+** Dump Mckernel-dump
+** DONE /tmp/issue1356_mckdump
+
+***** Result of eclair ************************
+spawn /home/satoken/ihk+mckernel/bin/eclair -d /tmp/issue1356_mckdump -k /home/satoken/ihk+mckernel/bin/../smp-x86/kernel/mckernel.img -l
+eclair 0.20160314
+setup_threads: num_processors: 7
+Reading symbols from /home/satoken/ihk+mckernel/smp-x86/kernel/mckernel.img...done.
+Remote debugging using :33646
+cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+1145    }
+(eclair) set pagination 0
+(eclair) info threads
+[New Thread 2000000001]
+[New Thread 2000000002]
+[New Thread 2000000003]
+[New Thread 2000000004]
+[New Thread 2000000005]
+[New Thread 2000000006]
+  Id   Target Id         Frame
+  7    Thread 2000000006 (PID 1, idle waiting on cpu 6) cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+  6    Thread 2000000005 (PID 1, idle waiting on cpu 5) cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+  5    Thread 2000000004 (PID 1, idle waiting on cpu 4) cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+  4    Thread 2000000003 (PID 1, idle waiting on cpu 3) cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+  3    Thread 2000000002 (PID 1, idle waiting on cpu 2) cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+  2    Thread 2000000001 (PID 1, idle waiting on cpu 1) cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+* 1    Thread 2000000000 (PID 1, idle waiting on cpu 0) cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+(eclair) thread 3
+[Switching to thread 3 (Thread 2000000002)]
+#0  cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+1145    }
+(eclair) info register
+rax            0xfffffffffe856a60       -24810912
+rbx            0xffff800100ada438       -140733182008264
+rcx            0xfffffffffe8c8318       -24345832
+rdx            0xffff880100b1a000       -131937088724992
+rsi            0x40004  262148
+rdi            0x2      2
+rbp            0xffff880100b09f18       0xffff880100b09f18
+rsp            0xffff880100b09f18       0xffff880100b09f18
+r8             0x0      0
+r9             0x0      0
+r10            0xffff880100b1c640       -131937088715200
+r11            0x0      0
+r12            0x46     70
+r13            0x0      0
+r14            0x0      0
+r15            0xfffffffffe856aa0       -24810848
+rip            0xfffffffffe856a66       0xfffffffffe856a66 <cpu_safe_halt+6>
+eflags         0x286    [ PF SF IF ]
+cs             0x20     32
+ss             0x28     40
+ds             0x28     40
+es             0x9000   36864
+fs             0x0      0
+gs             0x0      0
+(eclair) bt
+#0  cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+#1  0xfffffffffe82f83a in idle () at /home/satoken/src/mckernel/kernel/process.c:2983
+#2  0x0000000000000003 in ?? ()
+#3  0x0000000000000008 in ?? ()
+#4  0xffff880100b0e000 in ?? ()
+#5  0x0000000000000000 in ?? ()
+(eclair) missing "
+    while executing
+"send "quit\n
+"
+*** C1356T01 start *******************************
+** Check reading symbols
+Reading symbols from /home/satoken/ihk+mckernel/smp-x86/kernel/mckernel.img...done.
+*** C1356T01 PASSED ******************************
+
+*** C1356T02 start *******************************
+** Check detected number of cpus
+** CPU_NUM: 7  (expected 7)
+*** C1356T02 PASSED ******************************
+
+*** C1356T03 start *******************************
+** Check switch thread
+[Switching to thread 3 (Thread 2000000002)]
+*** C1356T03 PASSED ******************************
+
+*** C1356T04 start *******************************
+** Check info register
+rip            0xfffffffffe856a66       0xfffffffffe856a66 <cpu_safe_halt+6>
+*** C1356T04 PASSED ******************************
+
+*** C1356T05 start *******************************
+** Check back trace
+#0  cpu_safe_halt () at /home/satoken/src/mckernel/arch/x86_64/kernel/cpu.c:1145
+*** C1356T05 PASSED ******************************
+
