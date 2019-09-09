@@ -232,14 +232,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 			dkprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT before %#lx\n", memobj, obj->handle, off, p2align, pfn);
 			attr = pfn & ~PFN_PFN;
 
-			/* TODO: do an arch dependent PTE to mapping flag conversion 
-			 * instead of this inline check, also, we rely on having the
-			 * same PAT config as Linux here.. */
-#ifdef POSTK_DEBUG_ARCH_DEP_12
 			if (pfn_is_write_combined(pfn)) {
-#else /* POSTK_DEBUG_ARCH_DEP_12 */
-			if ((pfn & PFL1_PWT) && !(pfn & PFL1_PCD)) {
-#endif /* POSTK_DEBUG_ARCH_DEP_12 */
 				*flag |= VR_WRITE_COMBINED;
 			}
 

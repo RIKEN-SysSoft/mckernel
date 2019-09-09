@@ -184,12 +184,10 @@ enum ihk_mc_pt_attribute {
 
 enum ihk_mc_pt_attribute attr_mask;
 
-#ifdef POSTK_DEBUG_ARCH_DEP_12
 static inline int pfn_is_write_combined(uintptr_t pfn)
 {
 	return ((pfn & PFL1_PWT) && !(pfn & PFL1_PCD));
 }
-#endif /* #ifdef POSTK_DEBUG_ARCH_DEP_12 */
 
 static inline int pte_is_null(pte_t *ptep)
 {

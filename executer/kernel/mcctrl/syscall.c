@@ -1510,16 +1510,9 @@ retry:
 						pfn |= PFN_VALID | PFN_PRESENT;
 
 						/* Check if mapping is write-combined */
-#ifdef POSTK_DEBUG_ARCH_DEP_12
 						if (pte_is_write_combined(*pte)) {
 							pfn |= PFN_WRITE_COMBINED;
 						}
-#else /* POSTK_DEBUG_ARCH_DEP_12 */
-						if ((pte_flags(*pte) & _PAGE_PWT) &&
-						    !(pte_flags(*pte) & _PAGE_PCD)) {
-							pfn |= _PAGE_PWT;
-						}
-#endif /* POSTK_DEBUG_ARCH_DEP_12 */
 					}
 					pte_unmap(pte);
 				}
