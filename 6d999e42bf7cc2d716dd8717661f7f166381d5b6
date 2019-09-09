@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "944dddd7_4cb9d212",
+        "filename": "test/issues/988/README",
+        "patchSetId": 3
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-09T07:28:20Z",
+      "side": 1,
+      "message": "以下をredmineに記入してください。\n\n現在はmcctrl_pte_clear_range()でRWXに戻す必要はないが、将来的にパターンが増えた際を考え、RWXに戻すこととした。\n\n戻す必要がないことを以下に説明する。\n\nx86_64:\n\nビットパターンはRWX、___の2通りのみ。\nビットパターンをRWXに戻す関数は、do_munmap()と、mcctrl_pte_clear_range()\n\nRWXの場合は、do_munmap()でset_host_vma()を呼ばない一方で、\nmcctrl_pte_clear_range()を呼ぶが、すでにRWXであるので、パーミッションを変える必要はない。\n\n一方、___の場合は、do_munmap()でset_host_vma()を呼び、RWXに戻す。\nまた、mcctrl_pte_clear_range()を呼ばない。\n\narm64:\nパターンを調査してください。",
+      "range": {
+        "startLine": 2,
+        "startChar": 0,
+        "endLine": 2,
+        "endChar": 4
+      },
+      "revId": "6d999e42bf7cc2d716dd8717661f7f166381d5b6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "81598ee1_52e64d29",
         "filename": "test/issues/988/README",
         "patchSetId": 3
