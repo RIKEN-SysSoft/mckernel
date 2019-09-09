@@ -1,0 +1,34 @@
+【Issue#1354 動作確認】
+□ テスト内容
+1. 終了しようとしているスレッドがfp_regsの退避を行っていないことを確認
+	fp_regsの退避を行うsave_fp_regsに、スレッドが終了しようとしているかどうかを
+	判定するパッチを適用する
+	コンテキストスイッチが発生する下記のLTPを実施し、パッチによる検出ログが
+	kmsgに出力されていないことを確認する
+	 - futex_wait01
+	 - futex_wait02
+	 - futex_wait03
+	 - futex_wait04
+	 - futex_wait_bitset01
+	 - futex_wait_bitset02
+	 - futex_wake01
+	 - futex_wake02
+	 - futex_wake03
+
+□ 実行手順
+1. 下記の手順でテストを実行する
+$ cd <mckernel>
+$ patch -p0 < test/issues/1354/1354_check.patch
+(build mckernel)
+$ cd test/issues/1354
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照
+すべての項目をPASSしていることを確認。
+

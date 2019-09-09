@@ -1,0 +1,30 @@
+diff --git arch/arm64/kernel/cpu.c arch/arm64/kernel/cpu.c
+index d749024..759fc4e 100644
+--- arch/arm64/kernel/cpu.c
++++ arch/arm64/kernel/cpu.c
+@@ -1504,6 +1504,10 @@ out:
+ void
+ save_fp_regs(struct thread *thread)
+ {
++	/* THIS IS PATCH FOR TEST */
++	if (thread->status == PS_EXITED) {
++		kprintf("%s: thread is going to exit. (NOT_FIXED)\n", __func__);
++	}
+ 	if (thread == &cpu_local_var(idle)) {
+ 		return;
+ 	}
+diff --git arch/x86_64/kernel/cpu.c arch/x86_64/kernel/cpu.c
+index 2ba5bd3..7512daa 100644
+--- arch/x86_64/kernel/cpu.c
++++ arch/x86_64/kernel/cpu.c
+@@ -1725,6 +1725,10 @@ out:
+ void
+ save_fp_regs(struct thread *thread)
+ {
++	/* THIS IS PATCH FOR TEST */
++	if (thread->status == PS_EXITED) {
++		kprintf("%s: thread is going to exit. (NOT_FIXED)\n", __func__);
++	}
+ 	if (check_and_allocate_fp_regs(thread) != 0) {
+ 		// alloc error
+ 		return;
