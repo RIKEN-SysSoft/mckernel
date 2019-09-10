@@ -22,6 +22,30 @@
       "revId": "cd0283a55b0f00185e7aa6a1858fca5ceba1a706",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c84beed0_16449654",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 799,
+      "author": {
+        "id": 1014941
+      },
+      "writtenOn": "2019-09-10T23:50:04Z",
+      "side": 1,
+      "message": "他の割り込み制御関数のコメントにある\u003c\u003dは不等号ではなく矢印の意味になっているので(ICC_PMR_EL1 \u003c\u003d ICC_PMR_EL1_UNMASKED)に訂正しました。",
+      "parentUuid": "0b6a2275_915725c4",
+      "range": {
+        "startLine": 799,
+        "startChar": 0,
+        "endLine": 799,
+        "endChar": 77
+      },
+      "revId": "cd0283a55b0f00185e7aa6a1858fca5ceba1a706",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
