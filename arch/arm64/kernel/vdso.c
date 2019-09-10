@@ -137,6 +137,7 @@ int arch_map_vdso(struct process_vm *vm)
 	unsigned long flag;
 	int ret;
 	struct vm_range *range;
+	struct rb_root free = RB_ROOT;
 
 	vdso_text_len = vdso.vdso_npages << PAGE_SHIFT;
 	/* Be sure to map the data page */
@@ -173,7 +174,8 @@ int arch_map_vdso(struct process_vm *vm)
 
 		start = vdso_base;
 		end = vdso_base + PAGE_SIZE;
-		remove_process_memory_range(vm, start, end, NULL);
+		remove_process_memory_range(vm, start, end, NULL, &free);
+		free_ranges_pt(vm, &free);
 
 		goto exit;
 	}
