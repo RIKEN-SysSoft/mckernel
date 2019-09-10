@@ -825,11 +825,9 @@ int update_process_page_table(struct process_vm *vm,
 			  enum ihk_mc_pt_attribute flag)
 {
 	int error;
-	unsigned long flags;
 	enum ihk_mc_pt_attribute attr;
 
 	attr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
-	flags = ihk_mc_spinlock_lock(&vm->page_table_lock);
 	error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
 								(void *)range->start, (void *)range->end, phys, attr,
 								range->pgshift, range, 0);
@@ -840,7 +838,6 @@ int update_process_page_table(struct process_vm *vm,
 	// memory_stat_rss_add() is called in ihk_mc_pt_set_range()
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock(&vm->page_table_lock, flags);
 	return error;
 }
 
@@ -953,7 +950,9 @@ out:
 	return error;
 }
 
-int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
+static int free_process_memory_range(struct process_vm *vm,
+				     struct vm_range *range,
+				     struct rb_root *free_ranges)
 {
 	const intptr_t start0 = range->start;
 	const intptr_t end0 = range->end;
@@ -964,6 +963,9 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	intptr_t lpstart;
 	intptr_t lpend;
 	size_t pgsize;
+	struct rb_node **new = &(free_ranges->rb_node);
+	struct rb_node *parent = NULL;
+	struct vm_range *wk_range;
 
 	dkprintf("free_process_memory_range(%p, 0x%lx - 0x%lx)\n",
 			vm, range->start, range->end);
@@ -1007,48 +1009,6 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		}
 
 		dkprintf("%s: vm=%p,range=%p,%lx-%lx\n", __FUNCTION__, vm, range, range->start, range->end);
-		
-		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-		if (range->memobj) {
-			memobj_ref(range->memobj);
-		}
-
-		if (range->memobj && range->memobj->flags & MF_HUGETLBFS) {
-			error = ihk_mc_pt_clear_range(vm->address_space->page_table,
-					vm, (void *)start, (void *)end);
-		} else {
-			error = ihk_mc_pt_free_range(vm->address_space->page_table,
-					vm, (void *)start, (void *)end, range->memobj);
-		}
-		if (range->memobj) {
-			memobj_unref(range->memobj);
-		}
-		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
-		if (error && (error != -ENOENT)) {
-			ekprintf("free_process_memory_range(%p,%lx-%lx):"
-					"ihk_mc_pt_free_range(%lx-%lx,%p) failed. %d\n",
-					vm, start0, end0, start, end, range->memobj, error);
-			/* through */
-		}
-		// memory_stat_rss_sub() is called downstream, i.e. ihk_mc_pt_free_range() to deal with empty PTE
-	}
-	else {
-		// memory_stat_rss_sub() isn't called because free_physical is set to zero in clear_range()
-		dkprintf("%s,memory_stat_rss_sub() isn't called, VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED case, %lx-%lx\n", __FUNCTION__, start, end);
-		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-		error = ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
-				(void *)start, (void *)end);
-		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
-		if (error && (error != -ENOENT)) {
-			ekprintf("free_process_memory_range(%p,%lx-%lx):"
-					"ihk_mc_pt_clear_range(%lx-%lx) failed. %d\n",
-					vm, start0, end0, start, end, error);
-			/* through */
-		}
-	}
-
-	if (range->memobj) {
-		memobj_unref(range->memobj);
 	}
 
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
@@ -1056,15 +1016,68 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		if (vm->range_cache[i] == range)
 			vm->range_cache[i] = NULL;
 	}
-	kfree(range);
+	range->start = start;
+	range->end = end;
+	while (*new) {
+		wk_range = rb_entry(*new, struct vm_range, vm_rb_node);
+		parent = *new;
+		if (range->end <= wk_range->start) {
+			new = &((*new)->rb_left);
+		}
+		else {
+			new = &((*new)->rb_right);
+		}
+	}
+	rb_link_node(&range->vm_rb_node, parent, new);
+	rb_insert_color(&range->vm_rb_node, free_ranges);
 
 	dkprintf("free_process_memory_range(%p,%lx-%lx): 0\n",
 			vm, start0, end0);
 	return 0;
 }
 
+int free_ranges_pt(struct process_vm *vm, struct rb_root *ranges)
+{
+	struct vm_range *range;
+	struct rb_node *node;
+	struct rb_node *next = rb_first(ranges);
+	int error = 0;
+	int rc;
+
+	while ((node = next)) {
+		range = rb_entry(node, struct vm_range, vm_rb_node);
+		next = rb_next(node);
+
+		if (range->memobj) {
+			memobj_ref(range->memobj);
+		}
+		if ((range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED)) ||
+		    (range->memobj && (range->memobj->flags & MF_HUGETLBFS))) {
+			rc = ihk_mc_pt_clear_range(
+				vm->address_space->page_table, vm,
+				(void *)range->start, (void *)range->end);
+		}
+		else {
+			rc = ihk_mc_pt_free_range(vm->address_space->page_table,
+				vm, (void *)range->start, (void *)range->end,
+				range->memobj);
+		}
+		if (rc) {
+			error = rc;
+		}
+		if (range->memobj) {
+			memobj_unref(range->memobj);
+			memobj_unref(range->memobj);
+		}
+		rb_erase(&range->vm_rb_node, ranges);
+		kfree(range);
+	}
+	return error;
+}
+
 int remove_process_memory_range(struct process_vm *vm,
-		unsigned long start, unsigned long end, int *ro_freedp)
+	unsigned long start, unsigned long end, int *ro_freedp,
+	struct rb_root *free)
 {
 	struct vm_range *range, *next;
 	int error;
@@ -1107,7 +1120,7 @@ int remove_process_memory_range(struct process_vm *vm,
 			xpmem_remove_process_memory_range(vm, range);
 		}
 
-		error = free_process_memory_range(vm, range);
+		error = free_process_memory_range(vm, range, free);
 		if (error) {
 			ekprintf("remove_process_memory_range(%p,%lx,%lx):"
 					"free failed %d\n",
@@ -1501,11 +1514,9 @@ int change_prot_process_memory_range(struct process_vm *vm,
 		}
 	}
 
-	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	error = ihk_mc_pt_change_attr_range(vm->address_space->page_table,
 			(void *)range->start, (void *)range->end,
 			clrattr, setattr);
-	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error && (error != -ENOENT)) {
 		ekprintf("change_prot_process_memory_range(%p,%lx-%lx,%lx):"
 				"ihk_mc_pt_change_attr_range failed: %d\n",
@@ -1580,7 +1591,6 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 
 	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx)\n",
 			vm, range, start, end, off);
-	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memobj_ref(range->memobj);
 
 	args.start = start;
@@ -1607,7 +1617,6 @@ int remap_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	error = 0;
 out:
 	memobj_unref(range->memobj);
-	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	dkprintf("remap_process_memory_range(%p,%p,%#lx,%#lx,%#lx):%d\n",
 			vm, range, start, end, off, error);
 	return error;
@@ -1668,7 +1677,6 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 			vm, range, start, end);
 	args.memobj = range->memobj;
 
-	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 
 	if (!(range->memobj->flags & MF_ZEROFILL)) {
 		memobj_ref(range->memobj);
@@ -1682,7 +1690,6 @@ int sync_process_memory_range(struct process_vm *vm, struct vm_range *range,
 		memobj_unref(range->memobj);
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error) {
 		ekprintf("sync_process_memory_range(%p,%p,%#lx,%#lx):"
 				"visit failed%d\n",
@@ -1781,7 +1788,6 @@ int invalidate_process_memory_range(struct process_vm *vm,
 			vm, range, start, end);
 	args.range = range;
 
-	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memobj_ref(range->memobj);
 
 	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
@@ -1792,11 +1798,7 @@ int invalidate_process_memory_range(struct process_vm *vm,
 			// start pte is not contiguous head
 			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
-				ihk_spinlock_t *page_table_lock;
-
 				memobj_unref(range->memobj);
-				page_table_lock = &vm->page_table_lock;
-				ihk_mc_spinlock_unlock_noirq(page_table_lock);
 				goto out;
 			}
 		}
@@ -1810,11 +1812,7 @@ int invalidate_process_memory_range(struct process_vm *vm,
 			// end pte is not contiguous tail
 			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
-				ihk_spinlock_t *page_table_lock;
-
 				memobj_unref(range->memobj);
-				page_table_lock = &vm->page_table_lock;
-				ihk_mc_spinlock_unlock_noirq(page_table_lock);
 				goto out;
 			}
 		}
@@ -1831,7 +1829,6 @@ int invalidate_process_memory_range(struct process_vm *vm,
 					&invalidate_one_page, &args);
 	}
 	memobj_unref(range->memobj);
-	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (error) {
 		ekprintf("invalidate_process_memory_range(%p,%p,%#lx,%#lx):"
 				"visit failed%d\n",
@@ -1861,7 +1858,6 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	int devfile_or_hugetlbfs_or_premap, regfile_or_shm;
 
 	dkprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx)\n", vm, range->start, range->end, range->flag, fault_addr, reason);
-	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	/*****/
 	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
 			(void *)fault_addr, range->pgshift, &pgaddr, &pgsize,
@@ -2082,7 +2078,6 @@ retry:
 	page = NULL;
 
 out:
-	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (page) {
 		/* Unmap stray struct page */
 		dkprintf("%s: out,phys=%lx,vmr(%lx-%lx),flag=%x,fa=%lx,reason=%x\n",
@@ -2108,9 +2103,10 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
-	
+
 	if (!thread->vm->is_memory_range_lock_taken) {
 		/* For the case where is_memory_range_lock_taken is incremented after memory_range_lock is taken. */
+		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 		while (1) {
 			if (thread->vm->is_memory_range_lock_taken) {
 				goto skip;
@@ -2238,6 +2234,7 @@ out:
 	if (locked) {
 		ihk_mc_read_unlock(&vm->memory_range_lock);
 		cpu_restore_interrupt(irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	}
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0,
@@ -2520,12 +2517,10 @@ int remove_process_region(struct process_vm *vm,
 		return -EINVAL;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	/* We defer freeing to the time of exit */
 	// XXX: check error
 	ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
 			(void *)start, (void *)end);
-	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 
 	// memory_stat_rss_sub() isn't called because this execution path is no loger reached
 	dkprintf("%s: memory_stat_rss_sub() isn't called,start=%lx,end=%lx\n", __FUNCTION__, start, end);
@@ -2539,8 +2534,10 @@ void flush_process_memory(struct process_vm *vm)
 	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	int error;
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 
 	dkprintf("flush_process_memory(%p)\n", vm);
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memory_range_write_lock(vm, &irqflags);
 	/* Let concurrent page faults know the VM will be gone */
 	vm->exiting = 1;
@@ -2550,7 +2547,7 @@ void flush_process_memory(struct process_vm *vm)
 
 		if (range->memobj) {
 			// XXX: temporary of temporary
-			error = free_process_memory_range(vm, range);
+			error = free_process_memory_range(vm, range, &free);
 			if (error) {
 				ekprintf("flush_process_memory(%p):"
 						"free range failed. %lx-%lx %d\n",
@@ -2560,6 +2557,8 @@ void flush_process_memory(struct process_vm *vm)
 		}
 	}
 	memory_range_write_unlock(vm, &irqflags);
+	free_ranges_pt(vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	dkprintf("flush_process_memory(%p):\n", vm);
 	return;
 }
@@ -2570,17 +2569,19 @@ void free_process_memory_ranges(struct process_vm *vm)
 	struct vm_range *range;
 	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 
 	if (vm == NULL) {
 		return;
 	}
 
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memory_range_write_lock(vm, &irqflags);
 	while ((node = next)) {
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
 
-		error = free_process_memory_range(vm, range);
+		error = free_process_memory_range(vm, range, &free);
 		if (error) {
 			ekprintf("free_process_memory(%p):"
 					"free range failed. %lx-%lx %d\n",
@@ -2589,6 +2590,8 @@ void free_process_memory_ranges(struct process_vm *vm)
 		}
 	}
 	memory_range_write_unlock(vm, &irqflags);
+	free_ranges_pt(vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 }
 
 static void free_thread_pages(struct thread *thread)
@@ -2664,13 +2667,15 @@ free_all_process_memory_range(struct process_vm *vm)
 	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	int error;
 	unsigned long irqflags;
+	struct rb_root free = RB_ROOT;
 
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memory_range_write_lock(vm, &irqflags);
 	while ((node = next)) {
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
 
-		error = free_process_memory_range(vm, range);
+		error = free_process_memory_range(vm, range, &free);
 		if (error) {
 			ekprintf("free_process_memory(%p):"
 					"free range failed. %lx-%lx %d\n",
@@ -2679,6 +2684,8 @@ free_all_process_memory_range(struct process_vm *vm)
 		}
 	}
 	memory_range_write_unlock(vm, &irqflags);
+	free_ranges_pt(vm, &free);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 }
 
 void

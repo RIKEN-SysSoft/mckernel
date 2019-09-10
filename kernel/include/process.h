@@ -841,7 +841,7 @@ int add_process_memory_range(struct process_vm *vm,
 		struct memobj *memobj, off_t offset,
 		int pgshift, struct vm_range **rp);
 int remove_process_memory_range(struct process_vm *vm, unsigned long start,
-		unsigned long end, int *ro_freedp);
+		unsigned long end, int *ro_freedp, struct rb_root *free);
 int split_process_memory_range(struct process_vm *vm,
 		struct vm_range *range, uintptr_t addr, struct vm_range **splitp);
 int join_process_memory_range(struct process_vm *vm, struct vm_range *surviving,
@@ -877,6 +877,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 		unsigned long address, unsigned long flag);
 extern enum ihk_mc_pt_attribute arch_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
 enum ihk_mc_pt_attribute common_vrflag_to_ptattr(unsigned long flag, uint64_t fault, pte_t *ptep);
+int free_ranges_pt(struct process_vm *vm, struct rb_root *free);
 
 void schedule(void);
 void spin_sleep_or_schedule(void);

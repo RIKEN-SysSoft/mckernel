@@ -1195,18 +1195,22 @@ static int xpmem_detach(
 
 	XPMEM_DEBUG("call: at_vaddr=0x%lx", at_vaddr);
 
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+
 	memory_range_write_lock(vm, &irqflags);
 
 	range = lookup_process_memory_range(vm, at_vaddr, at_vaddr + 1);
 
 	if (!range || range->start > at_vaddr) {
 		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		return 0;
 	}
 
 	att = (struct xpmem_attachment *)range->private_data;
 	if (att == NULL) {
 		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		return -EINVAL;
 	}
 
@@ -1217,6 +1221,7 @@ static int xpmem_detach(
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		xpmem_att_deref(att);
 		return 0;
 	}
@@ -1230,6 +1235,7 @@ static int xpmem_detach(
 		xpmem_ap_deref(ap);
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		xpmem_att_deref(att);
 		return -EACCES;
 	}
@@ -1250,6 +1256,7 @@ static int xpmem_detach(
 			__FUNCTION__, ret);
 	}
 	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	DBUG_ON(ret != 0);
 
 	att->flags &= ~XPMEM_FLAG_VALIDPTEs;
@@ -1368,12 +1375,8 @@ static int xpmem_free_process_memory_range(
 	XPMEM_DEBUG("call: vm=0x%p, start=0x%lx, end=0x%lx", 
 		vm, range->start, range->end);
 
-	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-
 	error = ihk_mc_pt_clear_range(vm->address_space->page_table, vm,
 		(void *)range->start, (void *)range->end);
-
-	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 
 	if (error && (error != -ENOENT)) {
 		ekprintf("%s(%p,%lx-%lx): ERROR: "
@@ -1418,6 +1421,7 @@ static void xpmem_detach_att(
 
 	vm = cpu_local_var(current)->vm ? cpu_local_var(current)->vm : att->vm;
 
+	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	memory_range_write_lock(vm, &irqflags);
 
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
@@ -1425,6 +1429,7 @@ static void xpmem_detach_att(
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		XPMEM_DEBUG("return: XPMEM_FLAG_DESTROYING");
 		return;
 	}
@@ -1439,6 +1444,7 @@ static void xpmem_detach_att(
 		ihk_mc_spinlock_unlock_noirq(&ap->lock);
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 		xpmem_att_destroyable(att);
 		XPMEM_DEBUG("return: range=%p");
 		return;
@@ -1475,6 +1481,7 @@ static void xpmem_detach_att(
 	}
 
 	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 
 	xpmem_att_destroyable(att);
 
@@ -1578,6 +1585,7 @@ static void xpmem_clear_PTEs_of_att(
 	XPMEM_DEBUG("call: att=0x%p, start=0x%lx, end=0x%lx", 
 		att, start, end);
 
+	ihk_mc_spinlock_lock_noirq(&att->vm->page_table_lock);
 	memory_range_write_lock(att->vm, &irqflags);
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
@@ -1639,6 +1647,7 @@ static void xpmem_clear_PTEs_of_att(
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 	memory_range_write_unlock(att->vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&att->vm->page_table_lock);
 
 	XPMEM_DEBUG("return: ");
 }
