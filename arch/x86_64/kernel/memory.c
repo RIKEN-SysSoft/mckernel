@@ -37,6 +37,7 @@
 static char *last_page;
 extern char _head[], _end[];
 
+extern unsigned long linux_page_offset_base;
 extern unsigned long x86_kernel_phys_base;
 
 /* Arch specific early allocation routine */
@@ -2468,10 +2469,10 @@ static void init_linux_kernel_mapping(struct page_table *pt)
 		map_start = 0;
 		map_end = 0x20000000000;
 
-		virt = (void *)LINUX_PAGE_OFFSET;
+		virt = (void *)linux_page_offset_base;
 
 		kprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
-			LINUX_PAGE_OFFSET, LINUX_PAGE_OFFSET + map_end, 0, map_end);
+			virt, virt + map_end, 0, map_end);
 
 		for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE) {
 			if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
@@ -2495,9 +2496,11 @@ static void init_linux_kernel_mapping(struct page_table *pt)
 			}
 
 			dkprintf("Linux kernel virtual: 0x%lx - 0x%lx -> 0x%lx - 0x%lx\n",
-					 LINUX_PAGE_OFFSET + map_start, LINUX_PAGE_OFFSET + map_end, map_start, map_end);
+				 linux_page_offset_base + map_start,
+				 linux_page_offset_base + map_end,
+				 map_start, map_end);
 
-			virt = (void *)(LINUX_PAGE_OFFSET + map_start);
+			virt = (void *)(linux_page_offset_base + map_start);
 			for (phys = map_start; phys < map_end; phys += LARGE_PAGE_SIZE, virt += LARGE_PAGE_SIZE) {
 				if (set_pt_large_page(pt, virt, phys, PTATTR_WRITABLE) != 0) {
 					kprintf("%s: set_pt_large_page() failed for 0x%lx\n", __FUNCTION__, virt);
@@ -2641,12 +2644,12 @@ unsigned long virt_to_phys(void *v)
 	unsigned long va = (unsigned long)v;
 
 	if (va >= MAP_KERNEL_START) {
-		dkprintf("%s: MAP_KERNEL_START <= 0x%lx <= LINUX_PAGE_OFFSET\n",
+		dkprintf("%s: MAP_KERNEL_START <= 0x%lx <= linux_page_offset_base\n",
 				__FUNCTION__, va);
 		return va - MAP_KERNEL_START + x86_kernel_phys_base;
 	}
-	else if (va >= LINUX_PAGE_OFFSET) {
-		return va - LINUX_PAGE_OFFSET;
+	else if (va >= linux_page_offset_base) {
+		return va - linux_page_offset_base;
 	}
 	else if (va >= MAP_FIXED_START) {
 		return va - MAP_FIXED_START;
@@ -2665,7 +2668,7 @@ void *phys_to_virt(unsigned long p)
 		return (void *)(p + MAP_ST_START);
 	}
 
-	return (void *)(p + LINUX_PAGE_OFFSET);
+	return (void *)(p + linux_page_offset_base);
 }
 
 int copy_from_user(void *dst, const void *src, size_t siz)
