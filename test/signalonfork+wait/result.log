@@ -1,0 +1,1119 @@
+=========================
+aarch64
+=========================
+% sh run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 13-59 -m 2048M@4,2048M@5,2048M@6,2048M@7 -q 60 ... done
+@@@ initialize:
+seed for $RANDOM=1501
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 5000 msec
+[8113] I am the examiner for 8163.
+[8163] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(1) wait=1215
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1215 msec
+[33697] I am the examiner for 33747.
+[33747] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(2) wait=1098
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1098 msec
+[40562] I am the examiner for 40612.
+[40612] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(3) wait=1415
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1415 msec
+[46728] I am the examiner for 46778.
+[46778] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(4) wait=1246
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1246 msec
+[54475] I am the examiner for 54525.
+[54525] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(5) wait=1309
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1309 msec
+[61291] I am the examiner for 61341.
+[61341] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(6) wait=1416
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1416 msec
+[7877] I am the examiner for 7929.
+[7929] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(7) wait=1238
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1238 msec
+[15724] I am the examiner for 15774.
+[15774] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(8) wait=1220
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1220 msec
+[22344] I am the examiner for 22394.
+[22394] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(9) wait=1146
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1146 msec
+[28719] I am the examiner for 28769.
+[28769] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(10) wait=1103
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1103 msec
+[34947] I am the examiner for 34997.
+[34997] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(11) wait=1187
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1187 msec
+[41224] I am the examiner for 41274.
+[41274] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(12) wait=1248
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1248 msec
+[47715] I am the examiner for 47765.
+[47765] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(13) wait=1339
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1339 msec
+[54580] I am the examiner for 54630.
+[54630] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(14) wait=1437
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1437 msec
+[807] I am the examiner for 857.
+[857] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(15) wait=1139
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1139 msec
+[9209] I am the examiner for 9259.
+[9259] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(16) wait=1282
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1282 msec
+[15535] I am the examiner for 15585.
+[15585] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(17) wait=1330
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1330 msec
+[22645] I am the examiner for 22695.
+[22695] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(18) wait=1184
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1184 msec
+[30000] I am the examiner for 30050.
+[30050] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(19) wait=1123
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1123 msec
+[36522] I am the examiner for 36572.
+[36572] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(20) wait=1160
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1160 msec
+[42751] I am the examiner for 42801.
+[42801] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 11 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(21) wait=1461
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1461 msec
+[49095] I am the examiner for 49145.
+[49145] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(22) wait=1215
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1215 msec
+[56940] I am the examiner for 56990.
+[56990] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(23) wait=1381
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1381 msec
+[2921] I am the examiner for 2971.
+[2971] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(24) wait=1145
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1145 msec
+[10547] I am the examiner for 10597.
+[10597] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(25) wait=1038
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1038 msec
+[16922] I am the examiner for 16972.
+[16972] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(26) wait=1171
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1171 msec
+[22807] I am the examiner for 22857.
+[22857] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(27) wait=1213
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1213 msec
+[29133] I am the examiner for 29183.
+[29183] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(28) wait=1087
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1087 msec
+[35851] I am the examiner for 35901.
+[35901] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(29) wait=1256
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1256 msec
+[41785] I am the examiner for 41835.
+[41835] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(30) wait=1363
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1363 msec
+[48717] I am the examiner for 48767.
+[48767] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(31) wait=1147
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1147 msec
+[56219] I am the examiner for 56269.
+[56269] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(32) wait=1014
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1014 msec
+[1380] I am the examiner for 1430.
+[1430] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(33) wait=1333
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1333 msec
+[7376] I am the examiner for 7427.
+[7427] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(34) wait=1222
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1222 msec
+[14639] I am the examiner for 14689.
+[14689] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(35) wait=1070
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1070 msec
+[21504] I am the examiner for 21554.
+[21554] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 11 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(36) wait=1161
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1161 msec
+[27536] I am the examiner for 27586.
+[27586] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(37) wait=1412
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1412 msec
+[33764] I am the examiner for 33814.
+[33814] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(38) wait=1320
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1320 msec
+[41462] I am the examiner for 41512.
+[41512] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(39) wait=1350
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1350 msec
+[48719] I am the examiner for 48769.
+[48769] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(40) wait=1109
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1109 msec
+[56074] I am the examiner for 56124.
+[56124] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(41) wait=1037
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1037 msec
+[1322] I am the examiner for 1372.
+[1372] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(42) wait=1126
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1126 msec
+[7515] I am the examiner for 7565.
+[7565] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(43) wait=1153
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1153 msec
+[13797] I am the examiner for 13847.
+[13847] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 11 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(44) wait=1482
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1482 msec
+[20221] I am the examiner for 20271.
+[20271] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(45) wait=1290
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1290 msec
+[28249] I am the examiner for 28299.
+[28299] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(46) wait=1486
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1486 msec
+[35506] I am the examiner for 35556.
+[35556] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(47) wait=1124
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1124 msec
+[43695] I am the examiner for 43745.
+[43745] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(48) wait=1046
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1046 msec
+[49874] I am the examiner for 49924.
+[49924] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 11 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(49) wait=1267
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1267 msec
+[55514] I am the examiner for 55564.
+[55564] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(50) wait=1196
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1196 msec
+[1594] I am the examiner for 1644.
+[1644] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(51) wait=1171
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1171 msec
+[8674] I am the examiner for 8724.
+[8724] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(52) wait=1334
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1334 msec
+[15049] I am the examiner for 15099.
+[15099] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(53) wait=1384
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1384 msec
+[22355] I am the examiner for 22405.
+[22405] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(54) wait=1112
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1112 msec
+[29826] I am the examiner for 29876.
+[29876] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 11 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(55) wait=1335
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1335 msec
+[36005] I am the examiner for 36055.
+[36055] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(56) wait=1491
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1491 msec
+[43409] I am the examiner for 43459.
+[43459] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(57) wait=1302
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1302 msec
+[51695] I am the examiner for 51745.
+[51745] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(58) wait=1467
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1467 msec
+[59052] I am the examiner for 59102.
+[59102] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(59) wait=1322
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1322 msec
+[6199] I am the examiner for 6249.
+[6249] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(60) wait=1181
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1181 msec
+[13927] I am the examiner for 13977.
+[13977] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(61) wait=1107
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1107 msec
+[20498] I am the examiner for 20548.
+[20548] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(62) wait=1379
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1379 msec
+[26726] I am the examiner for 26776.
+[26776] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 11 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(63) wait=1123
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1123 msec
+[34295] I am the examiner for 34345.
+[34345] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(64) wait=1306
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1306 msec
+[40425] I am the examiner for 40475.
+[40475] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(65) wait=1313
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1313 msec
+[47437] I am the examiner for 47487.
+[47487] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(66) wait=1218
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1218 msec
+[54743] I am the examiner for 54793.
+[54793] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(67) wait=1428
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1428 msec
+[61216] I am the examiner for 61266.
+[61266] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(68) wait=1208
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1208 msec
+[8589] I am the examiner for 8639.
+[8639] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(69) wait=1078
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1078 msec
+[15258] I am the examiner for 15308.
+[15308] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(70) wait=1127
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1127 msec
+[21241] I am the examiner for 21291.
+[21291] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(71) wait=1217
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1217 msec
+[27469] I am the examiner for 27519.
+[27519] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(72) wait=1145
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1145 msec
+[34107] I am the examiner for 34157.
+[34157] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(73) wait=1206
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1206 msec
+[40348] I am the examiner for 40398.
+[40398] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(74) wait=1288
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1288 msec
+[46968] I am the examiner for 47018.
+[47018] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(75) wait=1320
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1320 msec
+[54176] I am the examiner for 54226.
+[54226] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(76) wait=1251
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1251 msec
+[61433] I am the examiner for 486.
+[486] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(77) wait=1027
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1027 msec
+[7973] I am the examiner for 8023.
+[8023] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(78) wait=1327
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1327 msec
+[13711] I am the examiner for 13761.
+[13761] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(79) wait=1096
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1096 msec
+[20919] I am the examiner for 20969.
+[20969] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(80) wait=1141
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1141 msec
+[26804] I am the examiner for 26854.
+[26854] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(81) wait=1053
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1053 msec
+[33228] I am the examiner for 33278.
+[33278] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(82) wait=1138
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1138 msec
+[38966] I am the examiner for 39016.
+[39016] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(83) wait=1488
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1488 msec
+[45293] I am the examiner for 45343.
+[45343] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(84) wait=1030
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1030 msec
+[53285] I am the examiner for 53335.
+[53335] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(85) wait=1364
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1364 msec
+[58876] I am the examiner for 58926.
+[58926] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(86) wait=1315
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1315 msec
+[5454] I am the examiner for 5505.
+[5505] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(87) wait=1326
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1326 msec
+[12856] I am the examiner for 12906.
+[12906] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(88) wait=1304
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1304 msec
+[20064] I am the examiner for 20114.
+[20114] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(89) wait=1475
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1475 msec
+[27223] I am the examiner for 27273.
+[27273] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 9 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(90) wait=1283
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1283 msec
+[35362] I am the examiner for 35412.
+[35412] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 10 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(91) wait=1410
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1410 msec
+[42325] I am the examiner for 42375.
+[42375] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(92) wait=1334
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1334 msec
+[50170] I am the examiner for 50220.
+[50220] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(93) wait=1055
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1055 msec
+[57525] I am the examiner for 57575.
+[57575] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(94) wait=1492
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1492 msec
+[2480] I am the examiner for 2532.
+[2532] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(95) wait=1415
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1415 msec
+[11193] I am the examiner for 11243.
+[11243] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(96) wait=1451
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1451 msec
+[18842] I am the examiner for 18892.
+[18892] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(97) wait=1342
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1342 msec
+[26687] I am the examiner for 26737.
+[26737] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 12 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(98) wait=1152
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1152 msec
+[33944] I am the examiner for 33994.
+[33994] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(99) wait=1022
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1022 msec
+[40369] I am the examiner for 40419.
+[40419] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 8 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+@@@ run signalonfork_wait:(100) wait=1367
+DANGERTEST SIGNALONFORK
+NUMTHREADS: 1
+NOSIGNAL: 0
+TIMETOWAIT: 1367 msec
+[46058] I am the examiner for 46108.
+[46108] I am a subjectThread 0, 80000032ec0 80000032ec0
+[0] setup: 13 ms
+[0] START TEST
+The TEST process is terminated by the signal 15
+TEST SUCCEEDED
+OK
