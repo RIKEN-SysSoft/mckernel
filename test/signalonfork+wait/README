@@ -1,0 +1,33 @@
+==========
+How to run
+==========
+
+(1) cd <mckernel>
+(2) patch -p1 < test/signalonfork+wait/error_injection.patch
+(3) Build McKernel
+(4) cd <mckernel>/test/signalonfork+wait
+(5) make
+(6) edit "$HOME/.mck_test_config"
+    * NUMA nodes should be 0 only
+(7) sh ./run.sh
+(8) sh ./run_error_injection.sh
+
+==========================
+sample of .mck_test_config
+==========================
+
+% cat "$HOME/.mck_test_config"
+# Config file for McKernel tests
+: ${MCK_DIR:=/opt/usr/ihk-mckernel}
+: ${BIN:=$MCK_DIR/bin}
+: ${SBIN:=$MCK_DIR/sbin}
+: ${OSTEST:=}
+: ${LTP:=}
+: ${BOOTPARAM:=-c 4-15 -m 16G}
+: ${MCKERNEL_VERSION:=1.5.0}
+
+============
+What to test
+============
+
+Check for memory leaks when a fork system call and delivery of the signal occur simultaneously.

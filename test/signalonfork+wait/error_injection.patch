@@ -1,0 +1,395 @@
+diff --git a/kernel/CMakeLists.txt b/kernel/CMakeLists.txt
+index 608c435..b5c8518 100644
+--- a/kernel/CMakeLists.txt
++++ b/kernel/CMakeLists.txt
+@@ -29,6 +29,7 @@ if (${ARCH} STREQUAL "arm64")
+ endif()
+ 
+ set(MCKERNEL_SRCS
++	sysctrl-signalonfork_wait.c
+ 	init.c mem.c debug.c mikc.c listeners.c ap.c syscall.c cls.c host.c process.c
+ 	copy.c waitq.c futex.c timer.c plist.c fileobj.c shmobj.c zeroobj.c
+ 	procfs.c devobj.c sysfs.c xpmem.c profile.c freeze.c rbtree.c pager.c
+diff --git a/kernel/include/sysctrl-signalonfork_wait.h b/kernel/include/sysctrl-signalonfork_wait.h
+new file mode 100644
+index 0000000..2e4833e
+--- /dev/null
++++ b/kernel/include/sysctrl-signalonfork_wait.h
+@@ -0,0 +1,49 @@
++#ifndef __SYSCTRL_SIGNALONFORK_WAIT_H__
++#define __SYSCTRL_SIGNALONFORK_WAIT_H__
++
++enum signalonfork_error {
++	signalonfork_error_null = 0,
++
++	do_fork_release_cpuid_0                  = 0x010000,
++	do_fork_destroy_thread_0                 = 0x010100,
++	do_fork_destroy_thread_1                 = 0x010101,
++	do_fork_destroy_thread_2                 = 0x010102,
++	do_fork_release_ids_0                    = 0x010200,
++	do_fork_release_ids_1                    = 0x010201,
++	do_fork_free_mod_clone_arg_0             = 0x010300,
++	do_fork_free_mod_clone_arg_1             = 0x010301,
++
++	clone_thread_free_thread_0               = 0x020000,
++	clone_thread_free_thread_1               = 0x020001,
++	clone_thread_free_fp_regs_0              = 0x020100,
++	clone_thread_free_fp_regs_1              = 0x020101,
++	clone_thread_free_fork_process_proc_0    = 0x020200,
++	clone_thread_free_fork_process_proc_1    = 0x020201,
++	clone_thread_free_fork_process_asp_0     = 0x020300,
++	clone_thread_free_fork_process_vm_0      = 0x020400,
++	clone_thread_free_fork_process_cmdline_0 = 0x020500,
++	clone_thread_free_fork_process_cmdline_1 = 0x020501,
++	clone_thread_free_fork_process_mckfd_0   = 0x020600,
++	clone_thread_free_fork_clone_process_0   = 0x020700,
++	clone_thread_free_copy_user_ranges_0     = 0x020800,
++
++	copy_user_ranges_err_rollback_0          = 0x030000,
++};
++
++static inline int __sof_err(enum signalonfork_error err)
++{
++	extern enum signalonfork_error sof_error;
++	return (err == sof_error);
++}
++
++#define sof_err(err) ({							\
++			int ret = __sof_err(err);			\
++			if (ret) {					\
++				kprintf("sof error injection: %s\n",	\
++					#err);				\
++			}						\
++			ret;						\
++		})
++
++
++#endif /*__SYSCTRL_SIGNALONFORK_WAIT_H__*/
+diff --git a/kernel/init.c b/kernel/init.c
+index 9ee3b42..ecf2f79 100644
+--- a/kernel/init.c
++++ b/kernel/init.c
+@@ -330,6 +330,9 @@ static void populate_sysfs(void)
+ 	numa_sysfs_setup();
+ 	dynamic_debug_sysfs_setup();
+ 	//setup_remote_snooping_samples();
++
++	extern void signalonfork_test_sysfs_setup(void);
++	signalonfork_test_sysfs_setup();
+ } /* populate_sysfs() */
+ 
+ int host_ikc_inited = 0;
+diff --git a/kernel/process.c b/kernel/process.c
+index b2d7f34..f607198 100644
+--- a/kernel/process.c
++++ b/kernel/process.c
+@@ -27,6 +27,7 @@
+ #include <kmalloc.h>
+ #include <cls.h>
+ #include <page.h>
++#include <sysctrl-signalonfork_wait.h>
+ #include <cpulocal.h>
+ #include <auxvec.h>
+ #include <hwcap.h>
+@@ -395,6 +396,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 					IHK_MC_AP_NOWAIT)) == NULL) {
+ 		return NULL;
+ 	}
++	if (sof_err(clone_thread_free_thread_0)) {
++		goto free_thread;
++	}
+ 
+ 	memset(thread, 0, sizeof(struct thread));
+ 	INIT_LIST_HEAD(&thread->hash_list);
+@@ -409,10 +413,17 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
+ 				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
+ 
++	if (sof_err(clone_thread_free_thread_1)) {
++		goto free_thread;
++	}
+ 	/* copy fp_regs from parent */
+ 	if (save_fp_regs(org)) {
+ 		goto free_thread;
+ 	}
++	if (sof_err(clone_thread_free_fp_regs_0)) {
++		goto free_fp_regs;
++	}
++
+ 	if (copy_fp_regs(org, thread)) {
+ 		goto free_fp_regs;
+ 	}
+@@ -437,23 +448,47 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 	}
+ 	/* fork() */
+ 	else {
++		if (sof_err(clone_thread_free_fp_regs_1)) {
++			goto free_fp_regs;
++		}
++
+ 		proc = kmalloc(sizeof(struct process), IHK_MC_AP_NOWAIT);
+ 		if(!proc)
+ 			goto free_fp_regs;
++
++		if (sof_err(clone_thread_free_fork_process_proc_0)) {
++			goto free_fork_process_proc;
++		}
++
+ 		memset(proc, '\0', sizeof(struct process));
+ 		init_process(proc, org->proc);
+ #ifdef PROFILE_ENABLE
+ 		proc->profile = org->proc->profile;
+ #endif
+ 		proc->termsig = termsig;
++
++		if (sof_err(clone_thread_free_fork_process_proc_1)) {
++			goto free_fork_process_proc;
++		}
++
+ 		asp = create_address_space(cpu_local_var(resource_set), 1);
+ 		if (!asp) {
+ 			goto free_fork_process_proc;
+ 		}
++
++		if (sof_err(clone_thread_free_fork_process_asp_0)) {
++			goto free_fork_process_asp;
++		}
++
+ 		proc->vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
+ 		if (!proc->vm) {
+ 			goto free_fork_process_asp;
+ 		}
++
++		if (sof_err(clone_thread_free_fork_process_vm_0)) {
++			goto free_fork_process_vm;
++		}
++
+ 		memset(proc->vm, '\0', sizeof(struct process_vm));
+ 
+ 		proc->saved_cmdline_len = org->proc->saved_cmdline_len;
+@@ -462,6 +497,11 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 		if (!proc->saved_cmdline) {
+ 			goto free_fork_process_vm;
+ 		}
++
++		if (sof_err(clone_thread_free_fork_process_cmdline_0)) {
++			goto free_fork_process_cmdline;
++		}
++
+ 		memcpy(proc->saved_cmdline, org->proc->saved_cmdline,
+ 		       proc->saved_cmdline_len);
+ 
+@@ -484,6 +524,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 		/* Copy user-space mappings.
+ 		 * TODO: do this with COW later? */
+ 		v->on_fork_vm = proc->vm;
++		if (sof_err(clone_thread_free_fork_process_cmdline_1)) {
++			v->on_fork_vm = NULL;
++			goto free_fork_process_cmdline;
++		}
+ 		if (copy_user_ranges(proc->vm, org->vm) != 0) {
+ 			v->on_fork_vm = NULL;
+ 			goto free_fork_process_cmdline;
+@@ -492,6 +536,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 
+ 		/* Copy mckfd list
+ 		   FIXME: Replace list manipulation with list_add() etc. */
++		if (sof_err(clone_thread_free_copy_user_ranges_0)) {
++			goto free_fork_process_mckfd;
++		}
+ 		long irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+ 		struct mckfd *cur;
+ 		for (cur = org->proc->mckfd; cur; cur = cur->next) {
+@@ -517,6 +564,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 			}
+ 		}
+ 		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
++		if (sof_err(clone_thread_free_fork_process_mckfd_0)) {
++			goto free_fork_process_mckfd;
++		}
+ 
+ 		thread->vm->vdso_addr = org->vm->vdso_addr;
+ 		thread->vm->vvar_addr = org->vm->vvar_addr;
+@@ -536,6 +586,13 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+ 	/* copy signal handlers (i.e., fork()) */
+ 	else {
+ 		dkprintf("fork(): sigcommon\n");
++		if (sof_err(clone_thread_free_fork_clone_process_0)) {
++			if (clone_flags & CLONE_VM) {
++				goto free_clone_process;
++			}
++			goto free_fork_process_mckfd;
++		}
++
+ 		thread->sigcommon = kmalloc(sizeof(struct sig_common),
+ 		                             IHK_MC_AP_NOWAIT);
+ 		if (!thread->sigcommon) {
+@@ -849,6 +906,10 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
+ 		// memory_stat_rss_add() is called in child-node, i.e. copy_user_pte()
+ 	}
+ 
++	if (sof_err(copy_user_ranges_err_rollback_0)) {
++		goto err_rollback;
++	}
++
+ 	memory_range_write_unlock(orgvm, &irqflags);
+ 
+ 	return 0;
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 4ed043f..17bec37 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -29,6 +29,7 @@
+ #include <cpulocal.h>
+ #include <ihk/mm.h>
+ #include <ihk/ikc.h>
++#include <sysctrl-signalonfork_wait.h>
+ #include <errno.h>
+ #include <cls.h>
+ #include <syscall.h>
+@@ -2737,6 +2738,10 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
+ 		kprintf("do_fork,core not available\n");
+ 		return -EAGAIN;
+ 	}
++	if (sof_err(do_fork_release_cpuid_0)) {
++		err =  -EFAULT;
++		goto release_cpuid;
++	}
+ 
+ 	new = clone_thread(old, curpc,
+ 	                    newsp ? newsp : cursp, clone_flags);
+@@ -2747,6 +2752,10 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
+ 	}
+ 
+ 	newproc = new->proc;
++	if (sof_err(do_fork_destroy_thread_0)) {
++		err =  -EFAULT;
++		goto destroy_thread;
++	}
+ 
+ 	cpu_set(cpuid, &new->vm->address_space->cpu_set,
+ 	        &new->vm->address_space->cpu_set_lock);
+@@ -2766,8 +2775,13 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
+ 				goto destroy_thread;
+ 			}
+ 
+-			newproc->tids = kmalloc(sizeof(struct mcexec_tid) *
+-						NR_TIDS, IHK_MC_AP_NOWAIT);
++			if (sof_err(do_fork_destroy_thread_1)) {
++				newproc->tids = NULL;
++			} else {
++				newproc->tids = kmalloc(sizeof(struct mcexec_tid) *
++							NR_TIDS, IHK_MC_AP_NOWAIT);
++			}
++
+ 			if (!newproc->tids) {
+ 				mcs_rwlock_writer_unlock(&newproc->threads_lock, &lock);
+ 				kfree(tids);
+@@ -2775,7 +2789,12 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
+ 				goto destroy_thread;
+ 			}
+ 
+-			if ((err = settid(new, NR_TIDS, tids)) < 0) {
++			if (sof_err(do_fork_release_ids_0)) {
++				err = -EFAULT;
++			} else {
++				err = settid(new, NR_TIDS, tids);
++			}
++			if (err < 0) {
+ 				mcs_rwlock_writer_unlock(&newproc->threads_lock,
+ 							&lock);
+ 				kfree(tids);
+@@ -2835,7 +2854,11 @@ retry_tid:
+ 			if(oldproc->ppid_parent->pid != 1)
+ 				request1.args[0] = clone_flags;
+ 		}
+-		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id());
++		if (sof_err(do_fork_destroy_thread_2)) {
++			newproc->pid = -EFAULT;
++		} else {
++			newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id());
++		}
+ 		if (newproc->pid < 0) {
+ 			kprintf("ERROR: forking host process\n");
+ 			err = newproc->pid;
+@@ -2900,6 +2923,11 @@ retry_tid:
+ 	ihk_mc_syscall_ret(new->uctx) = 0;
+ 
+ 	new->status = PS_RUNNING;
++
++	if (sof_err(do_fork_release_ids_1)) {
++		err = -EFAULT;
++		goto release_ids;
++	}
+ 	
+ 	/* Only the first do_fork() call creates a thread on a Linux CPU */
+ 	if (__sync_bool_compare_and_swap(&old->mod_clone, SPAWN_TO_REMOTE, SPAWN_TO_LOCAL)) {
+@@ -2918,6 +2946,12 @@ retry_tid:
+ 		}
+ 	}
+ 	chain_thread(new);
++
++	if (sof_err(do_fork_free_mod_clone_arg_0)) {
++		err = -EFAULT;
++		goto free_mod_clone_arg;
++	}
++
+ 	if (!(clone_flags & CLONE_VM)) {
+ 		newproc->status = PS_RUNNING;
+ 		if(clone_flags & CLONE_PARENT){
+@@ -2960,7 +2994,12 @@ retry_tid:
+ 		request1.number = __NR_clone;
+ 		request1.args[0] = 1;
+ 		request1.args[1] = new->tid;
+-		err = do_syscall(&request1, ihk_mc_get_processor_id());
++
++		if (sof_err(do_fork_free_mod_clone_arg_1)) {
++			err = -EFAULT;
++		} else {
++			err = do_syscall(&request1, ihk_mc_get_processor_id());
++		}
+ 		if (err) {
+ 			goto free_mod_clone_arg;
+ 		}
+diff --git a/kernel/sysctrl-signalonfork_wait.c b/kernel/sysctrl-signalonfork_wait.c
+new file mode 100644
+index 0000000..6995fab
+--- /dev/null
++++ b/kernel/sysctrl-signalonfork_wait.c
+@@ -0,0 +1,36 @@
++#include <sysctrl-signalonfork_wait.h>
++#include <string.h>
++#include <sysfs.h>
++#include <kmsg.h>
++
++enum signalonfork_error sof_error;
++
++static ssize_t signalonfork_test_show(struct sysfs_ops *ops,
++		void *instance, void *buf, size_t size)
++{
++	return snprintf(buf, size, "%d\n", sof_error);
++}
++
++static ssize_t signalonfork_test_store(struct sysfs_ops *ops,
++		void *instance, void *buf, size_t size)
++{
++	sof_error = strtol(buf, NULL, 0);
++	return size;
++}
++
++static struct sysfs_ops signalonfork_test_ops = {
++	.show = &signalonfork_test_show,
++	.store = &signalonfork_test_store,
++};
++
++void signalonfork_test_sysfs_setup(void)
++{
++	int error;
++
++	error = sysfs_createf(&signalonfork_test_ops, NULL, 0644,
++			      "/sys/kernel/debug/signalonfork_test");
++	if (error) {
++		kprintf("%s: ERROR: creating signalonfork_test sysfs file",
++			__func__);
++	}
++}
