@@ -1,0 +1,395 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "039589a6_7a9a4d0e",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1965,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tekprintf(\"%s: ERROR: xpmem_remap_pte() failed %d\\n\",",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92b9127b_8268cf35",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_ADDR\u003d`grep xpmem_attachment_addr ${log_file} | awk \u0027{ print $3; }\u0027`",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99ec5e5b_828d7a01",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_PGSIZE\u003d`grep -o \"XPMEM_PAGE_FAULT.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $5; }\u0027`",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3af922c5_e510aab5",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ OK ] xpmem_addr ($XPMEM_ADDR) is allocated using large pages\"",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97282714_e826c322",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using large pages\"",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3af944b7_3475cdfb",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_ADDR\u003d`grep xpmem_attachment_addr ${log_file} | awk \u0027{ print $3; }\u0027`",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3466b431_234e5a3e",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_PGSIZE\u003d`grep -o \"XPMEM_PAGE_FAULT.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $5; }\u0027`",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb615f53_315a4e52",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ OK ] xpmem_addr ($XPMEM_ADDR) is allocated using large pages\"",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ea81e30_89b19de4",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using large pages\"",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75d246b2_bc2efee7",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+XPMEM_PGSIZE\u003d`grep -o \"XPMEM_PAGE_FAULT.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $5; }\u0027`",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d80163f6_369000ac",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 99,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using small pages\"",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3bf749d4_3b19d181",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be51c4c9_379bbc34",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "52a08e0c_983d207f",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e6918cb_8b920bf3",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e79d5b81_4365c1cf",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "414b7037_81e21fd1",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "28ff516d_3b183d91",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a3b55b7_8ab667b1",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d423373_0abd6972",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 4
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "760fc437_6bfe625c",
+        "filename": "test/issues/1259/util.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, err, ...) do { \\\n+\tif (cond) {\t\t\t\\\n+\t\tprintf(__VA_ARGS__);   \\\n+\t\tret \u003d err;\t\t\\\n+\t\tgoto out;\t\t\\\n+\t}\t\t\t\t\\\n+} while (0)",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c651c1f7_a90a46dd",
+        "filename": "test/issues/1259/util.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\\\n+\tif (cond) {\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\\\n+\t\t\tprintf(\"[ OK ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\\\n+\t\tprintf(\"[ NG ] \" fmt, ##args);\t\t\\\n+\t\tif (jump)\t\t\t\t\\\n+\t\t\tgoto out;\t\t\t\\\n+\t}\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86b74e18_ceceade3",
+        "filename": "test/issues/1259/util2.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-11T08:01:56Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\tdo {\t\t\\\n+\tif (cond) {\t\t\t\t\\\n+\t\tfprintf(stderr, \" [NG] \");\t\\\n+\t\tfprintf(stderr, __VA_ARGS__);\t\\\n+\t\tfprintf(stderr, \" failed\\n\");\t\\\n+\t\tgoto fn_fail;\t\t\t\\\n+\t}\t\t\t\t\t\\\n+} while (0)",
+      "revId": "1c32a9138738761746afe1167ca90e0f34c16306",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
