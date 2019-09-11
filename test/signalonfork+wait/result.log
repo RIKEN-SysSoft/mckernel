@@ -1,0 +1,78 @@
+=========================
+aarch64(run.sh)
+=========================
+% sh run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 2048M@4,2048M@5,2048M@6,2048M@7 -q 60 ... done
+@@@ initialize:
+seed for $RANDOM=13000
+@@@ run signalonfork_wait: 1..1000
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+
+OK
+
+=========================
+aarch64(run_error_injection.sh)
+=========================
+% sh run_error_injection.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 4-51 -m 4096M ... done
+@@@ initialize:
+seed for $RANDOM=3466
+@@@ run signalonfork_wait(do_fork_release_cpuid_0, 0x010000) wait=1326
+./signalonfork_wait: fork: Bad address
+@@@ run signalonfork_wait(do_fork_destroy_thread_0, 0x010100) wait=1201
+./signalonfork_wait: fork: Bad address
+@@@ run signalonfork_wait(do_fork_destroy_thread_1, 0x010101) wait=1412
+./signalonfork_wait: pthread_create fail: Cannot allocate memory
+@@@ run signalonfork_wait(do_fork_destroy_thread_2, 0x010102) wait=1041
+./signalonfork_wait: fork: Bad address
+@@@ run signalonfork_wait(do_fork_release_ids_0, 0x010200) wait=1402
+./signalonfork_wait: pthread_create fail: Bad address
+@@@ run signalonfork_wait(do_fork_release_ids_1, 0x010201) wait=1354
+./signalonfork_wait: fork: Bad address
+@@@ run signalonfork_wait(do_fork_free_mod_clone_arg_0, 0x010300) wait=1495
+./signalonfork_wait: fork: Bad address
+@@@ run signalonfork_wait(do_fork_free_mod_clone_arg_1, 0x010301) wait=1020
+./signalonfork_wait: fork: Bad address
+@@@ run signalonfork_wait(clone_thread_free_thread_0, 0x020000) wait=1216
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_thread_1, 0x020001) wait=1217
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fp_regs_0, 0x020100) wait=1045
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fp_regs_1, 0x020101) wait=1026
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_process_proc_0, 0x020200) wait=1412
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_process_proc_1, 0x020201) wait=1087
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_process_asp_0, 0x020300) wait=1439
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_process_vm_0, 0x020400) wait=1273
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_process_cmdline_0, 0x020500) wait=1356
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_process_cmdline_1, 0x020501) wait=1240
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_process_mckfd_0, 0x020600) wait=1052
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_fork_clone_process_0, 0x020700) wait=1003
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(clone_thread_free_copy_user_ranges_0, 0x020800) wait=1465
+./signalonfork_wait: fork: Cannot allocate memory
+@@@ run signalonfork_wait(copy_user_ranges_err_rollback_0, 0x030000) wait=1042
+./signalonfork_wait: fork: Cannot allocate memory
+OK
+
+--
+result.log COPYRIGHT FUJITSU LIMITED 2019
