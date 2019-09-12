@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7e1d63c0_8a5271e0",
+        "filename": "test/signalonfork+wait/run.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-12T08:19:49Z",
+      "side": 1,
+      "message": "ログをあまり出さないようにして、1000回に増やしてください。",
+      "range": {
+        "startLine": 25,
+        "startChar": 0,
+        "endLine": 25,
+        "endChar": 20
+      },
+      "revId": "87ba6d39d6ceb9f8e12647e079850790ca17bc57",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
