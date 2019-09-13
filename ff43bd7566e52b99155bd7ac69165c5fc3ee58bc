@@ -49,6 +49,30 @@
     },
     {
       "key": {
+        "uuid": "c0a65b5f_ab861e1c",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1064,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-13T07:53:19Z",
+      "side": 1,
+      "message": "lookup_process_memory_rangeと、page table walkのコストをattach数からmake数に下げるために、xpmem_makeからpage_fault_process_vmを読んで下さい。",
+      "parentUuid": "6c6ab6bb_2af474ff",
+      "range": {
+        "startLine": 1064,
+        "startChar": 0,
+        "endLine": 1064,
+        "endChar": 0
+      },
+      "revId": "ff43bd7566e52b99155bd7ac69165c5fc3ee58bc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "7b384556_2dd2d926",
         "filename": "kernel/xpmem.c",
         "patchSetId": 3
