@@ -46,6 +46,30 @@
       "revId": "32b469a226991a75ddf1e2dd8e43cfd745808791",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f7cbf66d_4c992d13",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1181,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-13T03:25:17Z",
+      "side": 1,
+      "message": "以下の修正で、ENODEVを返すようにして下さい。\n* pager_req_create（syscall.c: 945行目付近）のif文で、それらのファイルで-ENODEVを返すように変更\n* fileobj_createの if (error !\u003d -ESRCH) {に、-ENODEVを追加\n\nテスト対象は、memとzeroを含んで下さい。",
+      "parentUuid": "698e98a8_56d52319",
+      "range": {
+        "startLine": 1181,
+        "startChar": 0,
+        "endLine": 1181,
+        "endChar": 4
+      },
+      "revId": "32b469a226991a75ddf1e2dd8e43cfd745808791",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
