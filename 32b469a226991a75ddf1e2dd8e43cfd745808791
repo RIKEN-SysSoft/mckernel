@@ -22,6 +22,30 @@
       "revId": "32b469a226991a75ddf1e2dd8e43cfd745808791",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "698e98a8_56d52319",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1181,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2019-09-13T02:35:58Z",
+      "side": 1,
+      "message": "/dev 下のmajorが1のspecial file をファイルマップする場合、Linux と McKernelで動作に違いがありました。\n・null, port, full, random urandom, kmsg, oldmem\n-\u003e Linuxでは、mmapがENODEVを返すが、McKernel ではファイルマップが成功する\n\n・mem, zero\n-\u003e Linux、McKernel 共にmmap 可能\n\n対応や、テスト対象について相談させてください。",
+      "parentUuid": "4e6f00a3_455465c6",
+      "range": {
+        "startLine": 1181,
+        "startChar": 0,
+        "endLine": 1181,
+        "endChar": 4
+      },
+      "revId": "32b469a226991a75ddf1e2dd8e43cfd745808791",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
