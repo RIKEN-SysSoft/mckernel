@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "626b81e5_8050f5ba",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1753,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-13T04:36:55Z",
+      "side": 1,
+      "message": "stateから、retに変更する。",
+      "range": {
+        "startLine": 1753,
+        "startChar": 0,
+        "endLine": 1753,
+        "endChar": 15
+      },
+      "revId": "621647c51d0abc317e1a9396a2cff3061ebc3111",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
