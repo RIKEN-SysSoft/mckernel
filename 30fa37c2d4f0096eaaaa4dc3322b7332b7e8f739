@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "94c0e3f5_2b85b994",
+        "filename": "kernel/freeze.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-13T03:01:46Z",
+      "side": 1,
+      "message": "monitor_lockをcpu_local_varの持ち物にしましょう。",
+      "range": {
+        "startLine": 20,
+        "startChar": 0,
+        "endLine": 20,
+        "endChar": 52
+      },
+      "revId": "30fa37c2d4f0096eaaaa4dc3322b7332b7e8f739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2c9e3272_93a676cb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1190,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-13T03:01:46Z",
+      "side": 1,
+      "message": "スレッド消滅もmutexすることにして、ここに以下のような行を挿入したらいかがでしょうか。（unlockも適切な場所に）\nmcs_rwlock_writer_lock_noirq(\u0026monitor_lock, \u0026thread-\u003egenerating_lock);",
+      "range": {
+        "startLine": 1190,
+        "startChar": 0,
+        "endLine": 1190,
+        "endChar": 44
+      },
+      "revId": "30fa37c2d4f0096eaaaa4dc3322b7332b7e8f739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "803cad7b_39d1718a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1380,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-13T03:01:46Z",
+      "side": 1,
+      "message": "スレッド消滅もmutexすることにして、ここに以下のような行を挿入したらいかがでしょうか。（unlockも適切な場所に）\nmcs_rwlock_writer_lock_noirq(\u0026monitor_lock, \u0026thread-\u003egenerating_lock);",
+      "range": {
+        "startLine": 1380,
+        "startChar": 1,
+        "endLine": 1380,
+        "endChar": 17
+      },
+      "revId": "30fa37c2d4f0096eaaaa4dc3322b7332b7e8f739",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
