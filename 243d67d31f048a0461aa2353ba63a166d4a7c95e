@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c7a24a45_5e4965a5",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 525,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003c KERNEL_VERSION(4, 11, 0) \u0026\u0026 \\",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f065ff1a_77899cb4",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 526,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t(!defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE \u003c RHEL_RELEASE_VERSION(7, 5))",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97ca8b9d_48993f5c",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 539,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 17, 0)",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b5f2620b_4907e4ed",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 572,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"mcctrl:huge page fault:flags %#x pgoff %#lx va %#lx page %p, pe_size %d\\n\",",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d29417ba_3dc8ce09",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 658,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t * Linux\u0027 VMA, make sure we don\u0027t try to map to those pages */",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e243bc2e_4dbd89c4",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 688,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfor (pix \u003d 0; pix \u003c ((map_end - map_start) / PAGE_SIZE); ++pix) {",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8aa97869_e5247bbb",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 742,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 17, 0)",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4b272206_2ac64d75",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 763,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-17T12:01:51Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 11, 0)",
+      "revId": "243d67d31f048a0461aa2353ba63a166d4a7c95e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
