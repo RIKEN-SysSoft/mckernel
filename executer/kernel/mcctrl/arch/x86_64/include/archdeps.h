@@ -20,9 +20,5 @@ static inline bool pte_is_write_combined(pte_t pte)
 
 #define ARCH_PERF_COUNTER_START	0
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
-static const unsigned long arch_rus_vm_flags = VM_RESERVED | VM_MIXEDMAP;
-#else
 static const unsigned long arch_rus_vm_flags = VM_DONTDUMP | VM_MIXEDMAP;
-#endif
 #endif /* __HEADER_MCCTRL_X86_64_ARCHDEPS_H */
