@@ -2155,6 +2155,7 @@ int do_process_vm_read_writev(int pid,
 		return -EINVAL;
 	}
 
+#if 0
 	/* Check if parameters are okay */
 	ihk_mc_spinlock_lock_noirq(&lthread->vm->memory_range_lock);
 
@@ -2183,6 +2184,7 @@ arg_out:
 	if (ret != 0) {
 		goto out;
 	}
+#endif
 
 	for (li = 0; li < liovcnt; ++li) {
 		llen += local_iov[li].iov_len;
