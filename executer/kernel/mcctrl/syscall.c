@@ -43,6 +43,7 @@
 #include <linux/semaphore.h>
 #include <linux/spinlock.h>
 #include <linux/mount.h>
+#include <linux/pfn_t.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -265,10 +266,10 @@ static int __notify_syscall_requester(ihk_os_t os, struct ikc_scd_packet *packet
 }
 
 long syscall_backward(struct mcctrl_usrdata *usrdata, int num,
-                      unsigned long arg1, unsigned long arg2,
-                      unsigned long arg3, unsigned long arg4,
-                      unsigned long arg5, unsigned long arg6,
-                      unsigned long *ret)
+		      unsigned long arg1, unsigned long arg2,
+		      unsigned long arg3, unsigned long arg4,
+		      unsigned long arg5, unsigned long arg6,
+		      unsigned long *ret)
 {
 	struct ikc_scd_packet *packet;
 	struct ikc_scd_packet *free_packet = NULL;
@@ -521,29 +522,36 @@ retry_alloc:
 	return error;
 }
 
-/*
- * By remap_pfn_range(), VM_PFN_AT_MMAP may be raised.
- * VM_PFN_AT_MMAP cause the following problems.
- *
- * 1) vm_pgoff is changed. As a result, i_mmap tree is corrupted.
- * 2) duplicate free_memtype() calls occur.
- *
- * These problems may be solved in linux-3.7.
- * It uses vm_insert_pfn() until it is fixed.
- */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 11, 0) && \
+	(!defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(7, 5))
+enum page_entry_size {
+	PE_SIZE_PTE = 0,
+	PE_SIZE_PMD,
+	PE_SIZE_PUD,
+};
 
-#define	USE_VM_INSERT_PFN	1
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
-static int rus_vm_fault(struct vm_fault *vmf)
-{
-	struct vm_area_struct *vma = vmf->vma;
-#else
-static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-{
+#define NO_HUGE_FAULT
 #endif
+
+/* 4.12 or rhel backports */
+#ifndef ALIGN_DOWN
+#define ALIGN_DOWN(x, a)    ALIGN((x) - ((a) - 1), (a))
+#endif
+/* arm64 doesn't have PMD_PAGE_SIZE */
+#ifndef PMD_PAGE_SIZE
+#define PMD_PAGE_SIZE (1UL << PMD_SHIFT)
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
+static vm_fault
+#else
+static int
+#endif
+rus_vm_huge_fault_compat(struct vm_area_struct *vma, struct vm_fault *vmf,
+			 enum page_entry_size pe_size)
+{
 	struct mcctrl_usrdata  *usrdata	= vma->vm_file->private_data;
-	ihk_device_t		dev = ihk_os_to_dev(usrdata->os);
+	ihk_device_t dev = ihk_os_to_dev(usrdata->os);
 	unsigned long		rpa;
 	unsigned long		phys;
 	int			error;
@@ -551,21 +559,24 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	uint64_t		reason;
 	unsigned long		pgsize;
 	unsigned long		rva;
+	unsigned long		map_start, map_end;
 	unsigned long		pfn;
-#if USE_VM_INSERT_PFN
 	size_t			pix;
-#endif
 	struct mcctrl_per_proc_data *ppd;
 	struct mcctrl_per_thread_data *ptd;
 	struct task_struct *task = current;
 	struct ikc_scd_packet packet = { };
 	unsigned long rsysnum = 0;
 	int ret = 0;
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-	unsigned long addr = vmf->address;
+	rva = vmf->address;
 #else /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
-	void __user *addr = vmf->virtual_address;
+	rva = (unsigned long)vmf->virtual_address;
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0) */
+
+	dprintk("mcctrl:huge page fault:flags %#x pgoff %#lx va %#lx page %p, pe_size %d\n",
+			vmf->flags, vmf->pgoff, rva, vmf->page, pe_size);
 
 	/* Look up per-process structure */
 	ppd = mcctrl_get_per_proc_data(usrdata, task_tgid_vnr(task));
@@ -603,7 +614,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	}
 
 	/* Don't even bother looking up NULL */
-	if (!addr) {
+	if (rva < 4096) {
 		pr_warn("%s: WARNING: attempted NULL pointer access\n",
 				__func__);
 		ret = VM_FAULT_SIGBUS;
@@ -612,15 +623,13 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	for (try = 1; ; ++try) {
 		error = translate_rva_to_rpa(usrdata->os, ppd->rpgtable,
-				(unsigned long)addr, &rpa, &pgsize);
+				rva, &rpa, &pgsize);
 #define	NTRIES 2
 		if (!error || (try >= NTRIES)) {
 			if (error) {
-				pr_err("%s: error translating 0x%#lx "
-					"(req: TID: %u, syscall: %lu)\n",
-					__func__,
-					(unsigned long)addr,
-					packet.fault_tid, rsysnum);
+				pr_err("%s: error translating %#lx (req: TID: %u, syscall: %lu)\n",
+				       __func__, rva, packet.fault_tid,
+				       rsysnum);
 			}
 
 			break;
@@ -631,14 +640,11 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 #define	PF_WRITE	0x02
 			reason |= PF_WRITE;
 		}
-		error = remote_page_fault(usrdata, (void *)addr,
+		error = remote_page_fault(usrdata, (void *)rva,
 					  reason, ppd, &packet);
 		if (error) {
-			pr_err("%s: error forwarding PF for 0x%#lx "
-					"(req: TID: %d, syscall: %lu)\n",
-					__func__,
-					(unsigned long)addr,
-					packet.fault_tid, rsysnum);
+			pr_err("%s: error forwarding PF for %#lx (req: TID: %d, syscall: %lu)\n",
+			       __func__, rva, packet.fault_tid, rsysnum);
 			break;
 		}
 	}
@@ -647,63 +653,85 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		goto put_and_out;
 	}
 
-	rva = (unsigned long)addr & ~(pgsize - 1);
-	rpa = rpa & ~(pgsize - 1);
 
-	phys = ihk_device_map_memory(dev, rpa, pgsize);
+	map_start = ALIGN_DOWN(rva, pgsize);
+	phys = ALIGN_DOWN(rpa, pgsize);
+	map_end = ALIGN(rva + pgsize, PAGE_SIZE);
+
+	phys = ihk_device_map_memory(dev, phys, pgsize);
+
+	/* LWK may hold large page based mappings that align rva outside
+	 * Linux' VMA, make sure we don't try to map to those pages */
+	if (map_start < vma->vm_start) {
+		phys = ALIGN(phys + vma->vm_start - map_start, PAGE_SIZE);
+		map_start = ALIGN(vma->vm_start, PAGE_SIZE);
+	}
+	if (map_end > vma->vm_end) {
+		map_end = ALIGN_DOWN(vma->vm_end, PAGE_SIZE);
+	}
+
 	pfn = phys >> PAGE_SHIFT;
-#if USE_VM_INSERT_PFN
-	for (pix = 0; pix < (pgsize / PAGE_SIZE); ++pix) {
-		struct page *page;
 
-		/* LWK may hold large page based mappings that align rva outside
-		 * Linux' VMA, make sure we don't try to map to those pages */
-		if (rva + (pix * PAGE_SIZE) < vma->vm_start) {
-			continue;
+	dprintk("mapping %ld@%#lx, vma %p vmf %p, pe size %d\n",
+		map_end - map_start, map_start, vma, vmf, pe_size);
+
+	error = VM_FAULT_FALLBACK;
+#ifndef NO_HUGE_FAULT
+	if (pe_size == PE_SIZE_PMD && map_end - map_start == PMD_PAGE_SIZE) {
+		error = vmf_insert_pfn_pmd(vma, map_start, vmf->pmd,
+					   phys_to_pfn_t(phys, PFN_DEV|PFN_MAP),
+					   vmf->flags & FAULT_FLAG_WRITE);
+		if (error == VM_FAULT_NOPAGE)
+			error = 0;
+		if (error != VM_FAULT_FALLBACK) {
+			pr_err("%s: error insert_pfn_pmd for %#lx (req TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+			       __func__, map_start, packet.fault_tid, rsysnum,
+			       error, vma->vm_start, vma->vm_end);
 		}
-
-		if (pfn_valid(pfn+pix)) {
-			page = pfn_to_page(pfn+pix);
-
-			error = vm_insert_page(vma, rva+(pix*PAGE_SIZE), page);
-			if (error) {
-				pr_err("%s: error inserting mapping for 0x%#lx "
-					"(req: TID: %d, syscall: %lu) error: %d,"
-					" vm_start: 0x%lx, vm_end: 0x%lx\n",
-					__func__,
-					(unsigned long)addr, packet.fault_tid,
-					rsysnum, error,
-					vma->vm_start, vma->vm_end);
-			}
-		}
-		else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
-			error = vmf_insert_pfn(vma, rva+(pix*PAGE_SIZE),
-					       pfn+pix);
-#else
-			error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE),
-					      pfn+pix);
+	}
 #endif
-		if (error) {
-			pr_err("%s: vm_insert_pfn returned %d\n",
-			       __func__, error);
-			if (error == -EBUSY) {
-				error = 0;
-			} else {
-				break;
+	if (error == VM_FAULT_FALLBACK) {
+		for (pix = 0; pix < ((map_end - map_start) / PAGE_SIZE); ++pix) {
+			struct page *page;
+			unsigned long map_addr = map_start + (pix * PAGE_SIZE);
+
+			// try to switch to VM_PFNMAP
+			if ((arch_rus_vm_flags & VM_MIXEDMAP) &&
+			    pfn_valid(pfn + pix)) {
+				page = pfn_to_page(pfn + pix);
+
+				error = vm_insert_page(vma, map_addr, page);
+				if (error) {
+					pr_err("%s: error inserting mapping for %#lx (req: TID: %d, syscall: %lu) error: %d, vm_start: 0x%lx, vm_end: 0x%lx\n",
+					       __func__, map_addr,
+					       packet.fault_tid, rsysnum,
+					       error, vma->vm_start,
+					       vma->vm_end);
+					break;
+				}
+			}
+			else {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
+				error = vmf_insert_pfn(vma, map_addr, pfn+pix);
+#else
+				error = vm_insert_pfn(vma, map_addr, pfn+pix);
+#endif
+				if (error) {
+					pr_err("%s: vm_insert_pfn @%#lx returned %d\n",
+					       __func__, map_addr, error);
+					if (error == -EBUSY) {
+						error = 0;
+					} else {
+						break;
+					}
+				}
 			}
 		}
 	}
-#else
-	error = remap_pfn_range(vma, rva, pfn, pgsize, vma->vm_page_prot);
-#endif
 	ihk_device_unmap_memory(dev, phys, pgsize);
 	if (error) {
-		pr_err("%s: remote PF failed for 0x%#lx, pgoff: %lu"
-				" (req: TID: %d, syscall: %lu)\n",
-				__func__,
-				(unsigned long)addr, vmf->pgoff,
-				packet.fault_tid, rsysnum);
+		pr_err("%s: remote PF failed for %#lx, pgoff: %lu (req: TID: %d, syscall: %lu)\n",
+		       __func__, rva, vmf->pgoff, packet.fault_tid, rsysnum);
 		ret = VM_FAULT_SIGBUS;
 		goto put_and_out;
 	}
@@ -716,14 +744,54 @@ put_and_out:
 	return ret;
 }
 
+#ifndef NO_HUGE_FAULT
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
+static vm_fault rus_vm_huge_fault(struct vm_fault *vmf,
+				  enum page_entry_size pe_size)
+#else
+static int rus_vm_huge_fault(struct vm_fault *vmf, enum page_entry_size pe_size)
+#endif
+{
+
+	switch (pe_size) {
+	case PE_SIZE_PUD:
+		return VM_FAULT_FALLBACK;
+	case PE_SIZE_PMD:
+	case PE_SIZE_PTE:
+		return rus_vm_huge_fault_compat(vmf->vma, vmf, pe_size);
+	default:
+		return VM_FAULT_SIGBUS;
+	}
+
+}
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+static int rus_vm_fault(struct vm_fault *vmf)
+{
+	struct vm_area_struct *vma = vmf->vma;
+#else
+static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+{
+#endif
+	return rus_vm_huge_fault_compat(vma, vmf, PE_SIZE_PTE);
+}
+
 static struct vm_operations_struct rus_vmops = {
 	.fault = &rus_vm_fault,
+#ifndef NO_HUGE_FAULT
+	.huge_fault = &rus_vm_huge_fault,
+#endif
 };
 
 static int rus_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	vma->vm_flags |= arch_rus_vm_flags;
 	vma->vm_ops = &rus_vmops;
+#ifdef VM_HUGE_FAULT
+	vma->vm_flags2 |= VM_HUGE_FAULT;
+#endif
+
 	return 0;
 }
 
@@ -764,13 +832,15 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 #endif
 #if 0
 	{ /* debug */
-        struct vm_area_struct *vma;
+		struct vm_area_struct *vma;
 		down_write(&current->mm->mmap_sem);
 		vma = find_vma(current->mm, start);
 		vma->vm_flags |= VM_DONTCOPY;
 		up_write(&current->mm->mmap_sem);
 	}
 #endif
+
+	file->f_mapping->host->i_flags |= S_DAX;
 	revert_creds(original);
 	put_cred(promoted);
 	fput(file);
@@ -1316,7 +1386,7 @@ struct pager_map_result {
 	uintptr_t	handle;
 	int		maxprot;
 	int8_t		padding[4];
-    char path[PATH_MAX];
+	char path[PATH_MAX];
 };
 
 static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
