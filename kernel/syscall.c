@@ -243,6 +243,10 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long flags;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
+			if (req->number == __NR_epoll_wait ||
+				req->number == __NR_epoll_pwait)
+				goto schedule;
+
 			cpu_pause();
 
 			/* Spin if not preemptable */
@@ -268,6 +272,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 				continue;
 			}
 
+schedule:
 			flags = cpu_disable_interrupt_save();
 
 			/* Try to sleep until notified */
