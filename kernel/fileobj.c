@@ -398,8 +398,9 @@ static void fileobj_free(struct memobj *memobj)
 		}
 	}
 
-	/* Pre-mapped? */
-	if (to_memobj(obj)->flags & MF_PREMAP) {
+	/* Pre-mapped zerofilled? */
+	if (to_memobj(obj)->flags & MF_PREMAP &&
+			to_memobj(obj)->flags & MF_ZEROFILL) {
 		int i;
 
 		for (i = 0; i < to_memobj(obj)->nr_pages; ++i) {
@@ -440,7 +441,7 @@ static void fileobj_free(struct memobj *memobj)
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
-		kprintf("%s(%p %lx): free failed. %d\n", __func__,
+		dkprintf("%s(%p %lx): free failed. %d\n", __func__,
 			obj, obj->handle, error);
 		/* through */
 	}
@@ -570,7 +571,8 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	profile_event_add(PROFILE_page_fault_file, PAGE_SIZE);
 #endif // PROFILE_ENABLE
 
-	if (memobj->flags & MF_PREMAP) {
+	if (memobj->flags & MF_PREMAP &&
+			memobj->flags & MF_ZEROFILL) {
 		int page_ind = off >> PAGE_SHIFT;
 
 		if (!memobj->pages[page_ind]) {
