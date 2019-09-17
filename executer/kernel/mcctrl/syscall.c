@@ -960,6 +960,25 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
+	/* OpenMPI /tmp shared memory hack */
+	{
+		char *pathbuf, *fullpath;
+		pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
+		if (pathbuf) {
+			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+			if (!IS_ERR(fullpath)) {
+				if (!strncmp("/tmp/ompi.", fullpath, 10)) {
+					dprintk("%s: treating %s as a device file..\n",
+						__func__, fullpath);
+					kfree(pathbuf);
+					error = -ESRCH;
+					goto out;
+				}
+				kfree(pathbuf);
+			}
+		}
+	}
+
 	inode = file->f_path.dentry->d_inode;
 	if (!inode) {
 		error = -EBADF;
@@ -1384,6 +1403,23 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 
 #define	ANY_WHERE 0
 	if (prot_and_flags & MAP_LOCKED) prot_and_flags |= MAP_POPULATE;
+
+	/* OpenMPI /tmp shared memory hack */
+	{
+		char *pathbuf, *fullpath;
+		pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
+		if (pathbuf) {
+			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+			if (!IS_ERR(fullpath)) {
+				if (!strncmp("/tmp/ompi.", fullpath, 10)) {
+					dprintk("%s: pre-populating %s..\n",
+						__func__, fullpath);
+					prot_and_flags |= MAP_POPULATE;
+				}
+				kfree(pathbuf);
+			}
+		}
+	}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	down_write(&current->mm->mmap_sem);
