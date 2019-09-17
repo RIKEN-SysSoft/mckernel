@@ -1699,6 +1699,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		populated_mapping = 1;
 	}
 
+#if 0
 	/* XXX: Intel MPI 128MB mapping.. */
 	if (len == 134217728) {
 		dkprintf("%s: %ld bytes mapping -> no prefault\n",
@@ -1706,6 +1707,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		vrflags |= VR_DEMAND_PAGING;
 		populated_mapping = 0;
 	}
+#endif
 
 	if ((flags & MAP_ANONYMOUS) && !(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ | PROT_EXEC, 1/* holding memory_range_lock */);
@@ -2730,10 +2732,12 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		return -EINVAL;
 	}
 
+#if 0
 	if (!allow_oversubscribe && rusage.num_threads >= cpu_info->ncpus) {
 		kprintf("%s: ERROR: CPU oversubscription is not allowed. Specify -O option in mcreboot.sh to allow it.\n", __FUNCTION__);
         return -EINVAL;
 	}
+#endif
 
 	if (oldproc->coredump_barrier_count) {
 		return -EINVAL;
@@ -4771,6 +4775,7 @@ SYSCALL_DECLARE(madvise)
 
 	dkprintf("[%d]sys_madvise(%lx,%lx,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, advice);
+	return 0;
 
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	end = start + len;
@@ -7386,6 +7391,7 @@ SYSCALL_DECLARE(nanosleep)
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
+	return 0;
 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
 	/* Do it locally if supported */
@@ -8329,6 +8335,8 @@ SYSCALL_DECLARE(mbind)
 	if (addr + len < addr || addr == (addr + len)) {
 		return -EINVAL;
 	}
+
+	return 0;
 
 	memset(numa_mask, 0, sizeof(numa_mask));
 

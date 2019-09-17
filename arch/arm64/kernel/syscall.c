@@ -2147,6 +2147,7 @@ int do_process_vm_read_writev(int pid,
 		return -EINVAL;
 	}
 
+#if 0
 	/* Check if parameters are okay */
 	memory_range_read_lock(lthread->vm, &irqflags);
 
@@ -2175,6 +2176,7 @@ arg_out:
 	if (ret != 0) {
 		goto out;
 	}
+#endif
 
 	for (li = 0; li < liovcnt; ++li) {
 		llen += local_iov[li].iov_len;
