@@ -2672,8 +2672,8 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 
 	phys = args->phys + (base - start);
 
-	/* Check if we can begin / end a series of contiguous PTEs */
-	if (__page_offset(base, PTL1_CONT_SIZE) == 0) {
+#if 0
+	if (__page_offset(base, PTL1_CONT_SIZE) == 0) { //check head pte
 		uintptr_t next_addr = base + PTL1_CONT_SIZE;
 
 		if (end < next_addr) {
@@ -2697,6 +2697,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 			args->attr[0] &= ~PTE_CONT;
 		}
 	}
+#endif
 	pte = phys | args->attr[0];
 	ptl1_set(ptep, pte);
 
@@ -2772,9 +2773,8 @@ retry:
 
 				phys = args->phys + (base - start);
 
-				/* Check if we can begin / end a series of
-				 * contiguous PTEs
-				 */
+#if 0
+				//check head pte
 				if (__page_offset(base, tbl.cont_pgsize) == 0) {
 					uintptr_t next_addr = base +
 						tbl.cont_pgsize;
@@ -2805,6 +2805,7 @@ retry:
 						args->attr[level-1] &= ~PTE_CONT;
 					}
 				}
+#endif
 
 				ptl_set(ptep, phys | args->attr[level-1],
 					level);
