@@ -1293,8 +1293,9 @@ static void unhandled_page_fault(struct thread *thread, void *fault_addr,
 
 	range = lookup_process_memory_range(vm, address, address+1);
 	if (range) {
-		__kprintf("address is in range, flag: 0x%lx\n",
-				range->flag);
+		__kprintf("address is in range, flag: 0x%lx (%s)\n",
+				range->flag,
+				range->memobj ? range->memobj->path : "");
 		ihk_mc_pt_print_pte(vm->address_space->page_table,
 				    (void *)address);
 	} else {
