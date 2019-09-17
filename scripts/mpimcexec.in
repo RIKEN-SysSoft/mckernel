@@ -1,0 +1,156 @@
+#!/bin/bash
+#
+# OBCX McKernel MPI wrapper script
+# author: Balazs Gerofi <bgerofi@riken.jp>
+#      Copyright (C) 2019  RIKEN R-CCS
+#
+
+prefix="@prefix@"
+BINDIR="${prefix}/bin"
+
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+	echo "You need at least bash-4.0 to run this script." >&2
+	exit 1
+fi
+
+RANKS=""
+NODES=""
+PPN=""
+MPI_ENV=""
+COMMAND=""
+NUMA=""
+HOSTFILE=""
+UTIL_CPUS=""
+
+if [ ! -z "${PJM_PROC_BY_NODE}" ]; then
+	PPN=${PJM_PROC_BY_NODE}
+elif [ ! -z "${MPI_LOCALNRANKS}" ]; then
+	PPN=${MPI_LOCALNRANKS}
+fi
+
+help_exit() {
+	echo ""
+	echo "Spawn an McKernel MPI job on Oakforest-Bridge."
+	echo "usage: `basename $0` -ppn ranks_per_node [--nodes nodes] [-n ranks] [--env additional_environment]... command"
+	echo ""
+	echo "   -ppn | --ppn | --ranks-per-node         Number of MPI ranks per node (required)"
+	echo "   -n | --n | --ranks                      Total number of MPI ranks in the job"
+	echo "   --nodes                                 Number of nodes to be used"
+	echo "   --env | -env                            Pass an additional environment variable"
+	echo "   -m | --numa                             Preferred NUMA node(s)"
+	echo "   -h | --hostfile                         Host file for MPI"
+	echo "   --help                                  Show help message"
+	exit 1
+}
+
+# Parse options
+while true; do
+	case $1 in
+		-ppn | --ppn | --ranks-per-node )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -ppn, --ppn, or --ranks-per-node option"
+			    help_exit
+			fi
+			PPN=$2
+			shift 2
+			;;
+		-n | --n | --ranks )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -n, --n, or --ranks option"
+			    help_exit
+			fi
+			RANKS=$2
+			shift 2
+			;;
+		-u | --util-cpus )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -u or --util-cpus"
+			    help_exit
+			fi
+			UTIL_CPUS="--util-cpus $2"
+			shift 2
+			;;
+		-m | --numa )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for -m or --numa option"
+			    help_exit
+			fi
+			NUMA="-m $2"
+			shift 2
+			;;
+		--nodes )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an interger value for --nodes option"
+			    help_exit
+			fi
+			NODES=$2
+			shift 2
+			;;
+		--env | -env )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs an environment variable name for -env or --env option"
+			    help_exit
+			fi
+			if [ -z "`echo $2 | grep I_MPI_PIN`" ]; then
+				MPI_ENV=`echo "${MPI_ENV} -env $2" | xargs`
+			fi
+			shift 2
+			;;
+		-h | --hostfile )
+			if [ $# -lt 2 ]; then
+			    echo "error: needs a file name for -h or --hostfile option"
+			    help_exit
+			fi
+			HOSTFILE="-hostfile $2"
+			shift 2
+			;;
+		--help )
+			help_exit
+			;;
+		* )
+			COMMAND=$@
+			break
+			;;
+	esac
+done
+
+if [ -z ${PPN} ]; then
+	echo "error: please specify the number of ranks per node"
+	help_exit
+fi
+
+# Unless explicitly specified, use Fujitsu inherited value
+if [ -z ${NODES} ]; then
+	NODES=${PJM_VNODES}
+fi
+
+if [ -z ${RANKS} ] && [ -z ${NODES} ]; then
+	echo "error: please specify the total number of ranks or the number of nodes"
+	help_exit
+fi
+
+if [ "x${COMMAND}" = "x" ]; then
+	echo "error: please specify command"
+	help_exit
+fi
+
+# Calculate total job size if not specified
+if [ -z ${RANKS} ]; then
+	let RANKS=(${PPN}*${NODES})
+fi
+
+# Support direct SSH when not executed from Fujitsu job system
+if [ -z ${PJM_VNODES} ]; then
+	HOSTFILE="-launcher-exec ssh ${HOSTFILE}"
+fi
+
+export I_MPI_PIN=off
+export PSM2_RCVTHREAD=0
+export HFI_NO_CPUAFFINITY=1
+export I_MPI_COLL_INTRANODE_SHM_THRESHOLD=4194304
+export PSM2_MQ_RNDV_HFI_WINDOW=4194304
+export PSM2_MQ_EAGER_SDMA_SZ=65536
+export PSM2_MQ_RNDV_HFI_THRESH=200000
+
+mpirun ${HOSTFILE} -n ${RANKS} -ppn ${PPN} ${MPI_ENV} ${BINDIR}/mcexec -n ${PPN} ${NUMA} ${UTIL_CPUS} --stack-premap=4M,4G --extend-heap-by=8M --disable-sched-yield --mpol-shm-premap ${COMMAND}
+
