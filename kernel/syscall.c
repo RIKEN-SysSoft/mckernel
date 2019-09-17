@@ -1919,28 +1919,33 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		/* Update PTEs for pre-mapped memory object */
 		if ((memobj->flags & MF_PREMAP) &&
 				(proc->mpol_flags & MPOL_SHM_PREMAP)) {
-			int i;
-			enum ihk_mc_pt_attribute ptattr;
-			ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+			if (memobj->flags & MF_ZEROFILL) {
+				int i;
+				enum ihk_mc_pt_attribute ptattr;
+				ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
 
-			for (i = 0; i < memobj->nr_pages; ++i) {
-				error = ihk_mc_pt_set_range(proc->vm->address_space->page_table,
-											proc->vm,
-											(void *)range->start + (i * PAGE_SIZE),
-											(void *)range->start + (i * PAGE_SIZE) +
-											PAGE_SIZE,
-											virt_to_phys(memobj->pages[i]),
-											ptattr,
-											PAGE_SHIFT,
-											range,
-											0);
-				if (error) {
-					kprintf("%s: ERROR: mapping %d page of pre-mapped file\n",
-							__FUNCTION__, i);
+				for (i = 0; i < memobj->nr_pages; ++i) {
+					error = ihk_mc_pt_set_range(proc->vm->address_space->page_table,
+							proc->vm,
+							(void *)range->start + (i * PAGE_SIZE),
+							(void *)range->start + (i * PAGE_SIZE) +
+							PAGE_SIZE,
+							virt_to_phys(memobj->pages[i]),
+							ptattr,
+							PAGE_SHIFT,
+							range,
+							0);
+					if (error) {
+						kprintf("%s: ERROR: mapping %d page of pre-mapped file\n",
+								__FUNCTION__, i);
+					}
 				}
+				dkprintf("%s: memobj 0x%lx pre-mapped\n", __FUNCTION__, memobj);
+				// 	fileobj && MF_PREMAP && MPOL_SHM_PREMAP case: memory_stat_rss_add() is called in fileobj_create()
 			}
-			dkprintf("%s: memobj 0x%lx pre-mapped\n", __FUNCTION__, memobj);
-			// 	fileobj && MF_PREMAP && MPOL_SHM_PREMAP case: memory_stat_rss_add() is called in fileobj_create()
+			else {
+				populated_mapping = 1;
+			}
 		}
 /*
 		else if (memobj->flags & MF_REG_FILE) {
