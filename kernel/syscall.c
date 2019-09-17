@@ -1724,6 +1724,13 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		off = off0;
 		error = fileobj_create(fd, &memobj, &maxprot,
 				       flags, addr0);
+		if (memobj && memobj->path && !strncmp(memobj->path, "/dev/shm/ucx_posix", 18)) {
+			kprintf("%s: mmap flags: %lx, path: %s, memobj->flags: %lx, "
+					"pgshift: %d, p2align: %d -> FIXING page size\n",
+					__func__, flags, memobj->path, memobj->flags, pgshift, p2align);
+			pgshift = PAGE_SHIFT;
+			p2align = PAGE_P2ALIGN;
+		}
 #ifdef ATTACHED_MIC
 		/*
 		 * XXX: refuse device mapping in attached-mic now:
