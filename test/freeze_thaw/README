@@ -1,0 +1,26 @@
+==========
+How to run
+==========
+
+(1) cd <mckernel>/test/freeze_thaw/cmd
+(2) CPPFLAGS="-I../../../../ihk/linux/include -I../../../../ihk/linux/include/ihk" make
+(3) cd <mckernel>/test/freeze_thaw
+(4) sh run.sh
+
+============
+What to test
+============
+check the freeze-thaw behavior.
+
+ 000.sh: transition RUNNING state to FREEZE state
+ 001.sh: transition FREEZE state to RUNNING state
+ 002.sh: allow freeze request in FREEZE state
+ 003.sh: multiple freeze requests can be canceled with one thaw
+ 004.sh: multiple freeze requests can be canceled with one thaw
+ 005.sh: allow thaw request in RUNNING state
+ 100-147.sh: check the can't be create process in the frozen state(cpu#0-cpu#47)
+ 200.sh: parallel execution of freeze-thaw requests and fork system call
+ 300.sh: parallel execution of freeze-thaw requests and pthread create
+
+--
+README COPYRIGHT FUJITSU LIMITED 2019
