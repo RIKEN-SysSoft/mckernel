@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "cb5c6d98_2de54037",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1401,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-18T07:44:44Z",
+      "side": 1,
+      "message": "schedule()の直前にPREPARE_PROCESSが実行されると、preempt_disableが1以上のままschedule()に入ってしまいます。そのため、\nhttps://postpeta.pccluster.org/redmine/issues/1010\nに記載のデザインに修正して下さい。",
+      "range": {
+        "startLine": 1401,
+        "startChar": 0,
+        "endLine": 1401,
+        "endChar": 18
+      },
+      "revId": "37df6c424be019a77536f597ff8332d18d0fc2ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
