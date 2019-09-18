@@ -17,6 +17,9 @@ freeze()
 	unsigned long flags;
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
+	if (monitor->status_bak & IHK_OS_MONITOR_ALLOW_THAW_REQUEST) {
+		return;
+	}
 	monitor->status_bak = monitor->status
 				| IHK_OS_MONITOR_ALLOW_THAW_REQUEST;
 	monitor->status = IHK_OS_MONITOR_KERNEL_FROZEN;
