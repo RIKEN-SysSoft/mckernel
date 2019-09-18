@@ -1,0 +1,45 @@
+#!/bin/env bash
+# function COPYRIGHT FUJITSU LIMITED 2019
+this_script_dir="$(cd "$(dirname "${BASH_SOURCE:-${(%):-%N}}")"; pwd)"
+cmd_dir="$(cd "$this_script_dir/cmd"; pwd)"
+mkdir -p "$this_script_dir/work"
+work_dir="$(cd "$this_script_dir/work"; pwd)"
+
+mcexec="$this_script_dir/mcexec"
+hello="$cmd_dir/helloworld"
+fork="$cmd_dir/fork"
+thread="$cmd_dir/pthread_create"
+
+is_os_freeze()
+{
+	local status=`"$this_script_dir/ihkosctl" 0 get status`
+	if [ "$status" = "FROZEN" ]; then
+		return 0
+	fi
+	return 1
+}
+
+is_os_running()
+{
+	local status=`"$this_script_dir/ihkosctl" 0 get status`
+	if [ "$status" = "RUNNING" ]; then
+		return 0
+	fi
+	return 1
+}
+
+freeze()
+{
+	sudo "$cmd_dir/freeze" 0
+	local ret=$?
+	sleep 1
+	return $ret
+}
+
+thaw()
+{
+	sudo "$cmd_dir/thaw" 0
+	local ret=$?
+	sleep 1
+	return $ret
+}
