@@ -17,12 +17,18 @@ freeze()
 	unsigned long flags;
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
-	monitor->status_bak = monitor->status;
+	monitor->status_bak = monitor->status
+				| IHK_OS_MONITOR_ALLOW_THAW_REQUEST;
 	monitor->status = IHK_OS_MONITOR_KERNEL_FROZEN;
 	flags = cpu_enable_interrupt_save();
+frozen:
 	while (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
 		cpu_halt();
 		cpu_pause();
+	}
+	if (monitor->status_bak != IHK_OS_MONITOR_KERNEL_THAW) {
+		monitor->status = IHK_OS_MONITOR_KERNEL_FROZEN;
+		goto frozen;
 	}
 	cpu_restore_interrupt(flags);
 	monitor->status = monitor->status_bak;
@@ -53,8 +59,10 @@ freeze_thaw(void *nmi_ctx)
 		}
 	}
 	else if (multi_intr_mode == 2) {
-		if (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
-			monitor->status = IHK_OS_MONITOR_KERNEL_THAW;
+		if (monitor->status_bak & IHK_OS_MONITOR_ALLOW_THAW_REQUEST) {
+			monitor->status = monitor->status_bak
+					& ~IHK_OS_MONITOR_ALLOW_THAW_REQUEST;
+			monitor->status_bak = IHK_OS_MONITOR_KERNEL_THAW;
 		}
 	}
 	return 0;
