@@ -1011,6 +1011,7 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	if (sig == ((SIGTRAP | (PTRACE_EVENT_EXEC << 8)))) {
 		memcpy(thread->ctx.thread, &tinfo, sizeof(struct thread_info));
 	}
+	arch_flush_icache_all();
 }
 
 long
