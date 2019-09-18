@@ -382,7 +382,12 @@ if ! ${SUDO} ${SBINDIR}/ihkconfig 0 create; then
 fi
 
 # Assign CPUs
-if ! ${SUDO} ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then
+acpus=${cpus}
+if [ "${acpus}" == "4-55" ]; then
+    acpus="4-27,32-55"
+fi
+
+if ! ${SUDO} ${SBINDIR}/ihkosctl 0 assign cpu ${acpus}; then
 	echo "error: assign CPUs" >&2
 	error_exit "os_created"
 fi
