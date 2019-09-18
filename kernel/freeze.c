@@ -28,9 +28,6 @@ freeze()
 		cpu_pause();
 	}
 	cpu_restore_interrupt(flags);
-
-	monitor->status = monitor->status_bak;
-	ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
 }
 
 long
@@ -59,7 +56,10 @@ freeze_thaw(void *nmi_ctx)
 	}
 	else if (multi_intr_mode == 2) {
 		if (monitor->status == IHK_OS_MONITOR_KERNEL_FROZEN) {
-			monitor->status = IHK_OS_MONITOR_KERNEL_THAW;
+			struct cpu_local_var *clv = get_this_cpu_local_var();
+
+			monitor->status = monitor->status_bak;
+			ihk_mc_spinlock_unlock_noirq(&clv->monitor_lock);
 		}
 	}
 	return 0;
