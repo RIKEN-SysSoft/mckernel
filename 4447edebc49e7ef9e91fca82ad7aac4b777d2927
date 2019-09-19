@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "36768edb_2a174e48",
+        "filename": "test/issues/1350/C1350.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-19T08:13:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+make check RUNTESTFLAGS\u003d\"GDB\u003d${mcexec_gdb} TRANSCRIPT\u003dy gdb.base/gdb1555.exp\" \u0026\u003e ${base_dir}/${tname}.txt",
+      "revId": "4447edebc49e7ef9e91fca82ad7aac4b777d2927",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
