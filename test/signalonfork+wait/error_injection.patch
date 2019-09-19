@@ -67,10 +67,10 @@ index 0000000..2e4833e
 +
 +#endif /*__SYSCTRL_SIGNALONFORK_WAIT_H__*/
 diff --git a/kernel/init.c b/kernel/init.c
-index 9ee3b42..ecf2f79 100644
+index 8781c12..81bcf31 100644
 --- a/kernel/init.c
 +++ b/kernel/init.c
-@@ -330,6 +330,9 @@ static void populate_sysfs(void)
+@@ -341,6 +341,9 @@ static void populate_sysfs(void)
  	numa_sysfs_setup();
  	dynamic_debug_sysfs_setup();
  	//setup_remote_snooping_samples();
@@ -81,7 +81,7 @@ index 9ee3b42..ecf2f79 100644
  
  int host_ikc_inited = 0;
 diff --git a/kernel/process.c b/kernel/process.c
-index b2d7f34..f607198 100644
+index 6d07b5c..1be3d63 100644
 --- a/kernel/process.c
 +++ b/kernel/process.c
 @@ -27,6 +27,7 @@
@@ -102,17 +102,19 @@ index b2d7f34..f607198 100644
  
  	memset(thread, 0, sizeof(struct thread));
  	INIT_LIST_HEAD(&thread->hash_list);
-@@ -409,10 +413,17 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+@@ -409,10 +413,19 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
  	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
  				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
  
 +	if (sof_err(clone_thread_free_thread_1)) {
 +		goto free_thread;
 +	}
++
  	/* copy fp_regs from parent */
  	if (save_fp_regs(org)) {
  		goto free_thread;
  	}
++
 +	if (sof_err(clone_thread_free_fp_regs_0)) {
 +		goto free_fp_regs;
 +	}
@@ -120,7 +122,7 @@ index b2d7f34..f607198 100644
  	if (copy_fp_regs(org, thread)) {
  		goto free_fp_regs;
  	}
-@@ -437,23 +448,47 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+@@ -437,23 +450,47 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
  	}
  	/* fork() */
  	else {
@@ -168,7 +170,7 @@ index b2d7f34..f607198 100644
  		memset(proc->vm, '\0', sizeof(struct process_vm));
  
  		proc->saved_cmdline_len = org->proc->saved_cmdline_len;
-@@ -462,6 +497,11 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+@@ -462,6 +499,11 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
  		if (!proc->saved_cmdline) {
  			goto free_fork_process_vm;
  		}
@@ -180,7 +182,7 @@ index b2d7f34..f607198 100644
  		memcpy(proc->saved_cmdline, org->proc->saved_cmdline,
  		       proc->saved_cmdline_len);
  
-@@ -484,6 +524,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+@@ -484,6 +526,10 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
  		/* Copy user-space mappings.
  		 * TODO: do this with COW later? */
  		v->on_fork_vm = proc->vm;
@@ -191,7 +193,7 @@ index b2d7f34..f607198 100644
  		if (copy_user_ranges(proc->vm, org->vm) != 0) {
  			v->on_fork_vm = NULL;
  			goto free_fork_process_cmdline;
-@@ -492,6 +536,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+@@ -492,6 +538,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
  
  		/* Copy mckfd list
  		   FIXME: Replace list manipulation with list_add() etc. */
@@ -201,7 +203,7 @@ index b2d7f34..f607198 100644
  		long irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
  		struct mckfd *cur;
  		for (cur = org->proc->mckfd; cur; cur = cur->next) {
-@@ -517,6 +564,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+@@ -517,6 +566,9 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
  			}
  		}
  		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
@@ -211,7 +213,7 @@ index b2d7f34..f607198 100644
  
  		thread->vm->vdso_addr = org->vm->vdso_addr;
  		thread->vm->vvar_addr = org->vm->vvar_addr;
-@@ -536,6 +586,13 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
+@@ -536,6 +588,13 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
  	/* copy signal handlers (i.e., fork()) */
  	else {
  		dkprintf("fork(): sigcommon\n");
@@ -225,7 +227,7 @@ index b2d7f34..f607198 100644
  		thread->sigcommon = kmalloc(sizeof(struct sig_common),
  		                             IHK_MC_AP_NOWAIT);
  		if (!thread->sigcommon) {
-@@ -849,6 +906,10 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
+@@ -849,6 +908,10 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
  		// memory_stat_rss_add() is called in child-node, i.e. copy_user_pte()
  	}
  
@@ -237,7 +239,7 @@ index b2d7f34..f607198 100644
  
  	return 0;
 diff --git a/kernel/syscall.c b/kernel/syscall.c
-index 4ed043f..17bec37 100644
+index 1012d66..28cf755 100644
 --- a/kernel/syscall.c
 +++ b/kernel/syscall.c
 @@ -29,6 +29,7 @@
