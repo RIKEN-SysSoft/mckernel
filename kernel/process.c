@@ -244,7 +244,7 @@ static int
 init_process_vm(struct process *owner, struct address_space *asp, struct process_vm *vm)
 {
 	int i;
-	ihk_mc_rwlock_init(&vm->memory_range_lock);
+	ihk_mc_spinlock_init(&vm->memory_range_lock);
 	ihk_mc_spinlock_init(&vm->page_table_lock);
 
 	ihk_atomic_set(&vm->refcount, 1);
@@ -785,9 +785,8 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 	struct vm_range *range;
 	struct vm_range *last_insert;
 	struct copy_args args;
-	unsigned long irqflags;
 
-	memory_range_write_lock(orgvm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&orgvm->memory_range_lock);
 
 	/* Iterate original process' vm_range list and take a copy one-by-one */
 	last_insert = NULL;
@@ -849,7 +848,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		// memory_stat_rss_add() is called in child-node, i.e. copy_user_pte()
 	}
 
-	memory_range_write_unlock(orgvm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&orgvm->memory_range_lock);
 
 	return 0;
 
@@ -869,14 +868,14 @@ err_rollback:
 			if (dest_range) {
 				free_process_memory_range(vm, dest_range);
 			}
-
 			if (src_range == last_insert) {
 				break;
 			}
 			src_range = next_process_memory_range(orgvm, src_range);
 		}
 	}
-	memory_range_write_unlock(orgvm, &irqflags);
+
+	ihk_mc_spinlock_unlock_noirq(&orgvm->memory_range_lock);
 	return -1;
 }
 
@@ -2165,7 +2164,6 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	struct vm_range *range;
 	struct thread *thread = cpu_local_var(current);
 	int locked = 0;
-	unsigned long irqflags;
 
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
@@ -2176,12 +2174,10 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 			if (thread->vm->is_memory_range_lock_taken) {
 				goto skip;
 			}
-			irqflags = cpu_disable_interrupt_save();
-			if (ihk_mc_read_trylock(&vm->memory_range_lock)) {
+			if (ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
 				locked = 1;
 				break;
 			}
-			cpu_restore_interrupt(irqflags);
 		}
 	} else {
 skip:;
@@ -2297,8 +2293,7 @@ skip:;
 	error = 0;
 out:
 	if (locked) {
-		ihk_mc_read_unlock(&vm->memory_range_lock);
-		cpu_restore_interrupt(irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	}
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0,
@@ -2599,10 +2594,9 @@ void flush_process_memory(struct process_vm *vm)
 	struct vm_range *range;
 	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	int error;
-	unsigned long irqflags;
 
 	dkprintf("flush_process_memory(%p)\n", vm);
-	memory_range_write_lock(vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	/* Let concurrent page faults know the VM will be gone */
 	vm->exiting = 1;
 	while ((node = next)) {
@@ -2620,7 +2614,7 @@ void flush_process_memory(struct process_vm *vm)
 			}
 		}
 	}
-	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	dkprintf("flush_process_memory(%p):\n", vm);
 	return;
 }
@@ -2630,13 +2624,12 @@ void free_process_memory_ranges(struct process_vm *vm)
 	int error;
 	struct vm_range *range;
 	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
-	unsigned long irqflags;
 
 	if (vm == NULL) {
 		return;
 	}
 
-	memory_range_write_lock(vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	while ((node = next)) {
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
@@ -2649,7 +2642,7 @@ void free_process_memory_ranges(struct process_vm *vm)
 			/* through */
 		}
 	}
-	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 }
 
 static void free_thread_pages(struct thread *thread)
@@ -2738,9 +2731,8 @@ free_all_process_memory_range(struct process_vm *vm)
 	struct vm_range *range;
 	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	int error;
-	unsigned long irqflags;
 
-	memory_range_write_lock(vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 	while ((node = next)) {
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
@@ -2753,7 +2745,7 @@ free_all_process_memory_range(struct process_vm *vm)
 			/* through */
 		}
 	}
-	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 }
 
 void
@@ -3173,7 +3165,7 @@ void sched_init(void)
 	               &idle_thread->proc->children_list);
 
 	ihk_mc_init_context(&idle_thread->ctx, NULL, idle);
-	ihk_mc_rwlock_init(&idle_thread->vm->memory_range_lock);
+	ihk_mc_spinlock_init(&idle_thread->vm->memory_range_lock);
 	idle_thread->vm->vm_range_tree = RB_ROOT;
 	idle_thread->vm->vm_range_numa_policy_tree = RB_ROOT;
 	idle_thread->proc->pid = 0;
