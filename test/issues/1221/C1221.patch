@@ -1,0 +1,74 @@
+diff --git a/arch/arm64/kernel/include/syscall_list.h b/arch/arm64/kernel/include/syscall_list.h
+index 5dd6243..0f172a3 100644
+--- a/arch/arm64/kernel/include/syscall_list.h
++++ b/arch/arm64/kernel/include/syscall_list.h
+@@ -128,6 +128,8 @@ SYSCALL_HANDLED(731, util_indicate_clone)
+ SYSCALL_HANDLED(732, get_system)
+ SYSCALL_HANDLED(733, util_register_desc)
+ 
++SYSCALL_HANDLED(750, int_and_sleep)
++
+ /* McKernel Specific */
+ SYSCALL_HANDLED(801, swapout)
+ SYSCALL_HANDLED(802, linux_mlock)
+diff --git a/arch/x86_64/kernel/include/syscall_list.h b/arch/x86_64/kernel/include/syscall_list.h
+index 8ef9bd0..2134212 100644
+--- a/arch/x86_64/kernel/include/syscall_list.h
++++ b/arch/x86_64/kernel/include/syscall_list.h
+@@ -170,6 +170,8 @@ SYSCALL_HANDLED(731, util_indicate_clone)
+ SYSCALL_HANDLED(732, get_system)
+ SYSCALL_HANDLED(733, util_register_desc)
+ 
++SYSCALL_HANDLED(750, int_and_sleep)
++
+ /* McKernel Specific */
+ SYSCALL_HANDLED(801, swapout)
+ SYSCALL_HANDLED(802, linux_mlock)
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 97935a7..a603791 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -9429,6 +9429,43 @@ SYSCALL_DECLARE(util_register_desc)
+ 	return 0;
+ }
+ 
++volatile long wk;
++volatile long x;
++volatile long y;
++volatile long z;
++
++static void int_func(void *arg)
++{
++	long i;
++
++	kprintf("int_func start\n");
++	for (i = 0; i < 100000000L; i++)
++		wk += x * y + z;
++	kprintf("int_func end\n");
++}
++
++SYSCALL_DECLARE(int_and_sleep)
++{
++	struct ihk_mc_interrupt_handler *int_handler;
++	long flag;
++
++	int_handler = kmalloc(sizeof(struct ihk_mc_interrupt_handler), IHK_MC_AP_NOWAIT);
++	memset(int_handler, '\0', sizeof(struct ihk_mc_interrupt_handler));
++	INIT_LIST_HEAD(&int_handler->list);
++	int_handler->func = int_func;
++	int_handler->priv = NULL;
++	kprintf("ihk_mc_register_interrupt_handler\n");
++	ihk_mc_register_interrupt_handler(140, int_handler);
++	kprintf("ihk_mc_interrupt_cpu\n");
++	flag = cpu_disable_interrupt_save();
++	ihk_mc_interrupt_cpu(ihk_mc_get_processor_id(), 140);
++	cpu_restore_interrupt(flag);
++	kprintf("ihk_mc_unregister_interrupt_handler\n");
++	ihk_mc_unregister_interrupt_handler(140, int_handler);
++	kfree(int_handler);
++	return 0;
++}
++
+ void
+ reset_cputime()
+ {
