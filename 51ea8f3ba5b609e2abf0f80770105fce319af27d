@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8f6dcbbb_e31e2334",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nReason for revert: This fix causes circular dependency with memory_range manipulation and TLB flush. See #1394.",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab8daabe_db23100b",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2202,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_mc_spinlock_lock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "29eda27a_931217cb",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2232,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_mc_spinlock_unlock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f19ff29_8e281218",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2339,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_mc_spinlock_lock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9309a8fc_b59419a1",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2369,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_mc_spinlock_unlock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d7a05476_8a5f2e52",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2115,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (ihk_mc_spinlock_trylock_noirq(\u0026vm-\u003ememory_range_lock)) {",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "84f175ee_83220301",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 458,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_mc_spinlock_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd6862de_971dfdcb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2209,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_mc_spinlock_lock_noirq(\u0026cpu_local_var(current)-\u003evm-\u003ememory_range_lock);",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8b76efb6_ba03bc41",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2213,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-20T07:18:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_mc_spinlock_unlock_noirq(\u0026cpu_local_var(current)-\u003evm-\u003ememory_range_lock);",
+      "revId": "51ea8f3ba5b609e2abf0f80770105fce319af27d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
