@@ -1,0 +1,84 @@
+Script started on Sun Sep 22 15:25:54 2019
+bash-4.2$ make test
+gcc -g -Wall -o C1221T01 C1221T01.c
+sh ./C1221.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+*** C1221T01 test start
+etime=0.230807
+utime=0.000001
+stime=0.230427
+*** C1221T01 PASS
+getrusage01    1  TPASS  :  getrusage passed
+getrusage01    2  TPASS  :  getrusage passed
+*** C1221T02: getrusage01 PASS (2)
+getrusage02    1  TPASS  :  getrusage failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
+getrusage02    2  TPASS  :  getrusage failed as expected: TEST_ERRNO=EFAULT(14): Bad address
+*** C1221T03: getrusage02 PASS (2)
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 103340
+getrusage03    0  TINFO  :  child.self = 105372
+getrusage03    1  TPASS  :  initial.self ~= child.self
+getrusage03    0  TINFO  :  Testcase #02: fork inherit(cont.)
+getrusage03    0  TINFO  :  initial.children = 105376
+getrusage03    2  TPASS  :  initial.children ~= 100MB
+getrusage03    0  TINFO  :  child.children = 0
+getrusage03    3  TPASS  :  child.children == 0
+getrusage03    0  TINFO  :  Testcase #03: fork + malloc
+getrusage03    0  TINFO  :  initial.self = 103340
+getrusage03    0  TINFO  :  child allocate +50MB
+getrusage03    0  TINFO  :  child.self = 156576
+getrusage03    4  TPASS  :  initial.self + 50MB ~= child.self
+getrusage03    0  TINFO  :  Testcase #04: grandchild maxrss
+getrusage03    0  TINFO  :  initial.children = 156576
+getrusage03_child    0  TINFO  :  grandchild allocate 300MB
+getrusage03    0  TINFO  :  post_wait.children = 310120
+getrusage03    5  TPASS  :  child.children ~= 300MB
+getrusage03    0  TINFO  :  Testcase #05: zombie
+getrusage03    0  TINFO  :  initial.children = 310120
+getrusage03_child    0  TINFO  :  child allocate 400MB
+getrusage03    0  TINFO  :  pre_wait.children = 310120
+getrusage03    6  TPASS  :  initial.children ~= pre_wait.children
+getrusage03    0  TINFO  :  post_wait.children = 412092
+getrusage03    7  TPASS  :  post_wait.children ~= 400MB
+getrusage03    0  TINFO  :  Testcase #06: SIG_IGN
+getrusage03    0  TINFO  :  initial.children = 412092
+getrusage03_child    0  TINFO  :  child allocate 500MB
+getrusage03    0  TINFO  :  after_zombie.children = 412092
+getrusage03    8  TPASS  :  initial.children ~= after_zombie.children
+getrusage03    0  TINFO  :  Testcase #07: exec without fork
+getrusage03    0  TINFO  :  initial.self = 103340, initial.children = 412092
+getrusage03_child    0  TINFO  :  exec.self = 103340, exec.children = 412092
+getrusage03_child    1  TPASS  :  initial.self ~= exec.self
+getrusage03_child    2  TPASS  :  initial.children ~= exec.children
+*** C1221T04: getrusage03 PASS (10)
+getrusage04    0  TINFO  :  Expected timers granularity is 1000 us
+getrusage04    0  TINFO  :  Using 1 as multiply factor for max [us]time increment (1000+1000us)!
+getrusage04    0  TINFO  :  utime:         377us; stime:        4205us
+getrusage04    0  TINFO  :  utime:         379us; stime:        4218us
+getrusage04    0  TINFO  :  utime:         381us; stime:        4302us
+getrusage04    0  TINFO  :  utime:         383us; stime:        4314us
+getrusage04    0  TINFO  :  utime:         385us; stime:        4325us
+getrusage04    0  TINFO  :  utime:         387us; stime:        4358us
+getrusage04    0  TINFO  :  utime:         388us; stime:        4416us
+getrusage04    0  TINFO  :  utime:         390us; stime:        4428us
+getrusage04    0  TINFO  :  utime:         392us; stime:        4440us
+getrusage04    0  TINFO  :  utime:         393us; stime:        4451us
+getrusage04    0  TINFO  :  utime:         395us; stime:        4467us
+getrusage04    0  TINFO  :  utime:         397us; stime:        4525us
+getrusage04    0  TINFO  :  utime:         399us; stime:        4537us
+getrusage04    0  TINFO  :  utime:         400us; stime:        4549us
+getrusage04    0  TINFO  :  utime:         402us; stime:        4563us
+getrusage04    0  TINFO  :  utime:         404us; stime:        4579us
+getrusage04    0  TINFO  :  utime:         405us; stime:        4600us
+getrusage04    0  TINFO  :  utime:         407us; stime:        4630us
+getrusage04    0  TINFO  :  utime:         409us; stime:        4646us
+getrusage04    0  TINFO  :  utime:         410us; stime:        4661us
+getrusage04    0  TINFO  :  utime:         412us; stime:        4688us
+getrusage04    1  TPASS  :  Test Passed
+*** C1221T05: getrusage04 PASS (1)
+bash-4.2$ exit
+exit
+
+Script done on Sun Sep 22 15:26:13 2019
