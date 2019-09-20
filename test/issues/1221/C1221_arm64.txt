@@ -1,0 +1,128 @@
+Script started on Thu 26 Sep 2019 10:37:38 AM JST
+gcc -g -Wall -o C1221T01 C1221T01.c
+sh ./C1221.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-6,29-34 -m 50G@0,50G@1 -r 1-6:0+29-34:28 -O ... done
+*** C1221T01 test start
+etime=0.000017
+utime=0.000001
+stime=0.000011
+*** C1221T01 PASS
+getrusage01    1  TPASS  :  getrusage passed
+getrusage01    2  TPASS  :  getrusage passed
+*** C1221T02: getrusage01 PASS (2)
+getrusage02    1  TPASS  :  getrusage failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
+getrusage02    2  TPASS  :  getrusage failed as expected: TEST_ERRNO=EFAULT(14): Bad address
+*** C1221T03: getrusage02 PASS (2)
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    0  TINFO  :  child.self = 106880
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    1  TPASS  :  initial.self ~= child.self
+getrusage03    0  TINFO  :  Testcase #02: fork inherit(cont.)
+getrusage03    0  TINFO  :  initial.children = 106880
+getrusage03    2  TPASS  :  initial.children ~= 100MB
+getrusage03    0  TINFO  :  child.children = 0
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    1  TPASS  :  initial.self ~= child.self
+getrusage03    0  TINFO  :  Testcase #02: fork inherit(cont.)
+getrusage03    0  TINFO  :  initial.children = 106880
+getrusage03    2  TPASS  :  initial.children ~= 100MB
+getrusage03    3  TPASS  :  child.children == 0
+getrusage03    0  TINFO  :  Testcase #03: fork + malloc
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    0  TINFO  :  child allocate +50MB
+getrusage03    0  TINFO  :  child.self = 158144
+getrusage03_child    0  TINFO  :  grandchild allocate 300MB
+getrusage03_child    0  TINFO  :  grandchild allocate 300MB
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    1  TPASS  :  initial.self ~= child.self
+getrusage03    0  TINFO  :  Testcase #02: fork inherit(cont.)
+getrusage03    0  TINFO  :  initial.children = 106880
+getrusage03    2  TPASS  :  initial.children ~= 100MB
+getrusage03    3  TPASS  :  child.children == 0
+getrusage03    0  TINFO  :  Testcase #03: fork + malloc
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    4  TPASS  :  initial.self + 50MB ~= child.self
+getrusage03    0  TINFO  :  Testcase #04: grandchild maxrss
+getrusage03    0  TINFO  :  initial.children = 158144
+getrusage03_child    0  TINFO  :  child allocate 400MB
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    1  TPASS  :  initial.self ~= child.self
+getrusage03    0  TINFO  :  Testcase #02: fork inherit(cont.)
+getrusage03    0  TINFO  :  initial.children = 106880
+getrusage03    2  TPASS  :  initial.children ~= 100MB
+getrusage03    3  TPASS  :  child.children == 0
+getrusage03    0  TINFO  :  Testcase #03: fork + malloc
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    4  TPASS  :  initial.self + 50MB ~= child.self
+getrusage03    0  TINFO  :  Testcase #04: grandchild maxrss
+getrusage03    0  TINFO  :  initial.children = 158144
+getrusage03    0  TINFO  :  post_wait.children = 311616
+getrusage03    5  TPASS  :  child.children ~= 300MB
+getrusage03    0  TINFO  :  Testcase #05: zombie
+getrusage03    0  TINFO  :  initial.children = 311616
+getrusage03_child    0  TINFO  :  child allocate 500MB
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    1  TPASS  :  initial.self ~= child.self
+getrusage03    0  TINFO  :  Testcase #02: fork inherit(cont.)
+getrusage03    0  TINFO  :  initial.children = 106880
+getrusage03    2  TPASS  :  initial.children ~= 100MB
+getrusage03    3  TPASS  :  child.children == 0
+getrusage03    0  TINFO  :  Testcase #03: fork + malloc
+getrusage03    0  TINFO  :  initial.self = 104576
+getrusage03    4  TPASS  :  initial.self + 50MB ~= child.self
+getrusage03    0  TINFO  :  Testcase #04: grandchild maxrss
+getrusage03    0  TINFO  :  initial.children = 158144
+getrusage03    0  TINFO  :  post_wait.children = 311616
+getrusage03    5  TPASS  :  child.children ~= 300MB
+getrusage03    0  TINFO  :  Testcase #05: zombie
+getrusage03    0  TINFO  :  initial.children = 311616
+getrusage03    0  TINFO  :  pre_wait.children = 311616
+getrusage03    6  TPASS  :  initial.children ~= pre_wait.children
+getrusage03    0  TINFO  :  post_wait.children = 412800
+getrusage03    7  TPASS  :  post_wait.children ~= 400MB
+getrusage03    0  TINFO  :  Testcase #06: SIG_IGN
+getrusage03    0  TINFO  :  initial.children = 412800
+getrusage03_child    0  TINFO  :  exec.self = 104576, exec.children = 412800
+getrusage03_child    1  TPASS  :  initial.self ~= exec.self
+getrusage03_child    2  TPASS  :  initial.children ~= exec.children
+*** C1221T04: getrusage03 PASS (23)
+getrusage04    0  TINFO  :  Expected timers granularity is 10000 us
+getrusage04    0  TINFO  :  Using 1 as multiply factor for max [us]time increment (1000+10000us)!
+getrusage04    0  TINFO  :  utime:         540us; stime:       42257us
+getrusage04    0  TINFO  :  utime:         544us; stime:       42260us
+getrusage04    0  TINFO  :  utime:         547us; stime:       42260us
+getrusage04    0  TINFO  :  utime:         549us; stime:       42261us
+getrusage04    0  TINFO  :  utime:         551us; stime:       42262us
+getrusage04    0  TINFO  :  utime:         553us; stime:       42262us
+getrusage04    0  TINFO  :  utime:         555us; stime:       42263us
+getrusage04    0  TINFO  :  utime:         557us; stime:       42263us
+getrusage04    0  TINFO  :  utime:         559us; stime:       42264us
+getrusage04    0  TINFO  :  utime:         561us; stime:       42264us
+getrusage04    0  TINFO  :  utime:         563us; stime:       42265us
+getrusage04    0  TINFO  :  utime:         565us; stime:       42265us
+getrusage04    0  TINFO  :  utime:         567us; stime:       42266us
+getrusage04    0  TINFO  :  utime:         569us; stime:       42266us
+getrusage04    0  TINFO  :  utime:         571us; stime:       42267us
+getrusage04    0  TINFO  :  utime:         573us; stime:       42267us
+getrusage04    0  TINFO  :  utime:         575us; stime:       42268us
+getrusage04    0  TINFO  :  utime:         577us; stime:       42268us
+getrusage04    0  TINFO  :  utime:         578us; stime:       42269us
+getrusage04    0  TINFO  :  utime:         580us; stime:       42270us
+getrusage04    0  TINFO  :  utime:         582us; stime:       42270us
+getrusage04    1  TPASS  :  Test Passed
+*** C1221T05: getrusage04 PASS (1)
+
+Script done on Thu 26 Sep 2019 10:38:13 AM JST

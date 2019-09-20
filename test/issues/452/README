@@ -32,5 +32,5 @@ mck_test_config.sample ファイルを $HOME にコピーし、適宜編集す�
 尚、テスト実行には C452.patch を適用した McKernel を使用すること。
 
 □ 実行結果
-C452.txt 参照。
+C452_x86_64.txt(x86_64実行結果)、C452_arm64.txt(arm64実行結果) 参照。
 全ての項目が PASS していることを確認。

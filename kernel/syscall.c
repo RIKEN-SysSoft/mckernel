@@ -9526,12 +9526,7 @@ set_cputime(enum set_cputime_mode mode)
 		}
 	}
 
-	if (mode == CPUTIME_MODE_K2K_IN) {
-		thread->base_tsc = 0;	
-	}
-	else{
-		thread->base_tsc = tsc;
-	}
+	thread->base_tsc = tsc;
 
 	thread->times_update = 1;
 	thread->in_kernel = (int)mode;
