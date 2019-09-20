@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "822bb2f1_b7b1aced",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1635,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-20T01:57:16Z",
+      "side": 1,
+      "message": "メモ；ここで、demand-pagingが選択されたときに余計なlock overheadと排他 overheadが加算される",
+      "range": {
+        "startLine": 1635,
+        "startChar": 0,
+        "endLine": 1635,
+        "endChar": 58
+      },
+      "revId": "1be18909afa090a1bdcfb8e2784d30f7c08e92d4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1e31986e_bab24c8b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2231,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-20T01:57:16Z",
+      "side": 1,
+      "message": "メモ：demand-pagingになった場合に、余計なlock overheadと排他overheadが発生する箇所",
+      "range": {
+        "startLine": 2231,
+        "startChar": 0,
+        "endLine": 2231,
+        "endChar": 50
+      },
+      "revId": "1be18909afa090a1bdcfb8e2784d30f7c08e92d4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
