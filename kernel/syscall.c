@@ -2198,11 +2198,7 @@ SYSCALL_DECLARE(brk)
 	}
 
 	/* Try to extend memory region */
-#ifdef POSTK_DEBUG_ARCH_DEP_60 /* brk() use demand-paging */
-	vrflag = VR_PROT_READ | VR_PROT_WRITE | VR_DEMAND_PAGING;
-#else /* POSTK_DEBUG_ARCH_DEP_60 */
 	vrflag = VR_PROT_READ | VR_PROT_WRITE;
-#endif /* POSTK_DEBUG_ARCH_DEP_60 */
 	vrflag |= VR_PRIVATE;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	old_brk_end_allocated = region->brk_end_allocated;
