@@ -16,6 +16,23 @@
       "revId": "4447edebc49e7ef9e91fca82ad7aac4b777d2927",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c7f1751_32bd574c",
+        "filename": "test/issues/1350/README",
+        "patchSetId": 5
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-09-20T06:38:46Z",
+      "side": 1,
+      "message": "gdbのビルド手順を追記して下さい。",
+      "revId": "4447edebc49e7ef9e91fca82ad7aac4b777d2927",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
