@@ -1011,7 +1011,6 @@ static int xpmem_attach(
 	struct mcs_rwlock_node_irqsave at_lock;
 	struct vm_range *vmr;
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	unsigned long irqflags;
 
 	XPMEM_DEBUG("call: apid=0x%lx, offset=0x%lx, size=0x%lx, vaddr=0x%lx, " 
 		"fd=%d, att_flags=%d", 
@@ -1104,12 +1103,12 @@ static int xpmem_attach(
 	if (flags & MAP_FIXED) {
 		struct vm_range *existing_vmr;
 
-		memory_range_read_lock(vm, &irqflags);
+		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 		existing_vmr = lookup_process_memory_range(vm, vaddr, 
 			vaddr + size);
 
-		memory_range_read_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 		for (; existing_vmr && existing_vmr->start < vaddr + size;
 			existing_vmr = next_process_memory_range(vm, 
@@ -1135,7 +1134,7 @@ static int xpmem_attach(
 	XPMEM_DEBUG("at_vaddr=0x%lx", at_vaddr);
 	att->at_vaddr = at_vaddr;
 
-	memory_range_write_lock(vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 	vmr = lookup_process_memory_range(vm, at_vaddr, at_vaddr + 1);
 
@@ -1146,7 +1145,7 @@ static int xpmem_attach(
 		ekprintf("%s: vmr->memobj equals to NULL\n", __FUNCTION__);
 	}
 
-	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	if (!vmr) {
 		ret = -ENOENT;
@@ -1191,22 +1190,21 @@ static int xpmem_detach(
 	struct mcs_rwlock_node_irqsave at_lock;
 	struct vm_range *range;
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	unsigned long irqflags;
 
 	XPMEM_DEBUG("call: at_vaddr=0x%lx", at_vaddr);
 
-	memory_range_write_lock(vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 	range = lookup_process_memory_range(vm, at_vaddr, at_vaddr + 1);
 
 	if (!range || range->start > at_vaddr) {
-		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		return 0;
 	}
 
 	att = (struct xpmem_attachment *)range->private_data;
 	if (att == NULL) {
-		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		return -EINVAL;
 	}
 
@@ -1216,7 +1214,7 @@ static int xpmem_detach(
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
-		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		xpmem_att_deref(att);
 		return 0;
 	}
@@ -1229,7 +1227,7 @@ static int xpmem_detach(
 		att->flags &= ~XPMEM_FLAG_DESTROYING;
 		xpmem_ap_deref(ap);
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
-		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		xpmem_att_deref(att);
 		return -EACCES;
 	}
@@ -1249,7 +1247,7 @@ static int xpmem_detach(
 		ekprintf("%s: ERROR: xpmem_vm_munmap() failed %d\n", 
 			__FUNCTION__, ret);
 	}
-	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 	DBUG_ON(ret != 0);
 
 	att->flags &= ~XPMEM_FLAG_VALIDPTEs;
@@ -1409,7 +1407,6 @@ static void xpmem_detach_att(
 	struct vm_range *range;
 	struct process_vm *vm;
 	struct mcs_rwlock_node_irqsave at_lock;
-	unsigned long irqflags;
 
 	XPMEM_DEBUG("call: apid=0x%lx, att=0x%p", ap->apid, att);
 
@@ -1418,13 +1415,13 @@ static void xpmem_detach_att(
 
 	vm = cpu_local_var(current)->vm ? cpu_local_var(current)->vm : att->vm;
 
-	memory_range_write_lock(vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
-		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		XPMEM_DEBUG("return: XPMEM_FLAG_DESTROYING");
 		return;
 	}
@@ -1438,7 +1435,7 @@ static void xpmem_detach_att(
 		list_del_init(&att->att_list);
 		ihk_mc_spinlock_unlock_noirq(&ap->lock);
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
-		memory_range_write_unlock(vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		xpmem_att_destroyable(att);
 		XPMEM_DEBUG("return: range=%p");
 		return;
@@ -1474,7 +1471,7 @@ static void xpmem_detach_att(
 			__FUNCTION__, ret);
 	}
 
-	memory_range_write_unlock(vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	xpmem_att_destroyable(att);
 
@@ -1573,12 +1570,11 @@ static void xpmem_clear_PTEs_of_att(
 {
 	int ret;
 	struct mcs_rwlock_node_irqsave at_lock;
-	unsigned long irqflags;
 
 	XPMEM_DEBUG("call: att=0x%p, start=0x%lx, end=0x%lx", 
 		att, start, end);
 
-	memory_range_write_lock(att->vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&att->vm->memory_range_lock);
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
 	if (att->flags & XPMEM_FLAG_VALIDPTEs) {
@@ -1638,7 +1634,7 @@ static void xpmem_clear_PTEs_of_att(
 	}
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
-	memory_range_write_unlock(att->vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&att->vm->memory_range_lock);
 
 	XPMEM_DEBUG("return: ");
 }
@@ -1653,7 +1649,6 @@ int xpmem_remove_process_memory_range(
 	struct xpmem_access_permit *ap;
 	struct xpmem_attachment *att;
 	struct mcs_rwlock_node_irqsave at_lock;
-	unsigned long irqflags;
 
 	XPMEM_DEBUG("call: vmr=0x%p, att=0x%p", vmr, vmr->private_data);
 
@@ -1667,7 +1662,8 @@ int xpmem_remove_process_memory_range(
 
 	xpmem_att_ref(att);
 
-	memory_range_write_lock(cpu_local_var(current)->vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(
+		&cpu_local_var(current)->vm->memory_range_lock);
 
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
@@ -1749,7 +1745,8 @@ int xpmem_remove_process_memory_range(
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 
-	memory_range_write_unlock(cpu_local_var(current)->vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(
+		&cpu_local_var(current)->vm->memory_range_lock);
 
 	xpmem_att_deref(att);
 
@@ -1901,18 +1898,17 @@ static int xpmem_remap_pte(
 	size_t att_pgsize;
 	int att_p2align;
 	enum ihk_mc_pt_attribute att_attr;
-	unsigned long irqflags;
 
 	XPMEM_DEBUG("call: vmr=0x%p, vaddr=0x%lx, reason=0x%lx, segid=0x%lx, " 
 		"seg_vaddr=0x%lx", 
 		vmr, vaddr, reason, seg->segid, seg_vaddr);
 
-	memory_range_read_lock(seg_tg->vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&seg_tg->vm->memory_range_lock);
 
 	seg_vmr = lookup_process_memory_range(seg_tg->vm, seg_vaddr, 
 		seg_vaddr + 1);
 
-	memory_range_read_unlock(seg_tg->vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&seg_tg->vm->memory_range_lock);
 
 	if (!seg_vmr) {
 		ret = -EFAULT;
@@ -2041,15 +2037,14 @@ static int xpmem_pin_page(
 {
 	int ret;
 	struct vm_range *range;
-	unsigned long irqflags;
 
 	XPMEM_DEBUG("call: tgid=%d, vaddr=0x%lx", tg->tgid, vaddr);
 
-	memory_range_read_lock(src_vm, &irqflags);
+	ihk_mc_spinlock_lock_noirq(&src_vm->memory_range_lock);
 
 	range = lookup_process_memory_range(src_vm, vaddr, vaddr + 1);
 
-	memory_range_read_unlock(src_vm, &irqflags);
+	ihk_mc_spinlock_unlock_noirq(&src_vm->memory_range_lock);
 
 	if (!range || range->start > vaddr) {
 		return -ENOENT;
