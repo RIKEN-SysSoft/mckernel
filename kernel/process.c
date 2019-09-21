@@ -246,6 +246,8 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	int i;
 	ihk_mc_spinlock_init(&vm->memory_range_lock);
 	ihk_mc_spinlock_init(&vm->page_table_lock);
+	ihk_mc_spinlock_init(&vm->backlog_lock);
+	INIT_LIST_HEAD(&vm->backlog);
 
 	ihk_atomic_set(&vm->refcount, 1);
 	vm->vm_range_tree = RB_ROOT;
@@ -786,7 +788,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 	struct vm_range *last_insert;
 	struct copy_args args;
 
-	ihk_mc_spinlock_lock_noirq(&orgvm->memory_range_lock);
+	memory_range_lock(orgvm);
 
 	/* Iterate original process' vm_range list and take a copy one-by-one */
 	last_insert = NULL;
@@ -848,7 +850,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		// memory_stat_rss_add() is called in child-node, i.e. copy_user_pte()
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&orgvm->memory_range_lock);
+	memory_range_unlock(orgvm);
 
 	return 0;
 
@@ -860,7 +862,6 @@ err_rollback:
 
 			if (src_range->flag & VR_DONTFORK)
 				continue;
-
 
 			dest_range = lookup_process_memory_range(vm,
 							src_range->start,
@@ -874,8 +875,8 @@ err_rollback:
 			src_range = next_process_memory_range(orgvm, src_range);
 		}
 	}
+	memory_range_unlock(orgvm);
 
-	ihk_mc_spinlock_unlock_noirq(&orgvm->memory_range_lock);
 	return -1;
 }
 
@@ -2174,7 +2175,7 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 			if (thread->vm->is_memory_range_lock_taken) {
 				goto skip;
 			}
-			if (ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
+			if (memory_range_trylock(vm)) {
 				locked = 1;
 				break;
 			}
@@ -2293,7 +2294,7 @@ skip:;
 	error = 0;
 out:
 	if (locked) {
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_unlock(vm);
 	}
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0,
@@ -2596,7 +2597,7 @@ void flush_process_memory(struct process_vm *vm)
 	int error;
 
 	dkprintf("flush_process_memory(%p)\n", vm);
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 	/* Let concurrent page faults know the VM will be gone */
 	vm->exiting = 1;
 	while ((node = next)) {
@@ -2614,7 +2615,7 @@ void flush_process_memory(struct process_vm *vm)
 			}
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 	dkprintf("flush_process_memory(%p):\n", vm);
 	return;
 }
@@ -2629,7 +2630,7 @@ void free_process_memory_ranges(struct process_vm *vm)
 		return;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 	while ((node = next)) {
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
@@ -2642,7 +2643,7 @@ void free_process_memory_ranges(struct process_vm *vm)
 			/* through */
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 }
 
 static void free_thread_pages(struct thread *thread)
@@ -2732,7 +2733,7 @@ free_all_process_memory_range(struct process_vm *vm)
 	struct rb_node *node, *next = rb_first(&vm->vm_range_tree);
 	int error;
 
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 	while ((node = next)) {
 		range = rb_entry(node, struct vm_range, vm_rb_node);
 		next = rb_next(node);
@@ -2745,7 +2746,7 @@ free_all_process_memory_range(struct process_vm *vm)
 			/* through */
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 }
 
 void
@@ -3851,6 +3852,74 @@ process_unlock(struct process *proc, struct mcs_rwlock_node_irqsave *lock)
 		return;
 	hash = process_hash(proc->pid);
 	mcs_rwlock_reader_unlock(&phash->lock[hash], lock);
+}
+
+void memory_range_lock(struct process_vm *vm)
+{
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+}
+
+int memory_range_trylock(struct process_vm *vm)
+{
+	return ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock);
+}
+
+void memory_range_unlock(struct process_vm *vm)
+{
+	for (;;) {
+		int flags;
+
+		for (;;) {
+			struct vm_backlog *bl = NULL;
+
+			flags = ihk_mc_spinlock_lock(&vm->backlog_lock);
+			if (!list_empty(&vm->backlog)) {
+				bl = list_first_entry(&vm->backlog,
+						      struct vm_backlog, list);
+				list_del(&bl->list);
+			}
+			ihk_mc_spinlock_unlock(&vm->backlog_lock, flags);
+			if (!bl) {
+				break;
+			}
+			bl->func(bl->arg);
+			kfree(bl);
+		}
+
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+
+		flags = ihk_mc_spinlock_lock(&vm->backlog_lock);
+		if (list_empty(&vm->backlog)) {
+			ihk_mc_spinlock_unlock(&vm->backlog_lock, flags);
+			break;
+		}
+		ihk_mc_spinlock_unlock(&vm->backlog_lock, flags);
+		if (!memory_range_trylock(vm)) {
+			break;
+		}
+	}
+}
+
+int add_backlog_vm(struct process_vm *vm, void (*func)(void *arg), void *arg)
+{
+	struct vm_backlog *bl;
+	int flags;
+
+	if (!(bl = kmalloc(sizeof(struct vm_backlog), IHK_MC_AP_NOWAIT))) {
+		return -ENOMEM;
+	}
+	memset(bl, '\0', sizeof(struct vm_backlog));
+	INIT_LIST_HEAD(&bl->list);
+	bl->func = func;
+	bl->arg = arg;
+	flags = ihk_mc_spinlock_lock(&vm->backlog_lock);
+	list_add_tail(&bl->list, &vm->backlog);
+	ihk_mc_spinlock_unlock(&vm->backlog_lock, flags);
+
+	if (memory_range_trylock(vm)) {
+		memory_range_unlock(vm);
+	}
+	return 0;
 }
 
 void

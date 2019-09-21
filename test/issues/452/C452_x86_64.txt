@@ -1,8 +1,17 @@
+<<<<<<< HEAD
 Script started on Wed Jul  3 13:39:36 2019
 bash-4.2$ make test
 sh ./C452.sh
 mcstop+release.sh ... done
 mcreboot.sh -c 1-7,17-23,9-15,25-31 -m 10G@0,10G@1 ... done
+=======
+Script started on Tue Sep 24 14:39:01 2019
+bash-4.2$ make test
+gcc -g -Wall -o C452T01 C452T01.c
+sh ./C452.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+>>>>>>> 6067c22... procfs: if memory_range_lock fails, process it when unlocking
 *** C452T01 test start
 000000400000-000000401000 r-xs 0 0:0 0			
 000000600000-000000601000 r--s 0 0:0 0			
@@ -10,6 +19,7 @@ mcreboot.sh -c 1-7,17-23,9-15,25-31 -m 10G@0,10G@1 ... done
 155555600000-155555622000 r-xs 0 0:0 0			
 155555821000-155555822000 r--s 0 0:0 0			
 155555822000-155555824000 rw-s 0 0:0 0			
+<<<<<<< HEAD
 2aaaaa9f8000-2aaaaaa00000 rw-p 0 0:0 0			
 2aaaaaa00000-2aaaaaa02000 r-xs 0 0:0 0			[vdso]
 2aaaaaa02000-2aaaaaa03000 rw-p 0 0:0 0			
@@ -21,6 +31,19 @@ mcreboot.sh -c 1-7,17-23,9-15,25-31 -m 10G@0,10G@1 ... done
 2aaaaade3000-2aaaaade8000 rw-p 0 0:0 0			
 2aaaaade8000-2aaaaadea000 rw-p 0 0:0 0			
 2aaaaadea000-2aaaaadeb000 rw-p 0 0:0 0			
+=======
+2aaaaa9fc000-2aaaaaa00000 rw-p 0 0:0 0			
+2aaaaaa00000-2aaaaaa02000 r-xs 0 0:0 0			[vdso]
+2aaaaaa02000-2aaaaaa03000 rw-p 0 0:0 0			
+2aaaaaa1b000-2aaaaaa1c000 rw-p 0 0:0 0			
+2aaaaaa1c000-2aaaaabdf000 r-xp 0 0:0 0			/usr/lib64/libc-2.17.so
+2aaaaabdf000-2aaaaadde000 ---p 0 0:0 0			/usr/lib64/libc-2.17.so
+2aaaaadde000-2aaaaade2000 r--p 0 0:0 0			/usr/lib64/libc-2.17.so
+2aaaaade2000-2aaaaade4000 rw-p 0 0:0 0			/usr/lib64/libc-2.17.so
+2aaaaade4000-2aaaaade9000 rw-p 0 0:0 0			
+2aaaaade9000-2aaaaadeb000 rw-p 0 0:0 0			
+2aaaaadeb000-2aaaaadec000 rw-p 0 0:0 0			
+>>>>>>> 6067c22... procfs: if memory_range_lock fails, process it when unlocking
 547fff800000-548000000000 rw-p 0 0:0 0			[stack]
 *** C452T01 PASS
 mmap01      1  TPASS  :  Functionality of mmap() successful
@@ -35,14 +58,20 @@ mmap12      1  TPASS  :  Functionality of mmap() successful
 *** C452T06: mmap12 PASS (1)
 brk01       1  TPASS  :  brk(8626060) returned 0, new size verified by sbrk
 *** C452T07: brk01 PASS (1)
+<<<<<<< HEAD
 fork01      1  TPASS  :  fork() returned 19074
 fork01      2  TPASS  :  child pid and fork() return agree: 19074
+=======
+fork01      1  TPASS  :  fork() returned 15134
+fork01      2  TPASS  :  child pid and fork() return agree: 15134
+>>>>>>> 6067c22... procfs: if memory_range_lock fails, process it when unlocking
 *** C452T08: fork01 PASS (2)
 fork02      0  TINFO  :  Inside parent
 fork02      0  TINFO  :  Inside child
 fork02      0  TINFO  :  exit status of wait 0
 fork02      1  TPASS  :  test 1 PASSED
 *** C452T09: fork02 PASS (1)
+<<<<<<< HEAD
 fork03      0  TINFO  :  process id in parent of child from fork : 19223
 fork03      1  TPASS  :  test 1 PASSED
 *** C452T10: fork03 PASS (1)
@@ -50,3 +79,69 @@ bash-4.2$ exit
 exit
 
 Script done on Wed Jul  3 13:39:53 2019
+=======
+fork03      0  TINFO  :  process id in parent of child from fork : 15284
+fork03      1  TPASS  :  test 1 PASSED
+*** C452T10: fork03 PASS (1)
+mremap04    1  TPASS  :  mremap() failed, 'MREMAP_MAYMOVE flag unset', errno 12
+*** C452T11: mremap04 PASS (1)
+mremap05    1  TPASS  :  MREMAP_FIXED requires MREMAP_MAYMOVE
+mremap05    2  TPASS  :  new_addr has to be page aligned
+mremap05    3  TPASS  :  old/new area must not overlap
+mremap05    4  TPASS  :  mremap #1
+mremap05    5  TPASS  :  mremap #1 value OK
+mremap05    6  TPASS  :  mremap #2
+mremap05    7  TPASS  :  mremap #2 value OK
+*** C452T12: mremap05 PASS (7)
+munmap01    1  TPASS  :  Functionality of munmap() successful
+*** C452T13: munmap01 PASS (1)
+shmat01     1  TPASS  :  conditions and functionality are correct
+shmat01     2  TPASS  :  conditions and functionality are correct
+shmat01     3  TPASS  :  conditions and functionality are correct
+shmat01     4  TPASS  :  conditions and functionality are correct
+*** C452T14: shmat01 PASS (4)
+shmdt01     1  TPASS  :  shared memory detached correctly
+*** C452T15: shmdt01 PASS (1)
+mlock01     1  TPASS  :  mlock passed
+mlock01     2  TPASS  :  mlock passed
+mlock01     3  TPASS  :  mlock passed
+mlock01     4  TPASS  :  mlock passed
+*** C452T16: mlock01 PASS (4)
+mlock04     0  TINFO  :  locked 40960 bytes from 0x2aaaaadeb000
+mlock04     1  TPASS  :  test succeeded.
+*** C452T17: mlock04 PASS (1)
+execl01_child    1  TPASS  :  execve01_child executed
+execve01    0  TINFO  :  Child process returned TPASS
+*** C452T18: execve01 PASS (2)
+exit01      1  TPASS  :  exit() test PASSED
+*** C452T19: exit01 PASS (1)
+exit02      1  TPASS  :  exit() test PASSED
+*** C452T20: exit02 PASS (1)
+exit_group01    1  TPASS  :  exit_group() succeeded
+*** C452T21: exit_group01 PASS (1)
+mprotect02    1  TPASS  :  got SIGSEGV as expected
+mprotect02    2  TPASS  :  didn't get SIGSEGV
+*** C452T22: mprotect02 PASS (2)
+mprotect03    0  TINFO  :  received signal: SIGSEGV
+mprotect03    1  TPASS  :  SIGSEGV generated as expected
+*** C452T23: mprotect03 PASS (1)
+msync01     1  TPASS  :  Functionality of msync() successful
+*** C452T24: msync01 PASS (1)
+msync02     1  TPASS  :  Functionality of msync successful
+*** C452T25: msync02 PASS (1)
+munlock01    1  TPASS  :  test 0 passed length = 1
+munlock01    2  TPASS  :  test 1 passed length = 1024
+munlock01    3  TPASS  :  test 2 passed length = 1048576
+munlock01    4  TPASS  :  test 3 passed length = 10485760
+*** C452T26: munlock01 PASS (4)
+remap_file_pages01    1  TPASS  :  Non-Linear shm file OK
+remap_file_pages01    2  TPASS  :  Non-Linear /tmp/ file OK
+*** C452T27: remap_file_pages01 PASS (2)
+remap_file_pages01    1  TPASS  :  Non-Linear shm file OK
+remap_file_pages01    2  TPASS  :  Non-Linear /tmp/ file OK
+*** C452T28: remap_file_pages01 PASS (2)
+bash-4.2$ exit
+exit
+
+Script done on Tue Sep 24 14:39:27 2019
+>>>>>>> 6067c22... procfs: if memory_range_lock fails, process it when unlocking

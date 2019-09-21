@@ -733,6 +733,12 @@ struct thread {
 
 #define VM_RANGE_CACHE_SIZE	4
 
+struct vm_backlog {
+	struct list_head list;
+	void (*func)(void *arg);
+	void *arg;
+};
+
 struct process_vm {
 	struct address_space *address_space;
 	struct rb_root vm_range_tree;
@@ -764,6 +770,9 @@ struct process_vm {
 	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
 	int range_cache_ind;
 	struct swapinfo *swapinfo;
+
+	struct list_head backlog;
+	ihk_spinlock_t backlog_lock;
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)
@@ -883,5 +892,10 @@ void clear_fp_regs(void);
 #define VERIFY_READ 0
 #define VERIFY_WRITE 1
 int access_ok(struct process_vm *vm, int type, uintptr_t addr, size_t len);
+
+void memory_range_lock(struct process_vm *vm);
+int memory_range_trylock(struct process_vm *vm);
+void memory_range_unlock(struct process_vm *vm);
+int add_backlog_vm(struct process_vm *vm, void (*func)(void *arg), void *arg);
 
 #endif

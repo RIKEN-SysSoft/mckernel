@@ -1650,7 +1650,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		p2align = PAGE_P2ALIGN;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	memory_range_lock(thread->vm);
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
@@ -1940,7 +1940,7 @@ out:
 	if (ro_vma_mapped) {
 		(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 	}
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	memory_range_unlock(thread->vm);
 
 	if (!error && populated_mapping && !((vrflags & VR_PROT_MASK) == VR_PROT_NONE)) {
 		error = populate_process_memory(thread->vm,
@@ -2008,9 +2008,9 @@ SYSCALL_DECLARE(munmap)
 		goto out;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	memory_range_lock(thread->vm);
 	error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */);
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	memory_range_unlock(thread->vm);
 
 out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
@@ -2064,7 +2064,7 @@ SYSCALL_DECLARE(mprotect)
 
 	flush_nfo_tlb();
 
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	memory_range_lock(thread->vm);
 
 	first = lookup_process_memory_range(thread->vm, start, start+PAGE_SIZE);
 
@@ -2154,7 +2154,7 @@ out:
 			/* through */
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	memory_range_unlock(thread->vm);
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
 	return error;
@@ -2197,11 +2197,11 @@ SYSCALL_DECLARE(brk)
 	vrflag |= VR_PRIVATE;
 	vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
 	old_brk_end_allocated = region->brk_end_allocated;
-	ihk_mc_spinlock_lock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+	memory_range_lock(cpu_local_var(current)->vm);
 	region->brk_end_allocated =
 		extend_process_region(cpu_local_var(current)->vm,
 				region->brk_end_allocated, address, vrflag);
-	ihk_mc_spinlock_unlock_noirq(&cpu_local_var(current)->vm->memory_range_lock);
+	memory_range_unlock(cpu_local_var(current)->vm);
 
 	if (old_brk_end_allocated == region->brk_end_allocated) {
 		r = old_brk_end_allocated;
@@ -2425,7 +2425,7 @@ static void munmap_all(void)
 	size_t size;
 	int error;
 
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 	next = lookup_process_memory_range(vm, 0, -1);
 	while ((range = next)) {
 		next = next_process_memory_range(vm, range);
@@ -2439,7 +2439,7 @@ static void munmap_all(void)
 			/* through */
 		}
 	}
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 
 	/* free vm_ranges which do_munmap() failed to remove. */
 	free_process_memory_ranges(thread->vm);
@@ -2471,18 +2471,18 @@ SYSCALL_DECLARE(execve)
 	struct process *proc = thread->proc;
 	int i;
 
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 
 	range = lookup_process_memory_range(vm, (unsigned long)filename, 
 			(unsigned long)filename+1);
 
 	if (range == NULL || !(range->flag & VR_PROT_READ)) {
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_unlock(vm);
 		kprintf("execve(): ERROR: filename is bad address\n");
 		return -EFAULT;
 	}
 	
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 
 	desc = ihk_mc_alloc_pages(4, IHK_MC_AP_NOWAIT);
 	if (!desc) {
@@ -4802,10 +4802,10 @@ SYSCALL_DECLARE(mincore)
 	range = NULL;
 	up = vec;
 	for (addr = start; addr < end; addr += PAGE_SIZE) {
-		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+		memory_range_lock(vm);
 		range = lookup_process_memory_range(vm, addr, addr+1);
 		if (!range) {
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			memory_range_unlock(vm);
 			dkprintf("mincore(0x%lx,0x%lx,%p):lookup failed. ENOMEM\n",
 					start, len, vec);
 			return -ENOMEM;
@@ -4827,7 +4827,7 @@ SYSCALL_DECLARE(mincore)
 			value = 0;
 		}
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_unlock(vm);
 
 		error = copy_to_user(up, &value, sizeof(value));
 		if (error) {
@@ -5001,7 +5001,7 @@ SYSCALL_DECLARE(madvise)
 		goto out2;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	memory_range_lock(thread->vm);
 	/* check contiguous map */
 	first = NULL;
 	range = NULL;	/* for avoidance of warning */
@@ -5126,7 +5126,7 @@ SYSCALL_DECLARE(madvise)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	memory_range_unlock(thread->vm);
 
 out2:
 	dkprintf("[%d]sys_madvise(%lx,%lx,%x): %d\n",
@@ -5438,11 +5438,11 @@ SYSCALL_DECLARE(shmat)
 		return -EACCES;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 
 	if (addr) {
 		if (lookup_process_memory_range(vm, addr, addr+len)) {
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			memory_range_unlock(vm);
 			shmobj_list_unlock();
 			memobj_unref(&obj->memobj);
 			dkprintf("shmat(%#x,%p,%#x):lookup_process_memory_range succeeded. -ENOMEM\n", shmid, shmaddr, shmflg);
@@ -5452,7 +5452,7 @@ SYSCALL_DECLARE(shmat)
 	else {
 		error = search_free_space(len, obj->pgshift, &addr);
 		if (error) {
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			memory_range_unlock(vm);
 			shmobj_list_unlock();
 			memobj_unref(&obj->memobj);
 			dkprintf("shmat(%#x,%p,%#x):search_free_space failed. %d\n", shmid, shmaddr, shmflg, error);
@@ -5468,7 +5468,7 @@ SYSCALL_DECLARE(shmat)
 	if (!(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ | PROT_EXEC, 1/* holding memory_range_lock */);
 		if (error) {
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			memory_range_unlock(vm);
 			shmobj_list_unlock();
 			memobj_unref(&obj->memobj);
 			dkprintf("shmat(%#x,%p,%#x):set_host_vma failed. %d\n", shmid, shmaddr, shmflg, error);
@@ -5483,13 +5483,13 @@ SYSCALL_DECLARE(shmat)
 			(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 		}
 		memobj_unref(&obj->memobj);
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_unlock(vm);
 		shmobj_list_unlock();
 		dkprintf("shmat(%#x,%p,%#x):add_process_memory_range failed. %d\n", shmid, shmaddr, shmflg, error);
 		return error;
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 	shmobj_list_unlock();
 
 	dkprintf("shmat(%#x,%p,%#x): 0x%lx. %d\n", shmid, shmaddr, shmflg, addr);
@@ -5776,23 +5776,23 @@ SYSCALL_DECLARE(shmdt)
 	int error;
 
 	dkprintf("shmdt(%p)\n", shmaddr);
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 	range = lookup_process_memory_range(vm, (uintptr_t)shmaddr, (uintptr_t)shmaddr+1);
 	if (!range || (range->start != (uintptr_t)shmaddr) || !range->memobj
 			|| !(range->memobj->flags & MF_SHMDT_OK)) {
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_unlock(vm);
 		dkprintf("shmdt(%p): -EINVAL\n", shmaddr);
 		return -EINVAL;
 	}
 
 	error = do_munmap((void *)range->start, (range->end - range->start), 1/* holding memory_range_lock */);
 	if (error) {
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_unlock(vm);
 		dkprintf("shmdt(%p): %d\n", shmaddr, error);
 		return error;
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 	dkprintf("shmdt(%p): 0\n", shmaddr);
 	return 0;
 } /* sys_shmdt() */
@@ -7682,7 +7682,7 @@ SYSCALL_DECLARE(mlock)
 		goto out2;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	memory_range_lock(thread->vm);
 
 	/* check contiguous map */
 	first = NULL;
@@ -7787,7 +7787,7 @@ SYSCALL_DECLARE(mlock)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	memory_range_unlock(thread->vm);
 
 	if (!error) {
 		error = populate_process_memory(thread->vm, (void *)start, len);
@@ -7857,7 +7857,7 @@ SYSCALL_DECLARE(munlock)
 		goto out2;
 	}
 
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	memory_range_lock(thread->vm);
 
 	/* check contiguous map */
 	first = NULL;
@@ -7962,7 +7962,7 @@ SYSCALL_DECLARE(munlock)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	memory_range_unlock(thread->vm);
 out2:
 	dkprintf("[%d]sys_munlock(%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), start0, len0, error);
@@ -8018,7 +8018,7 @@ SYSCALL_DECLARE(remap_file_pages)
 
 	dkprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x)\n",
 			start0, size, prot, pgoff, flags);
-	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+	memory_range_lock(thread->vm);
 #define	PGOFF_LIMIT	((off_t)1 << ((8*sizeof(off_t) - 1) - PAGE_SHIFT))
 	if ((size <= 0) || (size & (PAGE_SIZE - 1)) || (prot != 0)
 			|| (PGOFF_LIMIT <= pgoff)
@@ -8062,7 +8062,7 @@ SYSCALL_DECLARE(remap_file_pages)
 	}
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+	memory_range_unlock(thread->vm);
 
 	if (need_populate
 			&& (er = populate_process_memory(
@@ -8103,7 +8103,7 @@ SYSCALL_DECLARE(mremap)
 
 	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx)\n",
 			oldaddr, oldsize0, newsize0, flags, newaddr);
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 
 	/* check arguments */
 	if ((oldaddr & ~PAGE_MASK)
@@ -8299,7 +8299,7 @@ SYSCALL_DECLARE(mremap)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 	if (!error && (lckstart < lckend)) {
 		error = populate_process_memory(thread->vm, (void *)lckstart, (lckend - lckstart));
 		if (error) {
@@ -8334,7 +8334,7 @@ SYSCALL_DECLARE(msync)
 	uintptr_t e;
 
 	dkprintf("sys_msync(%#lx,%#lx,%#x)\n", start0, len0, flags);
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 
 	if ((start0 & ~PAGE_MASK)
 			|| (flags & ~(MS_ASYNC|MS_INVALIDATE|MS_SYNC))
@@ -8428,7 +8428,7 @@ SYSCALL_DECLARE(msync)
 
 	error = 0;
 out:
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 	dkprintf("sys_msync(%#lx,%#lx,%#x):%d\n", start0, len0, flags, error);
 	return error;
 } /* sys_msync() */
@@ -8609,7 +8609,7 @@ SYSCALL_DECLARE(mbind)
 	}
 
 	/* Validate address range */
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	memory_range_lock(vm);
 
 	range = lookup_process_memory_range(vm, addr, addr + len);
 	if (!range) {
@@ -8776,7 +8776,7 @@ mbind_update_only:
 	error = 0;
 
 unlock_out:
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	memory_range_unlock(vm);
 out:
 	return error;
 } /* sys_mbind() */
@@ -9006,18 +9006,18 @@ SYSCALL_DECLARE(get_mempolicy)
 	if (flags & MPOL_F_ADDR) {
 		struct vm_range *range;
 
-		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+		memory_range_lock(vm);
 		range = lookup_process_memory_range(vm, addr, addr + 1);
 		if (!range) {
 			dkprintf("%s: ERROR: range is invalid\n", __FUNCTION__);
 			error = -EFAULT;
-			ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+			memory_range_unlock(vm);
 			goto out;
 		}
 
 		range_policy = vm_range_policy_search(vm, addr);
 
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		memory_range_unlock(vm);
 	}
 
 	/* Return policy */
