@@ -38,6 +38,7 @@
 extern int snprintf(char *buf, size_t size, const char *fmt, ...);
 extern int sscanf(const char * buf, const char * fmt, ...);
 extern int scnprintf(char * buf, size_t size, const char *fmt, ...);
+static void do_backlog(void *arg);
 
 struct mckernel_procfs_buffer {
 	unsigned long next_pa;
@@ -148,12 +149,28 @@ procfs_delete_thread(struct thread *thread)
 	procfs_thread_ctl(thread, SCD_MSG_PROCFS_TID_DELETE);
 }
 
+static int add_backlog(struct process_vm *vm, struct ikc_scd_packet *rpacket)
+{
+	void *arg;
+	int err;
+
+	if (!(arg = kmalloc(sizeof(struct ikc_scd_packet), IHK_MC_AP_NOWAIT))) {
+		return -ENOMEM;
+	}
+	memcpy(arg, rpacket, sizeof(struct ikc_scd_packet));
+	if ((err = add_backlog_vm(vm, do_backlog, arg))) {
+		kfree(arg);
+		return err;
+	}
+	return 0;
+}
+
 /**
  * \brief The callback function for mckernel procfs files.
  *
  * \param rarg returned argument
  */
-int process_procfs_request(struct ikc_scd_packet *rpacket)
+static int _process_procfs_request(struct ikc_scd_packet *rpacket, int intCTX)
 {
 	unsigned long rarg = rpacket->arg;
 	unsigned long parg, pbuf;
@@ -419,7 +436,14 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 	if (strcmp(p, "maps") == 0) {
 		struct vm_range *range;
 
-		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+		if (intCTX) {
+			if (!memory_range_trylock(vm)) {
+				if ((err = add_backlog(vm, rpacket))) {
+					goto err;
+				}
+				goto out;
+			}
+		}
 
 		range = lookup_process_memory_range(vm, 0, -1);
 		while (range) {
@@ -455,14 +479,18 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 
 			if (ans < 0 || ans > count ||
 			    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
-				ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+				if (intCTX) {
+					memory_range_unlock(vm);
+				}
 				goto err;
 			}
 			range = next_process_memory_range(vm, range);
 		}
-		
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-		
+
+		if (intCTX) {
+			memory_range_unlock(vm);
+		}
+
 		ans = 0;
 		goto end;
 	}
@@ -483,8 +511,15 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 
 		start = (offset / sizeof(uint64_t)) << PAGE_SHIFT;
 		end = start + ((count / sizeof(uint64_t)) << PAGE_SHIFT);
-		
-		ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+		if (intCTX) {
+			if (!memory_range_trylock(vm)) {
+				if ((err = add_backlog(vm, rpacket))) {
+					goto err;
+				}
+				goto out;
+			}
+		}
 
 		while (start < end) {
 			*_buf = ihk_mc_pt_virt_to_pagemap(proc->vm->address_space->page_table, start);
@@ -494,8 +529,10 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			++_buf;
 		}
 
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
-		
+		if (intCTX) {
+			memory_range_unlock(vm);
+		}
+
 		dprintf("/proc/pagemap: 0x%lx - 0x%lx, count: %d\n", 
 			start, end, count);
 		
@@ -526,14 +563,23 @@ int process_procfs_request(struct ikc_scd_packet *rpacket)
 			goto err;
 		}
 
-		ihk_mc_spinlock_lock_noirq(&proc->vm->memory_range_lock);
+		if (intCTX) {
+			if (!memory_range_trylock(proc->vm)) {
+				if ((err = add_backlog(proc->vm, rpacket))) {
+					goto err;
+				}
+				goto out;
+			}
+		}
 		range = lookup_process_memory_range(vm, 0, -1);
 		while (range) {
 			if(range->flag & VR_LOCKED)
 				lockedsize += range->end - range->start;
 			range = next_process_memory_range(vm, range);
 		}
-		ihk_mc_spinlock_unlock_noirq(&proc->vm->memory_range_lock);
+		if (intCTX) {
+			memory_range_unlock(proc->vm);
+		}
 
 		cpu_bitmask = &bitmasks[bitmasks_offset];
 		bitmasks_offset += bitmap_scnprintf(cpu_bitmask,
@@ -786,6 +832,9 @@ end:
 	if (r->pbuf == PA_NULL && buf_top)
 		r->pbuf = virt_to_phys(buf_top);
 err:
+	send_procfs_answer(rpacket, err);
+
+out:
 	if (vbuf) {
 		ihk_mc_unmap_virtual(vbuf, npages);
 		ihk_mc_unmap_memory(NULL, pbuf, r->count);
@@ -806,4 +855,17 @@ err:
 		release_process_vm(vm);
 
 	return err;
+}
+
+int process_procfs_request(struct ikc_scd_packet *rpacket)
+{
+	return _process_procfs_request(rpacket, 1);
+}
+
+static void do_backlog(void *arg)
+{
+	struct ikc_scd_packet *rpacket = arg;
+
+	_process_procfs_request(rpacket, 0);
+	kfree(arg);
 }
