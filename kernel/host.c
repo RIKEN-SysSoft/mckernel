@@ -592,6 +592,20 @@ extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, i
 extern void terminate_host(int pid);
 extern void debug_log(long);
 
+void send_procfs_answer(struct ikc_scd_packet *packet, int err)
+{
+	struct ikc_scd_packet pckt;
+	struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
+
+	pckt.msg = SCD_MSG_PROCFS_ANSWER;
+	pckt.ref = packet->ref;
+	pckt.arg = packet->arg;
+	pckt.err = err;
+	pckt.reply = packet->reply;
+	pckt.pid = packet->pid;
+	syscall_channel_send(resp_channel, &pckt);
+}
+
 static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
                                   void *__packet, void *ihk_os)
 {
@@ -736,13 +750,7 @@ out_remote_pf:
 
 	case SCD_MSG_PROCFS_REQUEST:
 	case SCD_MSG_PROCFS_RELEASE:
-		pckt.msg = SCD_MSG_PROCFS_ANSWER;
-		pckt.ref = packet->ref;
-		pckt.arg = packet->arg;
-		pckt.err = process_procfs_request(packet);
-		pckt.reply = packet->reply;
-		pckt.pid = packet->pid;
-		syscall_channel_send(resp_channel, &pckt);
+		process_procfs_request(packet);
 		ret = 0;
 		break;
 
