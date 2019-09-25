@@ -152,5 +152,11 @@ export PSM2_MQ_RNDV_HFI_WINDOW=4194304
 export PSM2_MQ_EAGER_SDMA_SZ=65536
 export PSM2_MQ_RNDV_HFI_THRESH=200000
 
-mpirun ${HOSTFILE} -n ${RANKS} -ppn ${PPN} ${MPI_ENV} ${BINDIR}/mcexec -n ${PPN} ${NUMA} ${UTIL_CPUS} --enable-hfi1 --mpol-threshold=1M --stack-premap=4M,4G --extend-heap-by=8M --disable-sched-yield --mpol-shm-premap ${COMMAND}
+MCKERNEL_HFI1=""
+if [ ${PPN} -gt 16 ]; then
+	export PSM2_TID=0
+	MCKERNEL_HFI1="--enable-hfi1"
+fi
+
+mpirun ${HOSTFILE} -n ${RANKS} -ppn ${PPN} ${MPI_ENV} ${BINDIR}/mcexec -n ${PPN} ${NUMA} ${UTIL_CPUS} ${MCKERNEL_HFI1} --mpol-threshold=1M --stack-premap=4M,4G --extend-heap-by=8M --disable-sched-yield --mpol-shm-premap ${COMMAND}
 
