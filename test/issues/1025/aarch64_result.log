@@ -1,0 +1,16 @@
+*** C1025T01 ******************************************
+** Linux's result *************************************
+* REF_CPU_CYCLES event is NOT supported Linux on aarch64
+
+** McKernel's result *************************************
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: none]
+fd: 8
+REF_CPU_CYCLES         :          6641022
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: user]
+fd: 8
+REF_CPU_CYCLES         :               97
+[type: HARDWARE, counter: HW_REF_CPU_CYCLES, exclude: kernel]
+fd: 8
+REF_CPU_CYCLES         :          6644473
+** C1025T01 PASSED
+
