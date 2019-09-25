@@ -1725,6 +1725,8 @@ SYSCALL_DECLARE(mmap)
 		}
 
 		pgsize = (size_t)1 << ((flags >> MAP_HUGE_SHIFT) & 0x3F);
+		/* Round-up map length by pagesize */
+		len0 = ALIGN(len0, pgsize);
 
 		if (rusage_check_overmap(len0,
 				(flags >> MAP_HUGE_SHIFT) & 0x3F)) {
