@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7e35c57f_0589e627",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1971,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T13:26:47Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tekprintf(\"%s: ERROR: xpmem_remap_pte() failed %d\\n\",",
+      "revId": "af214546c7cfb4f0b188887daba32c24e4c88a0e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
