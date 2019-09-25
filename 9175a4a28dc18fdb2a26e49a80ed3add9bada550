@@ -1,0 +1,310 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "56eb5770_b75242cc",
+        "filename": "test/issues/452/C452.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e1485c16_e99eae99",
+        "filename": "test/issues/452/C452.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b9abdcf8_d7f18821",
+        "filename": "test/issues/452/C452.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ac57ff4e_f0289249",
+        "filename": "test/issues/452/C452.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "76cf0892_a8da3521",
+        "filename": "test/issues/452/C452.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a8604014_7a2280e1",
+        "filename": "test/issues/452/C452.patch",
+        "patchSetId": 6
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7fd4d253_c9424033",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+000000400000-000000401000 r-xs 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "18640594_ecb36efb",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+000000600000-000000601000 r--s 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e203d967_b2198460",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+000000601000-000000602000 rw-s 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5a31120_91291966",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+155555600000-155555622000 r-xs 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0acd101f_c6b70a59",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+155555821000-155555822000 r--s 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5ce3428_e49fa3fc",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+155555822000-155555824000 rw-s 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e390bd3_cea7b060",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+2aaaaa9fc000-2aaaaaa00000 rw-p 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7373b762_f045737e",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+2aaaaaa02000-2aaaaaa03000 rw-p 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "251a0f0b_778680e2",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+2aaaaaa1b000-2aaaaaa1c000 rw-p 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ff24f4b_6cb2d2e3",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+2aaaaade4000-2aaaaade9000 rw-p 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "df072944_5abbcd2d",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+2aaaaade9000-2aaaaadeb000 rw-p 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b36edad4_e88c02ac",
+        "filename": "test/issues/452/C452.txt",
+        "patchSetId": 6
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-25T14:06:58Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+2aaaaadeb000-2aaaaadec000 rw-p 0 0:0 0^I^I^I$",
+      "revId": "9175a4a28dc18fdb2a26e49a80ed3add9bada550",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
