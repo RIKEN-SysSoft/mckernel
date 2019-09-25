@@ -256,12 +256,20 @@ struct hw_perf_event_extra {
 	int idx;
 };
 
+/**
+ * enum perf_event_state - the states of an event:
+ */
+enum perf_event_state {
+	PERF_EVENT_STATE_INACTIVE   =  0,
+	PERF_EVENT_STATE_ACTIVE     =  1,
+};
 
 struct mc_perf_event {
 	struct perf_event_attr		attr;
 	struct hw_perf_event_extra extra_reg;
 	unsigned long		hw_config;
 	unsigned long		hw_config_ext;
+	enum perf_event_state		state;
 	int 				cpu_id;
 	int 				counter_id;	// counter_id
 	unsigned long			count;		// counter_value
@@ -275,6 +283,13 @@ struct mc_perf_event {
 	int 				nr_siblings;
 	int				pid;
 	struct list_head		group_entry;
+	int				use_invariant_tsc;
+	long long			base_user_tsc;
+	long long			stopped_user_tsc;
+	long long			user_accum_count;
+	long long			base_system_tsc;
+	long long			stopped_system_tsc;
+	long long			system_accum_count;
 };
 
 struct perf_event_mmap_page {
