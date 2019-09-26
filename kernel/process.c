@@ -3569,6 +3569,11 @@ int __sched_wakeup_thread(struct thread *thread,
 
 		/* Make interrupt_exit() call schedule() */
 		v->flags |= CPU_FLAG_NEED_RESCHED;
+
+		/* Make sure to check if timer needs to be re-enabled */
+		if (thread->cpu_id == ihk_mc_get_processor_id()) {
+			set_timer(1);
+		}
 	}
 	else {
 		status = -EINVAL;
