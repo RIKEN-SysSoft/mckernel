@@ -1,0 +1,134 @@
+Script started, file is typescript
+mcstop+release.sh ... done
+mcreboot.sh -c 1-6,29-34 -m 50G@0,50G@1 -r 1-6:0+29-34:28 -O ... done
+fork01      1  TPASS  :  fork() returned 22873
+fork01      2  TPASS  :  child pid and fork() return agree: 22873
+--- C1321T01: no error
+*** C1321T01: fork01 PASS (2)
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+--- C1321T02: no error
+*** C1321T02: fork02 PASS (1)
+fork03      0  TINFO  :  process id in parent of child from fork : 22967
+fork03      1  TPASS  :  test 1 PASSED
+--- C1321T03: no error
+*** C1321T03: fork03 PASS (1)
+exit01      1  TPASS  :  exit() test PASSED
+--- C1321T04: no error
+*** C1321T04: exit01 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+exit02.c:59: PASS: File written by child read back correctly
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+--- C1321T05: no error
+*** C1321T05: exit02 PASS (0)
+exit_group01    1  TPASS  :  exit_group() succeeded
+--- C1321T06: no error
+*** C1321T06: exit_group01 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+wait401.c:55: PASS: waitpid() returned correct pid 23183
+wait401.c:64: PASS: WIFEXITED() is set in status
+wait401.c:69: PASS: WEXITSTATUS() == 0
+
+Summary:
+passed   3
+failed   0
+skipped  0
+warnings 0
+--- C1321T07: no error
+*** C1321T07: wait401 PASS (0)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid01.c:51: PASS: waitpid() returned correct pid 23244
+waitpid01.c:60: PASS: WIFSIGNALED() set in status
+waitpid01.c:68: PASS: WTERMSIG() == SIGALRM
+
+Summary:
+passed   3
+failed   0
+skipped  0
+warnings 0
+--- C1321T08: no error
+*** C1321T08: waitpid01 PASS (0)
+waitpid02    1  TPASS  :  received expected pid
+waitpid02    2  TPASS  :  received expected signal
+waitpid02    3  TPASS  :  received expected exit value
+--- C1321T09: no error
+*** C1321T09: waitpid02 PASS (3)
+waitpid03    1  TPASS  :  Got correct child PID
+waitpid03    2  TPASS  :  Condition 2 test passed
+--- C1321T10: no error
+*** C1321T10: waitpid03 PASS (2)
+Script done, file is typescript
+[satoken@apollo16 1321]$ cat typescript
+Script started on Thu 26 Sep 2019 10:41:45 AM JST
+mcstop+release.sh ... done
+mcreboot.sh -c 1-6,29-34 -m 50G@0,50G@1 -r 1-6:0+29-34:28 -O ... done
+fork01      1  TPASS  :  fork() returned 22873
+fork01      2  TPASS  :  child pid and fork() return agree: 22873
+--- C1321T01: no error
+*** C1321T01: fork01 PASS (2)
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+--- C1321T02: no error
+*** C1321T02: fork02 PASS (1)
+fork03      0  TINFO  :  process id in parent of child from fork : 22967
+fork03      1  TPASS  :  test 1 PASSED
+--- C1321T03: no error
+*** C1321T03: fork03 PASS (1)
+exit01      1  TPASS  :  exit() test PASSED
+--- C1321T04: no error
+*** C1321T04: exit01 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+exit02.c:59: PASS: File written by child read back correctly
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+--- C1321T05: no error
+*** C1321T05: exit02 PASS (0)
+exit_group01    1  TPASS  :  exit_group() succeeded
+--- C1321T06: no error
+*** C1321T06: exit_group01 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+wait401.c:55: PASS: waitpid() returned correct pid 23183
+wait401.c:64: PASS: WIFEXITED() is set in status
+wait401.c:69: PASS: WEXITSTATUS() == 0
+
+Summary:
+passed   3
+failed   0
+skipped  0
+warnings 0
+--- C1321T07: no error
+*** C1321T07: wait401 PASS (0)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid01.c:51: PASS: waitpid() returned correct pid 23244
+waitpid01.c:60: PASS: WIFSIGNALED() set in status
+waitpid01.c:68: PASS: WTERMSIG() == SIGALRM
+
+Summary:
+passed   3
+failed   0
+skipped  0
+warnings 0
+--- C1321T08: no error
+*** C1321T08: waitpid01 PASS (0)
+waitpid02    1  TPASS  :  received expected pid
+waitpid02    2  TPASS  :  received expected signal
+waitpid02    3  TPASS  :  received expected exit value
+--- C1321T09: no error
+*** C1321T09: waitpid02 PASS (3)
+waitpid03    1  TPASS  :  Got correct child PID
+waitpid03    2  TPASS  :  Condition 2 test passed
+--- C1321T10: no error
+*** C1321T10: waitpid03 PASS (2)
+
+Script done on Thu 26 Sep 2019 10:43:05 AM JST
