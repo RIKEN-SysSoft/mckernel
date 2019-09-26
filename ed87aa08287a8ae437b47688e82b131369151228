@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fea43249_c4b528e6",
+        "filename": "test/issues/1321/C1321_x86_64.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:40:00Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid01    1  TPASS  :  recieved expected pid",
+      "revId": "ed87aa08287a8ae437b47688e82b131369151228",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ecd654ae_1dba2c8e",
+        "filename": "test/issues/1321/C1321_x86_64.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:40:00Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid01    2  TPASS  :  recieved expected signal",
+      "revId": "ed87aa08287a8ae437b47688e82b131369151228",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61e1df00_6bdddc66",
+        "filename": "test/issues/1321/C1321_x86_64.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:40:00Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid02    1  TPASS  :  recieved expected pid",
+      "revId": "ed87aa08287a8ae437b47688e82b131369151228",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "596d935f_e4de0c78",
+        "filename": "test/issues/1321/C1321_x86_64.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:40:00Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid02    2  TPASS  :  recieved expected signal",
+      "revId": "ed87aa08287a8ae437b47688e82b131369151228",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f142f46_1f1c63a9",
+        "filename": "test/issues/1321/C1321_x86_64.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:40:00Z",
+      "side": 1,
+      "message": "WARNING: \u0027recieved\u0027 may be misspelled - perhaps \u0027received\u0027?\n+waitpid02    3  TPASS  :  recieved expected exit value",
+      "revId": "ed87aa08287a8ae437b47688e82b131369151228",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
