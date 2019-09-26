@@ -1733,6 +1733,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 					__func__, flags, memobj->path, memobj->flags, pgshift, p2align);
 			pgshift = PAGE_SHIFT;
 			p2align = PAGE_P2ALIGN;
+			populated_mapping = 1;
 		}
 #ifdef ATTACHED_MIC
 		/*
@@ -1770,6 +1771,13 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 #ifdef PROFILE_ENABLE
 				profile_event_add(PROFILE_mmap_device_file, len);
 #endif // PROFILE_ENABLE
+				if (memobj->path &&
+						(!strncmp("/tmp/ompi.", memobj->path, 10) ||
+						 !strncmp("/dev/shm/", memobj->path, 9))) {
+					pgshift = PAGE_SHIFT;
+					p2align = PAGE_P2ALIGN;
+					populated_mapping = 1;
+				}
 			}
 		}
 		if (error) {

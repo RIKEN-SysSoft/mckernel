@@ -960,20 +960,23 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
-	/* OpenMPI /tmp shared memory hack */
+	/* Shared memory hack */
 	{
 		char *pathbuf, *fullpath;
 		pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
 		if (pathbuf) {
 			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 			if (!IS_ERR(fullpath)) {
-				if (!strncmp("/tmp/ompi.", fullpath, 10)) {
+				if (!strncmp("/tmp/ompi.", fullpath, 10) ||
+						!strncmp("/dev/shm/", fullpath, 9)) {
 					dprintk("%s: treating %s as a device file..\n",
 						__func__, fullpath);
 					kfree(pathbuf);
+
 					error = -ESRCH;
 					goto out;
 				}
+
 				kfree(pathbuf);
 			}
 		}
@@ -1396,14 +1399,15 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 #define	ANY_WHERE 0
 	if (prot_and_flags & MAP_LOCKED) prot_and_flags |= MAP_POPULATE;
 
-	/* OpenMPI /tmp shared memory hack */
+	/* Shared memory hack */
 	{
 		char *pathbuf, *fullpath;
 		pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
 		if (pathbuf) {
 			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 			if (!IS_ERR(fullpath)) {
-				if (!strncmp("/tmp/ompi.", fullpath, 10)) {
+				if (!strncmp("/tmp/ompi.", fullpath, 10) ||
+						!strncmp("/dev/shm/", fullpath, 9)) {
 					dprintk("%s: pre-populating %s..\n",
 						__func__, fullpath);
 					prot_and_flags |= MAP_POPULATE;
@@ -1583,10 +1587,27 @@ retry:
 #else
 		fault = handle_mm_fault(current->mm, vma, va, flags);
 #endif
+#ifdef SC_DEBUG
 		if (fault != 0) {
-			printk("%s: error: faulting %lx at off: %lu\n", 
-					__FUNCTION__, va, off);
+			char *pathbuf = NULL;
+			char *fullpath;
+
+			if (vma->vm_file) {
+				pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
+				if (pathbuf) {
+					fullpath = d_path(&vma->vm_file->f_path,
+							pathbuf, PATH_MAX);
+					if (!IS_ERR(fullpath)) {
+						printk("%s: WARNING: couldn't fault 0x%lx"
+								" at off: %lu in %s\n",
+								__FUNCTION__, va, off, fullpath);
+					}
+
+					kfree(pathbuf);
+				}
+			}
 		}
+#endif
 
 		page_fault_attempted = 1;
 		goto retry;
