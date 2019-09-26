@@ -33,5 +33,5 @@ McKernelのインストール先やLTPの配置場所は、$HOME/.mck_test_confi
 ファイルを $HOME にコピーし、適宜編集する
 
 □ 実行結果
-C1321.txt 参照。
+C1321_x86_64.txt(x86_64実行結果)、C1321_arm64.txt(arm64実行結果) 参照。
 すべての項目をPASSしていることを確認。
