@@ -292,6 +292,7 @@ schedule:
 				cpu_restore_interrupt(flags);
 				schedule();
 				waitq_finish_wait(&thread->scd_wq, &scd_wq_entry);
+				continue;
 			}
 			else {
 				if (do_schedule) {
