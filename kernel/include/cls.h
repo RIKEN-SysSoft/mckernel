@@ -94,6 +94,7 @@ struct cpu_local_var {
 	int in_interrupt;
 	int no_preempt;
 	int timer_enabled;
+	unsigned long nr_ctx_switches;
 	int kmalloc_initialized;
 	struct ihk_os_cpu_monitor *monitor;
 	struct rusage_percpu *rusage;

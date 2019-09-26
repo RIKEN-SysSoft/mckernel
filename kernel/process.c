@@ -3404,8 +3404,11 @@ void schedule(void)
 	set_timer(1);
 
 	if (switch_ctx) {
-		dkprintf("schedule: %d => %d \n",
-		        prev ? prev->tid : 0, next ? next->tid : 0);
+		++cpu_local_var(nr_ctx_switches);
+		dkprintf("%s: %d => %d [ctx sws: %lu]\n",
+				__func__,
+				prev ? prev->tid : 0, next ? next->tid : 0,
+				cpu_local_var(nr_ctx_switches));
 
 		if (prev && prev->ptrace_debugreg) {
 			save_debugreg(prev->ptrace_debugreg);
