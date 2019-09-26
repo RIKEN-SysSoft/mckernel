@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b1a38708_f29834f8",
+        "filename": "test/issues/1350/C1350.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T05:09:54Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret \u003d 0;\n+\tcatch_cnt \u003d 0;",
+      "revId": "d31cd7e41fe61d556de78ead623c04036bae74d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
