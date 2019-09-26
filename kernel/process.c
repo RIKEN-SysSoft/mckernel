@@ -2256,10 +2256,12 @@ int page_fault_process_vm(struct process_vm *fault_vm, void *fault_addr, uint64_
 			break;
 		}
 
+		preempt_enable();
 		if (thread->pgio_fp) {
 			(*thread->pgio_fp)(thread->pgio_arg);
 			thread->pgio_fp = NULL;
 		}
+		preempt_disable();
 	}
 
 	return error;
