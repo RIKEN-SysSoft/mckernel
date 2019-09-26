@@ -3323,7 +3323,7 @@ void set_timer(int runq_locked)
 	}
 
 	list_for_each_entry(thread, &v->runq, sched_list) {
-		if (thread->status != PS_RUNNING) {
+		if (thread->status != PS_RUNNING && !thread->spin_sleep) {
 			continue;
 		}
 		num_running++;
@@ -3333,7 +3333,7 @@ void set_timer(int runq_locked)
 	if (num_running > 1 || v->current->itimer_enabled ||
 	    !list_empty(&v->backlog_list)) {
 		if (!cpu_local_var(timer_enabled)) {
-			lapic_timer_enable(/*10000000*/1000000);
+			lapic_timer_enable(1000000);
 			cpu_local_var(timer_enabled) = 1;
 		}
 	}
