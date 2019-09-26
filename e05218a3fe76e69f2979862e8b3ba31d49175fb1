@@ -1,0 +1,293 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "838005fb_a6ca5d73",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 313,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d13215d3_f7bf4b0c",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 386,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "356bbe4e_fe18fc0c",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 407,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05dab91c_52103efc",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 413,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1cde9668_4442ad42",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 476,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e3ab1bd_21c1e9a9",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 489,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9703062d_ccb06d8b",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 502,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "edd5ef1c_54a64884",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 518,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ea30efcb_11aa818f",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 538,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9301f146_08144084",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 544,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31d5162a_f2929b5e",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 566,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a66ca828_ea3e5cbf",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 571,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "052c736b_556a1297",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 577,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4212edf6_eb8353c7",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 583,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c59b7c3c_d7637a53",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 599,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "017942d7_fb62eefd",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 625,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- $",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "572d5ed0_264a5019",
+        "filename": "test/signalonfork+wait/error_injection.patch",
+        "patchSetId": 3
+      },
+      "lineNbr": 632,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-09-26T02:26:17Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+- ^I$",
+      "revId": "e05218a3fe76e69f2979862e8b3ba31d49175fb1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
