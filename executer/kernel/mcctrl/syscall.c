@@ -1033,7 +1033,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			pager = newpager;
 			newpager = NULL;
 
-			/* Intel MPI library and shared memory "prefetch" */
+			/* Shared libraries prefetch */
 			{
 				char *pathbuf, *fullpath;
 
@@ -1041,15 +1041,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 				if (pathbuf) {
 					fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 					if (!IS_ERR(fullpath)) {
-						if (!strncmp("/dev/shm/Intel_MPI", fullpath, 18)) {
-							mf_flags = (MF_PREMAP | MF_ZEROFILL);
-							dprintk("%s: filename: %s, premap & zerofill\n",
-									__FUNCTION__, fullpath);
-						}
-						else if (strstr(fullpath, "libmpi") ||
-								strstr(fullpath, "libiomp") ||
-								strstr(fullpath, "libpthread") ||
-								strstr(fullpath, "libc.so")) {
+						if (strstr(fullpath, ".so")) {
 							mf_flags = MF_PREFETCH;
 							dprintk("%s: filename: %s, prefetch\n",
 									__FUNCTION__, fullpath);
