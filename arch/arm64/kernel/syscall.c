@@ -2129,10 +2129,10 @@ int do_process_vm_read_writev(int pid,
 	struct process *rproc;
 	struct process *lproc = lthread->proc;
 	struct process_vm *rvm = NULL;
-	unsigned long rphys;
-	unsigned long rpage_left;
-	unsigned long psize;
-	void *rva;
+	unsigned long lphys, rphys;
+	unsigned long lpage_left, rpage_left;
+	unsigned long lpsize, rpsize;
+	void *rva, *lva;
 	struct vm_range *range;
 	struct mcs_rwlock_node_irqsave lock;
 	struct mcs_rwlock_node update_lock;
@@ -2329,10 +2329,53 @@ pri_out:
 			to_copy = remote_iov[ri].iov_len - roff;
 		}
 
-retry_lookup:
+retry_llookup:
+		/* Figure out local physical */
+		/* TODO: remember page and do this only if necessary */
+		ret = ihk_mc_pt_virt_to_phys_size(lthread->vm->address_space->page_table,
+				local_iov[li].iov_base + loff, &lphys, &lpsize);
+
+		if (ret) {
+			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
+			void *addr;
+
+			if (faulted) {
+				ret = -EFAULT;
+				goto out;
+			}
+
+			/* Fault in pages */
+			for (addr = (void *)
+					(((unsigned long)local_iov[li].iov_base + loff)
+					& PAGE_MASK);
+					addr < (local_iov[li].iov_base + loff + to_copy);
+					addr += PAGE_SIZE) {
+
+				ret = page_fault_process_vm(lthread->vm, addr, reason);
+				if (ret) {
+					ret = -EFAULT;
+					goto out;
+				}
+			}
+
+			faulted = 1;
+			goto retry_llookup;
+		}
+
+		lpage_left = ((((unsigned long)local_iov[li].iov_base + loff +
+			lpsize) & ~(lpsize - 1)) -
+			((unsigned long)local_iov[li].iov_base + loff));
+		if (lpage_left < to_copy) {
+			to_copy = lpage_left;
+		}
+
+		lva = phys_to_virt(lphys);
+
+retry_rlookup:
+		/* Figure out remote physical */
 		/* TODO: remember page and do this only if necessary */
 		ret = ihk_mc_pt_virt_to_phys_size(rvm->address_space->page_table,
-				remote_iov[ri].iov_base + roff, &rphys, &psize);
+				remote_iov[ri].iov_base + roff, &rphys, &rpsize);
 
 		if (ret) {
 			uint64_t reason = PF_POPULATE | PF_WRITE | PF_USER;
@@ -2358,11 +2401,11 @@ retry_lookup:
 			}
 
 			faulted = 1;
-			goto retry_lookup;
+			goto retry_rlookup;
 		}
 
 		rpage_left = ((((unsigned long)remote_iov[ri].iov_base + roff +
-			psize) & ~(psize - 1)) -
+			rpsize) & ~(rpsize - 1)) -
 			((unsigned long)remote_iov[ri].iov_base + roff));
 		if (rpage_left < to_copy) {
 			to_copy = rpage_left;
@@ -2371,16 +2414,16 @@ retry_lookup:
 		rva = phys_to_virt(rphys);
 
 		fast_memcpy(
-				(op == PROCESS_VM_READ) ? local_iov[li].iov_base + loff : rva,
-				(op == PROCESS_VM_READ) ? rva : local_iov[li].iov_base + loff,
+				(op == PROCESS_VM_READ) ? lva : rva,
+				(op == PROCESS_VM_READ) ? rva : lva,
 				to_copy);
 
 		copied += to_copy;
-		dkprintf("local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied, psize: %lu, rpage_left: %lu\n",
+		dkprintf("local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied, rpsize: %lu, rpage_left: %lu\n",
 			li, local_iov[li].iov_base + loff, 
 			(op == PROCESS_VM_READ) ? "<-" : "->", 
 			ri, remote_iov[ri].iov_base + roff, to_copy,
-			psize, rpage_left);
+			rpsize, rpage_left);
 
 		loff += to_copy;
 		roff += to_copy;
