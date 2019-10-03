@@ -1,0 +1,18 @@
+==========
+How to run
+==========
+
+(1) cd <mckernel>
+(2) Build McKernel
+(3) cd <mckernel>/test/issues/1349
+(4) make
+(5) sh ./run.sh
+
+============
+What to test
+============
+
+Check for memory leak when child processes exit without reaped by the parent's wait.
+
+--
+README COPYRIGHT FUJITSU LIMITED 2020
