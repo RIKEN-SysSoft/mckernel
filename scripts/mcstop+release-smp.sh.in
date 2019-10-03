@@ -19,9 +19,13 @@ mem=""
 cpus=""
 kill_in_use=""
 
-while getopts k OPT
+RMMOD_PATH=/sbin/rmmod
+while getopts r:k OPT
 do
 	case ${OPT} in
+	r)
+		RMMOD_PATH=${OPTARG}
+		;;
 	k)
 		kill_in_use=1
 		;;
@@ -32,6 +36,11 @@ done
 if [[ "$#" -ge "$OPTIND" ]]; then
 	shift $((OPTIND - 1))
 	echo "Extra arguments: $@" >&2
+	exit 1
+fi
+
+if [ ! -f ${RMMOD_PATH} ]; then
+	echo "error: ${RMMOD_PATH} doesn't exist, please specify by -r <path_to_rmmod>"
 	exit 1
 fi
 
@@ -109,7 +118,7 @@ fi
 
 # Remove delegator if loaded
 if grep mcctrl /proc/modules &>/dev/null; then
-	if ! sudo rmmod mcctrl 2>/dev/null; then
+	if ! sudo ${RMMOD_PATH} mcctrl 2>/dev/null; then
 		echo "error: removing mcctrl" >&2
 		exit 1
 	fi
@@ -117,7 +126,7 @@ fi
 
 # Remove SMP module
 if grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
-	if ! sudo rmmod ihk_smp_@ARCH@ 2>/dev/null; then
+	if ! sudo ${RMMOD_PATH} ihk_smp_@ARCH@ 2>/dev/null; then
 		echo "error: removing ihk_smp_@ARCH@" >&2
 		exit 1
 	fi
@@ -125,7 +134,7 @@ fi
 
 # Remove core module
 if grep -E 'ihk\s' /proc/modules &>/dev/null; then
-	if ! sudo rmmod ihk 2>/dev/null; then
+	if ! sudo ${RMMOD_PATH} ihk 2>/dev/null; then
 		echo "error: removing ihk" >&2
 		exit 1
 	fi
