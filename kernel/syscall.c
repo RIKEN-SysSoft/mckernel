@@ -1346,8 +1346,8 @@ void terminate(int rc, int sig)
 
 				if (child->ppid_parent == proc &&
 						child->status == PS_ZOMBIE) {
-					list_del(&child->hash_list);
-					list_del(&child->siblings_list);
+					list_del_init(&child->hash_list);
+					list_del_init(&child->siblings_list);
 					free_child = 1;
 				}
 				else if (child->ppid_parent == proc) {
@@ -1377,7 +1377,7 @@ void terminate(int rc, int sig)
 						&updatelock);
 
 				if (free_child)
-					kfree(child);
+					release_process(child);
 			}
 			mcs_rwlock_writer_unlock(&resource_set->process_hash->lock[i],
 					&lock);

@@ -1,0 +1,16 @@
+[root@localhost mckernel]# cd test/issues/1349/
+[root@localhost 1349]# make
+cc -Wall -O0 -ggdb3   -c -o do_fork6.o do_fork6.c
+cc -lpthread  do_fork6.o   -o do_fork6
+[root@localhost 1349]# sh run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 512M@4 ... done
+(an omission)
+[0] END FORK
+grandchild
+[0] FINISH CHILDREN
+FINISH PARENT
+OK
+
+--
+result.log COPYRIGHT FUJITSU LIMITED 2020
