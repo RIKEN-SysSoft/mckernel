@@ -21,19 +21,16 @@ file: $(TMPFILES)
 	rm -f $(TMPFILES)
 	dd if=/dev/zero of=./file  bs=1M  count=1
 
-async_progress.o:: async_progress.c util.h
+async_progress.o:: async_progress.c
 	$(CC) $(CFLAGS) -I$(UTI_DIR)/include -c $<
 
-util.o:: util.c util.h
-	$(CC) $(CFLAGS) -qopenmp -c $<
-
-014: 014.o async_progress.o util.o
+014: 014.o async_progress.o util_omp_mpi.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 015: 015.o async_progress.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-016: 016.o async_progress.o util.o
+016: 016.o async_progress.o util_omp_mpi.o
 	$(LD) -o $@ $^ $(LDFLAGS) -qopenmp
 
 016.o::016.c

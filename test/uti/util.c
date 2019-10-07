@@ -1,79 +1,174 @@
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
-#include <unistd.h>
-#include <sys/syscall.h>   /* For SYS_xxx definitions */
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <sys/syscall.h>   /* For SYS_xxx definitions */
+#include <sched.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 #include <time.h>
+#include <errno.h>
 #include "util.h"
 
-static inline void fixed_size_work() {
-	asm volatile(
-	    "movq $0, %%rcx\n\t"
-		"1:\t"
-		"addq $1, %%rcx\n\t"
-		"cmpq $99, %%rcx\n\t"
-		"jle 1b\n\t"
-		:
-		: 
-		: "rcx", "cc");
+/* Messaging */
+enum test_loglevel test_loglevel = TEST_LOGLEVEL_DEBUG;
+
+/* Time */
+double spw; /* sec per work */
+double omp_ovh;
+
+/* Perform asm loop for <delay> seconds */
+void sdelay(double _delay)
+{
+	double delay = MAX2(_delay - omp_ovh, 0);
+
+	if (delay == 0) {
+		return;
+	}
+
+	if (delay < 0) {
+		printf("delay < 0\n");
+		return;
+	}
+
+	#pragma omp parallel
+	{
+		asmloop(delay / spw);
+	}
 }
 
-static inline void bulk_fsw(unsigned long n) {
-	int j;
-	for (j = 0; j < (n); j++) {
-		fixed_size_work(); 
-	} 
-}
-
-double nspw; /* nsec per work */
-unsigned long nsec;
-
-void fwq_init() {
-	struct timespec start, end;
+void sdelay_init(int verbose)
+{
 	int i;
-	clock_gettime(TIMER_KIND, &start);
-#define N_INIT 10000000
-	bulk_fsw(N_INIT);
-	clock_gettime(TIMER_KIND, &end);
-	nsec = DIFFNSEC(end, start);
-	nspw = nsec / (double)N_INIT;
-}
+	double start, end, sum;
+	double omp_ovh_max, omp_ovh_min, omp_ovh_sum_g;
+#ifdef WITH_MPI
+	int rank, nranks;
 
-#if 1
-void fwq(long delay_nsec) {
-	if (delay_nsec < 0) { 
-        return;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &nranks);
+#endif
+	start = mytime();
+
+	#pragma omp parallel
+	{
+		asmloop(N_INIT);
 	}
-	bulk_fsw(delay_nsec / nspw);
-}
-#else /* For machines with large core-to-core performance variation (e.g. OFP) */
-void fwq(long delay_nsec) {
-	struct timespec start, end;
-	
-	if (delay_nsec < 0) { return; }
-	clock_gettime(TIMER_KIND, &start);
 
-	while (1) {
-		clock_gettime(TIMER_KIND, &end);
-		if (DIFFNSEC(end, start) >= delay_nsec) {
-			break;
+	end = mytime();
+	spw = (end - start) / (double)N_INIT;
+#ifdef WITH_MPI
+	if (verbose) {
+		double max, min, sum;
+		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Reduce(&spw, &max, 1, MPI_DOUBLE,
+			   MPI_MAX, 0, MPI_COMM_WORLD);
+		MPI_Reduce(&spw, &min, 1, MPI_DOUBLE,
+			   MPI_MIN, 0, MPI_COMM_WORLD);
+		MPI_Reduce(&spw, &sum, 1, MPI_DOUBLE,
+			   MPI_SUM, 0, MPI_COMM_WORLD);
+
+		if (rank == 0) {
+			pr_debug("Time of asm loop (nsec): max: %.0f min: %.0f ave: %.0f\n",
+				 max * MYTIME_TONSEC,
+				 min * MYTIME_TONSEC,
+				 sum / nranks * MYTIME_TONSEC);
 		}
-		bulk_fsw(2); /* ~150 ns per iteration on FOP */
 	}
-}
 #endif
 
-int print_cpu_last_executed_on(const char *name) {
+#define NSAMPLES_OMP_OVH_OUTER 100 /* 1 sec */
+#define NSAMPLES_OMP_OVH_OUTER_DROP 10
+#define NSAMPLES_OMP_OVH_INNER 10000 /* 5 msec */
+
+	/* Measure OMP startup/shutdown cost (around 200 usec on KNL) */
+	sum = 0;
+	for (i = 0;
+	     i < NSAMPLES_OMP_OVH_OUTER +
+		     NSAMPLES_OMP_OVH_OUTER_DROP;
+	     i++) {
+
+		/* Simulating preceding communication phase */
+		asmloop(NSAMPLES_OMP_OVH_INNER);
+
+		start = mytime();
+		#pragma omp parallel
+		{
+		asmloop(NSAMPLES_OMP_OVH_INNER);
+		}
+		end = mytime();
+
+		/* Simulating following communication phase */
+		asmloop(NSAMPLES_OMP_OVH_INNER);
+
+		if (i < NSAMPLES_OMP_OVH_OUTER_DROP) {
+			continue;
+		}
+
+		sum += MAX2((end - start) - (spw * NSAMPLES_OMP_OVH_INNER), 0);
+#if 0
+		if (rank == 0) {
+			pr_debug("%.0f, %.0f\n",
+				 (end - start) * MYTIME_TOUSEC,
+				 (spw * NSAMPLES_OMP_OVH_INNER) *
+				 MYTIME_TOUSEC);
+#endif
+	}
+
+	omp_ovh = sum / NSAMPLES_OMP_OVH_OUTER;
+
+#ifdef WITH_MPI
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Allreduce(&omp_ovh, &omp_ovh_max, 1, MPI_DOUBLE,
+		   MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allreduce(&omp_ovh, &omp_ovh_min, 1, MPI_DOUBLE,
+		   MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(&omp_ovh, &omp_ovh_sum_g, 1, MPI_DOUBLE,
+		   MPI_SUM, MPI_COMM_WORLD);
+
+	if (verbose) {
+		if (rank == 0) {
+			pr_debug("OMP overhead (usec): max: %.0f min: %.0f ave: %.0f\n",
+				 omp_ovh_max * MYTIME_TOUSEC,
+				 omp_ovh_min * MYTIME_TOUSEC,
+				 omp_ovh_sum_g / nranks * MYTIME_TOUSEC);
+		}
+	}
+#endif
+}
+
+double cycpw; /* cyc per work */
+
+void cdlay_init(void)
+{
+	unsigned long start, end;
+
+	start = rdtsc_light();
+	asmloop(N_INIT);
+	end = rdtsc_light();
+	cycpw = (end - start) / (double)N_INIT;
+}
+
+void cdelay(long delay_cyc)
+{
+	if (delay_cyc < 0) { 
+		return;
+	}
+	asmloop(delay_cyc / cycpw);
+}
+
+int print_cpu_last_executed_on(const char *name)
+{
 	char fn[256];
 	char* result;
 	pid_t tid = syscall(SYS_gettid);
 	int fd;
 	int offset;
-    int mpi_errno = 0;
+	int mpi_errno = 0;
+	int rc;
 
 	sprintf(fn, "/proc/%d/task/%d/stat", getpid(), (int)tid);
 	//printf("fn=%s\n", fn);
@@ -115,11 +210,13 @@ int print_cpu_last_executed_on(const char *name) {
 
 	int cpu = sched_getcpu();
 	if(cpu == -1) {
-		printf("getcpu() failed\n");
+		printf("getpu() failed\n");
 		goto fn_fail;
 	}
 
-	printf("[INFO] %s (tid: %d) is running on %02d,%02d\n", name, tid, atoi(field), cpu);
+	rc = syscall(732);
+	
+	printf("%s: pmi_rank=%02d,os=%s,stat-cpu=%02d,sched_getcpu=%02d,tid=%d\n", name, atoi(getenv("PMI_RANK")), rc == -1 ? "lin" : "mck", atoi(field), cpu, tid); fflush(stdout);
  fn_exit:
     free(result);
     return mpi_errno;
@@ -128,3 +225,38 @@ int print_cpu_last_executed_on(const char *name) {
     goto fn_exit;
 }
 
+int show_maps() {
+	int ret;
+	FILE *fp;
+	char *maps;
+	size_t nread;
+	
+	maps = malloc(65536);
+	if (!maps) {
+		pr_err("%s: ERROR: fopen: %s",
+		       __func__, strerror(errno));
+		ret = -errno;
+		goto out;
+	}
+	
+	fp = fopen("/proc/self/maps", "r");
+	if (!fp) {
+		pr_err("%s: ERROR: fopen: %s",
+		       __func__, strerror(errno));
+		ret = -errno;
+		goto out;
+	}
+	
+	nread = fread(maps, sizeof(char), 65536, fp);
+	if (!feof(fp)) {
+		pr_err("%s: ERROR: EOF not reached\n",
+		       __func__);
+		ret = -1;
+		goto out;
+	}
+	
+	pr_debug("%s\n", maps);
+ out:
+	return ret;
+
+}

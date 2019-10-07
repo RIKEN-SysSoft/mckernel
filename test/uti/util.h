@@ -2,32 +2,52 @@
 #define __UTIL_H_INCLUDED__
 
 #include <stdint.h>
-
-#define DEBUG
-
-#ifdef DEBUG
-#define dprintf(...) do {			 \
-	char msg[1024];			 \
-	sprintf(msg, __VA_ARGS__);		 \
-	fprintf(stderr, "%s,%s", __func__, msg); \
-} while (0)
-#else
-#define dprintf(...) do {  } while (0)
+#ifdef WITH_MPI
+#include <mpi.h>
 #endif
 
-#define eprintf(...) do {			 \
-	char msg[1024];			 \
-	sprintf(msg, __VA_ARGS__);		 \
-	fprintf(stderr, "%s,%s", __func__, msg); \
+/* Calculation */
+
+static inline void asmloop(unsigned long n)
+{
+	int j;
+
+	for (j = 0; j < n; j++) {
+		asm volatile(
+			     "movq $0, %%rcx\n\t"
+			     "1:\t"
+			     "addq $1, %%rcx\n\t"
+			     "cmpq $99, %%rcx\n\t"
+			     "jle 1b\n\t"
+			     :
+			     :
+			     : "rcx", "cc");
+	}
+}
+
+/* Messaging */
+
+enum test_loglevel {
+	TEST_LOGLEVEL_ERR = 0,
+	TEST_LOGLEVEL_WARN,
+	TEST_LOGLEVEL_DEBUG
+};
+
+extern enum test_loglevel test_loglevel;
+static inline void test_set_loglevel(enum test_loglevel level)
+{
+	test_loglevel = level;
+}
+
+#define pr_level(level, fmt, args...) do {	\
+	if (test_loglevel >= level) {	\
+		fprintf(stdout, fmt, ##args);	\
+	}					\
 } while (0)
 
-#define CHKANDJUMP(cond, err, ...) do { \
-	if (cond) {			\
-		eprintf(__VA_ARGS__);   \
-		ret = err;		\
-		goto fn_fail;		\
-	}				\
-} while (0)
+#define pr_err(fmt, args...) pr_level(TEST_LOGLEVEL_ERR, fmt, ##args)
+#define pr_warn(fmt, args...) pr_level(TEST_LOGLEVEL_WARN, fmt, ##args)
+#define pr_debug(fmt, args...) pr_level(TEST_LOGLEVEL_DEBUG, fmt, ##args)
 
 #define _OKNG(verb, jump, cond, fmt, args...) do {	\
 	if (cond) {					\
@@ -35,8 +55,10 @@
 			printf("[ OK ] " fmt, ##args);	\
 	} else {					\
 		printf("[ NG ] " fmt, ##args);		\
-		if (jump)				\
-			goto fn_fail;			\
+		if (jump) {				\
+			ret = -1;			\
+			goto out;			\
+		}					\
 	}						\
 } while (0)
 
@@ -44,13 +66,23 @@
 #define NG(args...) _OKNG(0, 1, ##args)
 #define OKNGNOJUMP(args...) _OKNG(1, 0, ##args)
 
+
+/* Time */
+
+#define MYTIME_TOUSEC 1000000
+#define MYTIME_TONSEC 1000000000
+#define N_INIT 2000000/*10000000*/ /* one asmloop takes 500 ns on KNL */
+#define MAX2(x, y) ((x) > (y) ? (x) : (y))
+
+#define DIFFUSEC(end, start) ((end.tv_sec - start.tv_sec) * 1000000UL + (end.tv_usec - start.tv_usec))
 #define DIFFNSEC(end, start) ((end.tv_sec - start.tv_sec) * 1000000000UL + (end.tv_nsec - start.tv_nsec))
+#define TS2NS(sec, nsec) ((unsigned long)(sec) * 1000000000UL + (unsigned long)(nsec))
 #define TIMER_KIND CLOCK_MONOTONIC_RAW /* CLOCK_THREAD_CPUTIME_ID */
 
-static inline uint64_t rdtsc_light(void )
+static inline uint64_t rdtsc_light(void)
 {
     uint64_t x;
-    __asm__ __volatile__("rdtscp;" /* rdtscp works as instruction execution barrier */
+    __asm__ __volatile__("rdtscp;" /* rdtscp don't jump over earlier instructions */
                          "shl $32, %%rdx;"
                          "or %%rdx, %%rax" :
                          "=a"(x) :
@@ -59,12 +91,27 @@ static inline uint64_t rdtsc_light(void )
     return x;
 }
 
-extern double nspw; /* nsec per work */
-extern unsigned long nsec;
+static inline double mytime(void)
+{
+#ifdef WITH_MPI
+	return MPI_Wtime();
+#else
+        struct timespec ts;
 
-void fwq_init();
-void fwq(long delay_nsec);
-int print_cpu_last_executed_on(const char *name);
+        clock_gettime(TIMER_KIND, &ts);
+	return (double)TS2NS(ts.tv_sec, ts.tv_nsec);
+#endif
+}
+
+/* Calculation emulation */
+
+void ndelay_init(void);
+void ndelay(long delay_nsec);
+void cdelay_init(void);
+void cdelay(long delay_cyc);
+
+/* CPU location */
+
+int print_cpu_last_executed_on();
 
 #endif
-
