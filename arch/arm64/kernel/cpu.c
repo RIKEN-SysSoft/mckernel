@@ -153,7 +153,7 @@ static void multi_nm_interrupt_handler(void *priv)
 	case 3:
 		/* mode == 3,    for SHUTDOWN-WAIT NMI */
 		while (1) {
-			cpu_halt();
+			cpu_safe_halt();
 		}
 		break;
 
