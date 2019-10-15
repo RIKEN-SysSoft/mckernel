@@ -27,30 +27,17 @@ static inline int rusage_pgsize_to_pgtype(size_t pgsize)
 	case 12:
 		ret = IHK_OS_PGSIZE_4KB;
 		break;
-	case 16:
-		ret = IHK_OS_PGSIZE_64KB;
-		break;
 	case 21:
 		ret = IHK_OS_PGSIZE_2MB;
-		break;
-	case 25:
-		ret = IHK_OS_PGSIZE_32MB;
 		break;
 	case 30:
 		ret = IHK_OS_PGSIZE_1GB;
 		break;
-	case 34:
-		ret = IHK_OS_PGSIZE_16GB;
-		break;
-	case 29:
-		ret = IHK_OS_PGSIZE_512MB;
-		break;
-	case 42:
-		ret = IHK_OS_PGSIZE_4TB;
-		break;
 	default:
+#if 0 /* 64KB page goes here when using mckernel_rusage-compatible ihk_os_rusage */
 		kprintf("%s: Error: Unknown pgsize=%ld\n",
 			__func__, pgsize);
+#endif
 		break;
 	}
 
