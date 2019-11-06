@@ -19,6 +19,29 @@
     },
     {
       "key": {
+        "uuid": "e11ca66d_be26c791",
+        "filename": "arch/x86_64/kernel/memory.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2472,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-06T04:28:26Z",
+      "side": 1,
+      "message": "Memo on the definition of the macro:\n(1) Use the run-time value also in eclair.c and tools/crash/mckernel.c\n(2) Then remove the definition of LINUX_PAGE_OFFSET in arch/x86_64/kernel/include/arch-memory.h",
+      "range": {
+        "startLine": 2472,
+        "startChar": 0,
+        "endLine": 2472,
+        "endChar": 40
+      },
+      "revId": "19b227eb665a3bab7ac898a82861555e5e2f14ae",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "90a34f23_2a61d359",
         "filename": "arch/x86_64/kernel/memory.c",
         "patchSetId": 1
