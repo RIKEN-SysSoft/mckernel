@@ -8,7 +8,7 @@ include_directories(
 	"${PROJECT_BINARY_DIR}/ihk/linux/include"
 )
 
-
+add_subdirectory(lib)
 add_library(libmcexec STATIC arch/${ARCH}/archdep.S)
 SET_TARGET_PROPERTIES(libmcexec PROPERTIES OUTPUT_NAME mcexec)
 set_property(TARGET libmcexec PROPERTY POSITION_INDEPENDENT_CODE ON)
