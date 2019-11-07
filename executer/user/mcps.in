@@ -1,0 +1,10 @@
+#!/bin/bash
+# IHK/McKernel mcps script.
+# author: Balazs Gerofi <bgerofi@riken.jp>
+#      Copyright (C) 2019 RIKEN
+#
+prefix="@prefix@"
+BINDIR="${prefix}/bin"
+KERNDIR="@MCKERNELDIR@"
+
+${BINDIR}/mcinspect --kernel=${KERNDIR}/mckernel.img --ps
