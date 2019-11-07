@@ -1,3 +1,6 @@
 [submodule "ihk"]
 	path = ihk
 	url = https://github.com/RIKEN-SysSoft/ihk.git
+[submodule "executer/user/lib/libdwarf/libdwarf"]
+	path = executer/user/lib/libdwarf/libdwarf
+	url = https://github.com/masamichitakagi/libdwarf.git
