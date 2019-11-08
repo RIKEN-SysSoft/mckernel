@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "42053a6b_5ce237ec",
+        "filename": "NEWS.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 193,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-08T05:01:24Z",
+      "side": 1,
+      "message": "WARNING: \u0027deamon\u0027 may be misspelled - perhaps \u0027daemon\u0027?\n+   (2) A deamon called ihkmond monitors the state of McKernel periodically",
+      "revId": "767f7c16f9186a38b1c23949d265ef04a2af1f8b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff761109_f8f0405f",
+        "filename": "NEWS.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 352,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-08T05:01:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ql_mpiexec_finalize in the job script $",
+      "revId": "767f7c16f9186a38b1c23949d265ef04a2af1f8b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "951d4053_1666ee75",
+        "filename": "NEWS.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 398,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-08T05:01:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+The second step is explained using a pseudo-code. $",
+      "revId": "767f7c16f9186a38b1c23949d265ef04a2af1f8b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c463df4_59674fbf",
+        "filename": "NEWS.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 409,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-08T05:01:24Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+    /* ql_client() waits for command of ql_mpiexec_{start,finish} */ $",
+      "revId": "767f7c16f9186a38b1c23949d265ef04a2af1f8b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
