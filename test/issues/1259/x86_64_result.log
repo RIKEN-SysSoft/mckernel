@@ -1,5 +1,5 @@
 *** C1259T01 start *******************************
-** xpem_attach to Huge mapped memory range
+** xpmem_attach to Huge mapped memory range
 ** end of range is aligned with Large page size
 pageshift: 21
 ** [ OK ] seg_addr (2aaaab000000) is allocated until xpmem_attach
@@ -10,7 +10,7 @@ pageshift: 30
 *** C1259T01: PASSED
 
 *** C1259T02 start *******************************
-** xpem_attach to Huge mapped memory range
+** xpmem_attach to Huge mapped memory range
 ** end of range is NOT aligned with Large page size
 pageshift: 21
 ** [ OK ] seg_addr (2aaaab000000) is allocated until xpmem_attach
@@ -21,15 +21,15 @@ pageshift: 30
 *** C1259T02: PASSED
 
 *** C1259T03 start *******************************
-** xpem_attach to small mapped memory range
+** xpmem_attach to small mapped memory range
 pageshift: small page
 ** [ OK ] xpmem_addr (2aaaaafee000) is allocated using small pages
 *** C1259T03: PASSED
 
 *** C1259T04 start *******************************
-** xpem_attach to multi pagesize range
+** xpmem_attach to multi pagesize range
 pageshift: 21
-** [ OK ] xpmem_addr (2aaaab000000) is allocated using large pages
+** [ OK ] xpmem_addr (2aaaab200000) is allocated using large pages
 *** C1259T04: PASSED
 
 *** C1259T05 start *******************************
@@ -37,12 +37,12 @@ pageshift: 21
 XPMEM version = 26003
 
 ==== test_base STARTS ====
-xpmem_proc1: mypid = 13702
+xpmem_proc1: mypid = 20070
 xpmem_proc1: sharing 16384 bytes
-xpmem_proc1: segid = 200003586 at 0x2aaaaafee000
+xpmem_proc1: segid = 200004e66 at 0x2aaaaafee000
 
-xpmem_proc2: mypid = 14123
-xpmem_proc2: segid = 200003586
+xpmem_proc2: mypid = 20490
+xpmem_proc2: segid = 200004e66
 xpmem_proc2: attached at 0x2aaaaafee000
 xpmem_proc2: adding 1 to all elems
 
@@ -50,12 +50,12 @@ xpmem_proc1: verifying data...done
 ==== test_base PASSED ====
 
 ==== test_two_attach STARTS ====
-xpmem_proc1: mypid = 14543
+xpmem_proc1: mypid = 20913
 xpmem_proc1: sharing 16384 bytes
-xpmem_proc1: segid = 2000038cf at 0x2aaaaafee000
+xpmem_proc1: segid = 2000051b1 at 0x2aaaaafee000
 
-xpmem_proc2: mypid = 14963
-xpmem_proc2: segid = 2000038cf
+xpmem_proc2: mypid = 21336
+xpmem_proc2: segid = 2000051b1
 xpmem_proc2: attached at 0x2aaaaafee000
 xpmem_proc2: attached at 0x2aaaaaff2000
 xpmem_proc2: adding 1 to all elems using 0x2aaaaafee000
@@ -65,14 +65,14 @@ xpmem_proc1: verifying data...done
 ==== test_two_attach PASSED ====
 
 ==== test_two_shares STARTS ====
-xpmem_proc1: mypid = 15383
+xpmem_proc1: mypid = 21758
 xpmem_proc1: sharing 2 segments, 16384 bytes each
-xpmem_proc1: segid[0] = 200003c17 at 0x2aaaaafee000
-xpmem_proc1: segid[1] = 400003c17 at 0x2aaaaaff2000
+xpmem_proc1: segid[0] = 2000054fe at 0x2aaaaafee000
+xpmem_proc1: segid[1] = 4000054fe at 0x2aaaaaff2000
 
-xpmem_proc2: mypid = 15807
-xpmem_proc2: segid[0] = 200003c17
-xpmem_proc2: segid[1] = 400003c17
+xpmem_proc2: mypid = 22179
+xpmem_proc2: segid[0] = 2000054fe
+xpmem_proc2: segid[1] = 4000054fe
 xpmem_proc2: data[0] attached at 0x2aaaaafee000
 xpmem_proc2: data[1] attached at 0x2aaaaaff2000
 xpmem_proc2: adding 1 to all elems using 0x2aaaaafee000
@@ -82,22 +82,22 @@ xpmem_proc1: verifying data...done
 ==== test_two_shares PASSED ====
 
 ==== test_fork STARTS ====
-xpmem_proc1: mypid = 16227
+xpmem_proc1: mypid = 22599
 xpmem_proc1: sharing 16384 bytes
-xpmem_proc1: segid = 200003f63 at 0x2aaaaafee000
+xpmem_proc1: segid = 200005847 at 0x2aaaaafee000
 
-xpmem_proc2: mypid = 16647
-xpmem_proc2: segid = 200003f63
+xpmem_proc2: mypid = 23022
+xpmem_proc2: segid = 200005847
 xpmem_proc2: attached at 0x2aaaaafef000
 xpmem_proc2: reading to pin pages
 xpmem_proc2: waiting for COW...
 
 xpmem_proc1: forking a child
 xpmem_proc1: adding 1 to all elems to induce COW
+
 xpmem_proc1: give control back to xpmem_proc2
+xpmem_child: hello from pid 23443
 
-
-xpmem_child: hello from pid 17067
 
 xpmem_proc2: adding 1 to all elems
 
