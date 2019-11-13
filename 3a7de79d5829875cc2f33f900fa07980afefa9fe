@@ -2,6 +2,63 @@
   "comments": [
     {
       "key": {
+        "uuid": "69ac4739_a57bd673",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3458,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-13T07:56:23Z",
+      "side": 1,
+      "message": "mck_dirp and linux_dirp should only be needed on the first getdents, since they will be copied to ofd-\u003elinux_dirents or ofd-\u003emck_dirents we should be able to skip right past this on later calls?",
+      "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e3758526_fd690deb",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3601,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-13T07:56:23Z",
+      "side": 1,
+      "message": "this doesn\u0027t take into account the blacklisted entries e.g. as per comment, it\u0027s possible linux_ret didn\u0027t increment because the whole readdir chunk was ignored, but there is more to read",
+      "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "61cff7ff_8e01b852",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3606,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-13T07:56:23Z",
+      "side": 1,
+      "message": "(nitpick typo) concatenate",
+      "range": {
+        "startLine": 3606,
+        "startChar": 4,
+        "endLine": 3606,
+        "endChar": 15
+      },
+      "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "93f6f2c8_402ed161",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 1
