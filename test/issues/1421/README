@@ -1,0 +1,13 @@
+============
+What to test
+============
+(1) lseek value after a getdents matches the d_off of the last entry
+    received.
+(2) lseek using d_off and then getdents gets the proper entry.
+(3) lseek using d_off and then getdents with (d_reclen -1) returns EINVAL.
+
+===========
+How to test
+===========
+(1) make test
+(2) Check the result manually.
