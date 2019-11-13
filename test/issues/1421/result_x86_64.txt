@@ -1,0 +1,162 @@
+===== getdents count: 40
+/work/gg10/e29005/project/os/install/bin/mcexec ./1421 /sys/devices/system/node 40
+--------------- nread=24 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61145  directory    24         24  .
+at end of getdents: lseek         24
+--------------- nread=24 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   46533  directory    24         48  ..
+at end of getdents: lseek         48
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61156  directory    32         80  node0
+at end of getdents: lseek         80
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61148  directory    32        112  node1
+at end of getdents: lseek        112
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61147  regular      32        144  possible
+at end of getdents: lseek        144
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61146  regular      32        176  online
+at end of getdents: lseek        176
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   18112  directory    32        208  power
+at end of getdents: lseek        208
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 0: lseek          0
+--------------- nread=24 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61145  directory    24         24  .
+at end of getdents: lseek         24
+lseek to 24: lseek         24
+--------------- nread=24 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   46533  directory    24         48  ..
+at end of getdents: lseek         48
+lseek to 48: lseek         48
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61156  directory    32         80  node0
+at end of getdents: lseek         80
+lseek to 80: lseek         80
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61148  directory    32        112  node1
+at end of getdents: lseek        112
+lseek to 112: lseek        112
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61147  regular      32        144  possible
+at end of getdents: lseek        144
+lseek to 144: lseek        144
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61146  regular      32        176  online
+at end of getdents: lseek        176
+lseek to 176: lseek        176
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   18112  directory    32        208  power
+at end of getdents: lseek        208
+lseek to 208: lseek        208
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 240: lseek        240
+--------------- nread=0 (EOF) ---------
+at end of getdents: lseek        240
+
+===== getdents count: 200
+/work/gg10/e29005/project/os/install/bin/mcexec ./1421 /sys/devices/system/node 200
+--------------- nread=176 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61145  directory    24         24  .
+   46533  directory    24         48  ..
+   61156  directory    32         80  node0
+   61148  directory    32        112  node1
+   61147  regular      32        144  possible
+   61146  regular      32        176  online
+at end of getdents: lseek        176
+--------------- nread=64 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   18112  directory    32        208  power
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 0: lseek          0
+--------------- nread=176 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61145  directory    24         24  .
+   46533  directory    24         48  ..
+   61156  directory    32         80  node0
+   61148  directory    32        112  node1
+   61147  regular      32        144  possible
+   61146  regular      32        176  online
+at end of getdents: lseek        176
+lseek to 24: lseek         24
+--------------- nread=184 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   46533  directory    24         48  ..
+   61156  directory    32         80  node0
+   61148  directory    32        112  node1
+   61147  regular      32        144  possible
+   61146  regular      32        176  online
+   18112  directory    32        208  power
+at end of getdents: lseek        208
+lseek to 48: lseek         48
+--------------- nread=192 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61156  directory    32         80  node0
+   61148  directory    32        112  node1
+   61147  regular      32        144  possible
+   61146  regular      32        176  online
+   18112  directory    32        208  power
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 80: lseek         80
+--------------- nread=160 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61148  directory    32        112  node1
+   61147  regular      32        144  possible
+   61146  regular      32        176  online
+   18112  directory    32        208  power
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 112: lseek        112
+--------------- nread=128 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61147  regular      32        144  possible
+   61146  regular      32        176  online
+   18112  directory    32        208  power
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 144: lseek        144
+--------------- nread=96 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   61146  regular      32        176  online
+   18112  directory    32        208  power
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 176: lseek        176
+--------------- nread=64 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   18112  directory    32        208  power
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 208: lseek        208
+--------------- nread=32 ---------------
+i-node#  file type  d_reclen  d_off   d_name
+   18106  regular      32        240  uevent
+at end of getdents: lseek        240
+lseek to 240: lseek        240
+--------------- nread=0 (EOF) ---------
+at end of getdents: lseek        240
