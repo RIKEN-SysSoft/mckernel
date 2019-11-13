@@ -3003,12 +3003,16 @@ int close_cloexec_fds(int mcos_fd)
 
 struct overlay_fd {
 	int fd; /* associated fd, points to mckernel side */
+	int getdents_fd; /* non-seekable mckernel fd */
 	int linux_fd; /* linux fd, -1 if not opened */
 	struct list_head link;
-	char path[PATH_MAX]; /* linux path */
+	char linux_path[PATH_MAX]; /* linux path */
+	char mck_path[PATH_MAX]; /* mckernel path */
 	size_t pathlen;
-	void *dirents; /* copy of mckernel dirents to filter duplicates */
-	size_t dirents_size;
+	void *mck_dirents; /* cache of mckernel dirents to filter duplicates */
+	size_t mck_dirents_size;
+	void *linux_dirents; /* cache of filtered Linux dirents */
+	size_t linux_dirents_size;
 };
 LIST_HEAD(overlay_fd_list);
 
@@ -3039,10 +3043,15 @@ void overlay_addfd(int fd, const char *path)
 	}
 
 	ofd->fd = fd;
+	ofd->getdents_fd = -1;
 	ofd->linux_fd = -1;
-	ofd->dirents = NULL;
-	ofd->dirents_size = 0;
-	ofd->pathlen = snprintf(ofd->path, PATH_MAX, "%s%s", prefix, real_path);
+	ofd->mck_dirents = NULL;
+	ofd->mck_dirents_size = 0;
+	ofd->linux_dirents = NULL;
+	ofd->linux_dirents_size = 0;
+	ofd->pathlen = snprintf(ofd->linux_path, PATH_MAX, "%s%s",
+				prefix, real_path);
+	strncpy(ofd->mck_path, path, PATH_MAX);
 
 	pthread_spin_lock(&overlay_fd_lock);
 	list_add(&ofd->link, &overlay_fd_list);
@@ -3057,9 +3066,12 @@ void overlay_delfd(int fd)
 	list_for_each_entry(ofd, &overlay_fd_list, link) {
 		if (ofd->fd == fd) {
 			list_del(&ofd->link);
+			if (ofd->getdents_fd != -1)
+				close(ofd->getdents_fd);
 			if (ofd->linux_fd != -1)
 				close(ofd->linux_fd);
-			free(ofd->dirents);
+			free(ofd->mck_dirents);
+			free(ofd->linux_dirents);
 			free(ofd);
 			break;
 		}
@@ -3401,122 +3413,370 @@ static inline char *dirent_name(int sysnum, void *_dirp)
 		exit(-1);
 }
 
+static inline void *dirent_off(int sysnum, void *_dirp)
+{
+
+#ifdef	__NR_getdents
+		if (sysnum == __NR_getdents) {
+			struct linux_dirent *dirp = _dirp;
+
+			return &(dirp->d_off);
+		}
+#endif
+		if (sysnum == __NR_getdents64) {
+			struct linux_dirent64 *dirp = _dirp;
+
+			return &(dirp->d_off);
+		}
+		fprintf(stderr, "%s: unexpected syscall number %d\n",
+			__func__, sysnum);
+		exit(-1);
+}
+
+int copy_dirents(void *_dirp, void *dirents, size_t dirents_size,
+		 off_t offset, unsigned int *count, int sysnum)
+{
+	off_t max_len;
+	int len;
+	void *dirp_iter;
+	unsigned short reclen;
+
+	max_len = dirents_size - offset > *count ?
+		*count : dirents_size - offset;
+	__dprintf("max_len: %ld\n", max_len);
+	for (len = 0; len < max_len;) {
+		dirp_iter = dirents + offset + len;
+		reclen = dirent_reclen(sysnum, dirp_iter);
+
+		/* early exit on record boundary */
+		if (len + reclen > max_len) {
+			/* don't try to copy lower */
+			*count = 0;
+			__dprintf("early exit: len: %d, reclen: %d, max_len: %ld\n",
+			       len, reclen, max_len);
+			goto out;
+		}
+
+		memcpy(_dirp + len, dirp_iter, reclen);
+		len += reclen;
+	}
+	*count -= len;
+out:
+	return len;
+}
+
 int overlay_getdents(int sysnum, int fd, void *_dirp, unsigned int count)
 {
-	void *dirp, *mcdirp;
-	int ret = 0, pos, linux_ret, mcpos;
+	void *dirp = NULL;
+	void *linux_dirp_iter, *mck_dirp_iter;
+	int ret, ret_before_edit;
+	int mck_ret = 0, pos;
+	int linux_ret = 0, mcpos;
 	unsigned short reclen;
 	struct overlay_fd *ofd = NULL, *ofd_iter;
 	int hide_orig = 0;
+	off_t offset;
+	char ofd_path[PATH_MAX];
+	int mck_len, linux_len;
 
 	pthread_spin_lock(&overlay_fd_lock);
 	list_for_each_entry(ofd_iter, &overlay_fd_list, link) {
 		if (ofd_iter->fd == fd) {
 			ofd = ofd_iter;
 			__dprintf("found overlay cache entry (%s)\n",
-					ofd->path);
+					ofd->linux_path);
 			break;
 		}
 	}
 	pthread_spin_unlock(&overlay_fd_lock);
 
 	/* special case for /proc/N/task */
-	if (ofd && !strncmp(ofd->path, "/proc", 5) &&
-			!strncmp(ofd->path + strlen(ofd->path) - 4,
-				"task", 4)) {
+	if (ofd && !strncmp(ofd->linux_path, "/proc", 5) &&
+	    !strncmp(ofd->linux_path + strlen(ofd->linux_path) - 4,
+		     "task", 4)) {
 		hide_orig = 1;
 	}
 
-	/* not a directory we overlay, or not there yet */
-	if (ofd == NULL || ofd->linux_fd == -1 || hide_orig) {
+	/* not a directory we overlay or hiding lower fs */
+	if (ofd == NULL || hide_orig) {
 		ret = syscall(sysnum, fd, _dirp, count);
-		if (ret == -1)
+		if (ret == -1) {
 			ret = -errno;
-	}
-	if (ofd == NULL || ret < 0 || hide_orig)
-		return ret;
-
-	/* copy mckernel dirents to our buffer, in case of split getdents */
-	if (ret > 0) {
-		void *newbuf = realloc(ofd->dirents, ofd->dirents_size + ret);
-
-		if (!newbuf) {
-			fprintf(stderr, "%s: not enough memory (%zd)",
-				__func__, ofd->dirents_size + ret);
-			return ret;
+			goto err;
 		}
-		ofd->dirents = newbuf;
-		memcpy(ofd->dirents + ofd->dirents_size, _dirp, ret);
-		ofd->dirents_size += ret;
+		goto out_mck_only;
 	}
 
-	/* return first directory result unless it is empty or there
-	 * is obvious room for more elements.
-	 * The second check could have false positives depending on
-	 * the fs, but should not be for filesystems we overlay
-	 */
-	if (ret > 0 && count - ret < 500)
-		return ret;
+	dirp = malloc(count);
+	if (!dirp) {
+		fprintf(stderr, "%s: out of memory\n", __func__);
+		ret = -ENOMEM;
+		goto err;
+	}
 
-	if (ofd->linux_fd == -1) {
-		ofd->linux_fd = open(ofd->path, O_RDONLY|O_DIRECTORY);
-		if (ofd->linux_fd < 0) {
+	offset = lseek(fd, 0, SEEK_CUR);
+	if (offset == (off_t)-1) {
+		ret = -errno;
+		goto err;
+	}
+	__dprintf("offset: %ld\n", offset);
+
+	if (ofd->getdents_fd == -1) {
+		ofd->getdents_fd = open(ofd->mck_path, O_RDONLY | O_DIRECTORY);
+		if (ofd->getdents_fd < 0) {
+			ret = -errno;
 			if (errno != ENOENT) {
 				fprintf(stderr, "%s: could not open %s: %d\n",
-					__func__, ofd->path, errno);
+					__func__, ofd->mck_path, errno);
 			}
-			return ret;
+			goto err;
 		}
 	}
 
-again:
-	linux_ret = syscall(sysnum, ofd->linux_fd, _dirp + ret, count - ret);
-	if (linux_ret < 0) {
+mck_again:
+	/* Use "count" to simplify the handling of
+	 * "Result buffer is too small" case
+	 */
+	ret = syscall(sysnum, ofd->getdents_fd, dirp, count);
+	if (ret < 0) {
+		ret = -errno;
+		goto err;
+	}
+	mck_ret += ret;
+	__dprintf("getdents from upper: mck_ret: %d, ret: %d, count: %d\n",
+		  mck_ret, ret, count);
+
+	/* cache mckernel dirents to our buffer, in case of split getdents */
+	if (ret > 0) {
+		void *newbuf = realloc(ofd->mck_dirents,
+				       ofd->mck_dirents_size + ret);
+
+		if (!newbuf) {
+			ret = -ENOMEM;
+			fprintf(stderr, "%s: not enough memory (%zd)",
+				__func__, ofd->mck_dirents_size + ret);
+			goto err;
+		}
+		ofd->mck_dirents = newbuf;
+		memcpy(ofd->mck_dirents + ofd->mck_dirents_size, dirp, ret);
+
+		/* Rewrite d_off to match the packed data layout.
+		 * (EOF of fd) >= (EOF of upper + lower) is assumed.
+		 * See generic_file_llseek_size().
+		 */
+		for (mcpos = ofd->mck_dirents_size;
+		     mcpos < ofd->mck_dirents_size + ret;) {
+			mck_dirp_iter = ofd->mck_dirents + mcpos;
+			reclen = dirent_reclen(sysnum, mck_dirp_iter);
+#ifdef DEBUG
+			printf("<%s,%d,%ld> ",
+			       dirent_name(sysnum, mck_dirp_iter),
+			       dirent_reclen(sysnum, mck_dirp_iter),
+			       *((unsigned long *)
+				 dirent_off(sysnum, mck_dirp_iter)));
+#endif
+			*((unsigned long *)
+			  dirent_off(sysnum, mck_dirp_iter)) = mcpos + reclen;
+
+			mcpos += reclen;
+		}
+#ifdef DEBUG
+		printf("\n");
+#endif
+		ofd->mck_dirents_size += ret;
+	}
+
+	/* Fill as many entries as possbile to avoid
+	 * upper entries appear to be inserted in the
+	 * following getdents
+	 */
+	if (ret > 0 && mck_ret < count) {
+		goto mck_again;
+	}
+
+	if (ofd->linux_fd == -1) {
+		ofd->linux_fd = open(ofd->linux_path, O_RDONLY | O_DIRECTORY);
+		if (ofd->linux_fd < 0) {
+			ret = -errno;
+			if (errno != ENOENT) {
+				fprintf(stderr, "%s: could not open %s: %d\n",
+					__func__, ofd->linux_path, errno);
+			}
+			goto err;
+		}
+	}
+
+	/* lower fs path for blacklist check */
+	strncpy(ofd_path, ofd->linux_path, PATH_MAX - ofd->pathlen);
+
+linux_again:
+	/* greedy-fetch because the results would be blacklisted */
+	ret = syscall(sysnum, ofd->linux_fd, dirp, count);
+	if (ret < 0) {
+		ret = -errno;
 		fprintf(stderr, "%s: linux getdents failed: %d\n",
 			__func__, errno);
-		return ret;
+		goto err;
 	}
-	if (linux_ret == 0)
-		return ret;
+	ret_before_edit = ret;
 
-	for (pos = ret; pos < ret + linux_ret;) {
-		dirp = _dirp + pos;
-		reclen = dirent_reclen(sysnum, dirp);
-		snprintf(ofd->path + ofd->pathlen, PATH_MAX - ofd->pathlen,
-			 "/%s", dirent_name(sysnum, dirp));
+	for (pos = 0; pos < ret;) {
+		linux_dirp_iter = dirp + pos;
+		reclen = dirent_reclen(sysnum, linux_dirp_iter);
+		snprintf(ofd_path + ofd->pathlen, PATH_MAX - ofd->pathlen,
+			 "/%s", dirent_name(sysnum, linux_dirp_iter));
 		/* remove blacklist */
-		if (overlay_blacklist(ofd->path)) {
-			__dprintf("blacklisted %s\n", ofd->path);
-			memmove(_dirp + pos,
-				_dirp + pos + reclen,
-				ret + linux_ret - pos - reclen);
-			linux_ret -= reclen;
+		if (overlay_blacklist(ofd_path)) {
+			__dprintf("blacklisted: %s\n", ofd_path);
+			memmove(dirp + pos,
+				dirp + pos + reclen,
+				ret - pos - reclen);
+			ret -= reclen;
 			continue;
 		}
 		/* remove duplicates */
-		for (mcpos = 0; mcpos < ofd->dirents_size;) {
-			mcdirp = ofd->dirents + mcpos;
-			if (!strcmp(dirent_name(sysnum, mcdirp),
-				    dirent_name(sysnum, dirp))) {
-				memmove(_dirp + pos,
-					_dirp + pos + reclen,
-					ret + linux_ret - pos - reclen);
-				linux_ret -= reclen;
+		for (mcpos = 0; mcpos < ofd->mck_dirents_size;) {
+			mck_dirp_iter = ofd->mck_dirents + mcpos;
+			if (!strcmp(dirent_name(sysnum, mck_dirp_iter),
+				    dirent_name(sysnum, linux_dirp_iter))) {
+				__dprintf("dupe: %s\n",
+					  dirent_name(sysnum, mck_dirp_iter));
+				memmove(dirp + pos,
+					dirp + pos + reclen,
+					ret - pos - reclen);
+				ret -= reclen;
 				break;
 			}
-			mcpos += dirent_reclen(sysnum, mcdirp);
+			mcpos += dirent_reclen(sysnum, mck_dirp_iter);
 		}
-		if (mcpos >= ofd->dirents_size)
-			pos += reclen;
-	}
+		if (mcpos < ofd->mck_dirents_size)
+			continue;
 
-	ret += linux_ret;
+		pos += reclen;
+	}
+	linux_ret += ret;
+	__dprintf("getdents from lower: linux_ret: %d, ret: %d, count: %d\n",
+		  linux_ret, ret, count);
+
+	/* cache Linux dirents to our buffer, in case of split getdents */
+	if (ret > 0) {
+		void *newbuf = realloc(ofd->linux_dirents,
+				       ofd->linux_dirents_size + ret);
+
+		if (!newbuf) {
+			fprintf(stderr, "%s: not enough memory (%zd)",
+				__func__, ofd->linux_dirents_size + ret);
+			return ret;
+		}
+		ofd->linux_dirents = newbuf;
+		memcpy(ofd->linux_dirents + ofd->linux_dirents_size,
+		       dirp, ret);
+
+		ofd->linux_dirents_size += ret;
+
+		/* Rewrite d_off to match the packed data layout.
+		 * Rewrite all because ofd->mck_dirents_size might
+		 * have changed.
+		 */
+		for (pos = 0; pos < ofd->linux_dirents_size;) {
+			linux_dirp_iter = ofd->linux_dirents + pos;
+			reclen = dirent_reclen(sysnum, linux_dirp_iter);
+#ifdef DEBUG
+			printf("<%s,%d,%ld> ",
+			       dirent_name(sysnum, linux_dirp_iter),
+			       dirent_reclen(sysnum, linux_dirp_iter),
+			       *((unsigned long *)
+				 dirent_off(sysnum, linux_dirp_iter)));
+#endif
+			*((unsigned long *)
+			  dirent_off(sysnum, linux_dirp_iter)) =
+				ofd->mck_dirents_size + pos + reclen;
+
+			pos += reclen;
+		}
+#ifdef DEBUG
+		printf("\n");
+#endif
+	}
 
 	/* It's possible we filtered everything out, but there is more
 	 * available. Keep trying!
 	 */
-	if (linux_ret == 0 || count - ret > 500)
-		goto again;
+	if (ret_before_edit > 0 && mck_ret + linux_ret < count) {
+		goto linux_again;
+	}
+
+	/* concatenate cached upper and lower and lseek */
+
+	/* TODO: this error should be detected by lseek */
+	if (offset > ofd->mck_dirents_size + ofd->linux_dirents_size) {
+		fprintf(stderr, "%s: offset (%ld) is too large (upper: %ld, lower: %ld)\n",
+			__func__, offset, ofd->mck_dirents_size,
+			ofd->linux_dirents_size);
+		ret = -EINVAL;
+		goto err;
+	}
+
+	mck_len = 0;
+	linux_len = 0;
+	if (count > 0 && offset < ofd->mck_dirents_size) {
+		mck_len = copy_dirents(_dirp, ofd->mck_dirents,
+				       ofd->mck_dirents_size, offset,
+				       &count, sysnum);
+		/* Result buffer is too small */
+		if (mck_len == 0)  {
+			__dprintf("upper: Result buffer is too small\n");
+			ret = -EINVAL;
+			goto err;
+		}
+		offset = 0;
+	} else {
+		offset -= ofd->mck_dirents_size;
+	}
+	__dprintf("mck_dirents_size: %ld, offset: %ld, mck_len: %d, count: %d\n",
+		  ofd->mck_dirents_size, offset,
+		  mck_len, count);
+	if (count > 0 && offset < ofd->linux_dirents_size) {
+		linux_len = copy_dirents(_dirp + mck_len, ofd->linux_dirents,
+					 ofd->linux_dirents_size, offset,
+					 &count, sysnum);
+		/* Result buffer is too small */
+		if (mck_len == 0 && linux_len == 0) {
+			__dprintf("lower: Result buffer is too small\n");
+			ret = -EINVAL;
+			goto err;
+		}
+
+		__dprintf("linux_dirents_size: %ld, offset: %ld, linux_len: %d, count: %d\n",
+			  ofd->linux_dirents_size, offset,
+			  linux_len, count);
+	}
+
+	ret = mck_len + linux_len;
+	lseek(fd, ret, SEEK_CUR);
+
+out_mck_only:
+
+err:
+	free(dirp);
+
+#ifdef DEBUG
+	{
+		void *dirp_iter;
+
+		printf("ret: %d, {<d_name,d_reclen,d_off>}: ", ret);
+		for (pos = 0; pos < ret;
+		     pos += dirent_reclen(sysnum, dirp_iter)) {
+			dirp_iter = _dirp + pos;
+			printf("<%s,%d,%ld> ",
+			       dirent_name(sysnum, dirp_iter),
+			       dirent_reclen(sysnum, dirp_iter),
+			       *((unsigned long *)dirent_off(sysnum, dirp_iter))
+			       );
+		}
+		printf("\n");
+	}
+#endif
 
 	return ret;
 }
