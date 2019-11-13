@@ -21,8 +21,10 @@
  *  2013/08/19 shirasawa mcexec forward signal to MIC process
  */
 
-#include <linux/sched.h>
+#include <linux/init.h>
 #include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/sched.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
