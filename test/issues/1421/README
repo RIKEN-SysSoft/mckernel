@@ -1,0 +1,12 @@
+============
+What to test
+============
+(1) lseek value after a getdents matches the d_off of the last entry
+    received.
+(2) lseek using d_off and then getdents gets the proper entry.
+
+===========
+How to test
+===========
+(1) make test
+(2) Check the result manually.
