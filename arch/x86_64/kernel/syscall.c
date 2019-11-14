@@ -1076,7 +1076,9 @@ getsigpending(struct thread *thread, int delflag){
 			for(x = pending->sigmask.__val[0], sig = 0; x; sig++, x >>= 1);
 			k = thread->sigcommon->action + sig - 1;
 			if(delflag ||
-			   (sig != SIGCHLD && sig != SIGURG) ||
+			   (sig != SIGCHLD &&
+			    sig != SIGURG &&
+			    sig != SIGCONT) ||
 			   (k->sa.sa_handler != (void *)1 &&
 			    k->sa.sa_handler != NULL)){
 				if(!(pending->sigmask.__val[0] & w)){
@@ -1223,7 +1225,9 @@ check_sig_pending_thread(struct thread *thread)
 			for (x = pending->sigmask.__val[0], sig = 0; x;
 			     sig++, x >>= 1);
 			k = thread->sigcommon->action + sig - 1;
-			if ((sig != SIGCHLD && sig != SIGURG) ||
+			if ((sig != SIGCHLD &&
+			     sig != SIGURG &&
+			     sig != SIGCONT) ||
 			    (k->sa.sa_handler != (void *)1 &&
 			     k->sa.sa_handler != NULL)) {
 				if (!(pending->sigmask.__val[0] & w)) {
@@ -1232,6 +1236,7 @@ check_sig_pending_thread(struct thread *thread)
 						found = 1;
 						if (sig != SIGCHLD &&
 						    sig != SIGURG &&
+						    sig != SIGCONT &&
 						    !k->sa.sa_handler) {
 							found = 2;
 							break;
@@ -1555,7 +1560,7 @@ done:
 	if ((sig != SIGKILL && (tthread->ptrace & PT_TRACED)) ||
 	    (k->sa.sa_handler != (void *)1 &&
 	     (k->sa.sa_handler != NULL ||
-	      (sig != SIGCHLD && sig != SIGURG)))) {
+	      (sig != SIGCHLD && sig != SIGURG && sig != SIGCONT)))) {
 		struct sig_pending *pending = NULL;
 		if (sig < 33) { // SIGRTMIN - SIGRTMAX
 			list_for_each_entry(pending, head, list){
