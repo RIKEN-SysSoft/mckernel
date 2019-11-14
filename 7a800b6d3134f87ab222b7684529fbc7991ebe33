@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "737c519a_6f70a53c",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3955,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-14T06:48:46Z",
+      "side": 1,
+      "message": "WARNING: Too many leading tabs - consider code refactoring\n+\t\t\t\t\t\tif ((ret \u003d readlink(filename,",
+      "revId": "7a800b6d3134f87ab222b7684529fbc7991ebe33",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
