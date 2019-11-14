@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "fddbb513_26c44f49",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3458,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-14T03:11:32Z",
+      "side": 1,
+      "message": "I think we need a temporary buffer for absorbing variable length, e.g., for the case when the first getdents stops at the \"count\" limit and the second getdents returns the remaining records.\nI merged mck_dirp and linux_dirp into dirp anyway.",
+      "parentUuid": "69ac4739_a57bd673",
+      "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "e3758526_fd690deb",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 1
@@ -30,6 +48,24 @@
       "writtenOn": "2019-11-13T07:56:23Z",
       "side": 1,
       "message": "this doesn\u0027t take into account the blacklisted entries e.g. as per comment, it\u0027s possible linux_ret didn\u0027t increment because the whole readdir chunk was ignored, but there is more to read",
+      "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fdee5065_3bfff24a",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3601,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-14T03:11:32Z",
+      "side": 1,
+      "message": "Thanks. I fixed this.",
+      "parentUuid": "e3758526_fd690deb",
       "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
@@ -56,6 +92,30 @@
       "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0e12eaa4_37f86af9",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3606,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-14T03:11:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "61cff7ff_8e01b852",
+      "range": {
+        "startLine": 3606,
+        "startChar": 4,
+        "endLine": 3606,
+        "endChar": 15
+      },
+      "revId": "3a7de79d5829875cc2f33f900fa07980afefa9fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     },
     {
       "key": {
