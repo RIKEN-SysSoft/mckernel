@@ -608,6 +608,7 @@ struct thread {
 	// thread info
 	int cpu_id;
 	int tid;
+	char pthread_routine[PATH_MAX + 64];
 	int status;	// PS_RUNNING -> PS_EXITED (-> ZOMBIE / ptrace)
 			// |       ^       ^
 			// |       |       |
@@ -717,6 +718,7 @@ struct thread {
 	/* Syscall offload wait queue head */
 	struct waitq scd_wq;
 
+	unsigned long clone_pthread_start_routine;
 	int uti_state;
 	int mod_clone;
 	struct uti_attr *mod_clone_arg;
