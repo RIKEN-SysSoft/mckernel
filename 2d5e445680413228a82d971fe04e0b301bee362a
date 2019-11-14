@@ -2,6 +2,74 @@
   "comments": [
     {
       "key": {
+        "uuid": "93e28ae0_70b811af",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3075,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-14T06:04:59Z",
+      "side": 1,
+      "message": "This leaks ofd-\u003emck_path",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "08a20621_c5dcd4d5",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3458,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-14T06:04:59Z",
+      "side": 1,
+      "message": "So back to this one: to nitpick, we could check offset first and compare offset + count to ofd-\u003emck_dirents_size + ofd-\u003elinux_dirents_size and re-adjust the count we actually need to read appropriately.\nIt\u0027s probably not worth making the code more complex though, so would suggest leaving as is... Unsure, letting you decide.",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "14fe741b_2bb1c41a",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3533,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-14T06:04:59Z",
+      "side": 1,
+      "message": "If you only intend to read the minimum number of entries, this should be count - linux_ret - mck_ret.\nI would, however, always just read `count` instead because of the blacklists: if we only have a tiny buffer left and most of the rest of the directory is blacklisted, we would end up doing a lot of getdents just to save some memory that will be used on later getdents call anyway. It\u0027s more efficient to be a bit greedy here and read too much.\n(you\u0027d want to adjust the stop condition though, to something like ret_before_edit \u003e 0 \u0026\u0026 mck_ret + linux_ret \u003c count ?)",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d79151f5_3fcf2d51",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3570,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-14T06:04:59Z",
+      "side": 1,
+      "message": "should also rewrite linux_dirp_iter-\u003ed_off to ofd-\u003emck_dirents_size +  ofd-\u003elinux_dirents_size + pos ;\nd_off is guaranteed to be an offset we can lseek() at and the original offsets are totally different, so if we\u0027re going to support lseek we should do it all the way.\n\n(in the if; or (probably better) invert the if with a continue to make it more explicit that it was about removing duplicate entries... that one was my original code, sorry)",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "215a53c8_c144589d",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 4
