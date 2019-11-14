@@ -16,6 +16,29 @@
       "revId": "7a800b6d3134f87ab222b7684529fbc7991ebe33",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99ad4f26_16805dd2",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3595,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-14T07:33:08Z",
+      "side": 1,
+      "message": "do_execve()の方を修正して、カーネル空間のファイル名が使えるようにして、execve()のときはdo_execve()を呼ぶ前にカーネル空間にコピーするようにしましょう。",
+      "range": {
+        "startLine": 3595,
+        "startChar": 0,
+        "endLine": 3595,
+        "endChar": 64
+      },
+      "revId": "7a800b6d3134f87ab222b7684529fbc7991ebe33",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
