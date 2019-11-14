@@ -500,6 +500,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 		ihk_mc_unmap_memory(NULL, phys, sz);
 		return -ENOMEM;
 	}
+	sprintf(thread->pthread_routine, "%s", "[main]");
 	proc = thread->proc;
 	vm = thread->vm;
 
