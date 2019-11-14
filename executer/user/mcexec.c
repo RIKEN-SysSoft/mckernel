@@ -3940,7 +3940,8 @@ fork_err:
 				char *shebang_argv_flat;
 				char *buffer;
 				size_t size;
-				int ret;
+				int ret, flags;
+				char lnkpath[PATH_MAX];
 
 				/* Load descriptor phase */
 				case 1:
@@ -3948,7 +3949,17 @@ fork_err:
 					buffer = NULL;
 					desc = NULL;
 					filename = (char *)w.sr.args[1];
+					flags = (int)w.sr.args[3];
 					
+					if (flags & AT_SYMLINK_NOFOLLOW) {
+						if ((ret = readlink(filename,
+								lnkpath,
+								PATH_MAX))
+								!= -1) {
+							ret = ELOOP;
+							goto return_execve1;
+						}
+					}
 					if ((ret = load_elf_desc_shebang(filename, &desc,
 									 &shebang_argv, 0)) != 0) {
 						goto return_execve1;

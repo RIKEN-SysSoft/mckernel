@@ -2482,13 +2482,11 @@ static void munmap_all(void)
 	return;
 } /* munmap_all() */
 
-SYSCALL_DECLARE(execve)
+static int do_execve(ihk_mc_user_context_t *ctx, const char *filename,
+		char **argv, char **envp, int flags)
 {
 	int error;
 	long ret;
-	const char *filename = (const char *)ihk_mc_syscall_arg0(ctx);
-	char **argv = (char **)ihk_mc_syscall_arg1(ctx);
-	char **envp = (char **)ihk_mc_syscall_arg2(ctx);
 
 	char *argv_flat = NULL;
 	int argv_flat_len = 0;
@@ -2529,6 +2527,7 @@ SYSCALL_DECLARE(execve)
 	request.args[0] = 1;  /* 1st phase - get ELF desc */
 	request.args[1] = (unsigned long)filename;	
 	request.args[2] = virt_to_phys(desc);
+	request.args[3] = flags;
 	ret = do_syscall(&request, ihk_mc_get_processor_id());
 
 	if (ret != 0) {
@@ -2674,6 +2673,13 @@ end:
 	/* no preempt_enable, errors can only happen before we disabled it */
 
 	return ret;
+}
+
+SYSCALL_DECLARE(execve)
+{
+	return do_execve(ctx, (const char *)ihk_mc_syscall_arg0(ctx),
+			(char **)ihk_mc_syscall_arg1(ctx),
+			(char **)ihk_mc_syscall_arg2(ctx), 0);
 }
 
 unsigned long do_fork(int clone_flags, unsigned long newsp,
@@ -3556,6 +3562,75 @@ SYSCALL_DECLARE(openat)
 out:
 	kfree(pathname);
 	return rc;
+}
+
+SYSCALL_DECLARE(execveat)
+{
+	int dirfd = (int)ihk_mc_syscall_arg0(ctx);
+	const char *filename = (const char *)ihk_mc_syscall_arg1(ctx);
+	int flags = (int)ihk_mc_syscall_arg4(ctx);
+	char *path_buf = NULL;
+	char _buf[PATH_MAX];
+	int len;
+	long ret;
+
+	/* validate flags */
+	if ((flags & ~(AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) != 0) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (filename[0] == '/' || dirfd == AT_FDCWD) {
+		/* behave same as execve */
+		goto exec;
+	}
+
+	/* validate dirfd */
+	if (dirfd < 0) {
+		ret = -EBADF;
+		goto out;
+	}
+
+	/* allocate filepath buffer in user space */
+	path_buf = (char *)do_mmap(0, PATH_MAX, PROT_READ | PROT_WRITE,
+			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, 0, NULL);
+	if (IS_ERR((void *)path_buf)) {
+		ret = -ENOMEM;
+		path_buf = NULL;
+		goto out;
+	}
+
+	/* make path of executbale file */
+	if (flags & AT_EMPTY_PATH && filename[0] == '\0') {
+		len = snprintf(_buf, PATH_MAX, "/dev/fd/%d", dirfd);
+		flags &= ~(AT_SYMLINK_NOFOLLOW);
+	} else {
+		len = snprintf(_buf, PATH_MAX, "/dev/fd/%d/%s",
+				dirfd, filename);
+	}
+
+	if (len >= PATH_MAX) {
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if (copy_to_user(path_buf, _buf, PATH_MAX)) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	filename = path_buf;
+
+exec:
+	ret = do_execve(ctx, filename,
+			(char **)ihk_mc_syscall_arg2(ctx),
+			(char **)ihk_mc_syscall_arg3(ctx), flags);
+
+out:
+	if (path_buf) {
+		do_munmap(path_buf, PATH_MAX, 0);
+	}
+
+	return ret;
 }
 
 SYSCALL_DECLARE(close)
