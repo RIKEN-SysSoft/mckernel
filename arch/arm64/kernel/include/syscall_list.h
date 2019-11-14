@@ -119,6 +119,7 @@ SYSCALL_DELEGATED(241, perf_event_open)
 SYSCALL_HANDLED(260, wait4)
 SYSCALL_HANDLED(270, process_vm_readv)
 SYSCALL_HANDLED(271, process_vm_writev)
+SYSCALL_HANDLED(281, execveat)
 SYSCALL_HANDLED(700, get_cpu_id)
 #ifdef PROFILE_ENABLE
 SYSCALL_HANDLED(__NR_profile, profile)
