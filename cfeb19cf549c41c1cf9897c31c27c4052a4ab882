@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b6d4c591_1e0f2936",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3603,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-14T01:12:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"%s: offset (%ld) is too large (upper: %ld, lower: %ld)\\n\",",
+      "revId": "cfeb19cf549c41c1cf9897c31c27c4052a4ab882",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f98e188_a2ec93d4",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3618,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-14T01:12:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t__dprintf(\"mck_dirents_size: %ld, offset: %ld, mck_len: %d, count: %d\\n\",",
+      "revId": "cfeb19cf549c41c1cf9897c31c27c4052a4ab882",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "673831f3_701f2bee",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3629,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-14T01:12:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t__dprintf(\"linux_dirents_size: %ld, offset: %ld, linux_len: %d, count: %d\\n\",",
+      "revId": "cfeb19cf549c41c1cf9897c31c27c4052a4ab882",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
