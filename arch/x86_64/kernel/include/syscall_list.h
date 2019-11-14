@@ -163,6 +163,7 @@ SYSCALL_HANDLED(303, mod_call)
 SYSCALL_HANDLED(309, getcpu)
 SYSCALL_HANDLED(310, process_vm_readv)
 SYSCALL_HANDLED(311, process_vm_writev)
+SYSCALL_HANDLED(322, execveat)
 SYSCALL_HANDLED(700, get_cpu_id)
 #ifdef PROFILE_ENABLE
 SYSCALL_HANDLED(__NR_profile, profile)

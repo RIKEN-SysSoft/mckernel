@@ -3521,6 +3521,39 @@ again:
 	return ret;
 }
 
+/* for execveat */
+static int getpath_execveat(int dirfd, const char *filename, int flags,
+		char *pathbuf, size_t size)
+{
+	int rc, ret = 0;
+	size_t len;
+
+	if (filename[0] == '/' || dirfd == AT_FDCWD) {
+		len = snprintf(pathbuf, size, "%s", filename);
+	}
+	else if (flags & AT_EMPTY_PATH && filename[0] == '\0') {
+		len = snprintf(pathbuf, size, "/dev/fd/%d", dirfd);
+	}
+	else {
+		len = snprintf(pathbuf, size, "/dev/fd/%d/%s", dirfd, filename);
+	}
+
+	if (len >= size) {
+		ret = ENAMETOOLONG;
+		goto out;
+	}
+
+	if (flags & AT_SYMLINK_NOFOLLOW) {
+		if ((rc = readlink(filename, pathbuf, PATH_MAX)) != -1) {
+			ret = ELOOP;
+			goto out;
+		}
+	}
+
+out:
+	return ret;
+}
+
 int main_loop(struct thread_data_s *my_thread)
 {
 	struct syscall_wait_desc w;
@@ -3929,6 +3962,7 @@ fork_err:
 			break;
 		}
 
+		/* Actually, performing execveat() for McKernel */
 		case __NR_execve: {
 
 			/* Execve phase */
@@ -3940,15 +3974,25 @@ fork_err:
 				char *shebang_argv_flat;
 				char *buffer;
 				size_t size;
-				int ret;
+				int ret, dirfd, flags;
 
 				/* Load descriptor phase */
 				case 1:
 					shebang_argv = NULL;
 					buffer = NULL;
 					desc = NULL;
-					filename = (char *)w.sr.args[1];
+					dirfd = (int)w.sr.args[1];
+					filename = (char *)w.sr.args[2];
+					flags = (int)w.sr.args[4];
 					
+					ret = getpath_execveat(dirfd,
+						filename, flags,
+						pathbuf, PATH_MAX);
+					if (ret) {
+						goto return_execve1;
+					}
+					filename = pathbuf;
+
 					if ((ret = load_elf_desc_shebang(filename, &desc,
 									 &shebang_argv, 0)) != 0) {
 						goto return_execve1;
@@ -3987,7 +4031,7 @@ fork_err:
 
 					/* Copy descriptor to co-kernel side */
 					trans.userp = buffer;
-					trans.rphys = w.sr.args[2];
+					trans.rphys = w.sr.args[3];
 					trans.size = size;
 					trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 					

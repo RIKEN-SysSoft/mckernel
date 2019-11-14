@@ -122,6 +122,11 @@
 # define CLONE_NEWNET	0x40000000	/* New network namespace.  */
 # define CLONE_IO	0x80000000	/* Clone I/O context.  */
 
+/* for execveat() */
+#define AT_FDCWD	-100
+#define AT_SYMLINK_NOFOLLOW	0x100
+#define AT_EMPTY_PATH	0x1000
+
 struct user_desc {
 	unsigned int  entry_number;
 	unsigned int  base_addr;
