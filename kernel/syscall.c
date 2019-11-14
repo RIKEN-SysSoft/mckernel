@@ -2784,6 +2784,9 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	int termsig = clone_flags & 0x000000ff;
 	const struct ihk_mc_cpu_info *cpu_info = ihk_mc_get_cpu_info();
 	int err = 0;
+	unsigned long clone_pthread_start_routine = 0;
+	struct vm_range *range = NULL;
+	int helper_thread = 0;
 
 	dkprintf("%s,flags=%08x,newsp=%lx,ptidptr=%lx,"
 		"ctidptr=%lx,tls=%lx,curpc=%lx,cursp=%lx",
@@ -2792,6 +2795,18 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 
 	dkprintf("do_fork(): stack_pointr passed in: 0x%lX, stack pointer of caller: 0x%lx\n",
 			 newsp, cursp);
+
+	/* CLONE_VM and newsp == parent_tidptr impiles pthread start routine addr */
+	if ((clone_flags & CLONE_VM) && newsp == parent_tidptr) {
+		old->clone_pthread_start_routine = parent_tidptr;
+		dkprintf("%s: clone_pthread_start_routine: 0x%lx\n", __func__,
+			old->clone_pthread_start_routine);
+		return 0;
+	}
+
+	/* Clear pthread routine addr regardless if we succeed */
+	clone_pthread_start_routine = old->clone_pthread_start_routine;
+	old->clone_pthread_start_routine = 0;
 
 	parent_cpuid = old->cpu_id;
 	if (((clone_flags & CLONE_VM) && !(clone_flags & CLONE_THREAD)) ||
@@ -2846,10 +2861,34 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		}
 	}
 
-	cpuid = obtain_clone_cpuid(&old->cpu_set, old->mod_clone == SPAWN_TO_REMOTE && oldproc->uti_use_last_cpu);
-	if (cpuid == -1) {
-		kprintf("do_fork,core not available\n");
-		return -EAGAIN;
+	if (clone_pthread_start_routine) {
+		ihk_mc_spinlock_lock_noirq(&old->vm->memory_range_lock);
+		range = lookup_process_memory_range(old->vm,
+				clone_pthread_start_routine,
+				clone_pthread_start_routine + 1);
+		ihk_mc_spinlock_unlock_noirq(&old->vm->memory_range_lock);
+
+		if (range && range->memobj && range->memobj->path) {
+			if (!strstr(range->memobj->path, "omp.so")) {
+				helper_thread = 1;
+			}
+			dkprintf("clone(): %s thread from %s\n",
+				helper_thread ? "helper" : "compute",
+				range->memobj->path);
+		}
+	}
+
+	if (helper_thread) {
+		cpuid = ihk_mc_get_processor_id();
+		//cpuid = obtain_clone_cpuid(&oldproc->cpu_set, 1);
+	}
+	else {
+		cpuid = obtain_clone_cpuid(&oldproc->cpu_set,
+				(old->mod_clone == SPAWN_TO_REMOTE && oldproc->uti_use_last_cpu));
+		if (cpuid == -1) {
+			kprintf("do_fork,core not available\n");
+			return -EAGAIN;
+		}
 	}
 
 	new = clone_thread(old, curpc,
@@ -2858,6 +2897,17 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	if (!new) {
 		err =  -ENOMEM;
 		goto release_cpuid;
+	}
+
+	if (clone_pthread_start_routine &&
+		range && range->memobj && range->memobj->path) {
+
+		sprintf(new->pthread_routine, "0x%lx @ %s",
+			clone_pthread_start_routine,
+			range->memobj->path);
+	}
+	else {
+		sprintf(new->pthread_routine, "%s", "[unknown]");
 	}
 
 	newproc = new->proc;
