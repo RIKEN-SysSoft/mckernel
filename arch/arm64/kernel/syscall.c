@@ -58,15 +58,34 @@ extern int num_processors;
 int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 {
 	int min_queue_len = -1;
-	int cpu, min_cpu = -1, uti_cpu = -1;
+	int cpu, min_cpu = -1;
+#if 0
+	int uti_cpu = -1;
+#endif
 	unsigned long irqstate = 0;
+
+	int start, end, step;
+
+	if (use_last) {
+		start = num_processors - 1;
+		end = -1;
+		step = -1;
+	}
+	else {
+		start = 0;
+		end = num_processors;
+		step = 1;
+	}
 
 	if (!cpu_local_var(current)->proc->nr_processes) {
 		irqstate = ihk_mc_spinlock_lock(&runq_reservation_lock);
 	}
+	else {
+		irqstate = cpu_disable_interrupt_save();
+	}
 
 	/* Find the first allowed core with the shortest run queue */
-	for (cpu = 0; cpu < num_processors; ++cpu) {
+	for (cpu = start; cpu != end; cpu += step) {
 		struct cpu_local_var *v;
 
 		if (!CPU_ISSET(cpu, cpu_set))
@@ -77,11 +96,14 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d\n",
 			 __func__, cpu, v->runq_len, v->runq_reserved);
 		if (min_queue_len == -1 ||
-		    v->runq_len + v->runq_reserved < min_queue_len) {
-			min_queue_len = v->runq_len + v->runq_reserved;
+		    //v->runq_len + v->runq_reserved < min_queue_len) {
+		    v->runq_len < min_queue_len) {
+			//min_queue_len = v->runq_len + v->runq_reserved;
+			min_queue_len = v->runq_len;
 			min_cpu = cpu;
 		}
 
+#if 0
 		/* Record the last tie CPU */
 		if (min_cpu != cpu &&
 		    v->runq_len + v->runq_reserved == min_queue_len) {
@@ -90,14 +112,15 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 		dkprintf("%s: cpu=%d,runq_len=%d,runq_reserved=%d,min_cpu=%d,uti_cpu=%d\n",
 			 __func__, cpu, v->runq_len, v->runq_reserved,
 			 min_cpu, uti_cpu);
+#else
 
 		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
-#if 0
 		if (min_queue_len == 0)
 			break;
 #endif
 	}
 
+#if 0
 	min_cpu = use_last ? uti_cpu : min_cpu;
 	if (min_cpu != -1) {
 		if (get_cpu_local_var(min_cpu)->status != CPU_STATUS_RESERVED)
@@ -106,9 +129,15 @@ int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last)
 		__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved,
 				     1);
 	}
+#else
+	__sync_fetch_and_add(&get_cpu_local_var(min_cpu)->runq_reserved, 1);
+#endif
 
 	if (!cpu_local_var(current)->proc->nr_processes) {
 		ihk_mc_spinlock_unlock(&runq_reservation_lock, irqstate);
+	}
+	else {
+		cpu_restore_interrupt(irqstate);
 	}
 
 	return min_cpu;
