@@ -1,0 +1,31 @@
+【Issue#1410 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+C1410T01 McKernelに1CPU割り当てた状態で、2つのmcexecにSIGSTOPとSIGCONTを
+         送ったときプロセスが再開することを確認する。実行の結果PASSすること。
+C1420T01 SIGCONTをマスクした状態でプロセスを停止し、その後SIGCONTを送付して
+         プロセスが再開することを確認する。実行の結果PASSすること。
+
+2. LTP を用いて既存処理に影響しないことを確認
+   シグナル関連処理を変更したため、関連するシステムコールのテストを選定した。
+   全てPASSすること。
+C1410T02 kill01: kill の基本機能の確認
+C1410T03 kill02: kill の基本機能の確認
+C1410T04 kill06: kill の基本機能の確認
+C1410T05 kill07: kill の基本機能の確認
+C1410T06 kill08: kill の基本機能の確認
+C1410T07 kill09: kill の基本機能の確認
+C1410T08 signal03: signal の基本機能の確認
+C1410T09 signal04: signal の基本機能の確認
+C1410T10 signal05: signal の基本機能の確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+□ 実行結果
+C1410_x86_64.txt(x86_64実行結果)、C1410_arm64.txt(arm64実行結果) 参照。
+全ての項目が PASS していることを確認。
