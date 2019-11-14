@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "120bb4da_6b91e499",
+        "filename": "kernel/process.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 3867,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-14T07:20:25Z",
+      "side": 1,
+      "message": "(1) B fails to lock memory_range_lock\n(2) A unlocks memory_range_lock, won\u0027t find the entry\n(3) B locks backlog_lock\n(4) no one is going to process the backlog!\n\nSuggestions\n(0) memory_range_lockに紐付けるのをやめて、他のときにも使えるようにする\n(A) change back log to cpu local one\n(B) interrupt context inserts a back log and then start the interval timer when failing to lock memory_range lock\n(C) check the back log when exiting from the interrupt context",
+      "range": {
+        "startLine": 3867,
+        "startChar": 5,
+        "endLine": 3867,
+        "endChar": 24
+      },
+      "revId": "43d1f5c7a695848a3d055d7d308446f6c63eac6b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "fe4cf552_55701a5e",
         "filename": "test/issues/452/C452.patch",
         "patchSetId": 8
