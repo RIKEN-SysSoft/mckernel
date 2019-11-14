@@ -1,0 +1,95 @@
+*** C1366T01 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execveat_child.c:36: PASS: execveat_child run as expected
+execveat_child.c:36: PASS: execveat_child run as expected
+execveat_child.c:36: PASS: execveat_child run as expected
+execveat_child.c:36: PASS: execveat_child run as expected
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+*** C1366T01 PASSED (4)
+
+*** C1366T02 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execveat02.c:64: PASS: execveat() fails as expected: EBADF
+execveat02.c:64: PASS: execveat() fails as expected: EINVAL
+execveat02.c:64: PASS: execveat() fails as expected: ELOOP
+execveat02.c:64: PASS: execveat() fails as expected: ENOTDIR
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+*** C1366T02 PASSED (4)
+
+*** C1366T03 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execveat_child.c:36: PASS: execveat_child run as expected
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1366T03 PASSED (1)
+
+*** C1366T04 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve01_child.c:46: PASS: execve01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1366T04 PASSED (1)
+
+*** C1366T05 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve02.c:66: PASS: execve() failed expectedly: EACCES
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1366T05 PASSED (1)
+
+*** C1366T06 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve03.c:144: PASS: execve failed as expected: ENAMETOOLONG
+execve03.c:144: PASS: execve failed as expected: ENOENT
+execve03.c:144: PASS: execve failed as expected: ENOTDIR
+execve03.c:144: PASS: execve failed as expected: EFAULT
+execve03.c:144: PASS: execve failed as expected: EACCES
+execve03.c:144: PASS: execve failed as expected: ENOEXEC
+
+Summary:
+passed   6
+failed   0
+skipped  0
+warnings 0
+*** C1366T06 PASSED (6)
+
+*** C1366T07 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+
+Summary:
+passed   8
+failed   0
+skipped  0
+warnings 0
+*** C1366T07 PASSED (8)
+
