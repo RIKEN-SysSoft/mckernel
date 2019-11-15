@@ -132,6 +132,24 @@
       "revId": "c4f1b13283d034c3601b1058bf1db820c2e10bd8",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4a496038_04609239",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 3667,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-15T09:29:41Z",
+      "side": 1,
+      "message": "I believe the whole point of d_off is to use as an argument to lseek, yes. But I was wrong with my previous remark, I thought this was a SEEK_SET, so with SEEK_CUR you are correct with this code -- I was still assuming the initial mckernel getdents were done on fd but they are on a specific fd so it should work.\n\nIf you have time please try this program (mostly the example from `man 2 getdents`, with a lseek(fd, 0, SEEK_CUR) between getdents) : it should always print the same offset in lseek and in the last d_off of the chunk.\n\n    // test getdents d_off and lseek are coherent\n#define _GNU_SOURCE\n#include \u003cdirent.h\u003e     /* Defines DT_* constants */\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003csys/syscall.h\u003e\n\n#define handle_error(msg) \\\n        do { perror(msg); exit(EXIT_FAILURE); } while (0)\n\nstruct linux_dirent {\n    long           d_ino;\n    off_t          d_off;\n    unsigned short d_reclen;\n    char           d_name[];\n};\n\n#define BUF_SIZE 200\n\nint\nmain(int argc, char *argv[])\n{\n    int fd, nread;\n    char buf[BUF_SIZE];\n    struct linux_dirent *d;\n    int bpos;\n    char d_type;\n\n    fd \u003d open(argc \u003e 1 ? argv[1] : \".\", O_RDONLY | O_DIRECTORY);\n    if (fd \u003d\u003d -1)\n        handle_error(\"open\");\n\n    for ( ; ; ) {\n        nread \u003d syscall(SYS_getdents, fd, buf, BUF_SIZE);\n        if (nread \u003d\u003d -1)\n            handle_error(\"getdents\");\n\n        if (nread \u003d\u003d 0)\n            break;\n\n        printf(\"--------------- nread\u003d%d ---------------\\n\", nread);\n        printf(\"i-node#  file type  d_reclen  d_off   d_name\\n\");\n        for (bpos \u003d 0; bpos \u003c nread;) {\n            d \u003d (struct linux_dirent *) (buf + bpos);\n            printf(\"%8ld  \", d-\u003ed_ino);\n            d_type \u003d *(buf + bpos + d-\u003ed_reclen - 1);\n            printf(\"%-10s \", (d_type \u003d\u003d DT_REG) ?  \"regular\" :\n                             (d_type \u003d\u003d DT_DIR) ?  \"directory\" :\n                             (d_type \u003d\u003d DT_FIFO) ? \"FIFO\" :\n                             (d_type \u003d\u003d DT_SOCK) ? \"socket\" :\n                             (d_type \u003d\u003d DT_LNK) ?  \"symlink\" :\n                             (d_type \u003d\u003d DT_BLK) ?  \"block dev\" :\n                             (d_type \u003d\u003d DT_CHR) ?  \"char dev\" : \"???\");\n            printf(\"%4d %10lld  %s\\n\", d-\u003ed_reclen,\n                    (long long) d-\u003ed_off, (char *) d-\u003ed_name);\n            bpos +\u003d d-\u003ed_reclen;\n        }\n\tprintf(\"at end of getdents: lseek %10lld\\n\", lseek(fd, 0, SEEK_CUR));\n    }\n\n    exit(EXIT_SUCCESS);\n}",
+      "parentUuid": "2ed3728b_ca14ee9f",
+      "revId": "c4f1b13283d034c3601b1058bf1db820c2e10bd8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
