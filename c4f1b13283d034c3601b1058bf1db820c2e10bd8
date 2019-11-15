@@ -50,6 +50,29 @@
       "revId": "c4f1b13283d034c3601b1058bf1db820c2e10bd8",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a454ea75_fab7579e",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 3663,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2019-11-15T06:25:10Z",
+      "side": 1,
+      "message": "I believe this should be `offset + pos + reclen` ?",
+      "range": {
+        "startLine": 3663,
+        "startChar": 38,
+        "endLine": 3663,
+        "endChar": 50
+      },
+      "revId": "c4f1b13283d034c3601b1058bf1db820c2e10bd8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
