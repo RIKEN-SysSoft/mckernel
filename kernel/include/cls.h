@@ -132,7 +132,7 @@ static struct cpu_local_var *get_this_cpu_local_var(void)
 
 #define cpu_local_var_with_override(name, clv_override) (clv_override ? clv_override->name : get_this_cpu_local_var()->name)
 
-int add_backlog(int cpu, int (*func)(void *arg), void *arg);
+int add_backlog(int (*func)(void *arg), void *arg);
 void do_backlog(void);
 
 #endif

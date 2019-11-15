@@ -70,10 +70,10 @@ void preempt_disable(void)
 		++cpu_local_var(no_preempt);
 }
 
-int add_backlog(int cpu, int (*func)(void *arg), void *arg)
+int add_backlog(int (*func)(void *arg), void *arg)
 {
 	struct backlog *bl;
-	struct cpu_local_var *v = get_cpu_local_var(cpu);
+	struct cpu_local_var *v = get_this_cpu_local_var();
 	unsigned long irqstate;
 
 	if (!(bl = kmalloc(sizeof(struct backlog), IHK_MC_AP_NOWAIT))) {
@@ -88,9 +88,7 @@ int add_backlog(int cpu, int (*func)(void *arg), void *arg)
 	irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 	v->flags |= CPU_FLAG_NEED_RESCHED;
 	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
-	if (cpu != ihk_mc_get_processor_id()) {
-		ihk_mc_interrupt_cpu(cpu, ihk_mc_get_vector(IHK_GV_IKC));
-	}
+	set_timer(0);
 	return 0;
 }
 
