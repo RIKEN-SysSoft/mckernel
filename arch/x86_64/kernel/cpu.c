@@ -952,6 +952,8 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 		dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED \n", rdtsc());
+
+		do_backlog();
 	}
 	else if (vector == LOCAL_PERF_VECTOR) {
 		struct siginfo info;

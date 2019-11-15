@@ -3301,7 +3301,8 @@ void set_timer(int runq_locked)
 	}
 
 	/* Toggle timesharing if CPU core is oversubscribed */
-	if (num_running > 1 || v->current->itimer_enabled) {
+	if (num_running > 1 || v->current->itimer_enabled ||
+	    !list_empty(&v->backlog_list)) {
 		if (!cpu_local_var(timer_enabled)) {
 			lapic_timer_enable(/*10000000*/1000000);
 			cpu_local_var(timer_enabled) = 1;
