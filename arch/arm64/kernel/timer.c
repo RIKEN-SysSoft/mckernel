@@ -111,6 +111,8 @@ static void timer_handler(void *priv)
 		/* set timer re-enable for periodic */
 		arch_timer_reg_write(ARCH_TIMER_REG_TVAL, clocks);
 		arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
+
+		do_backlog();
 	}
 }
 
