@@ -76,6 +76,30 @@
     },
     {
       "key": {
+        "uuid": "1f431d5a_6a7ee6a6",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 3663,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-15T07:28:20Z",
+      "side": 1,
+      "message": "That\u0027s right.\n\nI moved the d_off fix to the location where editiing linux_dirp as you suggested because I found there\u0027s no need to fix the mck_dirp (the last entry points to the end of mck_dirp).\n\n... but I found that d_off fields aren\u0027t filled on ofp machine.\nSo I added the code to fill d_off for mck_dirp as well.",
+      "parentUuid": "a454ea75_fab7579e",
+      "range": {
+        "startLine": 3663,
+        "startChar": 38,
+        "endLine": 3663,
+        "endChar": 50
+      },
+      "revId": "c4f1b13283d034c3601b1058bf1db820c2e10bd8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "6af0fe69_23d163fc",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 5
@@ -87,6 +111,24 @@
       "writtenOn": "2019-11-15T06:26:40Z",
       "side": 1,
       "message": "actually same for the lseek, a directory read into three getdents would probably loop forever?",
+      "revId": "c4f1b13283d034c3601b1058bf1db820c2e10bd8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2ed3728b_ca14ee9f",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 3667,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-15T07:28:20Z",
+      "side": 1,
+      "message": "you mean lseek itself refers to d_off?",
+      "parentUuid": "6af0fe69_23d163fc",
       "revId": "c4f1b13283d034c3601b1058bf1db820c2e10bd8",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
