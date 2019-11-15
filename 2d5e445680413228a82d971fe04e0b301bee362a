@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "66bff2b2_4c8e1d7c",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3075,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-15T06:16:38Z",
+      "side": 1,
+      "message": "struct overlay_fd { ... char mck_path[PATH_MAX]; /* mckernel path */ };\nso it\u0027s fine :)",
+      "parentUuid": "93e28ae0_70b811af",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "08a20621_c5dcd4d5",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 4
@@ -30,6 +48,24 @@
       "writtenOn": "2019-11-14T06:04:59Z",
       "side": 1,
       "message": "So back to this one: to nitpick, we could check offset first and compare offset + count to ofd-\u003emck_dirents_size + ofd-\u003elinux_dirents_size and re-adjust the count we actually need to read appropriately.\nIt\u0027s probably not worth making the code more complex though, so would suggest leaving as is... Unsure, letting you decide.",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c33f53e5_f7e8435a",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3458,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-15T06:16:38Z",
+      "side": 1,
+      "message": "I prefer it as is.",
+      "parentUuid": "08a20621_c5dcd4d5",
       "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "db1ea19d_b04f9cb5",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3533,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-15T06:16:38Z",
+      "side": 1,
+      "message": "I agree with you. I modified the code so.",
+      "parentUuid": "14fe741b_2bb1c41a",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "d79151f5_3fcf2d51",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 4
@@ -64,6 +118,24 @@
       "writtenOn": "2019-11-14T06:04:59Z",
       "side": 1,
       "message": "should also rewrite linux_dirp_iter-\u003ed_off to ofd-\u003emck_dirents_size +  ofd-\u003elinux_dirents_size + pos ;\nd_off is guaranteed to be an offset we can lseek() at and the original offsets are totally different, so if we\u0027re going to support lseek we should do it all the way.\n\n(in the if; or (probably better) invert the if with a continue to make it more explicit that it was about removing duplicate entries... that one was my original code, sorry)",
+      "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d2213ae2_025e9ddb",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 3570,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-15T06:16:38Z",
+      "side": 1,
+      "message": "I fixed these! As for d_off, rewrite d_off of all entries. I didn\u0027t start from the last entry of ofd-\u003emck_dirents for simplicity.",
+      "parentUuid": "d79151f5_3fcf2d51",
       "revId": "2d5e445680413228a82d971fe04e0b301bee362a",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
