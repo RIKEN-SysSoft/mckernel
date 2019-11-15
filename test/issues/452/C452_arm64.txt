@@ -1,23 +1,26 @@
-Script started on Thu 26 Sep 2019 10:31:51 AM JST
+Script started on 2019-11-15 06:32:44+00:00
+bash-4.4$ uname -m
+aarch64
+bash-4.4$ make test
 gcc -g -Wall -o C452T01 C452T01.c
 sh ./C452.sh
 mcstop+release.sh ... done
-mcreboot.sh -c 1-6,29-34 -m 50G@0,50G@1 -r 1-6:0+29-34:28 -O ... done
+mcreboot.sh -c 2-7,10-15 -m 2G@0 ... done
 *** C452T01 test start
-000000400000-000000410000 r-xs 0 0:0 0
-000000410000-000000420000 r--s 0 0:0 0
-000000420000-000000430000 rw-s 0 0:0 0
-080000000000-080000020000 r-xs 0 0:0 0
-080000020000-080000030000 r--s 0 0:0 0
-080000030000-080000040000 rw-s 0 0:0 0
-0ffffffe0000-100000000000 rw-p 0 0:0 0
-100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
-100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
-100000040000-1000001b0000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
-1000001b0000-1000001c0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
-1000001c0000-1000001d0000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
-1000001d0000-1000001e0000 rw-p 0 0:0 0
-3fffff800000-400000000000 rw-p 0 0:0 0                  [stack]
+000000400000-000000410000 r-xs 0 0:0 0			
+000000410000-000000420000 r--s 0 0:0 0			
+000000420000-000000430000 rw-s 0 0:0 0			
+080000000000-080000020000 r-xs 0 0:0 0			
+080000020000-080000030000 r--s 0 0:0 0			
+080000030000-080000040000 rw-s 0 0:0 0			
+0ffffffe0000-100000000000 rw-p 0 0:0 0			
+100000000000-100000010000 r--s 0 0:0 0			[vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0			[vdso]
+100000030000-100000190000 r-xp 0 0:0 0			/usr/lib64/libc-2.28.so
+100000190000-1000001a0000 r--p 0 0:0 0			/usr/lib64/libc-2.28.so
+1000001a0000-1000001b0000 rw-p 0 0:0 0			/usr/lib64/libc-2.28.so
+1000001b0000-1000001c0000 rw-p 0 0:0 0			
+3fffff800000-400000000000 rw-p 0 0:0 0			[stack]
 *** C452T01 PASS
 mmap01      1  TPASS  :  Functionality of mmap() successful
 *** C452T02: mmap01 PASS (1)
@@ -27,33 +30,19 @@ mmap03      1  TPASS  :  mmap() functionality is correct
 *** C452T04: mmap03 PASS (1)
 mmap04      1  TPASS  :  Functionality of mmap() successful
 *** C452T05: mmap04 PASS (1)
-tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
-mmap12.c:103: INFO: All pages are present
-mmap12.c:127: PASS: File mapped properly
-
-Summary:
-passed   1
-failed   0
-skipped  0
-warnings 0
-*** C452T06: mmap12 PASS (0)
-tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
-brk01.c:67: PASS: brk() works fine
-
-Summary:
-passed   1
-failed   0
-skipped  0
-warnings 0
-*** C452T07: brk01 PASS (0)
-fork01      1  TPASS  :  fork() returned 9892
-fork01      2  TPASS  :  child pid and fork() return agree: 9892
+mmap12      1  TPASS  :  Functionality of mmap() successful
+*** C452T06: mmap12 PASS (1)
+brk01       1  TPASS  :  brk(543512330) returned 0, new size verified by sbrk
+*** C452T07: brk01 PASS (1)
+fork01      1  TPASS  :  fork() returned 4922
+fork01      2  TPASS  :  child pid and fork() return agree: 4922
 *** C452T08: fork01 PASS (2)
 fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  Inside child
 fork02      0  TINFO  :  exit status of wait 0
 fork02      1  TPASS  :  test 1 PASSED
 *** C452T09: fork02 PASS (1)
-fork03      0  TINFO  :  process id in parent of child from fork : 9979
+fork03      0  TINFO  :  process id in parent of child from fork : 5008
 fork03      1  TPASS  :  test 1 PASSED
 *** C452T10: fork03 PASS (1)
 mremap04    1  TPASS  :  mremap() failed, 'MREMAP_MAYMOVE flag unset', errno 12
@@ -68,18 +57,11 @@ mremap05    7  TPASS  :  mremap #2 value OK
 *** C452T12: mremap05 PASS (7)
 munmap01    1  TPASS  :  Functionality of munmap() successful
 *** C452T13: munmap01 PASS (1)
-tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
-shmat01.c:147: PASS: shmat() succeeded to attach NULL address
-shmat01.c:147: PASS: shmat() succeeded to attach aligned address
-shmat01.c:147: PASS: shmat() succeeded to attach unaligned address with SHM_RND
-shmat01.c:147: PASS: shmat() succeeded to attach aligned address with SHM_READONLY, and got SIGSEGV on write
-
-Summary:
-passed   4
-failed   0
-skipped  0
-warnings 0
-*** C452T14: shmat01 PASS (0)
+shmat01     1  TPASS  :  conditions and functionality are correct
+shmat01     2  TPASS  :  conditions and functionality are correct
+shmat01     3  TPASS  :  conditions and functionality are correct
+shmat01     4  TPASS  :  conditions and functionality are correct
+*** C452T14: shmat01 PASS (4)
 shmdt01     1  TPASS  :  shared memory detached correctly
 *** C452T15: shmdt01 PASS (1)
 mlock01     1  TPASS  :  mlock passed
@@ -87,29 +69,16 @@ mlock01     2  TPASS  :  mlock passed
 mlock01     3  TPASS  :  mlock passed
 mlock01     4  TPASS  :  mlock passed
 *** C452T16: mlock01 PASS (4)
-mlock04     0  TINFO  :  locked 40960 bytes from 0x1000001d0000
+mlock04     0  TINFO  :  locked 40960 bytes from 0x1000001b0000
 mlock04     1  TPASS  :  test succeeded.
 *** C452T17: mlock04 PASS (1)
-tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
-execve01_child.c:46: PASS: execve01_child executed
-
-Summary:
-passed   1
-failed   0
-skipped  0
-warnings 0
-*** C452T18: execve01 PASS (0)
+execl01_child    1  TPASS  :  execve01_child executed
+execve01    0  TINFO  :  Child process returned TPASS
+*** C452T18: execve01 PASS (2)
 exit01      1  TPASS  :  exit() test PASSED
 *** C452T19: exit01 PASS (1)
-tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
-exit02.c:59: PASS: File written by child read back correctly
-
-Summary:
-passed   1
-failed   0
-skipped  0
-warnings 0
-*** C452T20: exit02 PASS (0)
+exit02      1  TPASS  :  exit() test PASSED
+*** C452T20: exit02 PASS (1)
 exit_group01    1  TPASS  :  exit_group() succeeded
 *** C452T21: exit_group01 PASS (1)
 mprotect02    1  TPASS  :  got SIGSEGV as expected
@@ -133,5 +102,7 @@ remap_file_pages01    2  TPASS  :  Non-Linear /tmp/ file OK
 remap_file_pages01    1  TPASS  :  Non-Linear shm file OK
 remap_file_pages01    2  TPASS  :  Non-Linear /tmp/ file OK
 *** C452T28: remap_file_pages01 PASS (2)
+bash-4.4$ exit
+exit
 
-Script done on Thu 26 Sep 2019 10:32:32 AM JST
+Script done on 2019-11-15 06:33:24+00:00

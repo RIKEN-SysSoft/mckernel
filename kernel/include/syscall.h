@@ -412,6 +412,7 @@ struct procfs_file {
 };
 
 int process_procfs_request(struct ikc_scd_packet *rpacket);
+void send_procfs_answer(struct ikc_scd_packet *packet, int err);
 
 #define RUSAGE_SELF 0
 #define RUSAGE_CHILDREN -1
