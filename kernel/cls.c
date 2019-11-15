@@ -17,6 +17,7 @@
 #include <ihk/lock.h>
 #include <ihk/mm.h>
 #include <ihk/page_alloc.h>
+#include <kmalloc.h>
 #include <cls.h>
 #include <page.h>
 #include <rusage_private.h>
@@ -42,6 +43,7 @@ void cpu_local_var_init(void)
 		clv[i].monitor = monitor->cpu + i;
 		clv[i].rusage = rusage.cpu + i;
 		INIT_LIST_HEAD(&clv[i].smp_func_req_list);
+		INIT_LIST_HEAD(&clv[i].backlog_list);
 #ifdef ENABLE_PER_CPU_ALLOC_CACHE
 		clv[i].free_chunks.rb_node = NULL;
 #endif
@@ -66,4 +68,57 @@ void preempt_disable(void)
 {
 	if (cpu_local_var_initialized)
 		++cpu_local_var(no_preempt);
+}
+
+int add_backlog(int cpu, int (*func)(void *arg), void *arg)
+{
+	struct backlog *bl;
+	struct cpu_local_var *v = get_cpu_local_var(cpu);
+	unsigned long irqstate;
+
+	if (!(bl = kmalloc(sizeof(struct backlog), IHK_MC_AP_NOWAIT))) {
+		return -ENOMEM;
+	}
+	INIT_LIST_HEAD(&bl->list);
+	bl->func = func;
+	bl->arg = arg;
+	irqstate = ihk_mc_spinlock_lock(&v->backlog_lock);
+	list_add_tail(&bl->list, &v->backlog_list);
+	ihk_mc_spinlock_unlock(&v->backlog_lock, irqstate);
+	irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+	v->flags |= CPU_FLAG_NEED_RESCHED;
+	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+	if (cpu != ihk_mc_get_processor_id()) {
+		ihk_mc_interrupt_cpu(cpu, ihk_mc_get_vector(IHK_GV_IKC));
+	}
+	return 0;
+}
+
+void do_backlog(void)
+{
+	unsigned long irqstate;
+	struct list_head list;
+	struct cpu_local_var *v = get_this_cpu_local_var();
+	struct backlog *bl;
+	struct backlog *next;
+
+	INIT_LIST_HEAD(&list);
+	irqstate = ihk_mc_spinlock_lock(&v->backlog_lock);
+	list_for_each_entry_safe(bl, next, &v->backlog_list, list) {
+		list_del(&bl->list);
+		list_add_tail(&bl->list, &list);
+	}
+	ihk_mc_spinlock_unlock(&v->backlog_lock, irqstate);
+
+	list_for_each_entry_safe(bl, next, &list, list) {
+		list_del(&bl->list);
+		if (bl->func(bl->arg)) {
+			irqstate = ihk_mc_spinlock_lock(&v->backlog_lock);
+			list_add_tail(&bl->list, &v->backlog_list);
+			ihk_mc_spinlock_unlock(&v->backlog_lock, irqstate);
+		}
+		else {
+			kfree(bl);
+		}
+	}
 }

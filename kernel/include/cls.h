@@ -59,6 +59,12 @@ struct smp_func_call_request {
 	struct list_head list;
 };
 
+struct backlog {
+	struct list_head list;
+	int (*func)(void *arg);
+	void *arg;
+};
+
 struct cpu_local_var {
 	/* malloc */
 	struct list_head free_list;
@@ -103,6 +109,9 @@ struct cpu_local_var {
 
 	struct process_vm *on_fork_vm;
 
+	ihk_spinlock_t backlog_lock;
+	struct list_head backlog_list;
+
 	/* UTI */
 	void *uti_futex_resp;
 #ifdef ENABLE_PER_CPU_ALLOC_CACHE
@@ -122,5 +131,8 @@ static struct cpu_local_var *get_this_cpu_local_var(void)
 #define cpu_local_var(name) get_this_cpu_local_var()->name
 
 #define cpu_local_var_with_override(name, clv_override) (clv_override ? clv_override->name : get_this_cpu_local_var()->name)
+
+int add_backlog(int cpu, int (*func)(void *arg), void *arg);
+void do_backlog(void);
 
 #endif
