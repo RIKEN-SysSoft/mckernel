@@ -92,8 +92,7 @@ fi
 cpus=`sudo ${SBINDIR}/ihkconfig 0 query cpu`
 if [ "${cpus}" != "" ]; then
 	if ! sudo ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
-		echo "error: releasing CPUs" >&2
-		exit 1
+		echo "warning: failed to release CPUs" >&2
 	fi
 fi
 
