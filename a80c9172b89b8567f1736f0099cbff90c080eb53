@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d26ea788_4f371dbf",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3455,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-17T13:15:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__dprintf(\"early exit: len: %d, reclen: %d, max_len: %ld\\n\",",
+      "revId": "a80c9172b89b8567f1736f0099cbff90c080eb53",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e84c2b85_bd4e0886",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3713,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-17T13:15:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"%s: offset (%ld) is too large (upper: %ld, lower: %ld)\\n\",",
+      "revId": "a80c9172b89b8567f1736f0099cbff90c080eb53",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95a07fdf_378cade6",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3730,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-17T13:15:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t__dprintf(\"mck_dirents_size: %ld, offset: %ld, mck_len: %d, count: %d\\n\",",
+      "revId": "a80c9172b89b8567f1736f0099cbff90c080eb53",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69ef684f_1421d61f",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3737,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-17T13:15:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t__dprintf(\"linux_dirents_size: %ld, offset: %ld, linux_len: %d, count: %d\\n\",",
+      "revId": "a80c9172b89b8567f1736f0099cbff90c080eb53",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "398e92b1_6b266701",
+        "filename": "test/issues/1421/1421.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-17T13:15:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"i-node#  file type  d_reclen  d_off   d_name\\n\");",
+      "revId": "a80c9172b89b8567f1736f0099cbff90c080eb53",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
