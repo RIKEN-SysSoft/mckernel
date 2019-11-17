@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "b6f98914_b8abcafb",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 3529,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-17T13:26:24Z",
+      "side": 1,
+      "message": "Thanks. This part is changed to rewrite additional part only.",
+      "parentUuid": "5c840073_15dedda0",
+      "revId": "b9e9c16ec0abfdd9b8e7e6a83a0ec771492f98ab",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "f5371146_f6470838",
         "filename": "executer/user/mcexec.c",
         "patchSetId": 6
@@ -30,6 +48,24 @@
       "writtenOn": "2019-11-15T09:32:53Z",
       "side": 1,
       "message": "this also misses ofd-\u003elinux_dirents_size I think",
+      "revId": "b9e9c16ec0abfdd9b8e7e6a83a0ec771492f98ab",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "44df6a3f_9325ab79",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 3625,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-11-17T13:26:24Z",
+      "side": 1,
+      "message": "Thanks again. Now this part is changed to rewrite all because ofd-\u003emck_dirents_size might have changed.",
+      "parentUuid": "f5371146_f6470838",
       "revId": "b9e9c16ec0abfdd9b8e7e6a83a0ec771492f98ab",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
