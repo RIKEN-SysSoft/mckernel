@@ -567,11 +567,7 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 	struct mcctrl_part_exec *pe;
 	struct get_cpu_set_arg req;
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 	struct mcctrl_cpu_topology *cpu_top, *cpu_top_i;
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-	struct cpu_topology *cpu_top, *cpu_top_i;
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cache_topology *cache_top;
 	int cpu, cpus_assigned, cpus_to_assign, cpu_prev;
 	int ret = 0;
@@ -2966,13 +2962,8 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 	cpumask_t *cpuset = NULL, *env_cpuset = NULL;
 	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
 	ihk_device_t dev = ihk_os_to_dev(os);
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 	struct mcctrl_cpu_topology *cpu_topo;
 	struct mcctrl_cpu_topology *target_cpu = NULL;
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-	struct cpu_topology *cpu_topo;
-	struct cpu_topology *target_cpu = NULL;
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct node_topology *node_topo;
 	struct ihk_cache_topology *lcache_topo;
 	struct ihk_node_topology *lnode_topo;

@@ -157,13 +157,8 @@ static void free_node_topology(struct mcctrl_usrdata *udp)
 	return;
 } /* free_node_topology() */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
 		struct mcctrl_cpu_topology *cpu)
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
-		struct cpu_topology *cpu)
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	struct cache_topology *cache;
 	struct cache_topology *next;
@@ -179,13 +174,8 @@ static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
 
 static void free_cpu_topology(struct mcctrl_usrdata *udp)
 {
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 	struct mcctrl_cpu_topology *cpu;
 	struct mcctrl_cpu_topology *next;
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-	struct cpu_topology *cpu;
-	struct cpu_topology *next;
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 
 	list_for_each_entry_safe(cpu, next, &udp->cpu_topology_list, chain) {
 		list_del(&cpu->chain);
@@ -315,13 +305,8 @@ static int translate_cpumap(struct mcctrl_usrdata *udp,
 	return error;
 } /* translate_cpumap() */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 static struct cache_topology *get_cache_topology(struct mcctrl_usrdata *udp,
 		struct mcctrl_cpu_topology *cpu_topo, struct ihk_cache_topology *saved)
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-static struct cache_topology *get_cache_topology(struct mcctrl_usrdata *udp,
-		struct cpu_topology *cpu_topo, struct ihk_cache_topology *saved)
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	int error;
 	struct cache_topology *topo = NULL;
@@ -355,21 +340,12 @@ out:
 	return (error)? ERR_PTR(error): topo;
 } /* get_cache_topology() */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 static struct mcctrl_cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 		int index)
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
-		int index)
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	int error;
 	ihk_device_t dev = ihk_os_to_dev(udp->os);
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 	struct mcctrl_cpu_topology *topology = NULL;
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-	struct cpu_topology *topology = NULL;
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	struct cache_topology *cache;
 	struct ihk_cache_topology *saved_cache;
 
@@ -446,11 +422,7 @@ static int get_cpu_topology(struct mcctrl_usrdata *udp)
 {
 	int error;
 	int index;
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 	struct mcctrl_cpu_topology *topology;
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-	struct cpu_topology *topology;
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 
 	dprintk("get_cpu_topology(%p)\n", udp);
 	for (index = 0; index < udp->cpu_info->n_cpus; ++index) {
@@ -472,13 +444,8 @@ out:
 	return error;
 } /* get_cpu_topology() */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
 		struct mcctrl_cpu_topology *cpu, struct cache_topology *cache)
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
-		struct cpu_topology *cpu, struct cache_topology *cache)
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	char *prefix = "/sys/devices/system/cpu";
 	int cpu_number = cpu->mckernel_cpu_id;
@@ -530,13 +497,8 @@ static void setup_cpu_sysfs_cache_files(struct mcctrl_usrdata *udp,
 	return;
 } /* setup_cpu_sysfs_cache_files() */
 
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 		struct mcctrl_cpu_topology *cpu)
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
-		struct cpu_topology *cpu)
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	char *prefix = "/sys/devices/system/cpu";
 	int cpu_number = cpu->mckernel_cpu_id;
@@ -585,11 +547,7 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 static void setup_cpus_sysfs_files(struct mcctrl_usrdata *udp)
 {
 	int error;
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 	struct mcctrl_cpu_topology *cpu;
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-	struct cpu_topology *cpu;
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 
 	error = get_cpu_topology(udp);
 	if (error) {

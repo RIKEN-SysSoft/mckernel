@@ -294,11 +294,7 @@ struct cache_topology {
 	struct list_head chain;
 };
 
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 struct mcctrl_cpu_topology {
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-struct cpu_topology {
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
 	//struct mcctrl_usrdata *udp;
 	struct ihk_cpu_topology *saved;
 	int mckernel_cpu_id;
