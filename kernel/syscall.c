@@ -1139,7 +1139,9 @@ void sync_child_event(struct mc_perf_event *event)
 			ihk_mc_perfctr_read(leader->counter_id);
 	}
 	else if (leader->pid > 0) {
-		leader->count = ihk_mc_perfctr_read(leader->counter_id);
+		uint64_t count = ihk_mc_perfctr_read(leader->counter_id);
+
+		ihk_atomic64_set(&leader->count, count);
 	}
 	else
 		return; // Error
@@ -1150,7 +1152,9 @@ void sync_child_event(struct mc_perf_event *event)
 				ihk_mc_perfctr_read(sub->counter_id);
 		}
 		else if (event->pid > 0) {
-			sub->count = ihk_mc_perfctr_read(sub->counter_id);
+			uint64_t count = ihk_mc_perfctr_read(sub->counter_id);
+
+			ihk_atomic64_set(&sub->count, count);
 		}
 	}
 }
@@ -3958,7 +3962,7 @@ unsigned long perf_event_read_value(struct mc_perf_event *event)
 		}
 	}
 
-	rtn_count += event->count + pmc_count;
+	rtn_count += ihk_atomic64_read(&event->count) + pmc_count;
 
 	if(event->attr.inherit)
 		rtn_count += event->child_count_total;
@@ -4282,7 +4286,7 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 		if(event->attr.inherit)
 			return -EINVAL;
 
-		event->count += event->attr.sample_freq;
+		ihk_atomic64_add(event->attr.sample_freq, &event->count);
 		ihk_mc_perfctr_set(counter_id, event->attr.sample_freq * -1);
 
 		perf_start(event);
@@ -4541,7 +4545,7 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 
 	event->sample_freq = attr->sample_freq;
 	event->nr_siblings = 0;
-	event->count = 0L;
+	ihk_atomic64_set(&event->count, 0);
 	event->child_count_total = 0;
 	event->parent = NULL;
 
