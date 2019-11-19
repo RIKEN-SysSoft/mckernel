@@ -824,6 +824,7 @@ static void armv8pmu_handle_irq(void *priv)
 	}
 
 	if (event) {
+		ihk_mc_event_update(event);
 		ihk_mc_event_set_period(event);
 	}
 	return;
