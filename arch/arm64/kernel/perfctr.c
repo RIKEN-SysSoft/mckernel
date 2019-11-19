@@ -215,3 +215,20 @@ int ihk_mc_perfctr_set_extra(struct mc_perf_event *event)
 	/* Nothing to do. */
 	return 0;
 }
+
+static inline uint64_t arm_pmu_event_max_period(struct mc_perf_event *event)
+{
+	return 0xFFFFFFFF;
+}
+
+int hw_perf_event_init(struct mc_perf_event *event)
+{
+	struct hw_perf_event *hwc = &event->hw;
+
+	if (!is_sampling_event(event)) {
+		hwc->sample_period  = arm_pmu_event_max_period(event) >> 1;
+		hwc->last_period    = hwc->sample_period;
+		ihk_atomic64_set(&hwc->period_left, hwc->sample_period);
+	}
+	return 0;
+}

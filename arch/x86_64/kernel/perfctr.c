@@ -503,3 +503,8 @@ int ihk_mc_perf_get_num_counters(void)
 {
 	return NUM_PERF_COUNTERS;
 }
+
+int hw_perf_event_init(struct mc_perf_event *event)
+{
+	return 0;
+}

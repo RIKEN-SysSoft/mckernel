@@ -17,6 +17,7 @@
 #include <list.h>
 #include <ihk/context.h>
 #include <arch/cpu.h>
+#include <mc_perf_event.h>
 
 extern int num_processors;
 
@@ -89,6 +90,12 @@ unsigned long ihk_mc_hw_cache_event_map(unsigned long hw_cache_event);
 unsigned long ihk_mc_hw_cache_extra_reg_map(unsigned long hw_cache_event);
 unsigned long ihk_mc_raw_event_map(unsigned long raw_event);
 int ihk_mc_validate_event(unsigned long hw_config);
+int hw_perf_event_init(struct mc_perf_event *event);
+
+static inline int is_sampling_event(struct mc_perf_event *event)
+{
+	return event->attr.sample_period != 0;
+}
 
 /* returns the 'prev' argument of the call that caused the switch to the context returned. */
 void *ihk_mc_switch_context(ihk_mc_kernel_context_t *old_ctx,

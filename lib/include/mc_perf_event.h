@@ -4,6 +4,7 @@
 
 #include <list.h>
 #include <march.h>
+#include <ihk/atomic.h>
 
 struct perf_event_attr;
 
@@ -256,6 +257,31 @@ struct hw_perf_event_extra {
 	int idx;
 };
 
+struct hw_perf_event {
+	/*
+	 * The last observed hardware counter value, updated with a
+	 * local64_cmpxchg() such that pmu::read() can be called nested.
+	 */
+	ihk_atomic64_t			prev_count;
+
+	/*
+	 * The period to start the next sample with.
+	 */
+	uint64_t			sample_period;
+
+	/*
+	 * The period we started this sample with.
+	 */
+	uint64_t			last_period;
+
+	/*
+	 * However much is left of the current period; note that this is
+	 * a full 64bit value and allows for generation of periods longer
+	 * than hardware might allow.
+	 */
+	ihk_atomic64_t			period_left;
+};
+
 /**
  * enum perf_event_state - the states of an event:
  */
@@ -290,6 +316,7 @@ struct mc_perf_event {
 	long long			base_system_tsc;
 	long long			stopped_system_tsc;
 	long long			system_accum_count;
+	struct hw_perf_event		hw;
 };
 
 struct perf_event_mmap_page {

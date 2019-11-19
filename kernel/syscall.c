@@ -4526,6 +4526,7 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 	unsigned long val = 0, extra_config = 0;
 	struct mc_perf_event *event = NULL;
 	int ereg_id;
+	struct hw_perf_event *hwc;
 
 	if (!attr) {
 		ret = -EINVAL;
@@ -4548,6 +4549,14 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 	ihk_atomic64_set(&event->count, 0);
 	event->child_count_total = 0;
 	event->parent = NULL;
+
+	hwc = &event->hw;
+	hwc->sample_period = attr->sample_period;
+	if (attr->freq && attr->sample_freq) {
+		hwc->sample_period = 1;
+	}
+	hwc->last_period = hwc->sample_period;
+	ihk_atomic64_set(&hwc->period_left, hwc->sample_period);
 
 	if (attr->type == PERF_TYPE_HARDWARE &&
 		attr->config == PERF_COUNT_HW_REF_CPU_CYCLES) {
@@ -4594,6 +4603,8 @@ static int mc_perf_event_alloc(struct mc_perf_event **out,
 		event->extra_reg.reg = ihk_mc_get_extra_reg_msr(ereg_id);
 		event->extra_reg.idx = ihk_mc_get_extra_reg_idx(ereg_id);
 	}
+
+	ret = hw_perf_event_init(event);
 
 	*out = event;
 
@@ -4651,6 +4662,14 @@ SYSCALL_DECLARE(perf_event_open)
 	     PERF_FORMAT_TOTAL_TIME_RUNNING |
 	     PERF_FORMAT_ID)) {
 		not_supported_flag = 1;
+	}
+
+	if (attr->freq) {
+		not_supported_flag = 1;
+	} else {
+		if (attr->sample_period & (1ULL << 63)) {
+			return -EINVAL;
+		}
 	}
 
 	if (not_supported_flag) {
