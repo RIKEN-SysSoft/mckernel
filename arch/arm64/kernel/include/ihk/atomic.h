@@ -147,6 +147,8 @@ static inline void ihk_atomic64_add(long i, ihk_atomic64_t *v)
 /* @ref.impl arch/arm64/include/asm/atomic.h::atomic64_inc */
 #define ihk_atomic64_inc(v)			ihk_atomic64_add(1LL, (v))
 
+#define ihk_atomic64_cmpxchg(p, o, n) cmpxchg(&((p)->counter64), o, n)
+
 /***********************************************************************
  * others
  */

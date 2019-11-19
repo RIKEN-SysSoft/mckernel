@@ -3917,7 +3917,6 @@ unsigned long perf_event_read_value(struct mc_perf_event *event)
 {
 	unsigned long rtn_count = 0;
 	unsigned long pmc_count = 0;
-	int counter_id = event->counter_id;
 	struct thread *thread = cpu_local_var(current);
 	unsigned long cur_user_tsc, cur_system_tsc;
 
@@ -3957,8 +3956,7 @@ unsigned long perf_event_read_value(struct mc_perf_event *event)
 			}
 		}
 		else {
-			pmc_count = ihk_mc_perfctr_read(counter_id) +
-				event->attr.sample_freq;
+			ihk_mc_event_update(event);
 		}
 	}
 
@@ -4189,6 +4187,10 @@ perf_stop(struct mc_perf_event *event)
 	struct mc_perf_event *leader = event->group_leader, *sub;
 	struct thread *thread = cpu_local_var(current);
 
+	struct mc_perf_event *stop_event[PMC_ALLOC_MAP_BITS + 1];
+	int stop_event_idx = 0;
+
+	stop_event[0] = NULL;
 	counter_id = leader->counter_id;
 	if (ihk_mc_perf_counter_mask_check(1UL << counter_id) &&
 			leader->state == PERF_EVENT_STATE_ACTIVE) {
@@ -4202,6 +4204,8 @@ perf_stop(struct mc_perf_event *event)
 		}
 		else {
 			counter_mask |= 1UL << counter_id;
+			stop_event[stop_event_idx++] = leader;
+			stop_event[stop_event_idx] = NULL;
 		}
 
 		leader->state = PERF_EVENT_STATE_INACTIVE;
@@ -4223,6 +4227,8 @@ perf_stop(struct mc_perf_event *event)
 			}
 			else {
 				counter_mask |= 1UL << counter_id;
+				stop_event[stop_event_idx++] = sub;
+				stop_event[stop_event_idx] = NULL;
 			}
 			sub->state = PERF_EVENT_STATE_INACTIVE;
 		}
@@ -4230,6 +4236,10 @@ perf_stop(struct mc_perf_event *event)
 
 	if (counter_mask) {
 		ihk_mc_perfctr_stop(counter_mask, 0);
+		stop_event_idx = 0;
+		while (stop_event[stop_event_idx]) {
+			ihk_mc_event_update(stop_event[stop_event_idx++]);
+		}
 	}
 	cpu_local_var(current)->proc->monitoring_event = NULL;
 	cpu_local_var(current)->proc->perf_status = PP_NONE;

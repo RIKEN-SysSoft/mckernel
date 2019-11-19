@@ -723,6 +723,7 @@ struct thread {
 	struct futex_q futex_q;
 
 	// for performance counter
+#define PMC_ALLOC_MAP_BITS BITS_PER_LONG
 	unsigned long pmc_alloc_map;
 	unsigned long extra_reg_alloc_map;
 

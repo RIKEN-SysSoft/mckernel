@@ -272,3 +272,26 @@ int ihk_mc_event_set_period(struct mc_perf_event *event)
 
 	return ret;
 }
+
+uint64_t ihk_mc_event_update(struct mc_perf_event *event)
+{
+	struct hw_perf_event *hwc = &event->hw;
+	int64_t delta;
+	uint64_t prev_raw_count, new_raw_count;
+	uint64_t max_period = arm_pmu_event_max_period(event);
+
+again:
+	prev_raw_count = ihk_atomic64_read(&hwc->prev_count);
+	new_raw_count = cpu_pmu.read_counter(event->counter_id);
+
+	if (ihk_atomic64_cmpxchg(&hwc->prev_count, prev_raw_count,
+			     new_raw_count) != prev_raw_count)
+		goto again;
+
+	delta = (new_raw_count - prev_raw_count) & max_period;
+
+	ihk_atomic64_add(delta, &event->count);
+	ihk_atomic64_add(-delta, &hwc->period_left);
+
+	return new_raw_count;
+}
