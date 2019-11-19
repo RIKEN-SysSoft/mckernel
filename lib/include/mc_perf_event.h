@@ -4,6 +4,7 @@
 
 #include <list.h>
 #include <march.h>
+#include <ihk/atomic.h>
 
 struct perf_event_attr;
 
@@ -272,7 +273,7 @@ struct mc_perf_event {
 	enum perf_event_state		state;
 	int 				cpu_id;
 	int 				counter_id;	// counter_id
-	unsigned long			count;		// counter_value
+	ihk_atomic64_t			count;		// counter_value
 	unsigned long			child_count_total;	// child_counter_value
 	unsigned long 			pmc_status;
 	unsigned long			sample_freq;
