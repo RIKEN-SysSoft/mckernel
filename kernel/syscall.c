@@ -4068,6 +4068,7 @@ void perf_start(struct mc_perf_event *event)
 			leader->base_system_tsc = thread->system_tsc;
 		}
 		else {
+			ihk_mc_event_set_period(leader);
 			perf_counter_set(leader);
 			counter_mask |= 1UL << counter_id;
 		}
@@ -4097,6 +4098,7 @@ void perf_start(struct mc_perf_event *event)
 				sub->base_system_tsc = thread->system_tsc;
 			}
 			else {
+				ihk_mc_event_set_period(sub);
 				perf_counter_set(sub);
 				counter_mask |= 1UL << counter_id;
 			}
