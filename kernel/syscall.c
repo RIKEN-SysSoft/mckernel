@@ -4144,7 +4144,8 @@ perf_reset(struct mc_perf_event *event)
 			leader->system_accum_count = 0;
 		}
 		else {
-			ihk_mc_perfctr_reset(counter_id);
+			perf_event_read_value(leader);
+			ihk_atomic64_set(&leader->count, 0);
 		}
 	}
 
@@ -4173,7 +4174,8 @@ perf_reset(struct mc_perf_event *event)
 				sub->system_accum_count = 0;
 			}
 			else {
-				ihk_mc_perfctr_reset(counter_id);
+				perf_event_read_value(sub);
+				ihk_atomic64_set(&sub->count, 0);
 			}
 		}
 	}
