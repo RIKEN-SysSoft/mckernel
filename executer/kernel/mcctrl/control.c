@@ -2403,8 +2403,8 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 		st += rusage_global->cpu[i].system_tsc * rusage_global->ns_per_tsc / 1000;
 		rusage->cpuacct_usage_percpu[i] = wt;
 	}
-	rusage->cpuacct_stat_system = st / 10000000;
-	rusage->cpuacct_stat_user = ut / 10000000;
+	rusage->cpuacct_stat_system = (st + 10000000 - 1) / 10000000;
+	rusage->cpuacct_stat_user = (ut + 10000000 - 1) / 10000000;
 	rusage->cpuacct_usage = ut;
 
 	rusage->num_threads = rusage_global->num_threads;
