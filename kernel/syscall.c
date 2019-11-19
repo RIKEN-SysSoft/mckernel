@@ -4252,7 +4252,6 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 {
 	unsigned int cmd = ihk_mc_syscall_arg1(ctx);
 	struct mc_perf_event *event = (struct mc_perf_event*)sfd->data;
-	int counter_id = event->counter_id;
 	struct mcs_rwlock_node_irqsave lock;
 	struct process *proc;
 
@@ -4299,9 +4298,6 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 		// not supported on inherited events
 		if(event->attr.inherit)
 			return -EINVAL;
-
-		ihk_atomic64_add(event->attr.sample_freq, &event->count);
-		ihk_mc_perfctr_set(counter_id, event->attr.sample_freq * -1);
 
 		perf_start(event);
 
