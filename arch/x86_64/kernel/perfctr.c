@@ -513,3 +513,8 @@ int ihk_mc_event_set_period(struct mc_perf_event *event)
 {
 	return 0;
 }
+
+uint64_t ihk_mc_event_update(struct mc_perf_event *event)
+{
+	return 0;
+}
