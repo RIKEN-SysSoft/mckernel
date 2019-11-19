@@ -508,3 +508,8 @@ int hw_perf_event_init(struct mc_perf_event *event)
 {
 	return 0;
 }
+
+int ihk_mc_event_set_period(struct mc_perf_event *event)
+{
+	return 0;
+}

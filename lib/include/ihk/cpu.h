@@ -91,6 +91,7 @@ unsigned long ihk_mc_hw_cache_extra_reg_map(unsigned long hw_cache_event);
 unsigned long ihk_mc_raw_event_map(unsigned long raw_event);
 int ihk_mc_validate_event(unsigned long hw_config);
 int hw_perf_event_init(struct mc_perf_event *event);
+int ihk_mc_event_set_period(struct mc_perf_event *event);
 
 static inline int is_sampling_event(struct mc_perf_event *event)
 {

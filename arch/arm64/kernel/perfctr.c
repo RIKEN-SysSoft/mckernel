@@ -232,3 +232,43 @@ int hw_perf_event_init(struct mc_perf_event *event)
 	}
 	return 0;
 }
+
+int ihk_mc_event_set_period(struct mc_perf_event *event)
+{
+	struct hw_perf_event *hwc = &event->hw;
+	int64_t left = ihk_atomic64_read(&hwc->period_left);
+	int64_t period = hwc->sample_period;
+	uint64_t max_period;
+	int ret = 0;
+
+	max_period = arm_pmu_event_max_period(event);
+	if (unlikely(left <= -period)) {
+		left = period;
+		ihk_atomic64_set(&hwc->period_left, left);
+		hwc->last_period = period;
+		ret = 1;
+	}
+
+	if (unlikely(left <= 0)) {
+		left += period;
+		ihk_atomic64_set(&hwc->period_left, left);
+		hwc->last_period = period;
+		ret = 1;
+	}
+
+	/*
+	 * Limit the maximum period to prevent the counter value
+	 * from overtaking the one we are about to program. In
+	 * effect we are reducing max_period to account for
+	 * interrupt latency (and we are being very conservative).
+	 */
+	if (left > (max_period >> 1))
+		left = (max_period >> 1);
+
+	ihk_atomic64_set(&hwc->prev_count, (uint64_t)-left);
+
+	cpu_pmu.write_counter(event->counter_id,
+			      (uint64_t)(-left) & max_period);
+
+	return ret;
+}

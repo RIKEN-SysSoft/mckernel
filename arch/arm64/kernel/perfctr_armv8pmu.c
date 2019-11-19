@@ -788,6 +788,7 @@ static void armv8pmu_handle_irq(void *priv)
 	long irqstate;
 	struct mckfd *fdp;
 	struct pt_regs *regs = (struct pt_regs *)priv;
+	struct mc_perf_event *event = NULL;
 
 	/*
 	 * Get and reset the IRQ flags
@@ -821,6 +822,11 @@ static void armv8pmu_handle_irq(void *priv)
 	else {
 		set_signal(SIGIO, regs, NULL);
 	}
+
+	if (event) {
+		ihk_mc_event_set_period(event);
+	}
+	return;
 }
 
 static void armv8pmu_enable_user_access_pmu_regs(void)
