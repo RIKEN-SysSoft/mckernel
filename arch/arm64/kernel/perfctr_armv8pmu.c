@@ -491,6 +491,11 @@ static inline int armv8pmu_has_overflowed(uint32_t pmovsr)
 	return pmovsr & ARMV8_PMU_OVERFLOWED_MASK;
 }
 
+static inline int armv8pmu_counter_has_overflowed(uint32_t pmnc, int idx)
+{
+	return pmnc & BIT(idx);
+}
+
 /* @ref.impl linux-v4.15-rc3 arch/arm64/kernel/perf_event.c */
 static int __armv8_pmuv3_map_event(uint32_t type, uint64_t config,
 				   const unsigned int (*extra_event_map)
@@ -781,14 +786,11 @@ static uint32_t armv8pmu_read_num_pmnc_events(void)
 
 static void armv8pmu_handle_irq(void *priv)
 {
-	struct siginfo info;
 	uint32_t pmovsr;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
-	long irqstate;
-	struct mckfd *fdp;
-	struct pt_regs *regs = (struct pt_regs *)priv;
-	struct mc_perf_event *event = NULL;
+	const struct per_cpu_arm_pmu *cpu_pmu = get_per_cpu_pmu();
+	int idx;
 
 	/*
 	 * Get and reset the IRQ flags
@@ -801,29 +803,36 @@ static void armv8pmu_handle_irq(void *priv)
 	if (!armv8pmu_has_overflowed(pmovsr))
 		return;
 
+	if (!proc->monitoring_event) {
+		return;
+	}
 	/*
 	 * Handle the counter(s) overflow(s)
 	 */
-	/* same as x86_64 mckernel */
-	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
-	for (fdp = proc->mckfd; fdp; fdp = fdp->next) {
-		if (fdp->sig_no > 0)
-			break;
-	}
-	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
+	for (idx = 0; idx < cpu_pmu->num_events; idx++) {
+		struct mc_perf_event *event = NULL;
+		struct mc_perf_event *sub;
 
-	if (fdp) {
-		memset(&info, '\0', sizeof(info));
-		info.si_signo = fdp->sig_no;
-		info._sifields._sigfault.si_addr = (void *)regs->pc;
-		info._sifields._sigpoll.si_fd = fdp->fd;
-		set_signal(fdp->sig_no, regs, &info);
-	}
-	else {
-		set_signal(SIGIO, regs, NULL);
-	}
+		if (!armv8pmu_counter_has_overflowed(pmovsr, idx)) {
+			continue;
+		}
 
-	if (event) {
+		if (proc->monitoring_event->counter_id == idx) {
+			event = proc->monitoring_event;
+		} else {
+			list_for_each_entry(sub,
+					&proc->monitoring_event->sibling_list,
+					group_entry) {
+				if (sub->counter_id == idx) {
+					event = sub;
+					break;
+				}
+			}
+		}
+
+		if (!event) {
+			continue;
+		}
 		ihk_mc_event_update(event);
 		ihk_mc_event_set_period(event);
 	}
