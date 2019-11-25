@@ -598,7 +598,6 @@ static void syscall_channel_send(struct ihk_ikc_channel_desc *c,
 }
 
 extern unsigned long do_kill(struct thread *, int, int, int, struct siginfo *, int ptracecont);
-extern void terminate_host(int pid);
 extern void debug_log(long);
 
 void send_procfs_answer(struct ikc_scd_packet *packet, int err)
@@ -764,8 +763,9 @@ out_remote_pf:
 		break;
 
 	case SCD_MSG_CLEANUP_PROCESS:
-		dkprintf("SCD_MSG_CLEANUP_PROCESS pid=%d\n", packet->pid);
-		terminate_host(packet->pid);
+		dkprintf("SCD_MSG_CLEANUP_PROCESS pid=%d, thread=0x%llx\n",
+				packet->pid, packet->arg);
+		terminate_host(packet->pid, (struct thread *)packet->arg);
 		ret = 0;
 		break;
 

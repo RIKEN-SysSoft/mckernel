@@ -73,7 +73,6 @@ static struct vm_range *vm_range_find(struct process_vm *vm,
 		unsigned long addr);
 static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm);
 extern void __runq_add_proc(struct thread *proc, int cpu_id);
-extern void terminate_host(int pid);
 extern void lapic_timer_enable(unsigned int clocks);
 extern void lapic_timer_disable();
 extern int num_processors;
@@ -288,6 +287,8 @@ struct thread *create_thread(unsigned long user_pc,
 		return NULL;
 	memset(thread, 0, sizeof(struct thread));
 	ihk_atomic_set(&thread->refcount, 2);
+	INIT_LIST_HEAD(&thread->hash_list);
+	INIT_LIST_HEAD(&thread->siblings_list);
 	proc = kmalloc(sizeof(struct process), IHK_MC_AP_NOWAIT);
 	vm = kmalloc(sizeof(struct process_vm), IHK_MC_AP_NOWAIT);
 	asp = create_address_space(cpu_local_var(resource_set), 1);

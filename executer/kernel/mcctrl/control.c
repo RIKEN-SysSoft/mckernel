@@ -86,8 +86,19 @@ int syscall_backward(struct mcctrl_usrdata *, int, unsigned long, unsigned long,
                      unsigned long, unsigned long, unsigned long,
                      unsigned long, unsigned long *);
 
+struct mcos_handler_info {
+	int pid;
+	int cpu;
+	struct mcctrl_usrdata *ud;
+	struct file *file;
+	unsigned long user_start;
+	unsigned long user_end;
+	unsigned long prepare_thread;
+};
+
 static long mcexec_prepare_image(ihk_os_t os,
-                                 struct program_load_desc * __user udesc)
+				struct program_load_desc * __user udesc,
+				struct file *file)
 {
 	struct program_load_desc *desc = NULL;
 	struct program_load_desc *pdesc = NULL;
@@ -99,6 +110,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 	struct mcctrl_per_proc_data *ppd = NULL;
 	int num_sections;
 	int free_ikc_pointers = 1;
+	struct mcos_handler_info *info;
 
 	if (!usrdata) {
 		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
@@ -120,6 +132,13 @@ static long mcexec_prepare_image(ihk_os_t os,
 		ret = -EFAULT;
 		goto free_out;
 	}
+
+	info = ihk_os_get_mcos_private_data(file);
+	if (!info) {
+		ret = -EFAULT;
+		goto free_out;
+	}
+	info->cpu = desc->cpu;
 
 	ppd = mcctrl_get_per_proc_data(usrdata, desc->pid);
 	if (!ppd) {
@@ -192,6 +211,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 		/* either send or remote prepare_process failed */
 		goto put_and_free_out;
 	}
+	/* save prepared thread struct */
+	info->prepare_thread = pdesc->rprocess;
 
 	/* Update rpgtable */
 	ppd->rpgtable = pdesc->rpgtable;
@@ -306,15 +327,6 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 #endif
 }
 
-struct mcos_handler_info {
-	int pid;
-	int cpu;
-	struct mcctrl_usrdata *ud;
-	struct file *file;
-	unsigned long user_start;
-	unsigned long user_end;
-};
-
 struct mcos_handler_info;
 static LIST_HEAD(host_threads); /* Used for FS switch */
 DEFINE_RWLOCK(host_thread_lock);
@@ -379,6 +391,7 @@ static void release_handler(ihk_os_t os, void *param)
 	memset(&isp, '\0', sizeof isp);
 	isp.msg = SCD_MSG_CLEANUP_PROCESS;
 	isp.pid = info->pid;
+	isp.arg = info->prepare_thread;
 
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
 			__FUNCTION__, info, info->cpu);
@@ -414,6 +427,7 @@ static long mcexec_start_image(ihk_os_t os,
 	struct mcctrl_channel *c;
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 	struct mcos_handler_info *info;
+	struct mcos_handler_info *prev_info;
 	int ret = 0;
 
 	if (!usrdata) {
@@ -434,6 +448,7 @@ static long mcexec_start_image(ihk_os_t os,
 		goto out;
 	}
 
+	prev_info = ihk_os_get_mcos_private_data(file);
 	info = new_mcos_handler_info(os, file);
 	if (info == NULL) {
 		ret = -ENOMEM;
@@ -444,6 +459,7 @@ static long mcexec_start_image(ihk_os_t os,
 	info->cpu = desc->cpu;
 	info->user_start = desc->user_start;
 	info->user_end = desc->user_end;
+	info->prepare_thread = prev_info->prepare_thread;
 	ihk_os_register_release_handler(file, release_handler, info);
 	ihk_os_set_mcos_private_data(file, info);
 
@@ -460,8 +476,10 @@ static long mcexec_start_image(ihk_os_t os,
 	ret = mcctrl_ikc_send(os, desc->cpu, &isp);
 	if (ret < 0) {
 		printk("%s: error: sending IKC msg\n", __FUNCTION__);
+		goto out;
 	}
-
+	/* clear prepared thread struct */
+	info->prepare_thread = 0;
 out:
 	kfree(desc);
 	return ret;
@@ -3192,7 +3210,8 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	switch (req) {
 	case MCEXEC_UP_PREPARE_IMAGE:
 		return mcexec_prepare_image(os,
-		                            (struct program_load_desc *)arg);
+					(struct program_load_desc *)arg,
+					file);
 	case MCEXEC_UP_TRANSFER:
 		return mcexec_transfer_image(os, (struct remote_transfer *)arg);
 

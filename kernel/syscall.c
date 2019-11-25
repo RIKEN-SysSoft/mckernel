@@ -1390,14 +1390,21 @@ void terminate(int rc, int sig)
 }
 
 void
-terminate_host(int pid)
+terminate_host(int pid, struct thread *thread)
 {
 	struct process *proc;
 	struct mcs_rwlock_node_irqsave lock;
 
 	proc = find_process(pid, &lock);
-	if(!proc)
+	if (!proc) {
+		if (thread) {
+			proc = thread->proc;
+			ihk_atomic_set(&thread->refcount, 1);
+			release_thread(thread);
+			release_process(proc);
+		}
 		return;
+	}
 
 	if (proc->nohost != 1) {
 		proc->nohost = 1;
