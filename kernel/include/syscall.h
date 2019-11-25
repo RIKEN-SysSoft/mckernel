@@ -634,4 +634,5 @@ extern int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 #define COREDUMP_DESCHEDULED      1
 #define COREDUMP_TO_BE_WOKEN      2
 
+extern void terminate_host(int pid, struct thread *thread);
 #endif
