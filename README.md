@@ -184,3 +184,10 @@ Some of our collaborators include:
 ## License
 
 McKernel is GPL licensed, as found in the LICENSE file.
+
+## Contact
+
+Please give your feedback to us via one of the following mailing lists. Subscription via [www.pccluster.org](http://www.pccluster.org/mailman/listinfo/mckernel-users) is needed.
+
+* English: mckernel-users@pccluster.org
+* Japanese: mckernel-users-jp@pccluster.org
