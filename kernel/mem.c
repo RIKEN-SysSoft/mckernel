@@ -2478,7 +2478,7 @@ int is_mckernel_memory(unsigned long start, unsigned long end)
 
 		ihk_mc_get_memory_chunk(i, &chunk_start, &chunk_end, &numa_id);
 		if ((chunk_start <= start && start < chunk_end) &&
-		    (chunk_start <= end && end < chunk_end)) {
+		    (chunk_start <= end && end <= chunk_end)) {
 			return 1;
 		}
 	}
@@ -2497,7 +2497,7 @@ int is_mckernel_memory(unsigned long start, unsigned long end)
 		list_for_each_entry(pa_allocator,
 				    &memory_nodes[i].allocators, list) {
 			if ((area_start <= start && start < area_end) &&
-			    (area_start <= end && end < area_end)) {
+			    (area_start <= end && end <= area_end)) {
 				return 1;
 			}
 		}

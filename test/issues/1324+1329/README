@@ -1,0 +1,66 @@
+【Issue#1324,#1329 動作確認】
+□ テスト内容
+本Issueの症状は、以下の操作の際に操作対象メモリの物理メモリが
+McKernelに割り当てられたメモリチャンクの終端になっている場合に発生する
+  - fork時などのcopy_user_pte()
+  - POKE{TEXT,DATA}指定のptrace
+  - copy_{from,to}_user()
+  - /proc/<pid>/mem への読み書き
+
+1GBのmmapで確保したメモリ領域がメモリチャンクと重なるように、
+mcreboot.sh -m 1G@0,1G@0,1G@0... としてMcKernelを起動した状態で
+本テストを実行する
+
+1. 下記のテストプログラムを実行し、症状が発生しないことを確認する
+C1324+1329T01:
+  1. PRIVATE|ANONYMOUSな1GBのメモリ領域をmmapで確保
+  2. fork()が正常に行われることを確認
+  3. 子プロセスはptrace(TRACEME)を行い、停止
+  4. 親プロセスは、ptrace(POKETEXT)で、確保したメモリ領域の終端に
+    テスト用の値を書き込む
+  5. ptrace(DETACH)で子プロセスを再開
+  6. 子プロセスは、書き込まれたテスト用の値を確認
+
+C1324+1329T02:
+  (copy_{from,to}_user()を伴うシンプルなシステムコールとして、sigaltstackを利用)
+  1. PRIVATE|ANONYMOUSな1GBのメモリ領域を2つ、mmapで確保
+  2. sigaltstack()で授受する構造体を、それぞれ確保したメモリ領域の終端に配置
+  3. sigaltstack()での情報の授受が成功することを確認
+
+C1324+1329T03:
+  1. PRIVATE|ANONYMOUSな1GBのメモリ領域をmmapで確保
+  2. 確保したメモリ領域の終端にテスト用の値を書き込む
+  3. /proc/self/mem を介して、2.で書き込んだテスト用の値を確認
+
+2. 以下のLTPを用いてIssueで報告された症状が発生しないことを確認
+  - fork14
+
+3. 以下のLTPを用いて既存のfork,msgctl機能に影響が無いことを確認
+  - fork01
+  - fork02
+  - fork03
+  - fork04
+  - fork05
+  - fork06
+  - fork07
+  - fork08
+  - fork09
+  - fork10
+  - fork11
+  - msgctl01
+  - msgctl02
+  - msgctl03
+  - msgctl04
+  - msgctl12
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
