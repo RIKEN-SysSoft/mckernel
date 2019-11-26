@@ -154,7 +154,9 @@ SYSCALL_HANDLED(279, move_pages)
 SYSCALL_DELEGATED(281, epoll_pwait)
 SYSCALL_HANDLED(282, signalfd)
 SYSCALL_HANDLED(289, signalfd4)
+#ifdef ENABLE_PERF
 SYSCALL_HANDLED(298, perf_event_open)
+#endif
 #ifdef DCFA_KMOD
 SYSCALL_HANDLED(303, mod_call)
 #endif

@@ -1634,6 +1634,7 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 	/* Set up new TLS.. */
 	ihk_mc_init_user_tlsbase(next->uctx, next->tlsblock_base);
 
+#ifdef ENABLE_PERF
 	/* Performance monitoring inherit */
 	if(next->proc->monitoring_event) {
 		if(next->proc->perf_status == PP_RESET)
@@ -1643,6 +1644,7 @@ struct thread *arch_switch_context(struct thread *prev, struct thread *next)
 			perf_start(next->proc->monitoring_event);
 		}
 	}
+#endif
 
 #ifdef PROFILE_ENABLE
 	if (prev && prev->profile && prev->profile_start_ts != 0) {
