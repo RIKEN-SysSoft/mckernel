@@ -1,0 +1,11 @@
+CFLAGS=-g
+LDFLAGS=
+
+TARGET=C1324+1329T01 C1324+1329T02 C1324+1329T03
+
+all: $(TARGET)
+
+test: all
+	./C1324+1329.sh
+clean:
+	rm -f $(TARGET) *.o *.txt
