@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d0dae259_05ef42af",
+        "filename": "test/issues/1324+1329/C1324+1329.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-27T05:05:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+BOOTPARAM\u003d\"-m 1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0 -O\"",
+      "revId": "8ef9643c3c9c956ed278aee72b041c98a61a42aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c9eee49_6bcf78cc",
+        "filename": "test/issues/1324+1329/C1324+1329.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-27T05:05:19Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in fork14 fork01 fork02 fork03 fork04 fork05 fork06 fork07 fork08 fork09 fork10 fork11 msgctl01 msgctl02 msgctl03 msgctl04 msgctl12",
+      "revId": "8ef9643c3c9c956ed278aee72b041c98a61a42aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
