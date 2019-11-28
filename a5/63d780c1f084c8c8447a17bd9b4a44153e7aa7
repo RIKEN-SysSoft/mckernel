@@ -1,0 +1,9 @@
+Code-Review+1: Masamichi Takagi <masamichi.takagi@riken.jp>
+Code-Review+2: Balazs Gerofi <bgerofi@riken.jp>
+Verified+1: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Test-x86+2: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Submitted-by: Balazs Gerofi <bgerofi@riken.jp>
+Submitted-at: Thu, 28 Nov 2019 02:07:45 +0000
+Reviewed-on: https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/449375
+Project: RIKEN-SysSoft/mckernel
+Branch: refs/heads/development
