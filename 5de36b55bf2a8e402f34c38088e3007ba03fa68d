@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1ea65a0a_52f2d9b6",
+        "filename": "test/xpmem/util.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-11-29T02:29:23Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\tdo {\t\t\\\n+\tif (cond) {\t\t\t\t\\\n+\t\tfprintf(stderr, \" [NG] \");\t\\\n+\t\tfprintf(stderr, __VA_ARGS__);\t\\\n+\t\tfprintf(stderr, \" failed\\n\");\t\\\n+\t\tgoto fn_fail;\t\t\t\\\n+\t}\t\t\t\t\t\\\n+} while (0)",
+      "revId": "5de36b55bf2a8e402f34c38088e3007ba03fa68d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
