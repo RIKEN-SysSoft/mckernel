@@ -987,15 +987,6 @@ do_signal(unsigned long rc, void *regs0, struct thread *thread, struct sig_pendi
 			dkprintf("SIGTRAP(): woken up\n");
 			break;
 		case SIGCONT:
-			memset(&info, '\0', sizeof info);
-			info.si_signo = SIGCHLD;
-			info.si_code = CLD_CONTINUED;
-			info._sifields._sigchld.si_pid = proc->pid;
-			info._sifields._sigchld.si_status = 0x0000ffff;
-			do_kill(cpu_local_var(current), proc->parent->pid, -1, SIGCHLD, &info, 0);
-			proc->main_thread->signal_flags = SIGNAL_STOP_CONTINUED;
-			proc->status = PS_RUNNING;
-			dkprintf("do_signal,SIGCONT,do nothing\n");
 			break;
 		case SIGQUIT:
 		case SIGILL:
@@ -1588,6 +1579,29 @@ done:
 	mcs_rwlock_writer_unlock_noirq(savelock, &mcs_rw_node);
 	cpu_restore_interrupt(irqstate);
 
+	if (sig == SIGCONT || ptracecont == 1) {
+		/* Wake up the target only when stopped by SIGSTOP */
+		if (sched_wakeup_thread(tthread, PS_STOPPED) == 0) {
+			struct siginfo info;
+
+			tthread->proc->main_thread->signal_flags =
+							SIGNAL_STOP_CONTINUED;
+			tthread->proc->status = PS_RUNNING;
+			memset(&info, '\0', sizeof(info));
+			info.si_signo = SIGCHLD;
+			info.si_code = CLD_CONTINUED;
+			info._sifields._sigchld.si_pid = tthread->proc->pid;
+			info._sifields._sigchld.si_status = 0x0000ffff;
+			do_kill(tthread, tthread->proc->parent->pid, -1,
+							SIGCHLD, &info, 0);
+			tthread->proc->status = PS_RUNNING;
+			if (thread != tthread) {
+				ihk_mc_interrupt_cpu(tthread->cpu_id,
+						ihk_mc_get_vector(IHK_GV_IKC));
+			}
+			doint = 0;
+		}
+	}
 	if (doint && !(mask & tthread->sigmask.__val[0])) {
 		int status = tthread->status;
 
@@ -1602,11 +1616,6 @@ done:
 			if(sig == SIGKILL){
 				/* Wake up the target only when stopped by ptrace-reporting */
 				sched_wakeup_thread(tthread, PS_TRACED | PS_STOPPED | PS_INTERRUPTIBLE);
-			}
-			else if(sig == SIGCONT || ptracecont == 1){
-				/* Wake up the target only when stopped by SIGSTOP */
-				sched_wakeup_thread(tthread, PS_STOPPED);
-				tthread->proc->status = PS_RUNNING;
 			}
 			else {
 				sched_wakeup_thread(tthread, PS_INTERRUPTIBLE);
