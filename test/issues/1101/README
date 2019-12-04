@@ -1,0 +1,24 @@
+【Issue#1101 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+C1101T01 OFPにてHPLを2000回連続実行し、現象が発生しないことを確認する。
+         OFPでのHPL実行結果を C1101T01.txt.xz にxz圧縮形式で格納している。
+         2000回の連続実行に成功したことを以って PASS とする。
+
+2. mbind を呼び出してメモリリークが発生しないことを確認する。
+   全てのテストが PASS すること。
+C1101T02 mbind(MPOL_DEFAULT) の動作確認。
+C1101T03 mbind(MPOL_BIND) の動作確認。
+C1101T04 mbind(MPOL_INTERLEAVE) の動作確認。
+C1101T05 mbind(MPOL_PREFERRED) の動作確認。
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+□ 実行結果
+C1101_x86_64.txt(x86_64実行結果)、C1101_arm64.txt(arm64実行結果)参照。
+全ての項目が PASS していることを確認。
