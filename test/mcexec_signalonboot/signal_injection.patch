@@ -1,0 +1,124 @@
+diff --git a/executer/user/mcexec.c b/executer/user/mcexec.c
+index 7f84284..3d65118 100644
+--- a/executer/user/mcexec.c
++++ b/executer/user/mcexec.c
+@@ -200,6 +200,8 @@ static char *mpol_bind_nodes = NULL;
+ static int uti_thread_rank = 0;
+ static int uti_use_last_cpu = 0;
+ static int enable_uti = 0;
++static const char *signal_injection = "";
++static int injection_signo = 0;
+ 
+ /* Partitioned execution (e.g., for MPI) */
+ static int nr_processes = 0;
+@@ -892,11 +894,20 @@ int transfer_image(int fd, struct program_load_desc *desc)
+ 			/* No more left to upload.. */
+ 			if (lr == 0 && flen == 0) break;
+ 
++			if (strcmp(signal_injection, "MCEXEC_UP_TRANSFER:before") == 0) {
++				printf("raise\n");
++				raise(injection_signo);
++			}
++			printf("ioctl(MCEXEC_UP_TRANSFER)\n");
+ 			if (ioctl(fd, MCEXEC_UP_TRANSFER,
+ 						(unsigned long)&pt)) {
+ 				perror("dma");
+ 				break;
+ 			}
++			if (strcmp(signal_injection, "MCEXEC_UP_TRANSFER:after") == 0) {
++				printf("raise\n");
++				raise(injection_signo);
++			}
+ 		}
+ 	}
+ 
+@@ -2092,6 +2103,8 @@ int main(int argc, char **argv)
+ 	__glob_argv = argv;
+ #endif
+ 
++	printf("signal_injection.patch is applied.\n");
++
+ 	page_size = sysconf(_SC_PAGESIZE);
+ 	page_mask = ~(page_size - 1);
+ 
+@@ -2237,6 +2250,21 @@ int main(int argc, char **argv)
+ 		}
+ 	}
+ 
++	while ((opt = getopt_long(argc, argv, "i:s:",
++			mcexec_options, NULL)) != -1) {
++		switch (opt) {
++		case 'i':
++			signal_injection = optarg;
++			break;
++		case 's':
++			injection_signo = strtol(optarg, NULL, 0);
++			break;
++		default: /* '?' */
++			print_usage(argv);
++			exit(EXIT_FAILURE);
++		}
++	}
++
+ 	if (heap_extension == -1) {
+ 		heap_extension = sysconf(_SC_PAGESIZE);
+ 	}
+@@ -2653,11 +2681,20 @@ int main(int argc, char **argv)
+ 	desc->thp_disable = get_thp_disable();
+ 
+ 	/* user_start and user_end are set by this call */
++	if (strcmp(signal_injection, "MCEXEC_UP_PREPARE_IMAGE:before") == 0) {
++		printf("raise\n");
++		raise(injection_signo);
++	}
++	printf("ioctl(MCEXEC_UP_PREPARE_IMAGE)\n");
+ 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
+ 		perror("prepare");
+ 		close(fd);
+ 		return 1;
+ 	}
++	if (strcmp(signal_injection, "MCEXEC_UP_PREPARE_IMAGE:after") == 0) {
++		printf("raise\n");
++		raise(injection_signo);
++	}
+ 
+ 	print_desc(desc);
+ 	if (transfer_image(fd, desc) < 0) {
+@@ -2692,7 +2729,16 @@ int main(int argc, char **argv)
+ 	__dprintf("mccmd server initialized\n");
+ #endif
+ 
++	if (strcmp(signal_injection, "init_sigaction:before") == 0) {
++		printf("raise\n");
++		raise(injection_signo);
++	}
++	printf("init_sigaction\n");
+ 	init_sigaction();
++	if (strcmp(signal_injection, "init_sigaction:after") == 0) {
++		printf("raise\n");
++		raise(injection_signo);
++	}
+ 
+ 	/* Initialize watchdog thread which detects hang of McKernel */
+ 
+@@ -2721,11 +2767,20 @@ int main(int argc, char **argv)
+ 		return 1;
+ 	}
+ 
++	if (strcmp(signal_injection, "MCEXEC_UP_START_IMAGE:before") == 0) {
++		printf("raise\n");
++		raise(injection_signo);
++	}
++	printf("ioctl(MCEXEC_UP_START_IMAGE)\n");
+ 	if (ioctl(fd, MCEXEC_UP_START_IMAGE, (unsigned long)desc) != 0) {
+ 		perror("exec");
+ 		close(fd);
+ 		return 1;
+ 	}
++	if (strcmp(signal_injection, "MCEXEC_UP_START_IMAGE:after") == 0) {
++		printf("raise\n");
++		raise(injection_signo);
++	}
+ 
+ #if 1 /* debug : thread killed by exit_group() are still joinable? */
+ 	join_all_threads();

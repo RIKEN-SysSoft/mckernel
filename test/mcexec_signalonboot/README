@@ -1,0 +1,43 @@
+==========
+How to run
+==========
+
+(1) cd <mckernel> && patch -p1 < <mckernel>/test/mcexec_signalonboot/signal_injection.patch
+(2) Build McKernel
+(3) cd <mckernel>/test/mcexec_signalonboot
+(4) bash ./run.sh
+
+============
+What to test
+============
+
+Testing memory leaks in program booting.
+Terminate mcexec at some timing to check for memory leaks.
+
+ID  TIMING                         SIGNAL
+------------------------------------------
+001 MCEXEC_UP_PREPARE_IMAGE:before SIGINT
+002 MCEXEC_UP_PREPARE_IMAGE:before SIGKILL
+003 MCEXEC_UP_PREPARE_IMAGE:before SIGTERM
+011 MCEXEC_UP_PREPARE_IMAGE:after  SIGINT
+012 MCEXEC_UP_PREPARE_IMAGE:after  SIGKILL
+013 MCEXEC_UP_PREPARE_IMAGE:after  SIGTERM
+101 MCEXEC_UP_TRANSFER:before      SIGINT
+102 MCEXEC_UP_TRANSFER:before      SIGKILL
+103 MCEXEC_UP_TRANSFER:before      SIGTERM
+111 MCEXEC_UP_TRANSFER:after       SIGINT
+112 MCEXEC_UP_TRANSFER:after       SIGKILL
+113 MCEXEC_UP_TRANSFER:after       SIGTERM
+201 init_sigaction:before          SIGINT
+202 init_sigaction:before          SIGKILL
+203 init_sigaction:before          SIGTERM
+211 init_sigaction:after           SIGINT
+212 init_sigaction:after           SIGKILL
+213 init_sigaction:after           SIGTERM
+301 MCEXEC_UP_START_IMAGE:before   SIGINT
+302 MCEXEC_UP_START_IMAGE:before   SIGKILL
+303 MCEXEC_UP_START_IMAGE:before   SIGTERM
+311 MCEXEC_UP_START_IMAGE:after    SIGINT
+312 MCEXEC_UP_START_IMAGE:after    SIGKILL
+313 MCEXEC_UP_START_IMAGE:after    SIGTERM
+------------------------------------------

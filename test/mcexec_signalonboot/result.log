@@ -1,0 +1,27 @@
+[root@hostname mcexec_signalonboot]# sh run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 512M@4 ... done
+001: OK
+002: OK
+003: OK
+011: OK
+012: OK
+013: OK
+101: OK
+102: OK
+103: OK
+111: OK
+112: OK
+113: OK
+201: OK
+202: OK
+203: OK
+211: OK
+212: OK
+213: OK
+301: OK
+302: OK
+303: OK
+311: OK
+312: OK
+313: OK
