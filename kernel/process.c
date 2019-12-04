@@ -2744,6 +2744,8 @@ void
 release_process_vm(struct process_vm *vm)
 {
 	struct process *proc = vm->proc;
+	struct vm_range_numa_policy *policy;
+	struct rb_node *node;
 
 	if (!ihk_atomic_dec_and_test(&vm->refcount)) {
 		return;
@@ -2771,6 +2773,15 @@ release_process_vm(struct process_vm *vm)
 	detach_address_space(vm->address_space, vm->proc->pid);
 	proc->vm = NULL;
 	release_process(proc);
+
+	while ((node = rb_first(&vm->vm_range_numa_policy_tree))) {
+		policy = rb_entry(node, struct vm_range_numa_policy,
+				  policy_rb_node);
+		rb_erase(&policy->policy_rb_node,
+			 &vm->vm_range_numa_policy_tree);
+		kfree(policy);
+	}
+
 	kfree(vm);
 }
 
