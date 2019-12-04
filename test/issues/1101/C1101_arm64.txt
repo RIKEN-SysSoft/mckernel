@@ -1,0 +1,19 @@
+Script started on 2019-12-19 06:01:59+00:00
+bash-4.4$ make test
+sh ./C1101.sh
+aarch64
+mcstop+release.sh ... done
+mcreboot.sh -c 1-3 -m 1G@0 -e memdebug ... done
+*** C1101T01 PASS
+*** C1101T02 START
+*** C1101T02 PASS
+*** C1101T03 START
+*** C1101T03 PASS
+*** C1101T04 START
+*** C1101T04 PASS
+*** C1101T05 START
+*** C1101T05 PASS
+bash-4.4$ exit
+exit
+
+Script done on 2019-12-19 06:02:34+00:00

@@ -1,0 +1,23 @@
+Script started on Thu Dec 19 14:58:46 2019
+bash-4.2$ make test
+gcc -g -Wall -o C1101T02 C1101T02.c -lnuma
+gcc -g -Wall -o C1101T03 C1101T03.c -lnuma
+gcc -g -Wall -o C1101T04 C1101T04.c -lnuma
+gcc -g -Wall -o C1101T05 C1101T05.c -lnuma
+sh ./C1101.sh
+x86_64
+mcstop+release.sh ... done
+mcreboot.sh -c 1-3 -m 1G@0 -e memdebug ... done
+*** C1101T01 PASS
+*** C1101T02 START
+*** C1101T02 PASS
+*** C1101T03 START
+*** C1101T03 PASS
+*** C1101T04 START
+*** C1101T04 PASS
+*** C1101T05 START
+*** C1101T05 PASS
+bash-4.2$ exit
+exit
+
+Script done on Thu Dec 19 14:59:18 2019
