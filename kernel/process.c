@@ -3301,8 +3301,11 @@ static void do_migrate(void)
 
 		dkprintf("%s: migrated TID %d from CPU %d to CPU %d\n",
 			__FUNCTION__, req->thread->tid, old_cpu_id, cpu_id);
-		
+
 		v->flags |= CPU_FLAG_NEED_RESCHED;
+		/* Kick scheduler on target CPU */
+		ihk_mc_interrupt_cpu(cpu_id, ihk_mc_get_vector(IHK_GV_IKC));
+
 		waitq_wakeup(&req->wq);
 		double_rq_unlock(cur_v, v, irqstate);
 		continue;
