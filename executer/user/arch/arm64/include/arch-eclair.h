@@ -9,15 +9,15 @@
 #
 # if (CONFIG_ARM64_VA_BITS == 42)
 #  /* VA_BITS=42, 64K_PAGE address */
-#  define MAP_KERNEL		0xfffffc0007800000
+#  define MAP_KERNEL		0xfffffc000f800000
 #  define MAP_ST		0xfffffe0000000000
-#  define MAP_KERNEL_TEXT	"0xfffffc0007800000"
+#  define MAP_KERNEL_TEXT	"0xfffffc000f800000"
 #
 # elif (CONFIG_ARM64_VA_BITS == 48)
 #  /* VA_BITS=48, 64K_PAGE address */
-#  define MAP_KERNEL		0xffff000007800000
+#  define MAP_KERNEL		0xffff00000f800000
 #  define MAP_ST		0xffff800000000000
-#  define MAP_KERNEL_TEXT	"0xffff000007800000"
+#  define MAP_KERNEL_TEXT	"0xffff00000f800000"
 #
 # else
 #
@@ -29,15 +29,15 @@
 #
 # if (CONFIG_ARM64_VA_BITS == 39)
 #  /* VA_BITS=39, 4K_PAGE address */
-#  define MAP_KERNEL		0xffffff8007800000
+#  define MAP_KERNEL		0xffffff800f800000
 #  define MAP_ST		0xffffffc000000000
-#  define MAP_KERNEL_TEXT	"0xffffff8007800000"
+#  define MAP_KERNEL_TEXT	"0xffffff800f800000"
 #
 # elif (CONFIG_ARM64_VA_BITS == 48)
 #  /* VA_BITS=48, 4K_PAGE address */
-#  define MAP_KERNEL		0xffff000007800000
+#  define MAP_KERNEL		0xffff00000f800000
 #  define MAP_ST		0xffff800000000000
-#  define MAP_KERNEL_TEXT	"0xffff000007800000"
+#  define MAP_KERNEL_TEXT	"0xffff00000f800000"
 #
 # else
 #

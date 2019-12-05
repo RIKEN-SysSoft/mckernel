@@ -67,7 +67,7 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffffffbffbdfd000)
 # define MAP_ST_START		UL(0xffffffc000000000)
-# define MAP_KERNEL_START	UL(0xffffff8007800000)
+# define MAP_KERNEL_START	UL(0xffffff800f800000)
 #
 #elif (VA_BITS == 42 && GRANULE_SIZE == _SZ64KB) /* ARM64_MEMORY_LAYOUT=3 */
 #
@@ -78,7 +78,7 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xfffffdfffbdd0000)
 # define MAP_ST_START		UL(0xfffffe0000000000)
-# define MAP_KERNEL_START	UL(0xfffffc0007800000)
+# define MAP_KERNEL_START	UL(0xfffffc000f800000)
 #
 #elif (VA_BITS == 48 && GRANULE_SIZE == _SZ4KB) /* ARM64_MEMORY_LAYOUT=2 */
 #
@@ -89,7 +89,7 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffff7ffffbdfd000)
 # define MAP_ST_START		UL(0xffff800000000000)
-# define MAP_KERNEL_START	UL(0xffff000007800000)
+# define MAP_KERNEL_START	UL(0xffff00000f800000)
 #
 #elif (VA_BITS == 48 && GRANULE_SIZE == _SZ64KB) /* ARM64_MEMORY_LAYOUT=4 */
 #
@@ -100,7 +100,7 @@ extern char _end[];
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffff7ffffbdd0000)
 # define MAP_ST_START		UL(0xffff800000000000)
-# define MAP_KERNEL_START	UL(0xffff000007800000)
+# define MAP_KERNEL_START	UL(0xffff00000f800000)
 #
 #else
 # error address space is not defined.
