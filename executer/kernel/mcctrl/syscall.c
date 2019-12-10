@@ -758,10 +758,10 @@ reserve_user_space_common(struct mcctrl_usrdata *usrdata, unsigned long start, u
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	start = vm_mmap_pgoff(file, start, end, PROT_READ|PROT_WRITE|PROT_EXEC,
-	                      MAP_FIXED|MAP_SHARED, 0);
+			      MAP_FIXED | MAP_PRIVATE, 0);
 #else
 	start = vm_mmap(file, start, end, PROT_READ|PROT_WRITE|PROT_EXEC,
-	                MAP_FIXED|MAP_SHARED, 0);
+			MAP_FIXED | MAP_PRIVATE, 0);
 #endif
 #if 0
 	{ /* debug */
@@ -1823,14 +1823,14 @@ static int remap_user_space(uintptr_t rva, size_t len, int prot)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	map = do_mmap_pgoff(file, start, len,
-			prot, MAP_FIXED|MAP_SHARED, pgoff);
+			    prot, MAP_FIXED | MAP_PRIVATE, pgoff);
 #endif
 
 	up_write(&mm->mmap_sem);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
 	map = vm_mmap(file, start, len,
-			prot, MAP_FIXED|MAP_SHARED, pgoff << PAGE_SHIFT);
+		      prot, MAP_FIXED | MAP_PRIVATE, pgoff << PAGE_SHIFT);
 #endif
 
 out:
