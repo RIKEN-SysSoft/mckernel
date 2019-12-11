@@ -2042,6 +2042,13 @@ static void ld_preload_init()
 		LD_PRELOAD_APPEND;
 	}
 
+	/* Read predefined LD_PRELOAD */
+	ld_preload_str = getenv("LD_PRELOAD");
+	if (ld_preload_str) {
+		sprintf(elembuf, "%s%s", nelem > 0 ? ":" : "", ld_preload_str);
+		LD_PRELOAD_APPEND;
+	}
+
 	if (strlen(envbuf)) {
 		if (setenv("LD_PRELOAD", envbuf, 1) < 0) {
 			printf("%s: warning: failed to set LD_PRELOAD environment variable\n",
