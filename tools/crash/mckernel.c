@@ -82,7 +82,11 @@ static struct mck_size_table {
 #define MCK_SIZE_INIT(X, Y) (MCK_ASSIGN_SIZE(X) = STRUCT_SIZE(Y))
 
 #ifdef X86_64
-#define LINUX_PAGE_OFFSET 0xffff880000000000UL
+#define MAP_FIXED_START    0xffff860000000000UL
+#define MAP_KERNEL_START   0xffffffff80000000UL
+#define MAP_ST_START       0xffff800000000000UL
+unsigned long LINUX_PAGE_OFFSET = -1UL;
+unsigned long x86_kernel_phys_base = -1UL;
 static inline ulong phys_to_virt(ulong phys)
 {
 	return phys + LINUX_PAGE_OFFSET;
@@ -100,9 +104,29 @@ static inline ulong phys_to_virt(ulong phys)
 int mcreadmem(ulonglong addr, int memtype, void *buffer, long size,
 	char *type, ulong error_handle)
 {
-#ifdef ARM64
 	ulong phys;
-
+#ifdef X86_64
+	if (LINUX_PAGE_OFFSET != -1UL &&
+			x86_kernel_phys_base != -1UL) {
+		if (addr >= MAP_KERNEL_START &&
+			addr < MAP_KERNEL_START + 0x4000) {
+			phys = addr - MAP_KERNEL_START + x86_kernel_phys_base;
+		}
+		else if (addr >= LINUX_PAGE_OFFSET) {
+			phys = addr - LINUX_PAGE_OFFSET;
+		}
+		else if (addr >= MAP_FIXED_START) {
+			phys = addr - MAP_FIXED_START;
+		}
+		else if (addr >= MAP_ST_START) {
+			phys = addr - MAP_ST_START;
+		}
+		else {
+			kvtop(NULL, addr, &phys, 0);
+		}
+		addr = phys_to_virt(phys);
+	}
+#elif defined ARM64
 	/*
 	 * Crash on ARM RedHat8 can't seem to access module space
 	 * virtual addresses, translate to kernel fixed map.
@@ -147,13 +171,6 @@ get_symbol_value(char *name)
 	}
 
 	close_tmpfile2();
-
-#ifdef X86_64
-	/* adjust symbols in MAP_ST_START */
-	if (value < 0xffff810000000000UL && value >= 0xffff800000000000UL) {
-		value += 0x80000000000UL;
-	}
-#endif
 
 	return value;
 }
@@ -1050,7 +1067,8 @@ static void
 arch_init(void)
 {
 #ifdef X86_64
-	/* nothing to do */
+	LINUX_PAGE_OFFSET = get_symbol_value("linux_page_offset_base");
+	x86_kernel_phys_base = get_symbol_value("x86_kernel_phys_base");
 #elif defined(ARM64)
 	V2PHYS_OFFSET = get_symbol_value("memstart_addr");
 
@@ -1625,7 +1643,7 @@ cmd_mcinfo(void)
 #ifdef x86
 
 #endif
-
+	fprintf(fp, "LINUX_PAGE_OFFSET: 0x%lx\n", LINUX_PAGE_OFFSET);
 #ifdef ARM64
 	fprintf(fp, "V2PHYS_OFFSET: 0x%lx\n", V2PHYS_OFFSET);
 

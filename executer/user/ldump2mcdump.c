@@ -244,11 +244,7 @@ void cmd_ldump2mcdump(void)
 
 	bfd_init();
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34 /* use bfd_open target is NULL(automatic) */
 	abfd = bfd_fopen(fname, NULL, "w", -1);
-#else /* POSTK_DEBUG_ARCH_DEP_34 */
-	abfd = bfd_fopen(fname, "elf64-x86-64", "w", -1);
-#endif /* POSTK_DEBUG_ARCH_DEP_34 */
 	if (!abfd) {
 		bfd_perror("bfd_fopen");
 		return;

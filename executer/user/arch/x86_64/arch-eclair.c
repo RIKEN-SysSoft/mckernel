@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <arch-eclair.h>
 
+unsigned long linux_page_offset = 0xffff880000000000UL;
+
 int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 {
 	int i, ret, total = 0;
@@ -100,16 +102,15 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	return total;
 }
 
-#ifdef POSTK_DEBUG_ARCH_DEP_34
-static uintptr_t virt_to_phys(uintptr_t va)
+uintptr_t virt_to_phys(uintptr_t va)
 {
 	extern uintptr_t kernel_base;
 
 	if (va >= MAP_KERNEL_START) {
 		return va - MAP_KERNEL_START + kernel_base;
 	}
-	else if (va >= LINUX_PAGE_OFFSET) {
-		return va - LINUX_PAGE_OFFSET;
+	else if (va >= linux_page_offset) {
+		return va - linux_page_offset;
 	}
 	else if (va >= MAP_FIXED_START) {
 		return va - MAP_FIXED_START;
@@ -120,5 +121,16 @@ static uintptr_t virt_to_phys(uintptr_t va)
 
 	return NOPHYS;
 } /* virt_to_phys() */
-#endif /* POSTK_DEBUG_ARCH_DEP_34 */
+
+int arch_setup_constants(void)
+{
+	if (read_symbol_64("linux_page_offset_base",
+				&linux_page_offset) != 0) {
+		fprintf(stderr, "error: obtaining Linux page offset\n");
+		return 1;
+	}
+
+	printf("x86 linux_page_offset: 0x%lx\n", linux_page_offset);
+	return 0;
+}
 
