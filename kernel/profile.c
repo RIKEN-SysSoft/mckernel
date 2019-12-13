@@ -461,17 +461,91 @@ static void profile_clear_thread(struct thread *thread)
 			sizeof(*thread->profile_events) * PROFILE_EVENT_MAX);
 }
 
+int alloc_perf_sampling_buffer(struct perf_sampling *ps)
+{
+	ps->nentries = 32;
+	ps->size = ps->nentries * sizeof(unsigned long);
+	ps->len = 0;
+
+	kprintf("perf: allocating buffer\n");
+	ps->buffer = kmalloc(ps->size, IHK_MC_PG_KERNEL);
+	if (!ps->buffer) {
+		kprintf("Error: Cannot allocate PEBS buffer\n");
+		return -ENOMEM;
+	}
+	kprintf("perf: memsetting buffer\n");
+	memset((void *)ps->buffer, 0, ps->size);
+
+	return 0;
+}
+
+void print_perf_sampling(struct perf_sampling *ps)
+{
+	size_t i, j, slen;
+
+	kprintf("perf: printing buffer\n");
+
+	for (i = 0; i < ps->len;) {
+		slen = ps->buffer[i];
+		kprintf("\n");
+		i++;
+		for (j = 0; j < slen; j++, i++) {
+			kprintf(" %#16lx\n", ps->buffer[i]);
+		}
+	}
+}
+
 int do_profile(int flag)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
 	unsigned long now_ts = rdtsc();
 
+	kprintf("in do_profile! %x\n", flag);
+
 	/* Job level? */
 	if (flag & PROF_JOB) {
 		dkprintf("%s: JOB %d, flag: 0x%lx\n",
 				__FUNCTION__, proc->nr_processes, flag);
-		if (flag & PROF_PRINT) {
+		if (flag & PROF_SAMPLE) {
+			int ret;
+			struct perf_sampling *ps;
+
+			ps = &cpu_local_var(perf_sampling);
+
+			kprintf("in prof sample!\n");
+
+			// TODO this needs to be properly integrated with the
+			// timer used in oversubscription. Right now it is just
+			// assuming that the sched timer does not exists. Also
+			// look at the handle_interrupt function
+			if (flag & PROF_ON) {
+				kprintf("in prof sample on!\n");
+
+				if (ps->buffer == NULL) {
+					ret = alloc_perf_sampling_buffer(ps);
+					if (ret)
+						return ret;
+				}
+
+				if (!cpu_local_var(timer_enabled)) {
+					lapic_timer_enable(/*10000000*/100000);
+					cpu_local_var(timer_enabled) = 1;
+				}
+				ps->enabled = 1;
+			}
+			if (flag & PROF_OFF) {
+				kprintf("in prof sample off!\n");
+				if (cpu_local_var(timer_enabled)) {
+					lapic_timer_disable();
+				}
+				ps->enabled = 0;
+			}
+			if (flag & PROF_PRINT) {
+				kprintf("in prof sample print!\n");
+				print_perf_sampling(ps);
+			}
+		} else if (flag & PROF_PRINT) {
 			struct mcs_rwlock_node lock;
 			struct thread *_thread;
 
@@ -486,6 +560,7 @@ int do_profile(int flag)
 			/* Accumulate events to job level */
 			return profile_accumulate_and_print_job_events(proc);
 		}
+
 	}
 	/* Process level? */
 	else if (flag & PROF_PROC) {

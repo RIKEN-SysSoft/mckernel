@@ -59,6 +59,14 @@ struct smp_func_call_request {
 	struct list_head list;
 };
 
+struct perf_sampling {
+	unsigned long *buffer;
+	size_t nentries;
+	size_t size;
+	size_t len;
+	int enabled;
+};
+
 struct cpu_local_var {
 	/* malloc */
 	struct list_head free_list;
@@ -102,6 +110,8 @@ struct cpu_local_var {
 	struct list_head smp_func_req_list;
 
 	struct process_vm *on_fork_vm;
+
+	struct perf_sampling perf_sampling;
 
 	/* UTI */
 	void *uti_futex_resp;

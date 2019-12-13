@@ -1699,12 +1699,12 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	}
 
 	/* XXX: Intel MPI 128MB mapping.. */
-	if (len == 134217728) {
-		dkprintf("%s: %ld bytes mapping -> no prefault\n",
-			__FUNCTION__, len);
-		vrflags |= VR_DEMAND_PAGING;
-		populated_mapping = 0;
-	}
+	//if (len == 134217728) {
+	//	dkprintf("%s: %ld bytes mapping -> no prefault\n",
+	//		__FUNCTION__, len);
+	//	vrflags |= VR_DEMAND_PAGING;
+	//	populated_mapping = 0;
+	//}
 
 	if ((flags & MAP_ANONYMOUS) && !(prot & PROT_WRITE)) {
 		error = set_host_vma(addr, len, PROT_READ | PROT_EXEC, 1/* holding memory_range_lock */);

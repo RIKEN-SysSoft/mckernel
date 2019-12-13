@@ -100,6 +100,11 @@ static struct idt_entry{
 
 static struct x86_desc_ptr idt_desc, gdt_desc;
 
+struct stack {
+	struct stack *rbp;
+	unsigned long eip;
+};
+
 static uint64_t gdt[] __attribute__((aligned(16))) = {
 	0,                  /* 0 */
 	0,                  /* 8 */
@@ -881,6 +886,41 @@ void interrupt_exit(struct x86_user_context *regs)
 	}
 }
 
+void perf_sample_stack(void)
+{
+	struct perf_sampling *ps = &cpu_local_var(perf_sampling);
+	struct stack *rbp, *rbp_tmp;
+	size_t stack_len;
+
+	kprintf("perf: collecting sample. current len %zu\n", ps->len);
+
+	// there must be at least one free entry to do something
+	if (ps->nentries - ps->len == 0)
+		return;
+
+	asm("mov %%rbp, %0" : "=r"(rbp_tmp));
+	rbp = rbp_tmp;
+
+	stack_len = 0;
+	while ((unsigned long)rbp > 0xffff880000000000 &&
+			(ps->len + stack_len + 1) < ps->nentries) {
+		stack_len++;
+		rbp = rbp->rbp;
+	}
+
+	ps->buffer[ps->len] = stack_len;
+	ps->len++;
+	rbp = rbp_tmp;
+
+	while ((unsigned long)rbp > 0xffff880000000000 &&
+			ps->len < ps->nentries) {
+		ps->buffer[ps->len] = rbp->eip;
+		ps->len++;
+		rbp = rbp->rbp;
+	}
+	kprintf("perf: end of collecting sample\n");
+}
+
 void handle_interrupt(int vector, struct x86_user_context *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
@@ -948,10 +988,17 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 		unsigned long irqstate;
 		/* Timer interrupt, enabled only on oversubscribed CPU cores,
 		 * request reschedule */
-		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-		v->flags |= CPU_FLAG_NEED_RESCHED;
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
-		dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED \n", rdtsc());
+
+		if (v->perf_sampling.enabled) {
+			perf_sample_stack();
+		} else {
+			irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+			v->flags |= CPU_FLAG_NEED_RESCHED;
+			ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+			dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED\n",
+				 rdtsc());
+		}
+
 	}
 	else if (vector == LOCAL_PERF_VECTOR) {
 		struct siginfo info;
@@ -1454,11 +1501,6 @@ void arch_show_extended_context(void)
 		__kprintf("%016lX\n", xcr0);
 	}
 }
-
-struct stack {
-	struct stack *rbp;
-	unsigned long eip;
-};
 
 /* KPRINTF_LOCAL_BUF_LEN is 1024, useless to go further */
 #define STACK_BUF_LEN (1024-sizeof("[  0]: "))

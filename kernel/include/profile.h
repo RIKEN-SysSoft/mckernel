@@ -16,6 +16,7 @@
 #define PROF_ON                              0x02
 #define PROF_OFF                             0x04
 #define PROF_PRINT                           0x08
+#define PROF_SAMPLE                          0x10
 
 struct profile_event {
 	uint32_t cnt;
