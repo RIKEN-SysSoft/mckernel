@@ -1,0 +1,12 @@
+[root@hostname perf_overflow]# sh run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 512M@4 ... done
+000: OK
+001: OK
+002: OK
+003: OK
+010: OK
+011: OK
+012: OK
+013: OK
+014: OK

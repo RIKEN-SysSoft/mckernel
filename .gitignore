@@ -15,6 +15,7 @@ CMakeCache.txt
 Makefile
 !test/*/*/Makefile
 !test/signalonfork+wait/Makefile
+!test/perf_overflow/Makefile
 !test/*/*/*.cmd
 Kbuild
 cmake_install.cmake
