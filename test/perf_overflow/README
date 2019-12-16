@@ -1,0 +1,28 @@
+==========
+How to run
+==========
+
+(1) Build McKernel
+(2) cd <mckernel>/test/perf_overflow
+(3) make
+(4) sh run.sh
+
+============
+What to test
+============
+
+Test sampling where event counter overflow occurs.
+During sampling, sys_read, sys_ioctl(PERF_EVENT_IOC_RESET), and sys_ioctl(PERF_EVENT_IOC_REFRESH) calls are combined.
+
+ 000) count the number of executions of nop
+ 001) read counter while counting nop
+ 002) reset counter while nop counting
+ 003) refresh counter while counting nop
+ 010) read, reset, and refresh counter while counting nop
+ 011) read, read, and refresh counter while counting nop
+ 012) reset, reset, and read counter while counting nop
+ 013) refresh, refresh, and reset counter while counting nop
+ 014) refresh, read, and read counter while counting nop
+
+--
+README COPYRIGHT FUJITSU LIMITED 2019
