@@ -1,0 +1,35 @@
+==========
+How to run
+==========
+
+(1) Build McKernel
+(2) cd <mckernel>/test/perf_overflow
+(3) make
+(4) sh run.sh
+
+============
+What to test
+============
+
+Test overflow handling of performance counter.
+The steps of the test programs are as follows:
+(1) Starts counting with the initial counter value set to -30
+(2) Executes 40 nops
+(3) Repeat (4)-(5) with the commands specified by the test-case
+(4) Executes sys_read or sys_ioctl(PERF_EVENT_IOC_RESET) or sys_ioctl(PERF_EVENT_IOC_REFRESH)
+(5) Executes 40 nops
+(6) Checks if the counter value read in (4) is the same as Linux run
+
+
+ 000) count the number of executions of nop
+ 001) read counter while counting nop
+ 002) reset counter while nop counting
+ 003) refresh counter while counting nop
+ 010) read, reset, and refresh counter while counting nop
+ 011) read, read, and refresh counter while counting nop
+ 012) reset, reset, and read counter while counting nop
+ 013) refresh, refresh, and reset counter while counting nop
+ 014) refresh, read, and read counter while counting nop
+
+--
+README COPYRIGHT FUJITSU LIMITED 2019
