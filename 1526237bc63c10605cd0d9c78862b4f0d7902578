@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "65dcccba_fc2f6f65",
+        "filename": "arch/x86_64/kernel/memory.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-17T08:05:46Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern unsigned long linux_page_offset_base;",
+      "revId": "1526237bc63c10605cd0d9c78862b4f0d7902578",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31c02529_d8409d46",
+        "filename": "arch/x86_64/kernel/memory.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2647,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-17T08:05:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: MAP_KERNEL_START \u003c\u003d 0x%lx \u003c\u003d linux_page_offset_base\\n\",",
+      "revId": "1526237bc63c10605cd0d9c78862b4f0d7902578",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
