@@ -141,7 +141,7 @@ elseif (BUILD_TARGET STREQUAL "smp-arm64")
 		# NMI by priority doesn't work with ThunderX2
 		if(CPU_IMPLEMENTER STREQUAL "0x43" AND CPU_ARCH STREQUAL "8" AND
 		   CPU_VARIANT STREQUAL "0x1" AND CPU_PART STREQUAL "0x0af")
-			add_definitions(-DCONFIG_HAS_NMI=n)
+			# Don't add "-DCONFIG_HAS_NMI=n" because it'll be added to KBUILD_C_FLAGS
 			message("CONFIG_HAS_NMI isn't defined for ThunderX2")
 		else()
 			add_definitions(-DCONFIG_HAS_NMI=y)
