@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7332237a_f928c5b5",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2343,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-18T02:02:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tret \u003d ihk_mc_pt_virt_to_phys_size(lthread-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "9b871e73f99f554c4454ea04a24e76cb8714c5fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b344231_faee8000",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2357,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-18T02:02:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t(((unsigned long)local_iov[li].iov_base + loff)",
+      "revId": "9b871e73f99f554c4454ea04a24e76cb8714c5fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "588c5a74_01b44360",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2359,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-18T02:02:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\taddr \u003c (local_iov[li].iov_base + loff + to_copy);",
+      "revId": "9b871e73f99f554c4454ea04a24e76cb8714c5fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c9fc4d4_007cacf4",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2362,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-18T02:02:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tret \u003d page_fault_process_vm(lthread-\u003evm, addr, reason);",
+      "revId": "9b871e73f99f554c4454ea04a24e76cb8714c5fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a41b3cae_ddd2e33c",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2386,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-18T02:02:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tremote_iov[ri].iov_base + roff, \u0026rphys, \u0026rpsize);",
+      "revId": "9b871e73f99f554c4454ea04a24e76cb8714c5fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6357f8a3_43c0307d",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2430,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-18T02:02:38Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"local_iov[%d]: 0x%lx %s remote_iov[%d]: 0x%lx, %lu copied, rpsize: %lu, rpage_left: %lu\\n\",",
+      "revId": "9b871e73f99f554c4454ea04a24e76cb8714c5fe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
