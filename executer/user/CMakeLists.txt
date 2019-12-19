@@ -23,6 +23,8 @@ set_property(TARGET mcexec PROPERTY LINK_FLAGS "-fPIE -pie")
 add_executable(mcinspect mcinspect.c)
 if (NOT LIBDWARF)
 	target_include_directories(mcinspect PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/lib/")
+	target_include_directories(mcinspect PRIVATE
+		"${CMAKE_CURRENT_SOURCE_DIR}/lib/libdwarf/libdwarf/libdwarf/")
 	target_link_libraries(mcinspect dwarf z elf)
 else()
 	target_link_libraries(mcinspect ${LIBDWARF})
