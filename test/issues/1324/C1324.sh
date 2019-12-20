@@ -7,7 +7,7 @@ BOOTPARAM="-m 1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1G@0,1
 
 . ../../common.sh
 
-issue="1324+1329"
+issue="1324"
 tid=01
 
 for tno in 01 02 03
@@ -25,7 +25,7 @@ do
 	echo ""
 done
 
-for tp in fork14 fork01 fork02 fork03 fork04 fork05 fork06 fork07 fork08 fork09 fork10 fork11 msgctl01 msgctl02 msgctl03 msgctl04 msgctl12
+for tp in fork14 fork01 fork02 fork03 fork04 fork05 fork06 fork07 fork08 fork09 fork10 fork11
 do
 	tname=`printf "C${issue}T%02d" ${tid}`
 	echo "*** ${tname} start *******************************"

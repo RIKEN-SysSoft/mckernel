@@ -1,0 +1,30 @@
+【Issue#1329 動作確認】
+□ テスト内容
+1. 以下のLTPを300回連続実行し、Issueで報告された症状が発生しないことを確認
+  - msgctl11
+なお、本テストケースはapollo上では別の不具合によりテストが動作しないため、テスト対象から除外した
+
+2. 以下のLTPを用いて既存のfork機能に影響が無いことを確認
+  - fork01
+  - fork02
+  - fork03
+  - fork04
+  - fork05
+  - fork06
+  - fork07
+  - fork08
+  - fork09
+  - fork10
+  - fork11
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
