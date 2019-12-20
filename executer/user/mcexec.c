@@ -4120,19 +4120,22 @@ gettid_out:
 				}
 
 fork_child_sync_pipe:
-				sem_post(&fs->sem);
-				sem_destroy(&fs->sem);
-				if (fs->status)
-					exit(1);
-
+				/* clear fork_sync inherited from parent */
 				for (fp = fork_sync_top; fp;) {
 					fb = fp->next;
-					if (fp->fs && fp->fs != fs)
+					if (fp->fs && fp->fs != fs) {
 						munmap(fp->fs, sizeof(struct fork_sync));
+					}
 					free(fp);
 					fp = fb;
 				}
 				fork_sync_top = NULL;
+
+				sem_post(&fs->sem);
+				if (fs->status) {
+					exit(1);
+				}
+
 				pthread_mutex_init(&fork_sync_mutex, NULL);
 
 				/* TODO: does the forked thread run in a pthread context? */
@@ -4145,6 +4148,7 @@ fork_child_sync_pipe:
 					exit(1);
 				}
 
+				sem_destroy(&fs->sem);
 				munmap(fs, sizeof(struct fork_sync));
 #if 1 /* debug : thread killed by exit_group() are still joinable? */
 				join_all_threads();
