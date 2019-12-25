@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c7021b32_0f8e5f96",
+        "filename": "test/issues/1324/C1324.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-25T00:42:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in fork14 fork01 fork02 fork03 fork04 fork05 fork06 fork07 fork08 fork09 fork10 fork11",
+      "revId": "398f1d543966cc2c6a619b9488b7195ff7631f13",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5411914_a487d228",
+        "filename": "test/issues/1329/C1329.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2019-12-25T00:42:56Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in fork01 fork02 fork03 fork04 fork05 fork06 fork07 fork08 fork09 fork10 fork11",
+      "revId": "398f1d543966cc2c6a619b9488b7195ff7631f13",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
