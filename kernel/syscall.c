@@ -3669,6 +3669,69 @@ SYSCALL_DECLARE(fcntl)
 	return rc;
 }
 
+SYSCALL_DECLARE(epoll_pwait)
+{
+	long rc;
+	sigset_t *set = (sigset_t *)ihk_mc_syscall_arg4(ctx);
+	__sigset_t oldset;
+	__sigset_t wset;
+	struct thread *thread = cpu_local_var(current);
+
+	oldset = thread->sigmask.__val[0];
+	if (set) {
+		if (copy_from_user(&wset, set->__val, sizeof(wset))) {
+			return -EFAULT;
+		}
+		thread->sigmask.__val[0] = wset;
+	}
+	rc = syscall_generic_forwarding(__NR_epoll_pwait, ctx);
+	thread->sigmask.__val[0] = oldset;
+
+	return rc;
+}
+
+SYSCALL_DECLARE(ppoll)
+{
+	long rc;
+	sigset_t *set = (sigset_t *)ihk_mc_syscall_arg3(ctx);
+	__sigset_t oldset;
+	__sigset_t wset;
+	struct thread *thread = cpu_local_var(current);
+
+	oldset = thread->sigmask.__val[0];
+	if (set) {
+		if (copy_from_user(&wset, set->__val, sizeof(wset))) {
+			return -EFAULT;
+		}
+		thread->sigmask.__val[0] = wset;
+	}
+	rc = syscall_generic_forwarding(__NR_ppoll, ctx);
+	thread->sigmask.__val[0] = oldset;
+
+	return rc;
+}
+
+SYSCALL_DECLARE(pselect6)
+{
+	long rc;
+	sigset_t *set = (sigset_t *)ihk_mc_syscall_arg5(ctx);
+	__sigset_t oldset;
+	__sigset_t wset;
+	struct thread *thread = cpu_local_var(current);
+
+	oldset = thread->sigmask.__val[0];
+	if (set) {
+		if (copy_from_user(&wset, set->__val, sizeof(wset))) {
+			return -EFAULT;
+		}
+		thread->sigmask.__val[0] = wset;
+	}
+	rc = syscall_generic_forwarding(__NR_pselect6, ctx);
+	thread->sigmask.__val[0] = oldset;
+
+	return rc;
+}
+
 SYSCALL_DECLARE(rt_sigprocmask)
 {
 	int how = ihk_mc_syscall_arg0(ctx);
