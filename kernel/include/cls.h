@@ -110,6 +110,7 @@ struct cpu_local_var {
 	/* Per-CPU memory allocator cache */
 	struct rb_root free_chunks;
 #endif
+	int sched_print;
 } __attribute__((aligned(64)));
 
 extern int cpu_local_var_initialized;

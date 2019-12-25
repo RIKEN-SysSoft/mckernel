@@ -299,6 +299,7 @@
 #define ICC_SRE_EL1			sys_reg(3, 0, 12, 12, 5)
 #define ICC_GRPEN1_EL1			sys_reg(3, 0, 12, 12, 7)
 #define ICC_BPR1_EL1			sys_reg(3, 0, 12, 12, 3)
+#define ICC_IGRPEN0_EL1               sys_reg(3, 0, 12, 12, 6)
 
 #define ICC_IAR1_EL1_SPURIOUS		0x3ff
 

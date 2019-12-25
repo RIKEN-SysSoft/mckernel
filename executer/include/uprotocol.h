@@ -123,6 +123,7 @@ struct program_load_desc {
 	int reloc;
 	char enable_vdso;
 	char padding[7];
+	unsigned long asid;
 	unsigned long entry;
 	unsigned long user_start;
 	unsigned long user_end;

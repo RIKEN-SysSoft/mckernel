@@ -497,6 +497,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	proc->pid = pn->pid;
 	proc->vm->address_space->pids[0] = pn->pid;
+	set_address_space_id(proc->vm->address_space->page_table, (int)pn->asid);
 	proc->pgid = pn->pgid;
 	proc->ruid = pn->cred[0];
 	proc->euid = pn->cred[1];
@@ -672,6 +673,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 		dkprintf("%s: SCD_MSG_WAKE_UP_SYSCALL_THREAD: waking up tid %d\n",
 			__FUNCTION__, packet->ttid);
+		//++cpu_local_var(sched_print);
 		waitq_wakeup(&thread->scd_wq);
 		ret = 0;
 		break;
@@ -731,7 +733,7 @@ out_remote_pf:
 		syscall_channel_send(resp_channel, &pckt);
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
-		dkprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
+		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
 		ret = 0;
 		break;
 

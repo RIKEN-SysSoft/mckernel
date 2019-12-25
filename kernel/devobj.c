@@ -104,7 +104,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
-		kprintf("%s: error: fd: %d, len: %lu, off: %lu map failed.\n", 
+dkprintf("%s: error: fd: %d, len: %lu, off: %lu map failed.\n", 
 			__FUNCTION__, fd, len, off);
 		goto out;
 	}
@@ -170,7 +170,7 @@ static void devobj_free(struct memobj *memobj)
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
-		kprintf("%s(%p %lx): release failed. %d\n",
+		dkprintf("%s(%p %lx): release failed. %d\n",
 			__func__, obj, handle, error);
 		/* through */
 	}
@@ -254,7 +254,7 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 	}
 
 	if (!(pfn & PFN_PRESENT)) {
-		kprintf("devobj_get_page(%p %lx,%lx,%d):not present. %lx\n", memobj, obj->handle, off, p2align, pfn);
+dkprintf("devobj_get_page(%p %lx,%lx,%d):not present. %lx\n", memobj, obj->handle, off, p2align, pfn);
 		error = -EFAULT;
 		goto out;
 	}

@@ -94,6 +94,8 @@ static void timer_handler(void *priv)
 		  (timer_intrid == INTRID_HYP_PHYS_TIMER)) ?
 		 "physical" : "virtual");
 
+	dkprintf("%s: [ctx switches: %lu]\n",
+		__func__, cpu_local_var(nr_ctx_switches));
 	ctrl = arch_timer_reg_read(ARCH_TIMER_REG_CTRL);
 	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
 		const unsigned int clocks = per_cpu_timer_val[cpu];
@@ -104,6 +106,8 @@ static void timer_handler(void *priv)
 		irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 		v->flags |= CPU_FLAG_NEED_RESCHED;
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+		dkprintf("%s: [ctx switches: %lu] CPU_FLAG_NEED_RESCHED\n",
+			__func__, cpu_local_var(nr_ctx_switches));
 
 		/* gen control register value */
 		ctrl &= ~ARCH_TIMER_CTRL_IT_STAT;

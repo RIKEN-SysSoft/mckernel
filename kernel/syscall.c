@@ -243,9 +243,9 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long flags;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
-			if (req->number == __NR_epoll_wait ||
-				req->number == __NR_epoll_pwait)
-				goto schedule;
+			//if (req->number == __NR_epoll_wait ||
+			//	req->number == __NR_epoll_pwait)
+			//	goto schedule;
 
 			cpu_pause();
 
@@ -289,6 +289,8 @@ schedule:
 					PS_INTERRUPTIBLE);
 				cpu_restore_interrupt(flags);
 				schedule();
+				dkprintf("%s: tid %d got reply!\n",
+						__FUNCTION__, thread->tid);
 				waitq_finish_wait(&thread->scd_wq, &scd_wq_entry);
 				continue;
 			}
@@ -1702,7 +1704,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 
 #if 0
 	/* XXX: Intel MPI 128MB mapping.. */
-	if (len == 134217728) {
+	if (len == 16777216) {
 		dkprintf("%s: %ld bytes mapping -> no prefault\n",
 			__FUNCTION__, len);
 		vrflags |= VR_DEMAND_PAGING;
@@ -1781,7 +1783,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 			}
 		}
 		if (error) {
-			kprintf("%s: error: file mapping failed, fd: %d, error: %d\n",
+dkprintf("%s: error: file mapping failed, fd: %d, error: %d\n",
 					__func__, fd, error);
 			goto out;
 		}
@@ -1918,6 +1920,11 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		goto out;
 	}
 
+	if (range->pgshift == 29 && range->memobj) {
+		kprintf("%s: memobj->path: %s, pgshift: 29\n",
+			__func__, memobj->path);
+	}
+
 	/* Determine pre-populated size */
 	populate_len = memobj ? min(len, memobj->size) : len;
 
@@ -1982,7 +1989,7 @@ out:
 				(void *)addr, populate_len);
 
 		if (error) {
-			ekprintf("%s: WARNING: populate_process_memory(): "
+dkprintf("%s: WARNING: populate_process_memory(): "
 					"vm: %p, addr: %p, len: %d (flags: %s%s) failed %d\n",
 					__FUNCTION__,
 					thread->vm, (void *)addr, len,
@@ -3052,6 +3059,7 @@ retry_tid:
 		hold_thread(new);
 	}
 
+	dkprintf("%s: TID: %d -> cpuid: %d\n", __func__, new->tid, cpuid);
 	runq_add_thread(new, cpuid);
 
 	if (ptrace_event) {
@@ -5748,7 +5756,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	}
 	op = (op & FUTEX_CMD_MASK);
 	
-	uti_dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
+	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
 			flags,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -7065,6 +7073,13 @@ SYSCALL_DECLARE(sched_setaffinity)
 		if (!thread)
 			return -ESRCH;
 
+#if 1
+		if (thread->cpu_id != ihk_mc_get_processor_id()) {
+			kprintf("%s: WARNING: moving a thread from a different CPU than the caller is not supported...\n", __func__);
+			return 0;
+		}
+#endif
+
 		if (mythread->proc->euid != 0 &&
 				mythread->proc->euid != thread->proc->ruid &&
 				mythread->proc->euid != thread->proc->euid) {
@@ -7519,6 +7534,9 @@ SYSCALL_DECLARE(sched_yield)
 	int do_schedule = 0;
 	long runq_irqstate;
 	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	kprintf("%s: PC: %lx\n",
+		__func__, ihk_mc_syscall_pc(ctx));
 
 #ifdef DISABLE_SCHED_YIELD
 	return 0;
@@ -9784,6 +9802,27 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		terminate(0, SIGKILL);
 	}
 //kprintf("syscall=%d returns %lx(%ld)\n", num, l, l);
+
+#if 0
+	{
+		unsigned long irqflags;
+		extern void walk_page_tables_recursive(int level,
+				struct page_table *pt,
+				translation_table_t *tt,
+				unsigned long addr);
+
+		irqflags = ihk_mc_spinlock_lock(
+				&cpu_local_var(current)->vm->page_table_lock);
+		walk_page_tables_recursive(3,
+				get_init_page_table(),
+				NULL, 0);
+		walk_page_tables_recursive(3,
+				cpu_local_var(current)->vm->address_space->page_table,
+				NULL, 0);
+		ihk_mc_spinlock_unlock(
+				&cpu_local_var(current)->vm->page_table_lock, irqflags);
+	}
+#endif
 
 	return l;
 }

@@ -7,7 +7,7 @@ configure_file(include/swapfmt.h.in include/swapfmt.h)
 execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include
 	OUTPUT_VARIABLE SYSTEM_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
 add_definitions(-D__KERNEL__ -DIHK_OS_MANYCORE)
-add_compile_options(-ffreestanding -O2 -nostdinc -isystem ${SYSTEM_INCLUDE} -fno-omit-frame-pointer)
+add_compile_options(-ffreestanding -O2 -nostdinc -isystem ${SYSTEM_INCLUDE} -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer)
 include_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}/include"
 	"include"
@@ -124,6 +124,10 @@ elseif (BUILD_TARGET STREQUAL "smp-arm64")
 			OUTPUT_VARIABLE CONFIG_ARM64_VHE OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND awk -F= "$1 == \"CONFIG_ARM_GIC_V3\" { print $2; exit; }" "${KERNEL_DIR}/.config"
 			OUTPUT_VARIABLE CONFIG_ARM_GIC_V3 OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND bash -c "gawk '/CPU implementer/ { print \$4; exit; }' /proc/cpuinfo"
+			OUTPUT_VARIABLE CPU_IMPLEMENTER OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND bash -c "gawk '/CPU architecture/ { print \$3; exit; }' /proc/cpuinfo"
+			OUTPUT_VARIABLE CPU_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 	message("Host kernel CONFIG_NR_CPUS=${CONFIG_NR_CPUS}")
 	message("Host kernel CONFIG_HZ=${CONFIG_HZ}")
@@ -131,6 +135,7 @@ elseif (BUILD_TARGET STREQUAL "smp-arm64")
 	if(CONFIG_ARM_GIC_V3 STREQUAL "y")
 		add_definitions(-DCONFIG_ARM_GIC_V3=y)
 		#add_definitions(-DCONFIG_HAS_NMI=y)
+		message("CONFIG_HAS_NMI is defined")
 	else(CONFIG_ARM_GIC_V3 STREQUAL "y")
 		message(FATAL_ERROR "Host kernel must have GIC v3 enabled")
 	endif(CONFIG_ARM_GIC_V3 STREQUAL "y")

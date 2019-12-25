@@ -10,6 +10,7 @@ struct per_cpu_arm_pmu {
 	int num_events;
 #define ARMV8_PMUV3_MAX_COMMON_EVENTS 0x40
 	DECLARE_BITMAP(pmceid_bitmap, ARMV8_PMUV3_MAX_COMMON_EVENTS);
+	uint32_t overflows[ARMV8_PMUV3_MAX_COMMON_EVENTS];
 };
 
 /* @ref.impl arch/arm64/include/asm/pmu.h */
@@ -44,7 +45,7 @@ static inline const struct arm_pmu* get_cpu_pmu(void)
 	return &cpu_pmu;
 }
 
-static inline const struct per_cpu_arm_pmu *get_per_cpu_pmu(void)
+static inline struct per_cpu_arm_pmu *get_per_cpu_pmu(void)
 {
 	const struct arm_pmu *cpu_pmu = get_cpu_pmu();
 

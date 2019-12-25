@@ -155,6 +155,8 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	pdesc->pid = task_tgid_vnr(current);
 
+	pdesc->asid = atomic64_read(&current->mm->context.id);
+
 	if ((ret = reserve_user_space(usrdata, &pdesc->user_start,
 				      &pdesc->user_end))) {
 		goto put_and_free_out;
@@ -1398,8 +1400,9 @@ retry_alloc:
 	kfree(wqhln);
 	wqhln = NULL;
 
-	dprintk("%s: tid: %d request from CPU %d\n",
-			__FUNCTION__, task_pid_vnr(current), packet->ref);
+	dprintk("%s: tid: %d request from CPU %d, ASID: %lu\n",
+			__FUNCTION__, task_pid_vnr(current), packet->ref,
+			atomic64_read(&current->mm->context.id));
 
 	mb();
 	if (!smp_load_acquire(&packet->req.valid)) {

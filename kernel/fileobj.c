@@ -565,6 +565,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 
 	dkprintf("fileobj_get_page(%p,%lx,%x,%x,%p)\n", obj, off, p2align, virt_addr, physp);
 	if (p2align != PAGE_P2ALIGN) {
+		kprintf("%s: error: p2align: %d != PAGE_P2ALIGN\n", __func__, p2align);
 		return -ENOMEM;
 	}
 

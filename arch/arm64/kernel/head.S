@@ -75,6 +75,8 @@
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE_SIZE      0x08
 #define TRAMPOLINE_DATA_CPU_MAP_SIZE           (NR_CPUS * 8)
 #define TRAMPOLINE_DATA_DATA_RDISTS_PA_SIZE    (NR_CPUS * 8)
+#define TRAMPOLINE_DATA_DATA_RDIST_PROPBASE_PA_SIZE 0x08
+#define TRAMPOLINE_DATA_DATA_RDIST_PENDBASE_PA_SIZE 0x08
 #define TRAMPOLINE_DATA_RETENTION_STATE_FLAG_PA_SIZE 0x08
 #define TRAMPOLINE_DATA_NR_PMU_AFFI_SIZE       0x04
 #define TRAMPOLINE_DATA_PMU_AFF_SIZE           (CONFIG_SMP_MAX_CORES * 4)
@@ -502,6 +504,14 @@ CPU_LE(	bic	x0, x0, #(3 << 24)	)	// Clear the EE and E0E bits for EL1
 #endif /* CONFIG_ARM64_VHE */
 
 	/* Hyp configuration. */
+	/* When ARMv8.1-VHE is implemented, this regime has a single
+	 * stage of translation, stage 1, that maps VAs to PAs and can
+	 * support two VA ranges and the use of ASIDs.
+	 * This translation regime is used:
+	 * - For memory accesses from EL0 when the value of HCR_EL2.{E2H, TGE} is {1,1}.
+	 * - For memory accesses from EL2 when the value of HCR_EL2.E2H is 1.
+	 * This translation regime is present when ARMv8.4-SecEL2 is implemented and enabled.
+	 */
 	mov	x0, #HCR_RW			// 64-bit EL1
 	cbz	x2, set_hcr
 	orr	x0, x0, #HCR_TGE		// Enable Host Extensions
@@ -538,6 +548,30 @@ set_hcr:
 	mrs	x1, mpidr_el1
 	msr	vpidr_el2, x0
 	msr	vmpidr_el2, x1
+
+	/* EL2 debug */
+	mrs	x1, id_aa64dfr0_el1		// Check ID_AA64DFR0_EL1 PMUVer
+	sbfx	x0, x1, #8, #4
+	cmp	x0, #1
+	b.lt	4f				// Skip if no PMU present
+	mrs	x0, pmcr_el0			// Disable debug access traps
+	ubfx	x0, x0, #11, #5			// to EL2 and allow access to
+4:
+	csel	x3, xzr, x0, lt			// all PMU counters from EL1
+
+	/* Statistical profiling */
+	ubfx	x0, x1, #32, #4			// Check ID_AA64DFR0_EL1 PMSVer
+	cbz	x0, 6f				// Skip if SPE not present
+	cbnz	x2, 5f				// VHE?
+	mov	x1, #(MDCR_EL2_E2PB_MASK << MDCR_EL2_E2PB_SHIFT)
+	orr	x3, x3, x1			// If we don't have VHE, then
+	b	6f				// use EL1&0 translation.
+5:						// For VHE, use EL2 translation
+	orr	x3, x3, #MDCR_EL2_TPMS		// and disable access from EL1
+6:
+	//orr	x3, x3, #MDCR_EL2_TDE   // Trap debug exceptions
+	msr	mdcr_el2, x3			// Configure debug traps
+
 
 	/*
 	 * When VHE is not in use, early init of EL2 and EL1 needs to be

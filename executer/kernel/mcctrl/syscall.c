@@ -1408,9 +1408,9 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 			if (!IS_ERR(fullpath)) {
 				if (!strncmp("/tmp/ompi.", fullpath, 10) ||
 						!strncmp("/dev/shm/", fullpath, 9)) {
-					dprintk("%s: pre-populating %s..\n",
+					printk("%s: pre-populating %s..\n",
 						__func__, fullpath);
-					prot_and_flags |= MAP_POPULATE;
+					prot_and_flags |= MAP_POPULATE | MAP_LOCKED;
 				}
 				kfree(pathbuf);
 			}
@@ -1626,6 +1626,7 @@ out_release:
 	}
 
 	*ppfn = pfn;
+	smp_mb();
 	ihk_device_unmap_virtual(dev, ppfn, sizeof(*ppfn));
 	ihk_device_unmap_memory(dev, phys, sizeof(*ppfn));
 

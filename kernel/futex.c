@@ -672,7 +672,9 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 	 * queue_me() calls spin_unlock() upon completion, serializing
 	 * access to the hash list and forcing a memory barrier.
 	 */
-	xchg4(&(thread->status), PS_INTERRUPTIBLE);
+	irqstate = ihk_mc_spinlock_lock(&cpu_local_var(runq_lock));
+	thread->status = PS_INTERRUPTIBLE;
+	ihk_mc_spinlock_unlock(&cpu_local_var(runq_lock), irqstate);
 
 	/* Indicate spin sleep. Note that schedule_timeout() with
 	 * idle_halt should use spin sleep because sleep with timeout
@@ -715,10 +717,13 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 		dkprintf("futex_wait_queue_me(): tid: %d woken up\n", thread->tid);
 		}
 	}
-	
-	/* This does not need to be serialized */
+
+	irqstate = ihk_mc_spinlock_lock(&cpu_local_var(runq_lock));
 	thread->status = PS_RUNNING;
+	ihk_mc_spinlock_unlock(&cpu_local_var(runq_lock), irqstate);
+
 	thread->spin_sleep = 0;
+dkprintf("%s: TID: %d @ CPU %d -> PS_RUNNING\n", __func__, thread->tid, thread->cpu_id);
 	
 	return time_remain;
 }

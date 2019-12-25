@@ -115,6 +115,7 @@ static inline void switch_new_context(struct page_table *pgtbl)
 	flags = cpu_disable_interrupt_save();
 
 	tt_pa = get_translation_table_as_paddr(pgtbl);
+	//kprintf("%s: -> ASID: %d\n", __func__, (context & ASID_MASK));
 	cpu_do_switch_mm(tt_pa, context & ASID_MASK);
 
 	/* interrupt restore */
@@ -125,6 +126,7 @@ static inline void switch_new_context(struct page_table *pgtbl)
 /* ASID allocation */
 void switch_mm(struct page_table *pgtbl)
 {
+#if 0
 	unsigned int context = get_address_space_id(pgtbl);
 
 	/* During switch_mm, you want to disable the TTBR */
@@ -136,6 +138,7 @@ void switch_mm(struct page_table *pgtbl)
 
 		/* for existing process */
 		tt_pa = get_translation_table_as_paddr(pgtbl);
+		//kprintf("%s: -> ASID: %d\n", __func__, (context & ASID_MASK));
 		cpu_do_switch_mm(tt_pa, context & ASID_MASK);
 
 /* TODO: tif_switch_mm / after context switch */
@@ -151,6 +154,19 @@ void switch_mm(struct page_table *pgtbl)
 		/* ASID allocation & set ttbr0 */
 		switch_new_context(pgtbl);
 	}
+#else
+	translation_table_t* tt_pa;
+	unsigned int context = get_address_space_id(pgtbl);
+
+	//kprintf("%s: -> ASID: %d\n", __func__, (context & ASID_MASK));
+
+	/* During switch_mm, you want to disable the TTBR */
+	cpu_set_reserved_ttbr0();
+
+	/* ASID is inherited from Linux */
+	tt_pa = get_translation_table_as_paddr(pgtbl);
+	cpu_do_switch_mm(tt_pa, context & ASID_MASK);
+#endif
 }
 
 /* context switch assembler code extern */

@@ -1311,13 +1311,26 @@ int add_process_memory_range(struct process_vm *vm,
 	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
 #if 1
+		extern void memclear(void *addr, unsigned long len, void *tmp);
+		uint64_t q0q1[4];
+
 		memset((void *)phys_to_virt(phys), 0, end - start);
+		//memclear((void *)phys_to_virt(phys), end - start, &q0q1);
 #else
 		if (end - start < (1024*1024)) {
 			memset((void*)phys_to_virt(phys), 0, end - start);
 		}
 		else {
-			memset_smp(&cpu_local_var(current)->cpu_set,
+			if (cpu_local_var(current)->profile)
+				dkprintf("%s: calling memset_smp() on %d cores for phys 0x%lx:%lu\n",
+						__func__, __bitmap_weight(
+							cpu_local_var(current)->proc->nr_processes ?
+							&cpu_local_var(current)->proc->cpu_set :
+							&cpu_local_var(current)->cpu_set,
+							num_processors), phys, end - start);
+			memset_smp(cpu_local_var(current)->proc->nr_processes ?
+					&cpu_local_var(current)->proc->cpu_set :
+					&cpu_local_var(current)->cpu_set,
 					(void *)phys_to_virt(phys), 0, end - start);
 		}
 #endif
@@ -2082,6 +2095,23 @@ retry:
 	page = NULL;
 
 out:
+
+#if 0
+	{
+		extern void walk_page_tables_recursive(int level,
+				struct page_table *pt,
+				translation_table_t *tt,
+				unsigned long addr);
+
+		walk_page_tables_recursive(3,
+				get_init_page_table(),
+				NULL, 0);
+		walk_page_tables_recursive(3,
+				cpu_local_var(current)->vm->address_space->page_table,
+				NULL, 0);
+	}
+#endif
+
 	ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 	if (page) {
 		/* Unmap stray struct page */
@@ -2234,6 +2264,7 @@ skip:;
 	}
 
 	error = 0;
+	smp_mb();
 out:
 	if (locked) {
 		ihk_mc_read_unlock(&vm->memory_range_lock);
@@ -2728,7 +2759,7 @@ int populate_process_memory(struct process_vm *vm, void *start, size_t len)
 	for (addr = (uintptr_t)start; addr < end; addr += PAGE_SIZE) {
 		error = page_fault_process_vm(vm, (void *)addr, reason);
 		if (error) {
-			ekprintf("%s: WARNING: page_fault_process_vm(): vm: %p, "
+dkprintf("%s: WARNING: page_fault_process_vm(): vm: %p, "
 					"addr: %lx, reason: %lx, off: %lu, len: %lu returns %d\n",
 					__FUNCTION__, vm, addr, reason,
 					((void *)addr - start), len, error);
@@ -2932,6 +2963,18 @@ static void idle(void)
 	cpu_enable_interrupt();
 
 	while (1) {
+#if 0
+		if (ihk_mc_get_processor_id() == 0) {
+			extern void walk_page_tables_recursive(int level,
+					struct page_table *pt,
+					translation_table_t *tt,
+					unsigned long addr);
+
+			walk_page_tables_recursive(3, get_init_page_table(), NULL, 0);
+			flush_tlb();
+		}
+#endif
+
 		cpu_local_var(current)->status = PS_STOPPED;
 		schedule();
 		cpu_local_var(current)->status = PS_RUNNING;
@@ -2982,6 +3025,8 @@ static void idle(void)
 			kmalloc_consolidate_free_list();
 			monitor->status = IHK_OS_MONITOR_IDLE;
 			cpu_local_var(current)->status = PS_INTERRUPTIBLE;
+//if (ihk_mc_get_processor_id() == 54)
+//kprintf("%s: nothing to do.. \n", __func__);
 			cpu_safe_halt();
 			monitor->status = IHK_OS_MONITOR_KERNEL;
 			monitor->counter++;
@@ -3245,7 +3290,7 @@ void set_timer(int runq_locked)
 	/* Toggle timesharing if CPU core is oversubscribed */
 	if (num_running > 1 || v->current->itimer_enabled) {
 		if (!cpu_local_var(timer_enabled)) {
-			lapic_timer_enable(1000000);
+			lapic_timer_enable(250000000);
 			cpu_local_var(timer_enabled) = 1;
 		}
 	}
@@ -3341,9 +3386,15 @@ void schedule(void)
 	struct thread *last;
 	int prevpid;
 
-	if (cpu_local_var(no_preempt)) {
-		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
-			__FUNCTION__, cpu_local_var(no_preempt));
+	if (cpu_local_var(no_preempt) &&
+			cpu_local_var(current)->status != PS_TRACED) {
+		kprintf("%s: WARNING: can't schedule() while no preemption"
+				", cnt: %d, TID: %d, # of PFs: %d [# of ctx sws: %lu]\n",
+				__FUNCTION__,
+				cpu_local_var(no_preempt),
+				cpu_local_var(current)->tid,
+				ihk_atomic_read(&(cpu_local_var(current)->nr_page_faults)),
+				cpu_local_var(nr_ctx_switches));
 		return;
 	}
 
@@ -3408,10 +3459,13 @@ void schedule(void)
 
 	if (switch_ctx) {
 		++cpu_local_var(nr_ctx_switches);
-		dkprintf("%s: %d => %d [ctx sws: %lu]\n",
+if (cpu_local_var(sched_print) > 0) {
+	--cpu_local_var(sched_print);
+		kprintf("%s: %d => %d [ctx sws: %lu]\n",
 				__func__,
 				prev ? prev->tid : 0, next ? next->tid : 0,
 				cpu_local_var(nr_ctx_switches));
+}
 
 		if (prev && prev->ptrace_debugreg) {
 			save_debugreg(prev->ptrace_debugreg);
@@ -3570,7 +3624,8 @@ int __sched_wakeup_thread(struct thread *thread,
 		if (proc->status != PS_EXITED)
 			proc->status = PS_RUNNING;
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
-		xchg4((int *)(&thread->status), PS_RUNNING);
+		thread->status = PS_RUNNING;
+dkprintf("%s: (myTID: %d, in_interrupt: %d) TID: %d @ CPU %d -> PS_RUNNING\n", __func__, cpu_local_var(current)->tid, cpu_local_var(in_interrupt), thread->tid, thread->cpu_id);
 		status = 0;
 
 		/* Make interrupt_exit() call schedule() */
@@ -3589,7 +3644,8 @@ int __sched_wakeup_thread(struct thread *thread,
 		ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 	}
 
-	if (!status && (thread->cpu_id != ihk_mc_get_processor_id())) {
+	if (!status &&
+			(thread->cpu_id != ihk_mc_get_processor_id())) {
 		dkprintf("%s: issuing IPI, thread->cpu_id=%d\n",
 				__FUNCTION__, thread->cpu_id);
 		ihk_mc_interrupt_cpu(thread->cpu_id,
@@ -3636,7 +3692,6 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	DECLARE_WAITQ_ENTRY_LOCKED(entry, cpu_local_var(current));
 
 	waitq_init(&req.wq);
-	waitq_prepare_to_wait(&req.wq, &entry, PS_UNINTERRUPTIBLE);
 
 	irqstate = ihk_mc_spinlock_lock(&v->migq_lock);
 	list_add_tail(&req.list, &v->migq);
@@ -3645,8 +3700,8 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 	v->flags |= CPU_FLAG_NEED_RESCHED | CPU_FLAG_NEED_MIGRATE;
 	v->status = CPU_STATUS_RUNNING;
-	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 
+	waitq_prepare_to_wait(&req.wq, &entry, PS_UNINTERRUPTIBLE);
 	if (cpu_id != ihk_mc_get_processor_id()) {
 		/* Kick scheduler */
 		ihk_mc_interrupt_cpu(thread->cpu_id,
@@ -3654,6 +3709,8 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	}
 	dkprintf("%s: tid: %d -> cpu: %d\n",
 			__FUNCTION__, thread->tid, cpu_id);
+
+	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 
 	schedule();
 	waitq_finish_wait(&req.wq, &entry);

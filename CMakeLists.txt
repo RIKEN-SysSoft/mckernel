@@ -174,10 +174,12 @@ add_subdirectory(kernel)
 add_subdirectory(tools/mcstat)
 
 configure_file(scripts/mcreboot-smp.sh.in mcreboot.sh @ONLY)
+configure_file(scripts/mcreboot-lwk.sh.in mcreboot-lwk.sh @ONLY)
 configure_file(scripts/mcstop+release-smp.sh.in mcstop+release.sh @ONLY)
 configure_file(scripts/mcreboot.1in mcreboot.1 @ONLY)
 install(PROGRAMS
 		"${CMAKE_CURRENT_BINARY_DIR}/mcreboot.sh"
+		"${CMAKE_CURRENT_BINARY_DIR}/mcreboot-lwk.sh"
 		"${CMAKE_CURRENT_BINARY_DIR}/mcstop+release.sh"
 	DESTINATION "${CMAKE_INSTALL_SBINDIR}")
 install(FILES "scripts/irqbalance_mck.in"

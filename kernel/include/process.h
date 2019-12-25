@@ -660,6 +660,7 @@ struct thread {
 	unsigned long ptrace_eventmsg;
 
 	ihk_atomic_t refcount;
+	ihk_atomic_t nr_page_faults;
 
 	int	*clear_child_tid;
 	unsigned long tlsblock_base, tlsblock_limit;

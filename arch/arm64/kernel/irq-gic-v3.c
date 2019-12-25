@@ -148,6 +148,12 @@ static void gic_write_grpen1(uint64_t val)
 	isb();
 }
 
+static void gic_write_igrpen0(uint64_t val)
+{
+	asm volatile("msr_s " __stringify(ICC_IGRPEN0_EL1) ", %0" : : "r" (val));
+	isb();
+}
+
 static inline void gic_write_eoir(uint64_t irq)
 {
 	asm volatile("msr_s " __stringify(ICC_EOIR1_EL1) ", %0" : : "r" (irq));
@@ -314,6 +320,8 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 	unsigned long irqflags;
 	int do_check = 0;
 
+	++v->in_interrupt;
+
 	irqnr = gic_read_iar();
 	cpu_enable_nmi();
 	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
@@ -333,6 +341,8 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 		do_check = 1;
 	}
 	ihk_mc_spinlock_unlock(&v->runq_lock, irqflags);
+
+	--v->in_interrupt;
 
 	if (do_check) {
 		check_signal(0, regs, 0);
@@ -369,6 +379,41 @@ static void init_spi_routing(uint32_t irq, uint32_t linux_cpu)
 		       (void *)(dist_base + GICD_IROUTER +
 				spi_route_reg_offset));
 }
+
+void check_spi_routings(void)
+{
+	uint64_t spi_route_reg_val, spi_route_reg_offset;
+	int irq;
+	int cpu;
+
+	for (irq = 32; irq < 1020; ++irq) {
+		unsigned long linux_cpu;
+
+		spi_route_reg_offset = irq * 8;
+		spi_route_reg_val = readq_relaxed((void *)(dist_base + GICD_IROUTER +
+				spi_route_reg_offset));
+
+		if (spi_route_reg_val & GICD_IROUTER_SPI_MODE_ANY) {
+			kprintf("%s: SPI %d is routed to ANY?\n",
+					__func__, irq);
+			continue;
+		}
+
+		for (cpu = 0; cpu < num_processors; ++cpu) {
+			if (ihk_mc_get_core(cpu, &linux_cpu, 0, 0) < 0) {
+				kprintf("%s: invalid CPU %d??\n", __func__, cpu);
+				continue;
+			}
+
+			if (spi_route_reg_val ==
+					gic_mpidr_to_affinity(cpu_logical_map(linux_cpu))) {
+				kprintf("%s: SPI %d is routed to McKernel CPU %d (Linux CPU %lu)??\n",
+					__func__, irq, cpu, linux_cpu);
+			}
+		}
+	}
+}
+
 
 void gic_dist_init_gicv3(unsigned long dist_base_pa, unsigned long size)
 {
@@ -426,6 +471,18 @@ static void gic_do_wait_for_rwp(void *base)
 	};
 }
 
+void gic_print_debug(void)
+{
+	void *rbase = rdist_base[ihk_mc_get_hardware_processor_id()];
+	void *rd_sgi_base = rbase + 0x10000 /* SZ_64K */;
+	uint64_t val;
+
+	kprintf("GICR_CTLR: %lx\n", readl_relaxed(rbase + GICR_CTLR));
+	kprintf("GICR_TYPER: %lx\n", readl_relaxed(rbase + GICR_TYPER));
+	kprintf("GICR_ICENABLER0: %lx\n",
+		readl_relaxed(rd_sgi_base + GIC_DIST_ENABLE_SET));
+}
+
 void gic_enable_gicv3(void)
 {
 	void *rbase = rdist_base[ihk_mc_get_hardware_processor_id()];
@@ -434,6 +491,11 @@ void gic_enable_gicv3(void)
 	unsigned int enable_ppi_sgi = GICD_INT_EN_SET_SGI;
 	extern int ihk_param_nr_pmu_irq_affi;
 	extern int ihk_param_pmu_irq_affi[CONFIG_SMP_MAX_CORES];
+
+	if (is_cavium_thunderx) {
+		/* Only first 8 SGIs */
+		enable_ppi_sgi = 0xFF;
+	}
 
 	enable_ppi_sgi |= GICD_ENABLE << get_timer_intrid();
 

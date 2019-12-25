@@ -30,11 +30,13 @@ static struct mck_offset_table {
 	long clv_current;
 	long clv_runq;
 	long clv_resource_set;
+	long clv_timer_enabled;
 	long boot_param_msg_buffer;
 	long boot_param_boot_sec;
 	long boot_param_boot_nsec;
 	long resource_set_thread_hash;
 	long thread_tid;
+	long thread_pthread_routine;
 	long thread_status;
 	long thread_vm;
 	long thread_proc;
@@ -362,11 +364,13 @@ mckernel_refresh_symbols(int fatal)
 	MCK_MEMBER_OFFSET_INIT(clv_runq, "struct cpu_local_var", "runq");
 	MCK_MEMBER_OFFSET_INIT(clv_resource_set, "struct cpu_local_var",
 			       "resource_set");
+	MCK_MEMBER_OFFSET_INIT(clv_timer_enabled, "struct cpu_local_var", "timer_enabled");
 	MCK_MEMBER_OFFSET_INIT(boot_param_msg_buffer, "struct smp_boot_param",
 			       "msg_buffer");
 	MCK_MEMBER_OFFSET_INIT(resource_set_thread_hash, "struct resource_set",
 			       "thread_hash");
 	MCK_MEMBER_OFFSET_INIT(thread_tid, "struct thread", "tid");
+	MCK_MEMBER_OFFSET_INIT(thread_pthread_routine, "struct thread", "pthread_routine");
 	MCK_MEMBER_OFFSET_INIT(thread_status, "struct thread", "status");
 	MCK_MEMBER_OFFSET_INIT(thread_vm, "struct thread", "vm");
 	MCK_MEMBER_OFFSET_INIT(thread_proc, "struct thread", "proc");
@@ -521,18 +525,25 @@ static char *help_mcsymbols[] = {
 #define PS_STOPPED           0x20
 
 static int
-mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
+mcps_print_one(ulong thread,
+	int cpu, int timer_enabled,
+	int is_active, int is_idle)
 {
 	ulong proc, parent_proc, tmp;
 	int tid = 0, pid = 0, ppid = 0, status;
 	long saved_cmdline_len;
 	char *saved_cmdline, *comm = is_idle ? "idle" : "";
 	char *status_st;
+	char pthread_routine[PATH_MAX + 64];
 
-	if (!is_idle)
+	if (!is_idle) {
 		mcreadmem(thread + MCK_MEMBER_OFFSET(thread_tid), KVADDR,
 			&tid, sizeof(int), "thread_tid",
 			RETURN_ON_ERROR);
+		mcreadmem(thread + MCK_MEMBER_OFFSET(thread_pthread_routine), KVADDR,
+			pthread_routine, sizeof(pthread_routine), "thread_pthread_routine",
+			RETURN_ON_ERROR);
+	}
 	mcreadmem(thread + MCK_MEMBER_OFFSET(thread_status), KVADDR,
 		&status, sizeof(ulong), "thread_status",
 		RETURN_ON_ERROR);
@@ -589,10 +600,13 @@ mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 			RETURN_ON_ERROR);
 	}
 
-	fprintf(fp, "%s%6d %6d %6d %3d %016lx %2s %s\n",
+	fprintf(fp, "%s%6d %6d %6d %3d %5s %016lx %2s %s (%s)\n",
 		is_active ? ">" : " ",
-		tid, pid, ppid, cpu, thread,
-		status_st, comm);
+		tid, pid, ppid, cpu,
+		timer_enabled ? "ENABL" : "DISAB",
+		thread,
+		status_st, comm,
+		is_idle ? "idle" : pthread_routine);
 	if (saved_cmdline_len)
 		FREEBUF(saved_cmdline);
 
@@ -602,6 +616,7 @@ mcps_print_one(ulong thread, int cpu, int is_active, int is_idle)
 struct mcps_listcb_wrapper {
 	ulong running_thr;
 	int cpu;
+	int timer_enabled;
 };
 
 static int
@@ -613,13 +628,14 @@ mcps_print_one_listcb(void *_thread, void *_data)
 	if (thread == data->running_thr)
 		return 0;
 
-	return mcps_print_one(thread, data->cpu, 0, 0);
+	return mcps_print_one(thread,
+			data->cpu, data->timer_enabled, 0, 0);
 }
 
 static void
 cmd_mcps(void)
 {
-	int c, cpu;
+	int c, cpu, timer_enabled;
 
 	if (!mck_loaded)
 		error(FATAL, "You must run mcsymbols first");
@@ -636,8 +652,8 @@ cmd_mcps(void)
 	if (argerrs)
 		cmd_usage(pc->curcmd, SYNOPSIS);
 
-	fprintf(fp, " %6s %6s %6s %3s %-16s %2s %s\n",
-	       "TID", "PID", "PPID", "CPU", "THREAD", "ST", "COMM");
+	fprintf(fp, " %6s %6s %6s %3s %5s %-16s %2s %s\n",
+	       "TID", "PID", "PPID", "CPU", "TIMER", "THREAD", "ST", "COMM");
 	for (cpu = 0; cpu < MCK_SYMBOL(num_processors); cpu++) {
 		ulong clv = MCK_SYMBOL(clv) + cpu * MCK_SIZE(clv);
 		ulong thread, idle_thread;
@@ -655,12 +671,18 @@ cmd_mcps(void)
 			&thread, sizeof(ulong), "clv_current",
 			RETURN_ON_ERROR);
 
-		mcps_print_one(idle_thread, cpu, thread == idle_thread, 1);
+		mcreadmem(clv + MCK_MEMBER_OFFSET(clv_timer_enabled), KVADDR,
+			&timer_enabled, sizeof(int), "clv_timer_enabled",
+			RETURN_ON_ERROR);
+
+		mcps_print_one(idle_thread, cpu, timer_enabled,
+				thread == idle_thread, 1);
 		if (thread != idle_thread)
-			mcps_print_one(thread, cpu, 1, 0);
+			mcps_print_one(thread, cpu, timer_enabled, 1, 0);
 
 		cb_data.cpu = cpu;
 		cb_data.running_thr = thread;
+		cb_data.timer_enabled = timer_enabled;
 		ld.callback_data = &cb_data;
 		mcreadmem(clv + MCK_MEMBER_OFFSET(clv_runq), KVADDR,
 			&ld.start, sizeof(void *), "first list element",
@@ -1161,6 +1183,7 @@ pgshift_to_string(int pgshift)
 	case 21: return "2M";
 	case 29: return "512M";
 	case 30: return "1G";
+	case 34: return "16G";
 	case 39: return "512G";
 	case 42: return "4T";
 	case 55: return "32P";
@@ -1275,7 +1298,7 @@ pte_print_(ulong pte, ulong virt, int level)
 }
 
 static void
-pte_print(ulong pte, ulong virt, int level)
+pte_print(ulong pte, ulong virt, int level, int lookup)
 {
 	static ulong prev_pte, prev_virt;
 	static int prev_pgshift, prev_level, skipped_pte;
@@ -1307,6 +1330,7 @@ pte_print(ulong pte, ulong virt, int level)
 	prev_virt = virt;
 	prev_pgshift = pgshift;
 	prev_level = level;
+	printf("PTE: %lx\n", pte);
 }
 
 /* We should separate x86 and ARM64.. */
@@ -1334,8 +1358,11 @@ pte_do_walk(ulong pt, ulong virt, int level, int lookup,
 		if (!(pte & _PAGE_PRESENT))
 			continue;
 		if (pte_is_type_page(pte, level)) {
+			if (pte_get_phys(pte) == 0) {
+				fprintf(fp, "WARNING: 0x%lx maps to ZERO\n", virt | prefix);
+			}
 			pte_print(pte, (virt | prefix) +
-					(i << ptl_shift(level)), level);
+					(i << ptl_shift(level)), level, lookup);
 			if (lookup)
 				return;
 		} else if (level > 1) {
@@ -1357,7 +1384,7 @@ pte_walk(ulong pt, int lookup, ulong addr, ulong prefix)
 {
 	fprintf(fp, "%-16s %-16s %s %s\n", "VIRT", "PHYS", "SIZE", "FLAGS");
 	pte_do_walk(pt, 0, PGTABLE_LEVELS, lookup, addr, prefix);
-	pte_print(0, 0, 0); // flush last one if any
+	pte_print(0, 0, 0, lookup); // flush last one if any
 }
 
 static void

@@ -90,6 +90,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 
 		if (need_schedule) {
 			xchg4(&(cpu_local_var(current)->status), PS_RUNNING);
+kprintf("%s: TID: %d @ CPU %d -> PS_RUNNING\n", __func__, cpu_local_var(current)->tid, cpu_local_var(current)->cpu_id);
 			ihk_mc_spinlock_unlock(&(v->runq_lock), irqstate);
 			schedule();
 

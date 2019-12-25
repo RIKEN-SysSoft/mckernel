@@ -61,6 +61,7 @@ extern unsigned long ihk_param_gic_cpu_base_pa;
 extern unsigned long ihk_param_gic_cpu_map_size;
 extern unsigned int  ihk_param_gic_version;
 extern int snprintf(char * buf, size_t size, const char *fmt, ...);
+extern void smp_func_call_handler(void);
 
 /* Function pointers for GIC */
 void (*gic_dist_init)(unsigned long dist_base_pa, unsigned long size);
@@ -110,6 +111,7 @@ static struct ihk_mc_interrupt_handler remote_tlb_flush_handler = {
 static void cpu_stop_interrupt_handler(void *priv)
 {
 	kprintf("CPU%d: shutdown.\n", ihk_mc_get_processor_id());
+	arch_flush_icache_all();
 	psci_cpu_off();
 }
 
@@ -631,32 +633,31 @@ void setup_arm64_ap(void (*next_func)(void))
 void arch_show_interrupt_context(const void *reg);
 extern void tlb_flush_handler(int vector);
 
-static void show_context_stack(struct pt_regs *regs)
+void __show_context_stack(struct thread *thread,
+		unsigned long pc, uintptr_t sp, int kprintf_locked)
 {
-	const int min_stack_frame_size = 0x10;
-	uintptr_t sp;
 	uintptr_t stack_top;
-	int max_loop;
-	int i;
+	unsigned long irqflags = 0;
 
-	if (interrupt_from_user(regs)) {
-		kprintf("It is a user stack region and it ends.\n");
-		return;
-	}
-
-	ihk_mc_debug_show_interrupt_context(regs);
-
-	sp = (uintptr_t)regs + sizeof(*regs);
 	stack_top = ALIGN_UP(sp, (uintptr_t)KERNEL_STACK_SIZE);
-	max_loop = (stack_top - sp) / min_stack_frame_size;
 
-	for (i = 0; i < max_loop; i++) {
+	if (!kprintf_locked)
+		irqflags = kprintf_lock();
+
+	__kprintf("TID: %d, call stack (most recent first):\n",
+		thread->tid);
+	__kprintf("PC: %016lx, SP: %016lx\n", pc, sp);
+	for (;;) {
 		extern char _head[], _end[];
 		uintptr_t *fp, *lr;
 		fp = (uintptr_t *)sp;
 		lr = (uintptr_t *)(sp + 8);
 
-		if ((*fp <= sp) || (*fp > stack_top)) {
+		if ((*fp <= sp)) { 
+			break;
+		}
+
+		if ((*fp > stack_top)) {
 			break;
 		}
 
@@ -665,9 +666,63 @@ static void show_context_stack(struct pt_regs *regs)
 			break;
 		}
 
-		kprintf("LR: %016lx, SP: %016lx, FP: %016lx\n", *lr, sp, *fp);
+		__kprintf("PC: %016lx, SP: %016lx, FP: %016lx\n", *lr - 4, sp, *fp);
 		sp = *fp;
 	}
+
+	if (!kprintf_locked)
+		kprintf_unlock(irqflags);
+}
+
+
+void show_context_stack(struct pt_regs *regs)
+{
+	uintptr_t sp;
+	unsigned long irqflags;
+
+	if (interrupt_from_user(regs)) {
+		kprintf("It is a user stack region and it ends.\n");
+		return;
+	}
+
+	ihk_mc_debug_show_interrupt_context(regs);
+
+	irqflags = kprintf_lock();
+	__kprintf("TID: %d, call stack from regs->sp (most recent first):\n",
+		cpu_local_var(current)->tid);
+	sp = regs->sp;
+	__show_context_stack(cpu_local_var(current), regs->pc, sp, 1);
+
+	sp = (unsigned long)__builtin_frame_address(0);
+	__kprintf("TID: %d, call stack from builtin frame (most recent first):\n",
+		cpu_local_var(current)->tid);
+	__show_context_stack(cpu_local_var(current), regs->pc, sp, 1);
+
+	{
+		struct thread *thread;
+		struct cpu_local_var *v = get_this_cpu_local_var();
+
+		list_for_each_entry(thread, &v->runq, sched_list) {
+			if (thread == cpu_local_var(current)) {
+				continue;
+			}
+
+			__kprintf("TID: %d (non-current, state: %s):\n",
+				thread->tid,
+				thread->status == PS_RUNNING ? "PS_RUNNING" :
+				thread->status == PS_INTERRUPTIBLE ? "PS_INTERRUPTIBLE" :
+				thread->status == PS_ZOMBIE ? "PS_ZOMBIE" : 
+				thread->status == PS_EXITED ? "PS_EXITED" : 
+				thread->status == PS_STOPPED ? "PS_STOPPED" :
+				"unknown");
+			__show_context_stack(thread,
+				thread->ctx.thread->cpu_context.pc,
+				thread->ctx.thread->cpu_context.sp,
+				1);
+		}
+	}
+
+	kprintf_unlock(irqflags);
 }
 
 void handle_IPI(unsigned int vector, struct pt_regs *regs)
@@ -680,8 +735,13 @@ void handle_IPI(unsigned int vector, struct pt_regs *regs)
 	if (vector > ((sizeof(handlers) / sizeof(handlers[0])) - 1)) {
 		panic("Maybe BUG.");
 	}
+#if 0
 	else if (vector == INTRID_STACK_TRACE) {
 		show_context_stack(regs);
+	}
+#endif
+	else if (vector == LOCAL_SMP_FUNC_CALL_VECTOR) {
+		smp_func_call_handler();
 	}
 	else {
 		list_for_each_entry(h, &handlers[vector], list) {
@@ -1281,38 +1341,44 @@ void ihk_mc_delay_us(int us)
 
 void arch_print_stack(void)
 {
+	__show_context_stack(cpu_local_var(current),
+			(unsigned long)&arch_print_stack,
+			(unsigned long)__builtin_frame_address(0),
+			0);
 }
 
 void arch_show_interrupt_context(const void *reg)
 {
 	const struct pt_regs *regs = (struct pt_regs *)reg;
-	kprintf("dump pt_regs:\n");
-	kprintf("   x0 : %016lx  x1 : %016lx  x2 : %016lx  x3 : %016lx\n",
+	unsigned long irqflags = kprintf_lock();
+	__kprintf("dump pt_regs:\n");
+	__kprintf("   x0 : %016lx  x1 : %016lx  x2 : %016lx  x3 : %016lx\n",
 		regs->regs[0], regs->regs[1], regs->regs[2], regs->regs[3]);
-	kprintf("   x4 : %016lx  x5 : %016lx  x6 : %016lx  x7 : %016lx\n",
+	__kprintf("   x4 : %016lx  x5 : %016lx  x6 : %016lx  x7 : %016lx\n",
 		regs->regs[4], regs->regs[5], regs->regs[6], regs->regs[7]);
-	kprintf("   x8 : %016lx  x9 : %016lx x10 : %016lx x11 : %016lx\n",
+	__kprintf("   x8 : %016lx  x9 : %016lx x10 : %016lx x11 : %016lx\n",
 		regs->regs[8], regs->regs[9], regs->regs[10], regs->regs[11]);
-	kprintf("  x12 : %016lx x13 : %016lx x14 : %016lx x15 : %016lx\n",
+	__kprintf("  x12 : %016lx x13 : %016lx x14 : %016lx x15 : %016lx\n",
 		regs->regs[12], regs->regs[13], regs->regs[14], regs->regs[15]);
-	kprintf("  x16 : %016lx x17 : %016lx x18 : %016lx x19 : %016lx\n",
+	__kprintf("  x16 : %016lx x17 : %016lx x18 : %016lx x19 : %016lx\n",
 		regs->regs[16], regs->regs[17], regs->regs[18], regs->regs[19]);
-	kprintf("  x20 : %016lx x21 : %016lx x22 : %016lx x23 : %016lx\n",
+	__kprintf("  x20 : %016lx x21 : %016lx x22 : %016lx x23 : %016lx\n",
 		regs->regs[20], regs->regs[21], regs->regs[22], regs->regs[23]);
-	kprintf("  x24 : %016lx x25 : %016lx x26 : %016lx x27 : %016lx\n",
+	__kprintf("  x24 : %016lx x25 : %016lx x26 : %016lx x27 : %016lx\n",
 		regs->regs[24], regs->regs[25], regs->regs[26], regs->regs[27]);
-	kprintf("  x28 : %016lx x29 : %016lx x30 : %016lx\n",
+	__kprintf("  x28 : %016lx x29 : %016lx x30 : %016lx\n",
 		regs->regs[28], regs->regs[29], regs->regs[30]);
-	kprintf("  sp       : %016lx\n", regs->sp);
-	kprintf("  pc       : %016lx\n", regs->pc);
-	kprintf("  pstate   : %016lx(N:%d Z:%d C:%d V:%d SS:%d IL:%d D:%d A:%d I:%d F:%d M[4]:%d M:%d)\n",
+	__kprintf("  sp       : %016lx\n", regs->sp);
+	__kprintf("  pc       : %016lx\n", regs->pc);
+	__kprintf("  pstate   : %016lx(N:%d Z:%d C:%d V:%d SS:%d IL:%d D:%d A:%d I:%d F:%d M[4]:%d M:%d)\n",
 		regs->pstate,
 		(regs->pstate >> 31 & 1), (regs->pstate >> 30 & 1), (regs->pstate >> 29 & 1),
 		(regs->pstate >> 28 & 1), (regs->pstate >> 21 & 1), (regs->pstate >> 20 & 1),
 		(regs->pstate >>  9 & 1), (regs->pstate >>  8 & 1), (regs->pstate >>  7 & 1),
 		(regs->pstate >>  6 & 1), (regs->pstate >>  4 & 1), (regs->pstate & 7));
-	kprintf("  orig_x0   : %016lx\n", regs->orig_x0);
-	kprintf("  syscallno : %016lx\n", regs->syscallno);
+	__kprintf("  orig_x0   : %016lx\n", regs->orig_x0);
+	__kprintf("  syscallno : %016lx\n", regs->syscallno);
+	kprintf_unlock(irqflags);
 }
 
 void arch_cpu_stop(void)
@@ -1779,15 +1845,14 @@ int arch_cpu_read_write_register(
 	return ret;
 }
 
-int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)
-{
-	/* TODO: skeleton for smp_call_func */
-	return -1;
-}
-
 void arch_flush_icache_all(void)
 {
 	asm("ic	ialluis");
 	dsb(ish);
 }
+
+int ihk_mc_get_smp_handler_irq(void) {
+	return LOCAL_SMP_FUNC_CALL_VECTOR;
+}
+
 /*** end of file ***/

@@ -372,6 +372,7 @@ extern void ibmic_cmd_init(void);
 int main(void)
 {
 	arch_init();
+	arch_flush_icache_all();
 
 	/*
 	 * In attached-mic,
@@ -393,6 +394,9 @@ int main(void)
 
 	done_init();
 	kputs("IHK/McKernel booted.\n");
+	kprintf("%s: timer_intrid: %d\n", __func__, get_timer_intrid());
+	gic_print_debug();
+	check_spi_routings();
 
 #ifdef DCFA_KMOD
 	mc_cmd_client_init();

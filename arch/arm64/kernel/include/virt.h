@@ -6,10 +6,24 @@
 #define BOOT_CPU_MODE_EL1	(0xe11)
 #define BOOT_CPU_MODE_EL2	(0xe12)
 
+/* Hyp Debug Configuration Register bits */
+#define MDCR_EL2_TPMS		(1 << 14)
+#define MDCR_EL2_E2PB_MASK	(UL(0x3))
+#define MDCR_EL2_E2PB_SHIFT	(UL(12))
+#define MDCR_EL2_TDRA		(1 << 11)
+#define MDCR_EL2_TDOSA		(1 << 10)
+#define MDCR_EL2_TDA		(1 << 9)
+#define MDCR_EL2_TDE		(1 << 8)
+#define MDCR_EL2_HPME		(1 << 7)
+#define MDCR_EL2_TPM		(1 << 6)
+#define MDCR_EL2_TPMCR		(1 << 5)
+#define MDCR_EL2_HPMN_MASK	(0x1F)
+
 #ifndef __ASSEMBLY__
 
 #include <sysreg.h>
 #include <ptrace.h>
+
 
 /* @ref.impl linux-v4.15-rc3 arch/arm64/include/asm/virt.h */
 static inline int is_kernel_in_hyp_mode(void)

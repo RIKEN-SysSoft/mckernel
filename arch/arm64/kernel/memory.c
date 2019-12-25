@@ -1461,6 +1461,60 @@ struct page_table *ihk_mc_pt_create(ihk_mc_ap_flag ap_flag)
 	return pt;
 }
 
+void walk_page_tables_recursive(int level,
+	struct page_table *pt, translation_table_t *tt, unsigned long addr)
+{
+	if (pt && !tt) {
+		tt = get_translation_table(pt);
+	}
+
+	if ((level < 1) || (CONFIG_ARM64_PGTABLE_LEVELS < level)) {
+		kprintf("%s: level is out of range: %d\n", __func__, level);
+		return;
+	}
+
+	if (tt == NULL) {
+		kprintf("%s: tt is NULL\n", __func__);
+		return;
+	}
+
+	if (level > 1) {
+		const int entries[] = {
+			PTL2_ENTRIES,
+			PTL3_ENTRIES,
+			PTL4_ENTRIES
+		};
+		const int ents = entries[level - 2];
+		int ix;
+		pte_t *ptep;
+		translation_table_t *lower;
+
+		for (ix = 0; ix < ents; ++ix, addr += tbllv_to_pgsize(level)) {
+			ptep = &tt[ix];
+
+			if (!ptl_present(ptep, level)) {
+				continue;
+			}
+
+			if (ptl_type_page(ptep, level)) {
+				dkprintf("%s: 0x%lx -> 0x%lx\n", __func__, addr, ptl_phys(ptep, level));
+				if (ptl_phys(ptep, level) == 0x0) {
+					kprintf("%s: PANIC: NULL phys @ 0x%lx \n", __func__, addr);
+					panic("");
+					*ptep = 0;
+				}
+				continue;
+			}
+
+			lower = (translation_table_t *)phys_to_virt(
+						(unsigned long)ptl_phys(ptep, level));
+			walk_page_tables_recursive(level - 1, NULL, lower, addr);
+		}
+	}
+
+	return;
+}
+
 static void destroy_page_table(int level, translation_table_t* tt)
 {
 	if ((level < 1) || (CONFIG_ARM64_PGTABLE_LEVELS < level)) {
@@ -3302,6 +3356,9 @@ void init_page_table(void)
 		first_level_block_support =
 			(parange >= ID_AA64MMFR0_PARANGE_52);
 	}
+
+	/* Set idle ASID to 1 */
+	set_address_space_id(init_pt, 1);
 
 	/* Normal memory area */
 	init_normal_area(init_pt);

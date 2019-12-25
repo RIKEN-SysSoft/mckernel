@@ -1272,7 +1272,7 @@ void tlb_flush_handler(int vector)
 #endif // PROFILE_ENABLE
 }
 
-static void unhandled_page_fault(struct thread *thread, void *fault_addr,
+void unhandled_page_fault(struct thread *thread, void *fault_addr,
 				 uint64_t reason, void *regs)
 {
 	const uintptr_t address = (uintptr_t)fault_addr;
@@ -1305,7 +1305,15 @@ static void unhandled_page_fault(struct thread *thread, void *fault_addr,
 	kprintf_unlock(irqflags);
 
 	/* TODO */
-	ihk_mc_debug_show_interrupt_context(regs);
+	show_context_stack(regs);
+	//ihk_mc_debug_show_interrupt_context(regs);
+
+#if 0
+	kprintf("%s: descheduling TID %d\n", __func__, thread->tid);
+	thread->status = PS_INTERRUPTIBLE;
+	preempt_enable();
+	schedule();
+#endif
 
 	if (!(reason & PF_USER)) {
 		panic("panic: kernel mode PF");
@@ -1341,8 +1349,13 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			__FUNCTION__, fault_addr, reason, regs);
 
 	preempt_disable();
+	ihk_atomic_inc(&thread->nr_page_faults);
 
 	cpu_enable_interrupt();
+	if (!(reason & PF_USER)) {
+		unhandled_page_fault(thread, fault_addr, reason, regs);
+	}
+
 
 	if ((uintptr_t)fault_addr < PAGE_SIZE || !thread) {
 		error = -EINVAL;
@@ -1351,6 +1364,12 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	}
 	if (error) {
 		struct siginfo info;
+
+		kprintf("%s: descheduling TID: %d\n", __func__, thread->tid);
+		thread->status = PS_INTERRUPTIBLE;
+		preempt_enable();
+		schedule();
+
 
 		if (error == -ECANCELED) {
 			dkprintf("process is exiting, terminate.\n");

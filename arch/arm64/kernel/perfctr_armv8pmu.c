@@ -789,17 +789,37 @@ static void armv8pmu_handle_irq(void *priv)
 	long irqstate;
 	struct mckfd *fdp;
 	struct pt_regs *regs = (struct pt_regs *)priv;
+	int cnt;
 
 	/*
 	 * Get and reset the IRQ flags
 	 */
 	pmovsr = armv8pmu_getreset_flags();
 
+	kprintf("%s: pmovsr: 0x%lx\n", __func__, pmovsr);
+
 	/*
 	 * Did an overflow occur?
 	 */
 	if (!armv8pmu_has_overflowed(pmovsr))
 		return;
+
+	/* Record number of overflows for event counters */
+	for (cnt = 0; cnt < get_per_cpu_pmu()->num_events; ++cnt) {
+		if ((1U << cnt) & pmovsr) {
+			pmovsr &= ~(1UL << cnt);
+			get_per_cpu_pmu()->overflows[cnt] += 1;
+			dkprintf("%s: counter %d has overflown..\n", __func__, cnt);
+		}
+	}
+
+	/* Check cycle counter (should not happen..) */
+	if ((1U << ARMV8_IDX_CYCLE_COUNTER) & pmovsr) {
+			get_per_cpu_pmu()->overflows[ARMV8_IDX_CYCLE_COUNTER] += 1;
+			kprintf("%s: WARNING: cycle counter has overflown..?\n", __func__);
+	}
+
+	return;
 
 	/*
 	 * Handle the counter(s) overflow(s)
@@ -892,4 +912,5 @@ void armv8pmu_per_cpu_init(struct per_cpu_arm_pmu *per_cpu)
 	per_cpu->num_events = armv8pmu_read_num_pmnc_events();
 	armv8pmu_create_pmceid_bitmap(per_cpu->pmceid_bitmap,
 					ARMV8_PMUV3_MAX_COMMON_EVENTS);
+	memset(per_cpu->overflows, 0, sizeof(per_cpu->overflows));
 }

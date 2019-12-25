@@ -106,6 +106,9 @@ void do_mem_abort(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 	struct siginfo info;
 	const int from_user = interrupt_from_user(regs);
 
+	dkprintf("%s: error: %d (%s) @ 0x%lx, PC: %lx\n",
+		__func__, esr & 63, inf->name, addr, regs->pc);
+
 	/* set_cputime called in inf->fn() */
 	if (!inf->fn(addr, esr, regs))
 		return;
@@ -226,13 +229,15 @@ static int do_translation_fault(unsigned long addr,
 	if (addr < USER_END)
 		return do_page_fault(addr, esr, regs);
 
+	kprintf("%s: \n", __func__);
 	do_bad_area(addr, esr, regs);
 	return 0;
 }
 
 static int do_alignment_fault(unsigned long addr, unsigned int esr,
 			      struct pt_regs *regs)
-{
+{ 
+	kprintf("%s: \n", __func__);
 	do_bad_area(addr, esr, regs);
 	return 0;
 }
@@ -258,6 +263,15 @@ int do_debug_exception(unsigned long addr, unsigned int esr, struct pt_regs *reg
 	struct siginfo info;
 	const int from_user = interrupt_from_user(regs);
 	int ret = -1;
+
+	kprintf("debug exception: addr: %p\n", addr);
+	if (from_user)
+		regs->user_regs.pc += 4;
+	else
+		regs->pc += 4;
+
+	return 0;
+
 
 	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 

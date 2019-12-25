@@ -8,6 +8,9 @@
 #include <arch-memory.h>
 #include <signal.h>
 #include <process.h>
+#include <debug-monitors.h>
+
+void aarch64_setup_kernel_breakpoint(int i, unsigned long addr, int j);
 
 /* @ref.impl arch/arm64/kernel/hw_breakpoint.c::core_num_[brps|wrps] */
 /* Number of BRP/WRP registers on this CPU. */
@@ -145,6 +148,16 @@ void hw_breakpoint_reset(void)
 	}
 }
 
+
+void my_silly_function(void)
+{
+	if (ihk_mc_get_processor_id() == 0) {
+		dkprintf("%s: \n", __func__);
+	}
+	return;
+}
+
+
 /* @ref.impl arch/arm64/kernel/hw_breakpoint.c::arch_hw_breakpoint_init */
 void arch_hw_breakpoint_init(void)
 {
@@ -164,6 +177,29 @@ void arch_hw_breakpoint_init(void)
 		core_num_wrps = max_hws_dbg_regs;
 	}
 	hw_breakpoint_reset();
+	kprintf("%s: core_num_brps: %d\n", __func__, core_num_brps);
+
+	{
+#if 1
+		int j;
+		for (j = 0; j < 23; ++j) {
+			aarch64_setup_kernel_breakpoint(0,
+					(unsigned long)&my_silly_function + 4, j);
+			my_silly_function();
+		}
+#else
+		aarch64_setup_kernel_breakpoint(0,
+			0x100000106918, 1);
+#endif
+
+#if 0
+		aarch64_setup_kernel_breakpoint(0,
+			0x100000106918);
+		aarch64_setup_kernel_breakpoint(1,
+			(unsigned long)&my_silly_function + 4);
+		my_silly_function();
+#endif
+	}
 }
 
 struct arch_hw_breakpoint_ctrl {
@@ -408,3 +444,237 @@ int watchpoint_handler(unsigned long addr, unsigned int esr, struct pt_regs *reg
 	}
 	return 0;
 }
+
+
+#define DBGBCR_HMC	13
+#define DBGBCR_SSC  14
+#define DBGBCR_PMC  1
+
+struct breakpoint_enconding {
+	uint64_t hmc;
+	uint64_t ssc;
+	uint64_t pmc;
+};
+
+
+struct breakpoint_enconding breakpoint_encondings[23] =
+{
+	// HMC 0
+	{
+		.hmc = 0,
+		.ssc = 0,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0,
+		.pmc = 0x2,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0,
+		.pmc = 0x3,
+	},
+
+	{
+		.hmc = 0,
+		.ssc = 0x1,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0x1,
+		.pmc = 0x2,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0x1,
+		.pmc = 0x3,
+	},
+
+	{
+		.hmc = 0,
+		.ssc = 0x2,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0x2,
+		.pmc = 0x2,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0x2,
+		.pmc = 0x3,
+	},
+
+	{
+		.hmc = 0,
+		.ssc = 0x3,
+		.pmc = 0x0,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0x3,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0,
+		.ssc = 0x3,
+		.pmc = 0x3,
+	},
+
+	// HMC 1
+	{
+		.hmc = 0x1,
+		.ssc = 0x0,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0x1,
+		.ssc = 0x0,
+		.pmc = 0x3,
+	},
+
+	{
+		.hmc = 0x1,
+		.ssc = 0x1,
+		.pmc = 0x0,
+	},
+	{
+		.hmc = 0x1,
+		.ssc = 0x1,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0x1,
+		.ssc = 0x1,
+		.pmc = 0x3,
+	},
+
+	{
+		.hmc = 0x1,
+		.ssc = 0x2,
+		.pmc = 0x0,
+	},
+	{
+		.hmc = 0x1,
+		.ssc = 0x2,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0x1,
+		.ssc = 0x2,
+		.pmc = 0x3,
+	},
+
+	{
+		.hmc = 0x1,
+		.ssc = 0x3,
+		.pmc = 0x0,
+	},
+	{
+		.hmc = 0x1,
+		.ssc = 0x3,
+		.pmc = 0x1,
+	},
+	{
+		.hmc = 0x1,
+		.ssc = 0x3,
+		.pmc = 0x3,
+	},
+};
+
+
+void aarch64_setup_kernel_breakpoint(int i, unsigned long addr, int j)
+{
+	struct arch_hw_breakpoint_ctrl ahb_ctrl;
+	uint32_t mdscr, enable;
+	uint32_t ctrl;
+	uint64_t val;
+
+	/* Enable and allow kernel mode */
+	enable = DBG_MDSCR_MDE;
+	enable |= DBG_MDSCR_KDE;
+
+	mdscr = mdscr_read();
+	mdscr |= enable;
+	mdscr_write(mdscr);
+
+#if 0
+	ahb_ctrl.type = ARM_BREAKPOINT_EXECUTE;
+	ahb_ctrl.len = ARM_BREAKPOINT_LEN_4;
+	ahb_ctrl.privilege = AARCH64_BREAKPOINT_EL1;
+	//ahb_ctrl.privilege = AARCH64_BREAKPOINT_EL0;
+	ahb_ctrl.enabled = 0x1;
+
+	/* Use DBG reg i */
+	write_wb_reg(AARCH64_DBG_REG_BVR, i, addr);
+	ctrl = encode_ctrl_reg(ahb_ctrl);
+	//write_wb_reg(AARCH64_DBG_REG_BCR, i, ctrl);	
+	//val = read_wb_reg(AARCH64_DBG_REG_BCR, i);
+	//kprintf("AARCH64_DBG_REG_BCR (Linux): %lx\n", val);
+
+	/* Enable EL2, EL1, EL0 for both secure and non-secure */
+	/*
+	 * See: Table D2-9 under D2.9.3 Execution conditions for
+	 * which a breakpoint generates Breakpoint exceptions
+	 */
+	ctrl = 0;
+
+	ctrl &= ~(0x1U << DBGBCR_HMC); // EL0 or EL0 and EL1
+	//ctrl |= (0x1U << DBGBCR_HMC); // EL0, EL1, EL2 (non-secure)
+	ctrl |= (0x1U << DBGBCR_HMC);
+
+	ctrl &= ~(0x3U << DBGBCR_SSC);
+	//ctrl |= (0x3U << DBGBCR_SSC); // EL0 only
+	//ctrl |= (0x1U << DBGBCR_SSC); // EL0 and EL1
+	//ctrl |= (0x1U << DBGBCR_SSC); // EL0, EL1, EL2 (non-secure)
+	//ctrl |= (0x3U << DBGBCR_SSC);
+
+	ctrl &= ~(0x3U << DBGBCR_PMC);
+	//ctrl |= (0x2U << DBGBCR_PMC); // EL0 only
+	//ctrl |= (0x3U << DBGBCR_PMC); // EL0 and EL1
+	//ctrl |= (0x3U << DBGBCR_PMC); // EL0, EL1, EL2 (non-secure)
+	ctrl |= (0x3U << DBGBCR_PMC);
+	ctrl |= 0x1;
+#endif
+
+	write_wb_reg(AARCH64_DBG_REG_BVR, i, addr);
+
+	ctrl = 0;
+	ctrl |= (breakpoint_encondings[j].hmc << DBGBCR_HMC);
+	ctrl |= (breakpoint_encondings[j].ssc << DBGBCR_SSC);
+	ctrl |= (breakpoint_encondings[j].pmc << DBGBCR_PMC);
+	ctrl |= 0x1;
+
+	write_wb_reg(AARCH64_DBG_REG_BCR, i, ctrl);
+
+	val = read_wb_reg(AARCH64_DBG_REG_BCR, i);
+	kprintf("AARCH64_DBG_REG_BCR: %lx, HMC: %d, SSC: %d%d, PMC: %d%d\n",
+		val,
+		val & (1 << DBGBCR_HMC) ? 1 : 0,
+		val & (1 << (DBGBCR_SSC + 1)) ? 1 : 0,
+		val & (1 << (DBGBCR_SSC)) ? 1 : 0,
+		val & (1 << (DBGBCR_PMC + 1)) ? 1 : 0,
+		val & (1 << (DBGBCR_PMC)) ? 1 : 0
+		);
+
+	asm volatile(
+		"msr	daifclr, #0xf		// local_daif_unmask"
+		:
+		:
+		: "memory");
+
+	/*
+	asm("mrs %0, mdcr_el2" : "=r" (val));
+	kprintf("MDCR_EL2: %lx\n", val);
+	asm("mrs %0, hcr_el2" : "=r" (val));
+	kprintf("HCR_EL2: %lx\n", val);
+	asm("mrs %0, daif" : "=r" (val));
+	kprintf("DAIF: %lx\n", val);
+	*/
+
+	kprintf("reg %d (mode: %d) set for addr: 0x%lx\n", i, j, addr);
+}
+

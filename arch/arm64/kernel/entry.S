@@ -257,8 +257,8 @@ el1_sync:
 	b.eq	el1_sp_pc
 	cmp	x24, #ESR_ELx_EC_UNKNOWN	// unknown exception in EL1
 	b.eq	el1_undef
-	// cmp	x24, #ESR_ELx_EC_BREAKPT_CUR	// debug exception in EL1
-	// b.ge	el1_dbg
+	cmp	x24, #ESR_ELx_EC_BREAKPT_CUR	// debug exception in EL1
+	b.ge	el1_dbg
 	b	el1_inv
 el1_ia:
 	/*
@@ -303,17 +303,19 @@ el1_undef:
 	enable_dbg
 	mov	x0, sp
 	b	do_undefinstr
-// el1_dbg:
-// 	/*
-// 	 * Debug exception handling
-// 	 */
-// 	cmp	x24, #ESR_ELx_EC_BRK64		// if BRK64
-// 	cinc	x24, x24, eq			// set bit '0'
-// 	tbz	x24, #0, el1_inv		// EL1 only
-// 	mrs	x0, far_el1
-// 	mov	x2, sp				// struct pt_regs
-// 	bl	do_debug_exception
-// 	kernel_exit 1
+el1_dbg:
+	/*
+	 * Debug exception handling
+	 */
+	cmp	x24, #ESR_ELx_EC_BRK64		// if BRK64
+	cinc	x24, x24, eq			// set bit '0'
+	//tbz	x24, #0, el1_inv		// EL1 only
+	//mrs	x0, far_el1
+	mov	x2, sp				// struct pt_regs
+	enable_nmi
+	enable_dbg
+	bl	do_debug_exception
+	kernel_exit 1
 el1_inv:
 	// TODO: add support for undefined instructions in kernel mode
 	mov	x0, sp

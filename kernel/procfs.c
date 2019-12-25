@@ -145,6 +145,7 @@ procfs_create_thread(struct thread *thread)
 void
 procfs_delete_thread(struct thread *thread)
 {
+	dkprintf("%s: tid: %d\n", __func__, thread->tid);
 	procfs_thread_ctl(thread, SCD_MSG_PROCFS_TID_DELETE);
 }
 

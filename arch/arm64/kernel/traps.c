@@ -150,7 +150,12 @@ void do_undefinstr(struct pt_regs *regs)
 	info.si_code  = ILL_ILLOPC;
 	info._sifields._sigfault.si_addr  = (void*)regs->pc;
 
-	arm64_notify_die("Oops - undefined instruction", regs, &info, 0);
+	kprintf("%s: @ 0x%lx\n", __func__, regs->pc);
+	arch_print_stack();
+	psci_cpu_off();
+	panic("PANIC");
+
+	//arm64_notify_die("Oops - undefined instruction", regs, &info, 0);
 out:
 	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 }
@@ -166,6 +171,7 @@ void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
 
 	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	kprintf("entering bad_mode !! (regs:0x%p, reason:%d, esr:0x%x)\n", regs, reason, esr);
+	panic("PANIC");
 
 	kprintf("esr Analyse:\n");
 	kprintf("  Exception Class               : 0x%x\n",((esr >> 26) & 0x3f));
