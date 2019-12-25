@@ -1,0 +1,23 @@
+【Issue#1361 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+C1361T01 pselect のシグナルマスクが機能することを確認する。PASSすること。
+C1361T02 LTP epoll_pwait01 を実行し、PASSすること。
+C1361T03 LTP ppoll01 を実行し、PASSすること。
+
+2. LTP を用いて既存処理に影響しないことを確認
+   pselect, epoll_pwait, ppoll の処理を変更したので、関連するテストプログラム
+   を実行し、すべてPASSすること。
+C1361T04 LTP pselect01 を実行し、PASSすること。
+C1361T05 LTP pselect03 を実行し、PASSすること。
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+□ 実行結果
+C1361_x86_64.txt(x86_64実行結果)、C1361_arm64.txt(arm64実行結果)参照。
+全ての項目が PASS していることを確認。
