@@ -51,6 +51,11 @@ extern char *syscall_name[];
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
+#define PERF_SAMPLING_BUFFER_ENTRIES 32
+#define PERF_SAMPLING_BUFFER_SIZE \
+	(PERF_SAMPLING_BUFFER_ENTRIES*sizeof(unsigned long long))
+#define PERF_SAMPLING_BUFFER_PAGES \
+	((PERF_SAMPLING_BUFFER_SIZE + 4095) >> PAGE_SHIFT)
 
 char *profile_event_names[] =
 {
@@ -463,12 +468,16 @@ static void profile_clear_thread(struct thread *thread)
 
 int alloc_perf_sampling_buffer(struct perf_sampling *ps)
 {
-	ps->nentries = 32;
-	ps->size = ps->nentries * sizeof(unsigned long);
+	int p2align = PAGE_P2ALIGN;
+
+	ps->nentries = PERF_SAMPLING_BUFFER_ENTRIES;
+	ps->size = PERF_SAMPLING_BUFFER_SIZE;
 	ps->len = 0;
 
 	kprintf("perf: allocating buffer\n");
-	ps->buffer = kmalloc(ps->size, IHK_MC_PG_KERNEL);
+	//ps->buffer = kmalloc(ps->size, IHK_MC_PG_KERNEL);
+	ps->buffer = ihk_mc_alloc_aligned_pages(PERF_SAMPLING_BUFFER_PAGES,
+						p2align, IHK_MC_AP_NOWAIT);
 	if (!ps->buffer) {
 		kprintf("Error: Cannot allocate PEBS buffer\n");
 		return -ENOMEM;
@@ -493,6 +502,121 @@ void print_perf_sampling(struct perf_sampling *ps)
 			kprintf(" %#16lx\n", ps->buffer[i]);
 		}
 	}
+}
+
+void dump_perf_sampling(void)
+{
+	struct thread *mythread = cpu_local_var(current);
+	struct process *proc = mythread->proc;
+	ihk_mc_user_context_t ctx1, ctx2;
+	int fd;
+	int status;
+	struct perf_sampling *ps;
+	char *exec = "mcexec";
+	unsigned long long *usr_buf = 0;
+	unsigned long long *krn_fn_buf = 0, *usr_fn_buf = 0;
+	int p2align = PAGE_P2ALIGN;
+	int i;
+	int ret;
+
+	kprintf("allocating perf filename buffer\n");
+	krn_fn_buf = ihk_mc_alloc_aligned_pages(1, p2align, IHK_MC_AP_NOWAIT);
+	if (krn_fn_buf == 0) {
+		kprintf("Cannot allocate filename perf buffer\n");
+		return;
+	}
+
+	kprintf("maping to user\n");
+	usr_fn_buf = map_pages_to_user(krn_fn_buf, 1, VR_REMOTE);
+	if (usr_fn_buf == NULL) {
+		kprintf("%s: error: mapping PEBS buffer\n", __func__);
+		goto free_fn_buf;
+	}
+
+	if (proc->saved_cmdline) {
+		exec = strrchr(proc->saved_cmdline, '/');
+		if (exec) {
+			/* Point after '/' */
+			++exec;
+		}
+		else {
+			exec = proc->saved_cmdline;
+		}
+	}
+
+	kprintf("writing to kernel buffer\n");
+	snprintf((char *) krn_fn_buf, PATH_MAX, "%s-PERF-sampling.dat", exec);
+
+	// TODO: move me to some more appropriate place
+#define O_RDWR		00000002
+#define O_CREAT		00000100
+
+	ihk_mc_syscall_arg0(&ctx1) = (intptr_t)usr_fn_buf;
+	ihk_mc_syscall_arg1(&ctx1) = O_RDWR | O_CREAT;
+	ihk_mc_syscall_arg2(&ctx1) = 00600;
+
+	kprintf("trying to open the file: %s\n", krn_fn_buf);
+	fd = syscall_generic_forwarding(__NR_open, &ctx1);
+	if (fd < 0) {
+		kprintf("Can't open PEBS out file: %s, fd = %d",
+			usr_fn_buf, fd);
+		fd = 0;
+		goto unmap_fn_usrbuf;
+	}
+
+	int ncpus = 1;
+
+	for (i = 0; i < ncpus; i++) {
+		ps = &get_cpu_local_var(i)->perf_sampling;
+
+		kprintf("mapping to user space\n");
+		usr_buf = map_pages_to_user(ps->buffer,
+					    PERF_SAMPLING_BUFFER_PAGES,
+					    VR_REMOTE);
+		if (usr_buf == NULL) {
+			kprintf("%s: error: mapping PERF buffer\n", __func__);
+			goto close;
+		}
+
+		kprintf("writing cpu %d perf buffer to file\n", i);
+		ret = forward_write(fd, usr_buf,
+				    ps->len*sizeof(unsigned long long));
+		if (ret) {
+			kprintf("%s: error: writing pebs buffer\n", __func__);
+			ret = do_munmap((void *)usr_buf,
+					PERF_SAMPLING_BUFFER_SIZE, 0);
+			if (ret)
+				kprintf("%s:error: unmaping PERF user buffer\n",
+					__func__);
+			goto close;
+		}
+
+		//kprintf("unmap user map\n");
+		//ret = do_munmap((void *)usr_buf,
+		//		PERF_SAMPLING_BUFFER_SIZE, 0)
+		//if (ret) {
+		//	kprintf("%s:error: unmaping PERF user buffer\n",
+		//		__func__);
+		//	goto close;
+		//}
+	}
+
+close:
+	kprintf("closing the file!\n");
+	ihk_mc_syscall_arg0(&ctx2) = fd;
+	status = syscall_generic_forwarding(__NR_close, &ctx2);
+	if (status < 0) {
+		kprintf("Can't close PERF out file. fd = %d", status);
+	}
+
+unmap_fn_usrbuf:
+	kprintf("unmap filename kernel buffer\n");
+	if (do_munmap((void *)usr_fn_buf, 4096, 0))
+		kprintf("%s:error: unmaping PEBS user buffer\n", __func__);
+
+free_fn_buf:
+	kprintf("free filename user buffer\n");
+	ihk_mc_free_pages(krn_fn_buf, 1);
 }
 
 int do_profile(int flag)
@@ -543,7 +667,8 @@ int do_profile(int flag)
 			}
 			if (flag & PROF_PRINT) {
 				kprintf("in prof sample print!\n");
-				print_perf_sampling(ps);
+				//print_perf_sampling(ps);
+				dump_perf_sampling();
 			}
 		} else if (flag & PROF_PRINT) {
 			struct mcs_rwlock_node lock;

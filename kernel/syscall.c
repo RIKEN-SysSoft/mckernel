@@ -1582,6 +1582,52 @@ out:
 	return error;
 }
 
+void *map_pages_to_user(void *pages, int nr_pages, unsigned long extra_flag)
+{
+	int err;
+	uintptr_t addr = 0;
+	unsigned long vr_flags;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	int pgshift = ((size_t)nr_pages << PAGE_SHIFT) > LARGE_PAGE_SIZE ?
+		LARGE_PAGE_SHIFT : PAGE_SHIFT;
+
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
+	err = search_free_space((size_t)nr_pages << PAGE_SHIFT,
+			pgshift, &addr);
+	if (err) {
+		kprintf("%s: error: no virtual space available\n", __func__);
+		err = -ENOMEM;
+		goto out;
+	}
+
+	vr_flags = VR_PROT_READ;
+	vr_flags |= VRFLAG_PROT_TO_MAXPROT(vr_flags);
+	vr_flags |= extra_flag;
+
+	err = add_process_memory_range(vm, addr,
+				       addr + ((size_t)nr_pages << PAGE_SHIFT),
+				       virt_to_phys(pages), vr_flags, NULL,
+				       0, pgshift, NULL);
+	if (err) {
+		kprintf("%s: error: mapping user range\n", __func__);
+		err = -ENOMEM;
+		goto out;
+	}
+
+	dkprintf("%s: user_buf: %p:%lu\n", __func__,
+			addr, (size_t)nr_pages << PAGE_SHIFT);
+
+out:
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	if (!err) {
+		return (void *)addr;
+	}
+
+	return NULL;
+}
+
+
 intptr_t
 do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	const int flags, const int fd, const off_t off0)
@@ -9750,6 +9796,41 @@ set_cputime(enum set_cputime_mode mode)
 		}
 	}
 	cpu_restore_interrupt(irq_flags);
+}
+
+ssize_t forward_write(int fd, void *buf, size_t count)
+{
+	ihk_mc_user_context_t ctx;
+	size_t written, ret;
+	ssize_t write_ret;
+
+	written = 0;
+	ret = 0;
+
+	if (count < 1)
+		return 0;
+
+	dkprintf("%s: count: %lu, written: %lu\n",
+		__func__, count, written);
+	do {
+		ihk_mc_syscall_arg0(&ctx) = fd;
+		ihk_mc_syscall_arg1(&ctx) = (unsigned long) buf   + written;
+		ihk_mc_syscall_arg2(&ctx) = count - written;
+
+		write_ret = syscall_generic_forwarding(__NR_write, &ctx);
+		dkprintf("%s: to write: %lu, write_ret: %ld\n",
+			__func__, count - written, write_ret);
+		if (write_ret < 0) {
+			ret = write_ret;
+			break;
+		}
+
+		written += (size_t) write_ret;
+		dkprintf("%s: len: %lu, written: %lu\n",
+			__func__, count, written);
+	} while (written != count);
+
+	return ret;
 }
 
 long syscall(int num, ihk_mc_user_context_t *ctx)

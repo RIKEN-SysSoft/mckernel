@@ -505,6 +505,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			  void *_linux_wait_event,
 			  void *_linux_printk,
 			  void *_linux_clock_gettime);
+ssize_t forward_write(int fd, void *buf, size_t count);
 
 struct cpu_mapping {
 	int cpu_number;
