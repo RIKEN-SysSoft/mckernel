@@ -1,0 +1,83 @@
+Script started on Mon Jan  6 15:24:33 2020
+bash-4.2$ make test
+gcc     C1361T01.c   -o C1361T01
+sh ./C1361.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+x86_64
+*** C1361T01: PASS
+tst_test.c:1072: INFO: Timeout per run is 0h 05m 00s
+ppoll01.c:221: INFO: case NORMAL
+ppoll01.c:252: PASS: revents=0x0005
+ppoll01.c:258: PASS: ret: 1
+ppoll01.c:221: INFO: case MASK_SIGNAL
+ppoll01.c:258: PASS: ret: 0
+ppoll01.c:221: INFO: case TIMEOUT
+ppoll01.c:258: PASS: ret: 0
+ppoll01.c:221: INFO: case FD_ALREADY_CLOSED
+ppoll01.c:252: PASS: revents=0x0020
+ppoll01.c:258: PASS: ret: 1
+ppoll01.c:221: INFO: case SEND_SIGINT
+ppoll01.c:261: PASS: ret: -1, errno: EINTR (4)
+ppoll01.c:221: INFO: case SEND_SIGINT_RACE_TEST
+ppoll01.c:261: PASS: ret: -1, errno: EINTR (4)
+ppoll01.c:221: INFO: case INVALID_NFDS
+ppoll01.c:261: PASS: ret: -1, errno: EINVAL (22)
+ppoll01.c:221: INFO: case INVALID_FDS
+ppoll01.c:261: PASS: ret: -1, errno: EFAULT (14)
+
+Summary:
+passed   10
+failed   0
+skipped  0
+warnings 0
+*** C1361T02: ppoll01 PASS (10)
+epoll_pwait01    1  TPASS  :  epoll_pwait(sigmask) blocked signal
+epoll_pwait01    0  TINFO  :  Child process returned TPASS
+epoll_pwait01    2  TPASS  :  epoll_wait() failed as expected: TEST_ERRNO=EINTR(4): Interrupted system call
+epoll_pwait01    0  TINFO  :  Child process returned TPASS
+*** C1361T03: epoll_pwait01 PASS (4)
+tst_test.c:1072: INFO: Timeout per run is 0h 05m 00s
+tst_timer_test.c:356: INFO: CLOCK_MONOTONIC resolution 1ns
+tst_timer_test.c:368: INFO: prctl(PR_GET_TIMERSLACK) = 50us
+tst_timer_test.c:275: INFO: pselect() sleeping for 1000us 500 iterations, threshold 450.01us
+tst_timer_test.c:318: INFO: min 1065us, max 1079us, median 1066us, trunc mean 1065.64us (discarded 25)
+tst_timer_test.c:333: PASS: Measured times are within thresholds
+tst_timer_test.c:275: INFO: pselect() sleeping for 2000us 500 iterations, threshold 450.01us
+tst_timer_test.c:318: INFO: min 2065us, max 2072us, median 2066us, trunc mean 2065.86us (discarded 25)
+tst_timer_test.c:333: PASS: Measured times are within thresholds
+tst_timer_test.c:275: INFO: pselect() sleeping for 5000us 300 iterations, threshold 450.04us
+tst_timer_test.c:318: INFO: min 5065us, max 5072us, median 5066us, trunc mean 5065.87us (discarded 15)
+tst_timer_test.c:333: PASS: Measured times are within thresholds
+tst_timer_test.c:275: INFO: pselect() sleeping for 10000us 100 iterations, threshold 450.33us
+tst_timer_test.c:318: INFO: min 10065us, max 10074us, median 10066us, trunc mean 10065.57us (discarded 5)
+tst_timer_test.c:333: PASS: Measured times are within thresholds
+tst_timer_test.c:275: INFO: pselect() sleeping for 25000us 50 iterations, threshold 451.29us
+tst_timer_test.c:318: INFO: min 25064us, max 25077us, median 25065us, trunc mean 25065.38us (discarded 2)
+tst_timer_test.c:333: PASS: Measured times are within thresholds
+tst_timer_test.c:275: INFO: pselect() sleeping for 100000us 10 iterations, threshold 537.00us
+tst_timer_test.c:318: INFO: min 100109us, max 100118us, median 100110us, trunc mean 100111.33us (discarded 1)
+tst_timer_test.c:333: PASS: Measured times are within thresholds
+tst_timer_test.c:275: INFO: pselect() sleeping for 1000000us 2 iterations, threshold 4400.00us
+tst_timer_test.c:318: INFO: min 1001000us, max 1001013us, median 1001000us, trunc mean 1001000.00us (discarded 1)
+tst_timer_test.c:333: PASS: Measured times are within thresholds
+
+Summary:
+passed   7
+failed   0
+skipped  0
+warnings 0
+*** C1361T04: pselect01 PASS (7)
+tst_test.c:1072: INFO: Timeout per run is 0h 05m 00s
+pselect03.c:43: PASS: pselect() succeeded retval=0
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1361T05: pselect03 PASS (1)
+bash-4.2$ exit
+exit
+
+Script done on Mon Jan  6 15:25:00 2020
