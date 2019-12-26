@@ -33,6 +33,29 @@
       "revId": "398f1d543966cc2c6a619b9488b7195ff7631f13",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3b446426_ad4c86e2",
+        "filename": "test/issues/1329/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2019-12-26T01:05:14Z",
+      "side": 1,
+      "message": "メモ：message queueのサイズを返すコマンドのフォーマットが変わったため。\nLTPを修正して試す。",
+      "range": {
+        "startLine": 5,
+        "startChar": 0,
+        "endLine": 5,
+        "endChar": 46
+      },
+      "revId": "398f1d543966cc2c6a619b9488b7195ff7631f13",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
