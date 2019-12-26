@@ -118,10 +118,16 @@ fi
 
 # Remove delegator if loaded
 if grep mcctrl /proc/modules &>/dev/null; then
-	if ! sudo ${RMMOD_PATH} mcctrl 2>/dev/null; then
-		echo "error: removing mcctrl" >&2
-		exit 1
-	fi
+	attempts=0
+	while ! sudo ${RMMOD_PATH} mcctrl; do
+		echo "WARNING: failed to remove mcctrl, retrying in 1 sec.." >&2
+		sleep 1
+		let attempts=${attempts}+1;
+		if [ $attempts -gt 10 ]; then
+			echo "error: removing mcctrl" >&2
+			exit 1
+		fi
+	done
 fi
 
 # Remove SMP module
