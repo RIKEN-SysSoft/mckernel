@@ -731,14 +731,14 @@ static void command(const char *cmd, char *res, size_t res_size) {
 				int error;
 				struct arch_kregs kregs;
 
-				error = read_mem(curr_thread->process+K(CTX_OFFSET),
-						&kregs, sizeof(kregs));
+				error = arch_read_kregs(curr_thread->process+K(CTX_OFFSET),
+						&kregs);
 				if (error) {
-					perror("read_mem");
+					perror("arch_read_kregs");
 					break;
 				}
 
-				print_kregs(rbp, res_size, &kregs);
+				rbp += print_kregs(rbp, res_size, &kregs);
 			}
 			else {
 				int error;
