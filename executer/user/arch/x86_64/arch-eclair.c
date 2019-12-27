@@ -25,7 +25,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	total += ret;
 	rbp_size -= ret;
 
-	ret += print_bin(rbp, rbp_size, (void *)&kregs->rbx, sizeof(uint64_t));	/* rbx */
+	ret = print_bin(rbp, rbp_size, (void *)&kregs->rbx, sizeof(uint64_t));	/* rbx */
 	if (ret < 0) {
 		return ret;
 	}
@@ -73,7 +73,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 		rbp_size -= ret;
 	}
 
-	ret += print_bin(rbp, rbp_size, (void *)&ihk_mc_switch_context, sizeof(uint64_t));	/* rip */
+	ret = print_bin(rbp, rbp_size, (void *)&ihk_mc_switch_context, sizeof(uint64_t));	/* rip */
 	if (ret < 0) {
 		return ret;
 	}
@@ -81,7 +81,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	total += ret;
 	rbp_size -= ret;
 
-	ret += print_bin(rbp, rbp_size, (void *)&kregs->rflags, sizeof(uint32_t));	/* rflags */
+	ret = print_bin(rbp, rbp_size, (void *)&kregs->rflags, sizeof(uint32_t));	/* rflags */
 	if (ret < 0) {
 		return ret;
 	}

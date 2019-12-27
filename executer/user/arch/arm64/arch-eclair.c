@@ -41,7 +41,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 		rbp_size -= ret;
 	}
 
-	ret += print_bin(rbp, rbp_size, (void *)&kregs->sp, sizeof(kregs->sp));
+	ret = print_bin(rbp, rbp_size, (void *)&kregs->sp, sizeof(kregs->sp));
 	if (ret < 0) {
 		return ret;
 	}

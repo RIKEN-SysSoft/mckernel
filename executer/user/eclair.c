@@ -738,7 +738,7 @@ static void command(const char *cmd, char *res, size_t res_size) {
 					break;
 				}
 
-				print_kregs(rbp, res_size, &kregs);
+				rbp += print_kregs(rbp, res_size, &kregs);
 			}
 			else {
 				int error;
