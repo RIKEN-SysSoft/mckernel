@@ -3699,17 +3699,24 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	unsigned long irqstate;
 	DECLARE_WAITQ_ENTRY_LOCKED(entry, cpu_local_var(current));
 
+	/*
+	 * NOTES:
+	 * - migration queue lock must be held before runqueue lock.
+	 * - the lock must be held until migration request is added
+	 *   and the target core is notified, otherwise an interrupt
+	 *   may deschedule this thread and leave it hanging in
+	 *   uninterruptible state forever.
+	 */
+	irqstate = ihk_mc_spinlock_lock(&v->migq_lock);
 	waitq_init(&req.wq);
 	waitq_prepare_to_wait(&req.wq, &entry, PS_UNINTERRUPTIBLE);
 
-	irqstate = ihk_mc_spinlock_lock(&v->migq_lock);
 	list_add_tail(&req.list, &v->migq);
-	ihk_mc_spinlock_unlock(&v->migq_lock, irqstate);
 
-	irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+	ihk_mc_spinlock_lock_noirq(&v->runq_lock);
 	v->flags |= CPU_FLAG_NEED_RESCHED | CPU_FLAG_NEED_MIGRATE;
 	v->status = CPU_STATUS_RUNNING;
-	ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+	ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
 
 	if (cpu_id != ihk_mc_get_processor_id()) {
 		/* Kick scheduler */
@@ -3718,6 +3725,7 @@ void sched_request_migrate(int cpu_id, struct thread *thread)
 	}
 	dkprintf("%s: tid: %d -> cpu: %d\n",
 			__FUNCTION__, thread->tid, cpu_id);
+	ihk_mc_spinlock_unlock(&v->migq_lock, irqstate);
 
 	schedule();
 	waitq_finish_wait(&req.wq, &entry);
