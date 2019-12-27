@@ -44,7 +44,7 @@ uintptr_t debug_constants[] = {
 	offsetof(struct cpu_local_var, runq),
 	offsetof(struct cpu_local_var, status),
 	offsetof(struct cpu_local_var, idle),
-	offsetof(struct thread, ctx) + offsetof(struct thread_info, cpu_context),
+	offsetof(struct thread, ctx),
 	offsetof(struct thread, sched_list),
 	offsetof(struct thread, proc),
 	offsetof(struct thread, status),
