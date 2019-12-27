@@ -60,11 +60,10 @@ struct smp_func_call_request {
 };
 
 struct perf_sampling {
-	unsigned long *buffer;
+	unsigned long long *buffer;
 	size_t nentries;
 	size_t size;
 	size_t len;
-	int enabled;
 };
 
 struct cpu_local_var {
@@ -102,6 +101,9 @@ struct cpu_local_var {
 	int in_interrupt;
 	int no_preempt;
 	int timer_enabled;
+	unsigned int timer_flags;
+#define TIMER_SCHED 0x1
+#define TIMER_PERF  0x2
 	int kmalloc_initialized;
 	struct ihk_os_cpu_monitor *monitor;
 	struct rusage_percpu *rusage;

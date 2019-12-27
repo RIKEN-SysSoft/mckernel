@@ -3278,6 +3278,24 @@ ack:
 	ihk_mc_spinlock_unlock(&cur_v->migq_lock, irqstate);
 }
 
+void timer_enable(unsigned int flag, unsigned int clocks)
+{
+	cpu_local_var(timer_flags) |= flag;
+	if (!cpu_local_var(timer_enabled)) {
+		lapic_timer_enable(clocks);
+		cpu_local_var(timer_enabled) = 1;
+	}
+}
+
+void timer_disable(unsigned int flag)
+{
+	cpu_local_var(timer_flags) &= ~flag;
+	if (!cpu_local_var(timer_flags) && cpu_local_var(timer_enabled)) {
+		lapic_timer_disable();
+		cpu_local_var(timer_enabled) = 0;
+	}
+}
+
 void set_timer(int runq_locked)
 {
 	struct cpu_local_var *v = get_this_cpu_local_var();
@@ -3302,16 +3320,9 @@ void set_timer(int runq_locked)
 
 	/* Toggle timesharing if CPU core is oversubscribed */
 	if (num_running > 1 || v->current->itimer_enabled) {
-		if (!cpu_local_var(timer_enabled)) {
-			lapic_timer_enable(/*10000000*/1000000);
-			cpu_local_var(timer_enabled) = 1;
-		}
-	}
-	else {
-		if (cpu_local_var(timer_enabled)) {
-			lapic_timer_disable();
-			cpu_local_var(timer_enabled) = 0;
-		}
+		timer_enable(TIMER_SCHED, /*10000000*/1000000);
+	} else {
+		timer_disable(TIMER_SCHED);
 	}
 
 	if (!runq_locked) {

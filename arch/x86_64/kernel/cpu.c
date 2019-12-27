@@ -886,24 +886,33 @@ void interrupt_exit(struct x86_user_context *regs)
 	}
 }
 
-void perf_sample_stack(void)
+void imuser(void) {}
+
+void perf_sample_stack(int user)
 {
 	struct perf_sampling *ps = &cpu_local_var(perf_sampling);
 	struct stack *rbp, *rbp_tmp;
 	size_t stack_len;
 
-	kprintf("perf: collecting sample. current len %zu\n", ps->len);
-
-	// there must be at least one free entry to do something
-	if (ps->nentries - ps->len == 0)
+	// there must be at least two free entry to do something
+	if (ps->nentries - ps->len <= 1)
 		return;
 
-	asm("mov %%rbp, %0" : "=r"(rbp_tmp));
-	rbp = rbp_tmp;
+	//if (user) {
+	//	ps->buffer[ps->len++] = 1;
+	//	ps->buffer[ps->len++] = (unsigned long) imuser;
+	//	return;
+	//}
+
+	asm("mov %%rbp, %0" : "=r"(rbp));
+	rbp_tmp = rbp;
 
 	stack_len = 0;
-	while ((unsigned long)rbp > 0xffff880000000000 &&
-			(ps->len + stack_len + 1) < ps->nentries) {
+	while ((unsigned long)rbp > 0xffff880000000000) {
+		// not enough space to store this callchain
+		if ((ps->len + stack_len + 1 + 1) > ps->nentries)
+			return;
+
 		stack_len++;
 		rbp = rbp->rbp;
 	}
@@ -918,7 +927,7 @@ void perf_sample_stack(void)
 		ps->len++;
 		rbp = rbp->rbp;
 	}
-	kprintf("perf: end of collecting sample\n");
+
 }
 
 void handle_interrupt(int vector, struct x86_user_context *regs)
@@ -986,18 +995,20 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	}
 	else if (vector == LOCAL_TIMER_VECTOR) {
 		unsigned long irqstate;
-		/* Timer interrupt, enabled only on oversubscribed CPU cores,
-		 * request reschedule */
+		/* Timer interrupt, enabled only on oversubscribed CPU cores
+		 * (request reschedule) and perf call stack sampling.
+		 */
 
-		if (v->perf_sampling.enabled) {
-			perf_sample_stack();
-		} else {
+		if (v->timer_flags & TIMER_SCHED)  {
 			irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 			v->flags |= CPU_FLAG_NEED_RESCHED;
 			ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 			dkprintf("timer[%lu]: CPU_FLAG_NEED_RESCHED\n",
 				 rdtsc());
 		}
+
+		if (v->timer_flags & TIMER_PERF)
+			perf_sample_stack(interrupt_from_user(regs));
 
 	}
 	else if (vector == LOCAL_PERF_VECTOR) {

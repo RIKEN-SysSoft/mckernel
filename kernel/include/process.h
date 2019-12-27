@@ -864,6 +864,8 @@ void chain_process(struct process *);
 void chain_thread(struct thread *);
 void proc_init(void);
 void set_timer(int runq_locked);
+void timer_enable(unsigned int flag, unsigned int clocks);
+void timer_disable(unsigned int flag);
 struct sig_pending *hassigpending(struct thread *thread);
 extern int do_signal(unsigned long rc, void *regs0, struct thread *thread,
 		     struct sig_pending *pending, int num);

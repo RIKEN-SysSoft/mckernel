@@ -51,7 +51,7 @@ extern char *syscall_name[];
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-#define PERF_SAMPLING_BUFFER_ENTRIES 32
+#define PERF_SAMPLING_BUFFER_ENTRIES (1024*1024)
 #define PERF_SAMPLING_BUFFER_SIZE \
 	(PERF_SAMPLING_BUFFER_ENTRIES*sizeof(unsigned long long))
 #define PERF_SAMPLING_BUFFER_PAGES \
@@ -475,7 +475,6 @@ int alloc_perf_sampling_buffer(struct perf_sampling *ps)
 	ps->len = 0;
 
 	kprintf("perf: allocating buffer\n");
-	//ps->buffer = kmalloc(ps->size, IHK_MC_PG_KERNEL);
 	ps->buffer = ihk_mc_alloc_aligned_pages(PERF_SAMPLING_BUFFER_PAGES,
 						p2align, IHK_MC_AP_NOWAIT);
 	if (!ps->buffer) {
@@ -506,8 +505,8 @@ void print_perf_sampling(struct perf_sampling *ps)
 
 void dump_perf_sampling(void)
 {
-	struct thread *mythread = cpu_local_var(current);
-	struct process *proc = mythread->proc;
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
 	ihk_mc_user_context_t ctx1, ctx2;
 	int fd;
 	int status;
@@ -550,9 +549,10 @@ void dump_perf_sampling(void)
 	// TODO: move me to some more appropriate place
 #define O_RDWR		00000002
 #define O_CREAT		00000100
+#define O_TRUNC		00001000
 
 	ihk_mc_syscall_arg0(&ctx1) = (intptr_t)usr_fn_buf;
-	ihk_mc_syscall_arg1(&ctx1) = O_RDWR | O_CREAT;
+	ihk_mc_syscall_arg1(&ctx1) = O_RDWR | O_CREAT | O_TRUNC;
 	ihk_mc_syscall_arg2(&ctx1) = 00600;
 
 	kprintf("trying to open the file: %s\n", krn_fn_buf);
@@ -564,10 +564,16 @@ void dump_perf_sampling(void)
 		goto unmap_fn_usrbuf;
 	}
 
-	int ncpus = 1;
+	for_each_set_bit(i, (unsigned long *)&proc->cpu_set,
+			 sizeof(proc->cpu_set) * BITS_PER_BYTE) {
 
-	for (i = 0; i < ncpus; i++) {
 		ps = &get_cpu_local_var(i)->perf_sampling;
+
+		kprintf("perf sample dump of cpu %d: %s\n", i,
+			(ps->buffer) ? "proceed" : "skip");
+
+		if (!ps->buffer)
+			continue;
 
 		kprintf("mapping to user space\n");
 		usr_buf = map_pages_to_user(ps->buffer,
@@ -578,7 +584,8 @@ void dump_perf_sampling(void)
 			goto close;
 		}
 
-		kprintf("writing cpu %d perf buffer to file\n", i);
+		kprintf("writing %lu perf buffer entries (%lu bytes) of cpu %d to file\n",
+			ps->len, ps->len*sizeof(unsigned long long), i);
 		ret = forward_write(fd, usr_buf,
 				    ps->len*sizeof(unsigned long long));
 		if (ret) {
@@ -619,6 +626,34 @@ free_fn_buf:
 	ihk_mc_free_pages(krn_fn_buf, 1);
 }
 
+int perf_sampling_smp_handler(int cpu_index, int nr_cpus, void *arg)
+{
+	int flag = *((int *) arg);
+	int ret;
+	struct perf_sampling *ps;
+
+	ps = &cpu_local_var(perf_sampling);
+
+	if (flag & PROF_ON) {
+		kprintf("in cpu %d prof sample on!\n", cpu_index);
+
+		if (ps->buffer == NULL) {
+			ret = alloc_perf_sampling_buffer(ps);
+			if (ret)
+				return ret;
+		}
+
+		timer_enable(TIMER_PERF, 1000000);
+	}
+	if (flag & PROF_OFF) {
+		kprintf("in cpu %d prof sample off!\n", cpu_index);
+
+		timer_disable(TIMER_PERF);
+	}
+
+	return 0;
+}
+
 int do_profile(int flag)
 {
 	struct thread *thread = cpu_local_var(current);
@@ -632,44 +667,29 @@ int do_profile(int flag)
 		dkprintf("%s: JOB %d, flag: 0x%lx\n",
 				__FUNCTION__, proc->nr_processes, flag);
 		if (flag & PROF_SAMPLE) {
-			int ret;
-			struct perf_sampling *ps;
-
-			ps = &cpu_local_var(perf_sampling);
-
 			kprintf("in prof sample!\n");
 
 			// TODO this needs to be properly integrated with the
 			// timer used in oversubscription. Right now it is just
 			// assuming that the sched timer does not exists. Also
 			// look at the handle_interrupt function
-			if (flag & PROF_ON) {
-				kprintf("in prof sample on!\n");
 
-				if (ps->buffer == NULL) {
-					ret = alloc_perf_sampling_buffer(ps);
-					if (ret)
-						return ret;
+			if (flag & (PROF_ON | PROF_OFF)) {
+				if (smp_call_func(&proc->cpu_set,
+						    perf_sampling_smp_handler,
+						    &flag)) {
+					kprintf("Error: enable/disable perf sampling\n");
 				}
+				kprintf("perf buffer allocation done!\n");
 
-				if (!cpu_local_var(timer_enabled)) {
-					lapic_timer_enable(/*10000000*/100000);
-					cpu_local_var(timer_enabled) = 1;
-				}
-				ps->enabled = 1;
 			}
-			if (flag & PROF_OFF) {
-				kprintf("in prof sample off!\n");
-				if (cpu_local_var(timer_enabled)) {
-					lapic_timer_disable();
-				}
-				ps->enabled = 0;
-			}
+
 			if (flag & PROF_PRINT) {
 				kprintf("in prof sample print!\n");
 				//print_perf_sampling(ps);
 				dump_perf_sampling();
 			}
+
 		} else if (flag & PROF_PRINT) {
 			struct mcs_rwlock_node lock;
 			struct thread *_thread;

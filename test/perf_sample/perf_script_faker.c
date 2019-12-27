@@ -11,6 +11,7 @@
 
 #define CMD_MAX 4096
 #define OUT_MAX 4096
+#define NAME_MAX 256
 
 struct perf_sampling {
 	unsigned long long nr;
@@ -42,10 +43,17 @@ void process_stack(struct perf_sampling *ps)
 	char *pout;
 
 	//printf("nr: %lu\n", ps->nr);
-	//for (i = 0; i < ps->nr; i++) {
-	//	printf("0x%lx\n", ps->addr[i]);
+	//if (ps->nr > 100000) {
+	//	printf("skipping raw print of too long callchain\n");
+	//} else {
+	//	for (i = 0; i < ps->nr; i++) {
+	//		printf("0x%lx\n", ps->addr[i]);
+	//	}
+	//	printf("\n");
 	//}
-	//printf("\n");
+
+	if (!ps->nr)
+		return;
 
 	off = snprintf(cmd, CMD_MAX, "%s ", cmdb);
 	for (i = 0; i < ps->nr; i++) {
@@ -83,6 +91,7 @@ void process_stack(struct perf_sampling *ps)
 
 		// print path
 		pout = strtok(NULL, ": ");
+		pout[1] = (pout[1] == '\n') ? '\0' : pout[1];
 		printf("(%s)\n", pout);
 	}
 	printf("\n");
@@ -90,6 +99,29 @@ void process_stack(struct perf_sampling *ps)
 	if (pclose(fp) == -1) {
 		perror("Warning: closing add2line failed");
 	}
+}
+void print_progression_bar(size_t done, size_t size)
+{
+	int i;
+	int ticks;
+	const int mticks = 80;
+	static int prev_ticks = -1;
+	double ratio = (double)done/(double)size;
+
+	ticks = (ratio*mticks);
+	//fprintf(stderr, "ticks %d prev %d mticks %d\n",
+	//	ticks, prev_ticks, mticks);
+	if (ticks != prev_ticks) {
+		fprintf(stderr, "\r%87s", "|");
+		fprintf(stderr, "\r|");
+		for (i = 0; i < ticks; i++)
+			fprintf(stderr, "=");
+		fprintf(stderr, ">[%d%]", (int)(ratio*100));
+		prev_ticks = ticks;
+	}
+	if (ratio == 1)
+		fprintf(stderr, "\n");
+	fflush(stderr);
 }
 
 int main(int argc, char *argv[])
@@ -130,11 +162,14 @@ int main(int argc, char *argv[])
 	}
 
 	while (rem) {
+		//printf("processed %zu/%zu bytes\n", size-rem, size);
 		process_stack(ps);
 
 		ss = sizeof(ps->nr) + ps->nr*sizeof(ps->addr[0]);
 		ps = (struct perf_sampling *) (((char *) ps) + ss);
 		rem -= ss;
+
+		print_progression_bar(size-rem, size);
 	}
 
 	return 0;
