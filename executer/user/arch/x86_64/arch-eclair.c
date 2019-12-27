@@ -25,7 +25,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	total += ret;
 	rbp_size -= ret;
 
-	ret += print_bin(rbp, rbp_size, (void *)&kregs->rbx, sizeof(uint64_t));	/* rbx */
+	ret = print_bin(rbp, rbp_size, (void *)&kregs->rbx, sizeof(uint64_t));	/* rbx */
 	if (ret < 0) {
 		return ret;
 	}
@@ -44,7 +44,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	}
 
 	for (i = 0; i < sizeof(regs_1)/sizeof(regs_1[0]); i++) {	/* rsi, rdi, rbp, rsp */
-		ret = print_bin(rbp, rbp_size, regs_1 + i, sizeof(regs_1[0]));
+		ret = print_bin(rbp, rbp_size, (void *)regs_1[i], sizeof(regs_1[0]));
 		if (ret < 0) {
 			return ret;
 		}
@@ -64,7 +64,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	}
 
 	for (i = 0; i < sizeof(regs_2)/sizeof(regs_2[0]); i++) {	/* r12-r15 */
-		ret = print_bin(rbp, rbp_size, regs_2 + i, sizeof(regs_2[0]));
+		ret = print_bin(rbp, rbp_size, (void *)regs_2[i], sizeof(regs_2[0]));
 		if (ret < 0) {
 			return ret;
 		}
@@ -73,7 +73,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 		rbp_size -= ret;
 	}
 
-	ret += print_bin(rbp, rbp_size, (void *)&ihk_mc_switch_context, sizeof(uint64_t));	/* rip */
+	ret = print_bin(rbp, rbp_size, (void *)&ihk_mc_switch_context, sizeof(uint64_t));	/* rip */
 	if (ret < 0) {
 		return ret;
 	}
@@ -81,7 +81,7 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 	total += ret;
 	rbp_size -= ret;
 
-	ret += print_bin(rbp, rbp_size, (void *)&kregs->rflags, sizeof(uint32_t));	/* rflags */
+	ret = print_bin(rbp, rbp_size, (void *)&kregs->rflags, sizeof(uint32_t));	/* rflags */
 	if (ret < 0) {
 		return ret;
 	}
@@ -131,6 +131,11 @@ int arch_setup_constants(void)
 	}
 
 	printf("x86 linux_page_offset: 0x%lx\n", linux_page_offset);
+
 	return 0;
 }
 
+int arch_read_kregs(unsigned long ctx, struct arch_kregs *kregs)
+{
+	return read_mem(ctx, kregs, sizeof(*kregs));
+}
