@@ -9,14 +9,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ht.h"
+
 #define CMD_MAX 4096
 #define OUT_MAX 4096
 #define NAME_MAX 256
+
+#define PRINT_SYMBOL_LENGTH 6
+
+typedef struct {
+	char addr[PRINT_SYMBOL_LENGTH];
+	char name[NAME_MAX];
+	char libp[NAME_MAX];
+} symbol_t;
 
 struct perf_sampling {
 	unsigned long long nr;
 	unsigned long long addr[];
 };
+
+hash_table_t ht;
 
 void usage(void)
 {
@@ -30,7 +42,7 @@ void print_fake_header(void)
 	printf("fake 111111 11111.%06d:          666666 cycles:ppp:\n", ns++);
 }
 
-void process_stack(struct perf_sampling *ps)
+symbol_t *translate_missing_symbol(unsigned long long addr)
 {
 	unsigned long long i;
 	char *cmdb = "addr2line -e /home/z30443/riken/projects/ihk+mckernel/install/smp-x86/kernel/mckernel.img -fpa";
@@ -41,6 +53,72 @@ void process_stack(struct perf_sampling *ps)
 	off_t off;
 	size_t len;
 	char *pout;
+	size_t nr;
+	symbol_t *s;
+
+	off = snprintf(cmd, CMD_MAX, "%s ", cmdb);
+	off += snprintf(cmd + off, CMD_MAX - off, "0x%lx ", addr);
+	if (off >= CMD_MAX) {
+		fprintf(stderr, "Error: add2line input buffer too small\n");
+		exit(EXIT_FAILURE);
+	}
+
+	s = (symbol_t *) malloc(sizeof(symbol_t));
+	if (!s) {
+		perror("Error: allocating symbol structures\n");
+		exit(EXIT_FAILURE);
+	}
+
+	fp = popen(cmd, "r");
+	if (fp == NULL) {
+		perror("Error: opening add2line");
+		exit(EXIT_FAILURE);
+	}
+
+	i = 0;
+	while (fgets(out, sizeof(out), fp) != NULL) {
+		//printf("%s", out);
+
+		if (i) {
+			fprintf(stderr, "addr2line returned more than one line\n");
+			exit(EXIT_FAILURE);
+		}
+
+		// print trimmed address
+		pout = strtok(out, ": ");
+		len = strlen(pout);
+		off = (len > 6) ? len - 6 : 0;
+		snprintf(s->addr, PRINT_SYMBOL_LENGTH, "%s", pout + off);
+
+		// print symbol name
+		pout = strtok(NULL, ": ");
+		snprintf(s->name, NAME_MAX, "%s", pout);
+
+		// skip "at"
+		pout = strtok(NULL, ": ");
+
+		// print path
+		pout = strtok(NULL, ": ");
+		pout[1] = (pout[1] == '\n') ? '\0' : pout[1];
+		snprintf(s->libp, NAME_MAX, "%s", pout);
+
+		// insert element into hash table
+		ht_insert(ht, addr, s);
+
+		i++;
+	}
+
+	if (pclose(fp) == -1) {
+		perror("Warning: closing add2line failed");
+	}
+
+	return s;
+}
+
+void process_stack(struct perf_sampling *ps)
+{
+	unsigned long long i;
+	symbol_t *s;
 
 	//printf("nr: %lu\n", ps->nr);
 	//if (ps->nr > 100000) {
@@ -55,51 +133,18 @@ void process_stack(struct perf_sampling *ps)
 	if (!ps->nr)
 		return;
 
-	off = snprintf(cmd, CMD_MAX, "%s ", cmdb);
-	for (i = 0; i < ps->nr; i++) {
-		off += snprintf(cmd + off, CMD_MAX - off, "0x%lx ",
-				ps->addr[i]);
-		if (off >= CMD_MAX) {
-			fprintf(stderr, "Error: add2line input buffer too small\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	fp = popen(cmd, "r");
-	if (fp == NULL) {
-		perror("Error: opening add2line");
-		exit(EXIT_FAILURE);
-	}
-
 	print_fake_header();
 
-	while (fgets(out, sizeof(out), fp) != NULL) {
-		//printf("%s", out);
-
-		// print trimmed address
-		pout = strtok(out, ": ");
-		len = strlen(pout);
-		off = (len > 6) ? len - 6 : 0;
-		printf("%24s ", pout + off);
-
-		// print symbol name
-		pout = strtok(NULL, ": ");
-		printf("%s ", pout);
-
-		// skip "at"
-		pout = strtok(NULL, ": ");
-
-		// print path
-		pout = strtok(NULL, ": ");
-		pout[1] = (pout[1] == '\n') ? '\0' : pout[1];
-		printf("(%s)\n", pout);
+	for (i = 0; i < ps->nr; i++) {
+		s = (symbol_t *) ht_search(ht, ps->addr[i]);
+		if (!s) {
+			s = translate_missing_symbol(ps->addr[i]);
+		}
+		printf("%24s %s (%s)\n", s->addr, s->name, s->libp);
 	}
 	printf("\n");
-
-	if (pclose(fp) == -1) {
-		perror("Warning: closing add2line failed");
-	}
 }
+
 void print_progression_bar(size_t done, size_t size)
 {
 	int i;
@@ -138,6 +183,8 @@ int main(int argc, char *argv[])
 		usage();
 		return 1;
 	}
+
+	ht_init(ht);
 
 	fn = argv[1];
 
