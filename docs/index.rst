@@ -1,7 +1,12 @@
-Contents:
+.. toctree::
+   :maxdepth: 2
+   :caption: Quick Guide
+
+   main
 
 .. toctree::
    :maxdepth: 2
-   :caption: Basics
+   :caption: Specifications
 
-   main
+   spec-mckernel
+   spec-ihk

@@ -1,7 +1,6 @@
-![McKernel Logo](https://www.sys.r-ccs.riken.jp/members_files/bgerofi/mckernel-logo.png)
--------------------------
-
 ## Summary
+
+![](https://www.sys.r-ccs.riken.jp/members_files/bgerofi/mckernel-logo.png "McKernel logo")
 
 IHK/McKernel is a light-weight multi-kernel operating system designed for high-end supercomputing. It runs Linux and McKernel, a light-weight kernel (LWK), side-by-side inside compute nodes and aims at the following:
 
