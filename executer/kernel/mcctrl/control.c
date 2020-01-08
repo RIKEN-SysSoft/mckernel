@@ -565,7 +565,7 @@ extern int mckernel_cpu_2_linux_cpu(struct mcctrl_usrdata *udp, int cpu_id);
 static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 {
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
-	struct mcctrl_part_exec *pe;
+	struct mcctrl_part_exec *pe, *pe_itr;
 	struct get_cpu_set_arg req;
 	struct mcctrl_cpu_topology *cpu_top, *cpu_top_i;
 	struct cache_topology *cache_top;
@@ -591,24 +591,43 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		return -EINVAL;
 	}
 
-	pe = &udp->part_exec;
-
-	mutex_lock(&pe->lock);
-
 	if (copy_from_user(&req, (void *)arg, sizeof(req))) {
-		printk("%s: error copying user request\n", __FUNCTION__);
-		ret = -EINVAL;
-		goto put_and_unlock_out;
+		pr_err("%s: error copying user request\n", __func__);
+		return -EINVAL;
 	}
 
-	/* First process to enter CPU partitioning */
-	if (pe->nr_processes == -1) {
+	mutex_lock(&udp->part_exec_lock);
+	pe = NULL;
+	/* Find part_exec having same node_proxy */
+	list_for_each_entry(pe_itr, &udp->part_exec_list, chain) {
+		if (pe_itr->node_proxy_pid == req.ppid) {
+			pe = pe_itr;
+			break;
+		}
+	}
+
+	if (!pe) {
+		/* First process to enter CPU partitioning */
+		pe = kzalloc(sizeof(struct mcctrl_part_exec), GFP_KERNEL);
+		if (!pe) {
+			mutex_unlock(&udp->part_exec_lock);
+			return -ENOMEM;
+		}
+		/* Init part_exec */
+		mutex_init(&pe->lock);
+		INIT_LIST_HEAD(&pe->pli_list);
 		pe->nr_processes = req.nr_processes;
 		pe->nr_processes_left = req.nr_processes;
+		pe->nr_processes_remain = req.nr_processes;
+		pe->node_proxy_pid = req.ppid;
+
+		list_add(&pe->chain, &udp->part_exec_list);
 		dprintk("%s: nr_processes: %d (partitioned exec starts)\n",
-				__FUNCTION__,
-				pe->nr_processes);
+				__func__, pe->nr_processes);
 	}
+	mutex_unlock(&udp->part_exec_lock);
+
+	mutex_lock(&pe->lock);
 
 	if (pe->nr_processes != req.nr_processes) {
 		printk("%s: error: requested number of processes"
@@ -618,7 +637,15 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		goto put_and_unlock_out;
 	}
 
+	if (pe->nr_processes_remain <= 0) {
+		printk("%s: over mcexec. nr_processes is %d\n",
+				__func__, req.nr_processes);
+		ret = -EINVAL;
+		goto put_and_unlock_out;
+	}
+
 	--pe->nr_processes_left;
+	--pe->nr_processes_remain;
 	dprintk("%s: nr_processes: %d, nr_processes_left: %d\n",
 			__FUNCTION__,
 			pe->nr_processes,
@@ -704,8 +731,6 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 				wake_up_interruptible(&pli_next->pli_wq);
 			}
 
-			/* Reset process counter to start state */
-			pe->nr_processes = -1;
 			ret = -ETIMEDOUT;
 			goto put_and_unlock_out;
 		}
@@ -953,16 +978,8 @@ next_cpu:
 	/* Commit used cores to OS structure */
 	memcpy(&pe->cpus_used, cpus_used, sizeof(*cpus_used));
 
-	/* Reset if last process */
-	if (pe->nr_processes_left == 0) {
-		dprintk("%s: nr_processes: %d (partitioned exec ends)\n",
-				__FUNCTION__,
-				pe->nr_processes);
-		pe->nr_processes = -1;
-		memset(&pe->cpus_used, 0, sizeof(pe->cpus_used));
-	}
-	/* Otherwise wake up next process in list */
-	else {
+	/* If not last process, wake up next process in list */
+	if (pe->nr_processes_left != 0) {
 		++pe->process_rank;
 		pli_next = list_first_entry(&pe->pli_list,
 			struct process_list_item, list);
