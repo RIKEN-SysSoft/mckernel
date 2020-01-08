@@ -518,6 +518,7 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	init_waitqueue_head(&usrdata->wq_procfs);
 	mutex_init(&usrdata->reserve_lock);
+	mutex_init(&usrdata->part_exec_lock);
 
 	for (i = 0; i < MCCTRL_PER_PROC_DATA_HASH_SIZE; ++i) {
 		INIT_LIST_HEAD(&usrdata->per_proc_data_hash[i]);
@@ -526,10 +527,8 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	INIT_LIST_HEAD(&usrdata->cpu_topology_list);
 	INIT_LIST_HEAD(&usrdata->node_topology_list);
+	INIT_LIST_HEAD(&usrdata->part_exec_list);
 
-	mutex_init(&usrdata->part_exec.lock);
-	INIT_LIST_HEAD(&usrdata->part_exec.pli_list);
-	usrdata->part_exec.nr_processes = -1;
 	INIT_LIST_HEAD(&usrdata->wakeup_descs_list);
 	spin_lock_init(&usrdata->wakeup_descs_lock);
 
@@ -585,6 +584,18 @@ void destroy_ikc_channels(ihk_os_t os)
 
 	kfree(usrdata->channels);
 	kfree(usrdata->ikc2linux);
+
+	mutex_lock(&usrdata->part_exec_lock);
+	while (!list_empty(&usrdata->part_exec_list)) {
+		struct mcctrl_part_exec *pe;
+
+		pe = list_first_entry(&usrdata->part_exec_list,
+				struct mcctrl_part_exec, chain);
+		list_del(&pe->chain);
+		kfree(pe);
+	}
+	mutex_unlock(&usrdata->part_exec_lock);
+
 	kfree(usrdata);
 }
 

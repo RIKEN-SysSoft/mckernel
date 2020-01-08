@@ -2554,6 +2554,7 @@ int main(int argc, char **argv)
 		cpu_set_arg.cpu_set = (void *)&desc->cpu_set;
 		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
 		cpu_set_arg.nr_processes = nr_processes;
+		cpu_set_arg.ppid = getppid();
 		cpu_set_arg.target_core = &target_core;
 		cpu_set_arg.process_rank = &process_rank;
 		cpu_set_arg.mcexec_linux_numa = &mcexec_linux_numa;
