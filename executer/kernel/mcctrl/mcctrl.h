@@ -324,13 +324,20 @@ struct process_list_item {
 	wait_queue_head_t pli_wq;
 };
 
+#define PE_LIST_MAXLEN 5
+
 struct mcctrl_part_exec {
 	struct mutex lock;	
 	int nr_processes;
+	/* number of processes to let in / out the synchronization point */
 	int nr_processes_left;
+	/* number of processes which have joined the partition */
+	int nr_processes_joined;
 	int process_rank;
+	pid_t node_proxy_pid;
 	cpumask_t cpus_used;
 	struct list_head pli_list;
+	struct list_head chain;
 };
 
 #define CPU_LONGS (((NR_CPUS) + (BITS_PER_LONG) - 1) / (BITS_PER_LONG))
@@ -353,6 +360,7 @@ struct mcctrl_usrdata {
 	int	job_pos;
 	int	mcctrl_dma_abort;
 	struct mutex reserve_lock;
+	struct mutex part_exec_lock;
 	unsigned long	last_thread_exec;
 	wait_queue_head_t wq_procfs;
 	struct list_head per_proc_data_hash[MCCTRL_PER_PROC_DATA_HASH_SIZE];
@@ -368,7 +376,7 @@ struct mcctrl_usrdata {
 	nodemask_t numa_online;
 	struct list_head cpu_topology_list;
 	struct list_head node_topology_list;
-	struct mcctrl_part_exec part_exec;
+	struct list_head part_exec_list;
 	int perf_event_num;
 };
 

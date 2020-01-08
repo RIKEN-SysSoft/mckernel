@@ -1,0 +1,74 @@
+*** C929T01 start *******************************
+mpirun -f ./hostfile -ppn 5 /home/satoken/ihk+mckernel/bin/mcexec -n 5 ./test_prog.sh
+test_prog is started.
+test_prog is started.
+test_prog is started.
+test_prog is started.
+test_prog is started.
+*** C929T01 PASSED ******************************
+
+*** C929T02 start *******************************
+mpirun -f ./hostfile -ppn 5 /home/satoken/ihk+mckernel/bin/mcexec -n 3 ./test_prog.sh
+getting CPU set for partitioned execution: Invalid argument
+getting CPU set for partitioned execution: Invalid argument
+test_prog is started.
+test_prog is started.
+test_prog is started.
+*** C929T02 PASSED ******************************
+
+*** C929T03 start *******************************
+mpirun -f ./hostfile -ppn 3 /home/satoken/ihk+mckernel/bin/mcexec -n 5 ./test_prog.sh
+getting CPU set for partitioned execution: Connection timed out
+getting CPU set for partitioned execution: Connection timed out
+getting CPU set for partitioned execution: Connection timed out
+*** C929T03 PASSED ******************************
+
+*** C929T04 start *******************************
+mpirun -f ./hostfile -ppn 6 /home/satoken/ihk+mckernel/bin/mcexec -n 3 ./test_prog.sh
+getting CPU set for partitioned execution: Invalid argument
+getting CPU set for partitioned execution: Invalid argument
+getting CPU set for partitioned execution: Invalid argument
+test_prog is started.
+test_prog is started.
+test_prog is started.
+*** C929T04 PASSED ******************************
+
+*** C929T05 start *******************************
+mpirun -f ./hostfile -ppn 250 /home/satoken/ihk+mckernel/bin/mcexec -n 250 ./test_prog.sh
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+error: nr_processes can't exceed nr. of CPUs
+...
+*** C929T05 PASSED ******************************
+
+*** C929T06 start *******************************
+mpirun -f ./hostfile -ppn 5 /home/satoken/ihk+mckernel/bin/mcexec -n 5 ./test_prog.sh
+[OK] exec: 1
+[OK] exec: 2
+[OK] exec: 3
+[OK] exec: 4
+[OK] exec: 5
+[OK] exec: 6
+[OK] exec: 7
+[OK] exec: 8
+[OK] exec: 9
+[OK] exec: 10
+[OK] exec: 11
+[OK] exec: 12
+[OK] exec: 13
+[OK] exec: 14
+[OK] exec: 15
+[OK] exec: 16
+[OK] exec: 17
+[OK] exec: 18
+[OK] exec: 19
+[OK] exec: 20
+*** C929T06 PASSED ******************************
+
