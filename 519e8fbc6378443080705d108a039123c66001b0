@@ -2,6 +2,52 @@
   "comments": [
     {
       "key": {
+        "uuid": "c313fa91_2c5c37f7",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 595,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-01-09T06:10:07Z",
+      "side": 1,
+      "message": "ppdをputして下さい。",
+      "range": {
+        "startLine": 595,
+        "startChar": 0,
+        "endLine": 595,
+        "endChar": 55
+      },
+      "revId": "519e8fbc6378443080705d108a039123c66001b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e473fb75_3b8e045b",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 613,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-01-09T06:10:07Z",
+      "side": 1,
+      "message": "ppdをputして下さい。",
+      "range": {
+        "startLine": 613,
+        "startChar": 0,
+        "endLine": 613,
+        "endChar": 38
+      },
+      "revId": "519e8fbc6378443080705d108a039123c66001b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "08a8cf3d_62cfce9f",
         "filename": "executer/kernel/mcctrl/control.c",
         "patchSetId": 1
@@ -16,6 +62,69 @@
       "revId": "519e8fbc6378443080705d108a039123c66001b0",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6dce4d9f_ae2a90ba",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 641,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-01-09T06:10:07Z",
+      "side": 1,
+      "message": "\"%s: too many processes have joined to the group of %d\\n\"\nでしょうか。",
+      "range": {
+        "startLine": 641,
+        "startChar": 0,
+        "endLine": 641,
+        "endChar": 49
+      },
+      "revId": "519e8fbc6378443080705d108a039123c66001b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "270c462d_c115df1e",
+        "filename": "executer/kernel/mcctrl/mcctrl.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 330,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-01-09T06:10:07Z",
+      "side": 1,
+      "message": "/* number of processes to let in / out the synchronization point */",
+      "range": {
+        "startLine": 330,
+        "startChar": 0,
+        "endLine": 330,
+        "endChar": 23
+      },
+      "revId": "519e8fbc6378443080705d108a039123c66001b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9a21ddad_9b54db45",
+        "filename": "executer/kernel/mcctrl/mcctrl.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 331,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-01-09T06:10:07Z",
+      "side": 1,
+      "message": "int nr_processes_joined;\n/* number of processes which have joined the partition */\nにして、--するのではなくて++したほうがわかりやすいのではないのでしょうか。",
+      "revId": "519e8fbc6378443080705d108a039123c66001b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
