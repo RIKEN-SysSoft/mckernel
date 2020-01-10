@@ -65,8 +65,9 @@ umask_old=`umask`
 idle_halt=""
 allow_oversubscribe=""
 time_sharing="time_sharing"
+force_reserve="no"
 
-while getopts stk:c:m:o:f:r:q:i:d:e:hOT: OPT
+while getopts stk:c:m:o:f:r:q:i:d:e:hROT: OPT
 do
 	case ${OPT} in
 	f)	facility=${OPTARG}
@@ -96,6 +97,8 @@ do
 	h) idle_halt="idle_halt"
 		;;
 	O) allow_oversubscribe="allow_oversubscribe"
+		;;
+	R) force_reserve="yes"
 		;;
 	T)
 		case ${OPTARG} in
@@ -333,6 +336,17 @@ if ! grep ihk_smp_@ARCH@ /proc/modules &>/dev/null; then
 		done
 	fi
 
+	if ! ${SUDO} ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then
+		echo "error: reserving memory" >&2
+		error_exit "ihk_smp_loaded"
+	fi
+	if ! ${SUDO} ${SBINDIR}/ihkconfig 0 reserve cpu ${cpus}; then
+		echo "error: reserving CPUs" >&2;
+		error_exit "mem_reserved"
+	fi
+fi
+
+if [ ${force_reserve} == "yes" ]; then
 	if ! ${SUDO} ${SBINDIR}/ihkconfig 0 reserve mem ${mem}; then
 		echo "error: reserving memory" >&2
 		error_exit "ihk_smp_loaded"
