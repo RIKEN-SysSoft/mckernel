@@ -1,0 +1,99 @@
+#!/bin/bash
+# IHK/McKernel user priviledge reboot script.
+# author: Balazs Gerofi <bgerofi@riken.jp>
+#      Copyright (C) 2019 RIKEN
+#
+prefix="@prefix@"
+BINDIR="${prefix}/bin"
+SBINDIR="${prefix}/sbin"
+KERNDIR="@MCKERNELDIR@"
+
+mem=""
+cpus=""
+ikc_map=""
+
+while getopts c:m:r: OPT
+do
+	case ${OPT} in
+	c) cpus=${OPTARG}
+		;;
+	m) mem=${OPTARG}
+		;;
+	r) ikc_map=${OPTARG}
+		;;
+	\?) exit 1
+		;;
+	esac
+done
+
+if [ "${ikc_map}" == "" ]; then
+	# Query IKC map
+	if ! ${SBINDIR}/ihkosctl 0 get ikc_map > /dev/null; then
+		echo "error: querying IKC map" >&2
+		exit 1
+	fi
+
+	ikc_map=`${SBINDIR}/ihkosctl 0 get ikc_map`
+fi
+
+
+# Shutdown OS
+if ! ${SBINDIR}/ihkosctl 0 shutdown; then
+	echo "error: shuting down OS" >&2
+	exit 1
+fi
+
+sleep 2
+
+# Query IHK-SMP resources and reassign
+if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then
+	echo "error: querying cpus" >&2
+	exit 1
+fi
+
+cpus=`${SBINDIR}/ihkconfig 0 query cpu`
+if [ "${cpus}" == "" ]; then
+	echo "error: querying CPUs" >&2
+	exit 1
+fi
+
+# Assign CPUs
+if ! ${SBINDIR}/ihkosctl 0 assign cpu ${cpus}; then
+	echo "error: assign CPUs" >&2
+	exit 1
+fi
+
+# Assign memory
+for i in `seq 0 15`; do
+	if ! ${SBINDIR}/ihkosctl 0 assign mem all@${i}; then
+		echo "error: assign memory" >&2
+		exit 1
+	fi
+done
+
+if [ "${ikc_map}" != "" ]; then
+	# Set IKC map
+	if ! ${SBINDIR}/ihkosctl 0 set ikc_map ${ikc_map}; then
+		echo "error: setting IKC map" >&2
+		exit 1
+	fi
+fi
+
+# Load kernel image
+if ! ${SBINDIR}/ihkosctl 0 load ${KERNDIR}/mckernel.img; then
+	echo "error: loading kernel image: ${KERNDIR}/mckernel.img" >&2
+	exit 1
+fi
+
+# Set kernel arguments
+if ! ${SBINDIR}/ihkosctl 0 kargs "hidos dump_level=24"; then
+	echo "error: setting kernel arguments" >&2
+	exit 1
+fi
+
+# Boot OS instance
+if ! ${SBINDIR}/ihkosctl 0 boot; then
+	echo "error: booting" >&2
+	exit 1
+fi
+

@@ -18,9 +18,10 @@ KERNDIR="@KERNDIR@"
 mem=""
 cpus=""
 kill_in_use=""
+dont_unload="no"
 
 RMMOD_PATH=/sbin/rmmod
-while getopts r:k OPT
+while getopts r:kR OPT
 do
 	case ${OPT} in
 	r)
@@ -28,6 +29,9 @@ do
 		;;
 	k)
 		kill_in_use=1
+		;;
+	R)
+		dont_unload="yes"
 		;;
 	\?) exit 1
 		;;
@@ -113,6 +117,10 @@ fi
 if ! sudo ${SBINDIR}/ihkconfig 0 release mem "all" > /dev/null; then
 	echo "error: releasing memory" >&2
 	exit 1
+fi
+
+if [ "${dont_unload}" == "yes" ]; then
+	exit 0
 fi
 
 # Remove delegator if loaded
