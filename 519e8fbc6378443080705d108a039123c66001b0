@@ -88,6 +88,23 @@
     },
     {
       "key": {
+        "uuid": "e62aa319_3a4cf8aa",
+        "filename": "executer/kernel/mcctrl/ikc.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 585,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-01-10T07:55:05Z",
+      "side": 1,
+      "message": "以下のようにreference counterを用いて開放したほうが良いのではないでしょうか。\n* mcexec_get_cpuset()でref\n* release_handler()でderef\n何度もmpiexecした際にエントリがたまるのを防げるためです。",
+      "revId": "519e8fbc6378443080705d108a039123c66001b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "270c462d_c115df1e",
         "filename": "executer/kernel/mcctrl/mcctrl.h",
         "patchSetId": 1
