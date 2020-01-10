@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a9146401_4df53df9",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-01-10T06:48:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d print_bin(rbp, rbp_size, (void *)\u0026kregs-\u003erbx, sizeof(uint64_t));\t/* rbx */",
+      "revId": "240e4c062ceeb67f128aa3837ad3d8f410cb7297",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75237a88_89dfdf65",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-01-10T06:48:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d print_bin(rbp, rbp_size, (void *)\u0026ihk_mc_switch_context, sizeof(uint64_t));\t/* rip */",
+      "revId": "240e4c062ceeb67f128aa3837ad3d8f410cb7297",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4cdeabec_dc2eb32d",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-01-10T06:48:13Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d print_bin(rbp, rbp_size, (void *)\u0026kregs-\u003erflags, sizeof(uint32_t));\t/* rflags */",
+      "revId": "240e4c062ceeb67f128aa3837ad3d8f410cb7297",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
