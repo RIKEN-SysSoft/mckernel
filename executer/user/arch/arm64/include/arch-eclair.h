@@ -3,7 +3,7 @@
 #define HEADER_USER_ARM64_ECLAIR_H
 
 /* PHYS_OFFSET needs to be changed according to the environment. */
-#define PHYS_OFFSET		0x40000000
+extern uint64_t PHYS_OFFSET;
 
 #ifdef CONFIG_ARM64_64K_PAGES
 #

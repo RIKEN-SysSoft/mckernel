@@ -122,7 +122,7 @@ uintptr_t virt_to_phys(uintptr_t va)
 	return NOPHYS;
 } /* virt_to_phys() */
 
-int arch_setup_constants(void)
+int arch_setup_constants(int mcos_fd)
 {
 	if (read_symbol_64("linux_page_offset_base",
 				&linux_page_offset) != 0) {
