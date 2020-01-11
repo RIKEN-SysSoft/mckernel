@@ -122,7 +122,7 @@ uintptr_t virt_to_phys(uintptr_t va)
 	return NOPHYS;
 } /* virt_to_phys() */
 
-int arch_setup_constants(void)
+int arch_setup_constants(int mcos_fd)
 {
 	MAP_KERNEL_START = lookup_symbol("_head");
 	if (MAP_KERNEL_START == NOSYMBOL) {
