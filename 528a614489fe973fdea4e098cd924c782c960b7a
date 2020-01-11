@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "353a59ce_1bf0c1ea",
+        "filename": "executer/user/arch/arm64/arch-eclair.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-01-11T13:02:39Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to 0\n+uint64_t PHYS_OFFSET \u003d 0;",
+      "revId": "528a614489fe973fdea4e098cd924c782c960b7a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
