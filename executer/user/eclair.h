@@ -19,6 +19,6 @@ int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs);
 #define NOPHYS ((uintptr_t)-1)
 uintptr_t virt_to_phys(uintptr_t va);
 
-int arch_setup_constants(void);
+int arch_setup_constants(int mcos_fd);
 
 #endif	/* HEADER_USER_COMMON_ECLAIR_H */

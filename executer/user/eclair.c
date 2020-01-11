@@ -225,7 +225,7 @@ static int setup_constants(void) {
 	int error;
 	uintptr_t va;
 
-	error = arch_setup_constants();
+	error = arch_setup_constants(opt.mcos_fd);
 	if (error) {
 		fprintf(stderr, "error: setting up arch constants\n");
 		return 1;

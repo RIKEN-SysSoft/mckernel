@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <eclair.h>
 #include <arch-eclair.h>
+#include <sys/ioctl.h>
+#include <ihk/ihk_host_user.h>
+
+uint64_t PHYS_OFFSET;
 
 int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 {
@@ -65,8 +69,14 @@ uintptr_t virt_to_phys(uintptr_t va)
 	return NOPHYS;
 } /* virt_to_phys() */
 
-int arch_setup_constants(void)
+int arch_setup_constants(int mcos_fd)
 {
-	/* Nothing here */
-	return 0;
+	int error;
+	dumpargs_t args;
+
+	args.cmd = DUMP_QUERY_PHYS_START;
+	args.buf = &PHYS_OFFSET;
+
+	error = ioctl(mcos_fd, IHK_OS_DUMP, &args);
+	return error;
 }
