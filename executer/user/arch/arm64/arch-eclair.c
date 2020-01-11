@@ -5,6 +5,8 @@
 #include <sys/ioctl.h>
 #include <ihk/ihk_host_user.h>
 
+uint64_t PHYS_OFFSET;
+
 int print_kregs(char *rbp, size_t rbp_size, const struct arch_kregs *kregs)
 {
 	int i, ret, total = 0;
@@ -105,8 +107,11 @@ uintptr_t virt_to_phys(uintptr_t va)
 	return NOPHYS;
 } /* virt_to_phys() */
 
-int arch_setup_constants(void)
+int arch_setup_constants(int mcos_fd)
 {
+	int error;
+	dumpargs_t args;
+
 	MAP_KERNEL_START = lookup_symbol("_head");
 	if (MAP_KERNEL_START == NOSYMBOL) {
 		fprintf(stderr, "error: obtaining MAP_KERNEL_START\n");
@@ -114,7 +119,11 @@ int arch_setup_constants(void)
 	}
 	printf("arm64 MAP_KERNEL_START 0x%lx\n", MAP_KERNEL_START);
 
-	return 0;
+	args.cmd = DUMP_QUERY_PHYS_START;
+	args.buf = &PHYS_OFFSET;
+
+	error = ioctl(mcos_fd, IHK_OS_DUMP, &args);
+	return error;
 }
 
 /*

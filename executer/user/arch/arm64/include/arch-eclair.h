@@ -2,6 +2,9 @@
 #ifndef HEADER_USER_ARM64_ECLAIR_H
 #define HEADER_USER_ARM64_ECLAIR_H
 
+/* PHYS_OFFSET needs to be changed according to the environment. */
+extern uint64_t PHYS_OFFSET;
+
 #ifdef CONFIG_ARM64_64K_PAGES
 #
 # if (CONFIG_ARM64_VA_BITS == 42)

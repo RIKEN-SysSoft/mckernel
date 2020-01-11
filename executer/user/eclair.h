@@ -25,7 +25,7 @@ int arch_read_kregs(unsigned long ctx, struct arch_kregs *kregs);
 #define NOPHYS ((uintptr_t)-1)
 uintptr_t virt_to_phys(uintptr_t va);
 
-int arch_setup_constants(void);
+int arch_setup_constants(int mcos_fd);
 
 //#define DEBUG
 #ifdef DEBUG
