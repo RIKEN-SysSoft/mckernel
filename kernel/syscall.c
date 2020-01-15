@@ -1894,7 +1894,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		memset(&ads, 0, sizeof(ads));
 		ads.shm_segsz = len;
 		ads.shm_perm.mode = SHM_DEST;
-		ads.init_pgshift = PAGE_SHIFT;
+		ads.init_pgshift = pgshift;
 		error = shmobj_create(&ads, &memobj);
 		if (error) {
 			ekprintf("do_mmap:shmobj_create failed. %d\n", error);
