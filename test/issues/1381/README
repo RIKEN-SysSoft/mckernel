@@ -1,0 +1,38 @@
+【Issue#1381 動作確認】
+□ テスト内容
+1. 以下のケースでMAP_SHARED指定のmmapをした領域の、
+   最後のスモールページ1ページ分をmunmapし、期待通りの動作となることを確認する
+  - MAP_HUGETLB指定 ： munmapが-1を返し、errnoにEINVALがセットされる
+  - ラージページサイズの倍数のサイズ ： munampが-1を返し、errnoにEINVALがセットされる
+  - ラージページサイズの倍数ではないサイズ ：munmapが成功する
+
+2. Issueで報告された以下のLTPを実行し、症状が発生しないことを確認する
+  - futex_wake04
+
+3. 以下のLTPを用いて既存のshm機能に影響が無いことを確認
+  - shmat01
+  - shmat02
+  - shmat03
+  - shmctl01
+  - shmctl02
+  - shmctl03
+  - shmctl04
+  - shmdt01
+  - shmdt02
+  - shmget01
+  - shmget02
+  - shmget03
+  - shmget04
+  - shmget05
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
