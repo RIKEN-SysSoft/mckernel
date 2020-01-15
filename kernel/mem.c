@@ -45,6 +45,7 @@
 #include <sysfs.h>
 #include <ihk/debug.h>
 #include <bootparam.h>
+#include <memobj.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -2710,4 +2711,19 @@ int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pga
 	}
 
 	return 0;
+}
+
+int is_splitable(struct page *page, uint32_t memobj_flags)
+{
+	int ret = 1;
+
+	if (page && (page_is_in_memobj(page)
+			|| page_is_multi_mapped(page))) {
+		if (memobj_flags & MF_SHM) {
+			goto out;
+		}
+		ret = 0;
+	}
+out:
+	return ret;
 }
