@@ -33,6 +33,7 @@
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
+#include <shm.h>
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
@@ -909,6 +910,7 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	int error;
 	struct vm_range *newrange = NULL;
 	unsigned long page_mask;
+	struct shmobj *shmobj = NULL;
 
 	dkprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p)\n",
 			vm, range->start, range->end, addr, splitp);
@@ -920,8 +922,49 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 			range->pgshift = 0;
 		}
 	}
+	if (range->memobj && range->memobj->flags & MF_SHM) {
+		uintptr_t get_addr, _phys;
+		off_t off;
 
-	error = ihk_mc_pt_split(vm->address_space->page_table, vm, (void *)addr);
+		shmobj = to_shmobj(range->memobj);
+		page_mask = (1 << shmobj->pgshift) - 1;
+		if (addr & page_mask) {
+			/* split addr is not aligned */
+			shmobj->pgshift = PAGE_SHIFT;
+			range->pgshift = PAGE_SHIFT;
+
+			/* split shmobj */
+			for (get_addr = range->start; get_addr < range->end;
+					get_addr += PAGE_SIZE) {
+				if (!(get_addr & page_mask)) {
+					error = ihk_mc_pt_split(
+						vm->address_space->page_table,
+						vm, range,
+						(void *)(get_addr + PAGE_SIZE));
+					if (error) {
+						ekprintf("%s: split shmobj failed. %d\n",
+							__func__, error);
+						goto out;
+					}
+					continue;
+				}
+
+				off = range->objoff + get_addr - range->start;
+				error = memobj_get_page(range->memobj, off,
+						PAGE_P2ALIGN, &_phys,
+						NULL, get_addr);
+
+				if (error) {
+					ekprintf("%s: memobj_get_page failed. %d\n",
+						__func__, error);
+					goto out;
+				}
+			}
+		}
+	}
+
+	error = ihk_mc_pt_split(vm->address_space->page_table, vm,
+		range, (void *)addr);
 	if (error) {
 		ekprintf("split_process_memory_range:"
 				"ihk_mc_pt_split failed. %d\n", error);

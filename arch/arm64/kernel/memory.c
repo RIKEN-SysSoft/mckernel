@@ -2985,7 +2985,8 @@ out:
 	return error;
 }
 
-int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
+int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm,
+		struct vm_range *range, void *addr)
 {
 	int error;
 	pte_t *ptep;
