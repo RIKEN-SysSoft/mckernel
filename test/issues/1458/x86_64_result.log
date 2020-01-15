@@ -1,0 +1,253 @@
+*** C1458T01 start *******************************
+** Map pgshift:21 Unmap pgshift:12
+** Case 1: specified MAP_HUGETLB
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 2: size is aligned on large page
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 3: size is NOT aligned on large page
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Map pgshift:30 Unmap pgshift:12
+** Case 1: specified MAP_HUGETLB
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 2: size is aligned on large page
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 3: size is NOT aligned on large page
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Map pgshift:30 Unmap pgshift:21
+** Case 1: specified MAP_HUGETLB
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 2: size is aligned on large page
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 3: size is NOT aligned on large page
+[OK] munamp succceeded
+[OK] data is correct
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+*** C1458T01 PASSED ******************************
+*** C1458T02 start *******************************
+** Map pgshift:21 Unmap pgshift:12
+** Case 1: specified MAP_HUGETLB
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 2: size is aligned on large page
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 3: size is NOT aligned on large page
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Map pgshift:30 Unmap pgshift:12
+** Case 1: specified MAP_HUGETLB
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 2: size is aligned on large page
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 3: size is NOT aligned on large page
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Map pgshift:30 Unmap pgshift:21
+** Case 1: specified MAP_HUGETLB
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 2: size is aligned on large page
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+** Case 3: size is NOT aligned on large page
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+*** C1458T02 PASSED ******************************
+*** C1458T03 start *******************************
+** Map pgshift:21 Unmap pgshift:12
+** Case 1: specified MAP_HUGETLB
+shmid: 4182
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Case 2: size is aligned on large page
+shmid: 69719
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Case 3: size is NOT aligned on large page
+shmid: 135256
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Map pgshift:30 Unmap pgshift:12
+** Case 1: specified MAP_HUGETLB
+shmid: 4185
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Case 2: size is aligned on large page
+shmid: 69722
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Case 3: size is NOT aligned on large page
+shmid: 135259
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Map pgshift:30 Unmap pgshift:21
+** Case 1: specified MAP_HUGETLB
+shmid: 4188
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Case 2: size is aligned on large page
+shmid: 69725
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+** Case 3: size is NOT aligned on large page
+shmid: 135262
+[OK] munamp succceeded
+[OK] Occurred SEGV on unmap area
+[OK] data is correct
+[OK] shmctl(IPC_RMID) succeeded
+*** C1458T03 PASSED ******************************
+*** LTP-shmat01 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+shmat01.c:147: PASS: shmat() succeeded to attach NULL address
+shmat01.c:147: PASS: shmat() succeeded to attach aligned address
+shmat01.c:147: PASS: shmat() succeeded to attach unaligned address with SHM_RND
+shmat01.c:147: PASS: shmat() succeeded to attach aligned address with SHM_READONLY, and got SIGSEGV on write
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+***  PASSED (4)
+
+*** LTP-shmat02 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+shmat02.c:68: PASS: shmat() failed as expected: EINVAL
+shmat02.c:68: PASS: shmat() failed as expected: EINVAL
+shmat02.c:68: PASS: shmat() failed as expected: EACCES
+
+Summary:
+passed   3
+failed   0
+skipped  0
+warnings 0
+***  PASSED (3)
+
+*** LTP-shmat03 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+shmat03.c:75: INFO: Attempting to attach shared memory to null page
+shmat03.c:91: INFO: Mapped shared memory to 0x2aaaaadea000
+shmat03.c:98: PASS: The kernel assigned a different VM address
+shmat03.c:101: INFO: Touching shared memory to see if anything strange happens
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+***  PASSED (1)
+
+*** LTP-shmctl01 start *******************************
+shmctl01    1  TPASS  :  pid, size, # of attaches and mode are correct - pass #1
+shmctl01    2  TPASS  :  pid, size, # of attaches and mode are correct - pass #2
+shmctl01    3  TPASS  :  new mode and change time are correct
+shmctl01    4  TPASS  :  get correct shared memory limits
+shmctl01    5  TPASS  :  get correct shared memory id
+shmctl01    6  TPASS  :  SHM_LOCK is set
+shmctl01    7  TPASS  :  SHM_LOCK is cleared
+shmctl01    8  TPASS  :  shared memory appears to be removed
+***  PASSED (8)
+
+*** LTP-shmctl02 start *******************************
+shmctl02    1  TPASS  :  expected failure - errno = 13 : Permission denied
+shmctl02    2  TPASS  :  expected failure - errno = 14 : Bad address
+shmctl02    3  TPASS  :  expected failure - errno = 14 : Bad address
+shmctl02    4  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmctl02    5  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmctl02    6  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
+shmctl02    7  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
+***  PASSED (5)
+
+*** LTP-shmctl03 start *******************************
+shmctl03    1  TPASS  :  expected failure - errno = 13 : Permission denied
+shmctl03    2  TPASS  :  expected failure - errno = 1 : Operation not permitted
+shmctl03    3  TPASS  :  expected failure - errno = 1 : Operation not permitted
+***  PASSED (3)
+
+*** LTP-shmctl04 start *******************************
+shmctl04    1  TPASS  :  SHM_INFO call succeeded
+***  PASSED (1)
+
+*** LTP-shmdt01 start *******************************
+shmdt01     1  TPASS  :  shared memory detached correctly
+***  PASSED (1)
+
+*** LTP-shmdt02 start *******************************
+shmdt02     1  TPASS  :  expected failure - errno = 22 : Invalid argument
+***  PASSED (1)
+
+*** LTP-shmget01 start *******************************
+shmget01    1  TPASS  :  size, pid & mode are correct
+***  PASSED (1)
+
+*** LTP-shmget02 start *******************************
+shmget02    1  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmget02    2  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmget02    3  TPASS  :  expected failure - errno = 17 : File exists
+shmget02    4  TPASS  :  expected failure - errno = 2 : No such file or directory
+***  PASSED (4)
+
+*** LTP-shmget03 start *******************************
+shmget03    1  TPASS  :  expected failure - errno = 28 : No space left on device
+***  PASSED (1)
+
+*** LTP-shmget04 start *******************************
+shmget04    1  TPASS  :  expected failure - errno = 13 : Permission denied
+***  PASSED (1)
+
+*** LTP-shmget05 start *******************************
+shmget05    1  TPASS  :  expected failure - errno = 13 : Permission denied
+***  PASSED (1)
+
