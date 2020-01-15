@@ -39,7 +39,7 @@ static struct memobj_ops shmobj_ops = {
 	.lookup_page =	&shmobj_lookup_page,
 };
 
-static struct shmobj *to_shmobj(struct memobj *memobj)
+struct shmobj *to_shmobj(struct memobj *memobj)
 {
 	return (struct shmobj *)memobj;
 }
