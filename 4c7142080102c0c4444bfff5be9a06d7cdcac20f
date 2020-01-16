@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "78972bc4_a8be56fe",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 4424,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-01-16T03:19:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%s: error allocating range_policy\\n\",",
+      "revId": "4c7142080102c0c4444bfff5be9a06d7cdcac20f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b51add75_f4f41f0c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 4435,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-01-16T03:19:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tkprintf(\"%s: ERROR: could not insert range: %d\\n\",",
+      "revId": "4c7142080102c0c4444bfff5be9a06d7cdcac20f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b720fc70_627cedf5",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 4488,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-01-16T03:19:41Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tekprintf(\"%s(%p,%lx-%lx (nodemask)%lx (policy)%d): overlap %lx-%lx (nodemask)%lx (policy)%d\\n\",",
+      "revId": "4c7142080102c0c4444bfff5be9a06d7cdcac20f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
