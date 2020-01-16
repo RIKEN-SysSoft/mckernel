@@ -57,6 +57,7 @@ extern char *syscall_name[];
 #define PERF_SAMPLING_BUFFER_PAGES \
 	((PERF_SAMPLING_BUFFER_SIZE + 4095) >> PAGE_SHIFT)
 
+
 char *profile_event_names[] =
 {
 	"remote_tlb_invalidate",
@@ -559,7 +560,7 @@ void dump_perf_sampling(void)
 	fd = syscall_generic_forwarding(__NR_open, &ctx1);
 	if (fd < 0) {
 		kprintf("Can't open PEBS out file: %s, fd = %d",
-			usr_fn_buf, fd);
+			krn_fn_buf, fd);
 		fd = 0;
 		goto unmap_fn_usrbuf;
 	}
