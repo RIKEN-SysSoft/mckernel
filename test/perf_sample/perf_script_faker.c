@@ -115,20 +115,27 @@ symbol_t *translate_missing_symbol(unsigned long long addr)
 	return s;
 }
 
+void print_raw_stack(struct perf_sampling *ps)
+{
+	unsigned long long i;
+
+	fprintf(stderr, "nr: %lu\n", ps->nr);
+	if (ps->nr > 100000) {
+		fprintf(stderr, "skipping raw print of too long callchain\n");
+	} else {
+		for (i = 0; i < ps->nr; i++) {
+			fprintf(stderr, "0x%lx\n", ps->addr[i]);
+		}
+		fprintf(stderr, "\n");
+	}
+}
+
 void process_stack(struct perf_sampling *ps)
 {
 	unsigned long long i;
 	symbol_t *s;
 
-	//printf("nr: %lu\n", ps->nr);
-	//if (ps->nr > 100000) {
-	//	printf("skipping raw print of too long callchain\n");
-	//} else {
-	//	for (i = 0; i < ps->nr; i++) {
-	//		printf("0x%lx\n", ps->addr[i]);
-	//	}
-	//	printf("\n");
-	//}
+	//print_raw_stack(ps);
 
 	if (!ps->nr)
 		return;
