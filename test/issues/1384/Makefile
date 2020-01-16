@@ -1,0 +1,11 @@
+CFLAGS=-g
+LDFLAGS=-lnuma
+
+TARGET=C1384T01 C1384T02 C1384T03 C1384T04 C1384T05 C1384T06
+
+all: $(TARGET)
+
+test: all
+	./C1384.sh
+clean:
+	rm -f $(TARGET) *.o *.txt

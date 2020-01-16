@@ -1,0 +1,127 @@
+*** C1384T01 start *******************************
+base mbind: 0x2aaaab211000 - 0x2aaaab214000  policy:2
+new mbind:  0x2aaaab210000 - 0x2aaaab213000  policy:0
+[OK] policies are expected
+*** C1384T01 PASSED ******************************
+
+*** C1384T02 start *******************************
+base mbind: 0x2aaaab211000 - 0x2aaaab214000  policy:2
+new mbind:  0x2aaaab211000 - 0x2aaaab214000  policy:0
+[OK] policies are expected
+*** C1384T02 PASSED ******************************
+
+*** C1384T03 start *******************************
+base mbind: 0x2aaaab210000 - 0x2aaaab215000  policy:2
+new mbind:  0x2aaaab211000 - 0x2aaaab214000  policy:0
+[OK] policies are expected
+*** C1384T03 PASSED ******************************
+
+*** C1384T04 start *******************************
+base mbind: 0x2aaaab211000 - 0x2aaaab214000  policy:2
+new mbind:  0x2aaaab212000 - 0x2aaaab215000  policy:0
+[OK] policies are expected
+*** C1384T04 PASSED ******************************
+
+*** C1384T05 start *******************************
+base1 mbind: 0x2aaaab211000 - 0x2aaaab212000  policy:2
+base2 mbind: 0x2aaaab211000 - 0x2aaaab214000  policy:2
+new mbind:  0x2aaaab210000 - 0x2aaaab215000  policy:0
+[OK] policies are expected
+*** C1384T05 PASSED ******************************
+
+*** C1384T06 start *******************************
+base1 mbind: 0x2aaaab210000 - 0x2aaaab213000  policy:2
+base2 mbind: 0x2aaaab213000 - 0x2aaaab215000  policy:2
+new mbind:  0x2aaaab211000 - 0x2aaaab214000  policy:0
+[OK] policies are expected
+*** C1384T06 PASSED ******************************
+
+*** C1384T07 start *******************************
+vma02       0  TINFO  :  pid = 5920 addr = 0x2aaaab42c000
+vma02       0  TINFO  :  start = 0x2aaaab42c000, end = 0x2aaaab42f000
+vma02       1  TPASS  :  only 1 VMA.
+*** C1384T07 PASSED (1)
+
+*** C1384T08 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+mbind01.c:181: INFO: case MPOL_DEFAULT
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_DEFAULT (target exists)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_BIND (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_BIND
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_INTERLEAVE (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_INTERLEAVE
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case UNKNOWN_POLICY
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_DEFAULT (invalid flags)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED (invalid nodemask)
+mbind01.c:230: PASS: Test passed
+
+Summary:
+passed   11
+failed   0
+skipped  0
+warnings 0
+*** C1384T08 PASSED (11)
+
+*** C1384T09 start *******************************
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=-1 errno=14 (Bad address)
+RESULT: return value(ret)=-1 errno=14 (Bad address)
+EXPECT: return value(ret)=-1 errno=22 (Invalid argument)
+RESULT: return value(ret)=-1 errno=22 (Invalid argument)
+get_mempolicy01    0  TINFO  :  (case00) START
+get_mempolicy01    1  TPASS  :  (case00) END
+get_mempolicy01    0  TINFO  :  (case01) START
+get_mempolicy01    2  TPASS  :  (case01) END
+get_mempolicy01    0  TINFO  :  (case02) START
+get_mempolicy01    3  TPASS  :  (case02) END
+get_mempolicy01    0  TINFO  :  (case03) START
+get_mempolicy01    4  TPASS  :  (case03) END
+get_mempolicy01    0  TINFO  :  (case04) START
+get_mempolicy01    5  TPASS  :  (case04) END
+get_mempolicy01    0  TINFO  :  (case05) START
+get_mempolicy01    6  TPASS  :  (case05) END
+get_mempolicy01    0  TINFO  :  (case06) START
+get_mempolicy01    7  TPASS  :  (case06) END
+get_mempolicy01    0  TINFO  :  (case07) START
+get_mempolicy01    8  TPASS  :  (case07) END
+get_mempolicy01    0  TINFO  :  (case08) START
+get_mempolicy01    9  TPASS  :  (case08) END
+get_mempolicy01    0  TINFO  :  (case09) START
+get_mempolicy01   10  TPASS  :  (case09) END
+get_mempolicy01    0  TINFO  :  (case10) START
+get_mempolicy01   11  TPASS  :  (case10) END
+get_mempolicy01    0  TINFO  :  (case11) START
+get_mempolicy01   12  TPASS  :  (case11) END
+*** C1384T09 PASSED (12)
+
