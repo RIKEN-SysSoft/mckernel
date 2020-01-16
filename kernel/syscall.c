@@ -4378,6 +4378,99 @@ struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintp
 	return NULL;
 }
 
+static int vm_policy_clear_range(struct process_vm *vm,
+		unsigned long start, unsigned long end)
+{
+	struct rb_root *root = &vm->vm_range_numa_policy_tree;
+	struct vm_range_numa_policy *range, *range_policy_iter;
+	struct vm_range_numa_policy *range_policy;
+	struct rb_node *node;
+	int error = 0;
+
+	/*
+	 * Adjust overlapping range settings and add new one
+	 *  case: front part of new range overlaps existing one
+	 *  case: new range is a part of existing range
+	 */
+	range_policy_iter = vm_range_policy_search(vm, start);
+	if (range_policy_iter) {
+		int adjusted = 0;
+		unsigned long orig_end = range_policy_iter->end;
+
+		if (range_policy_iter->start == start &&
+				range_policy_iter->end == end) {
+			rb_erase(&range_policy_iter->policy_rb_node,
+				&vm->vm_range_numa_policy_tree);
+			kfree(range_policy_iter);
+			error = 0;
+			goto out;
+		}
+
+		/* Overlapping partially? */
+		if (range_policy_iter->start < start) {
+			orig_end = range_policy_iter->end;
+			range_policy_iter->end = start;
+			adjusted = 1;
+		}
+
+		/* Do we need to keep the end? */
+		if (orig_end > end) {
+			if (adjusted) {
+				/* Add a new entry after */
+				range_policy = kmalloc(
+					sizeof(struct vm_range_numa_policy),
+					IHK_MC_AP_NOWAIT);
+				if (!range_policy) {
+					dkprintf("%s: error allocating range_policy\n",
+							__func__);
+					error = -ENOMEM;
+					goto out;
+				}
+
+				RB_CLEAR_NODE(&range_policy->policy_rb_node);
+				range_policy->start = end;
+				range_policy->end = orig_end;
+
+				if (error) {
+					kprintf("%s: ERROR: could not insert range: %d\n",
+							__func__, error);
+					goto out;
+				}
+			}
+			else {
+				range_policy_iter->start = end;
+			}
+		}
+	}
+
+	/*
+	 * Adjust overlapping range settings
+	 *  case: rear part of new range overlaps existing range
+	 */
+	range_policy_iter = vm_range_policy_search(vm, end - 1);
+	if (range_policy_iter) {
+		range_policy_iter->start = end;
+	}
+
+	/* Search fulliy contained range */
+again_search:
+	for (node = rb_first(root); node; node = rb_next(node)) {
+		range = rb_entry(node, struct vm_range_numa_policy,
+				policy_rb_node);
+
+		/* existing range is fully contained */
+		if (range->start >= start && range->end <= end) {
+			rb_erase(&range->policy_rb_node,
+				&vm->vm_range_numa_policy_tree);
+			kfree(range);
+			goto again_search;
+		}
+	}
+
+out:
+	return error;
+}
+
 static int vm_policy_insert(struct process_vm *vm, struct vm_range_numa_policy *newrange)
 {
 	struct rb_root *root = &vm->vm_range_numa_policy_tree;
@@ -4392,15 +4485,19 @@ static int vm_policy_insert(struct process_vm *vm, struct vm_range_numa_policy *
 		} else if (newrange->start >= range->end) {
 			new = &((*new)->rb_right);
 		} else {
-			ekprintf("vm_range_insert(%p,%lx-%lx (nodemask)%lx (policy)%d): overlap %lx-%lx (nodemask)%lx (policy)%d\n",
-					vm, newrange->start, newrange->end, newrange->numa_mask, newrange->numa_mem_policy,
-					range->start, range->end, range->numa_mask, range->numa_mem_policy);
+			ekprintf("%s(%p,%lx-%lx (nodemask)%lx (policy)%d): overlap %lx-%lx (nodemask)%lx (policy)%d\n",
+					__func__, vm, newrange->start,
+					newrange->end, newrange->numa_mask,
+					newrange->numa_mem_policy, range->start,
+					range->end, range->numa_mask,
+					range->numa_mem_policy);
 			return -EFAULT;
 		}
 	}
 
-	dkprintf("vm_range_insert: %p,%p: %lx-%lx (nodemask)%lx (policy)%d\n", 
-				vm, newrange, newrange->start, newrange->end, newrange->numa_mask, newrange->numa_mem_policy);
+	dkprintf("%s: %p,%p: %lx-%lx (nodemask)%lx (policy)%d\n",
+			__func__, vm, newrange, newrange->start, newrange->end,
+			newrange->numa_mask, newrange->numa_mem_policy);
 
 	rb_link_node(&newrange->policy_rb_node, parent, new);
 	rb_insert_color(&newrange->policy_rb_node, root);
@@ -8838,52 +8935,23 @@ SYSCALL_DECLARE(mbind)
 		case MPOL_BIND:
 		case MPOL_INTERLEAVE:
 		case MPOL_PREFERRED:
-			/* Adjust any overlapping range settings and add new one */
+			/* Check if same range is existing */
 			range_policy_iter = vm_range_policy_search(vm, addr);
 			if (range_policy_iter) {
-				int adjusted = 0;
-				unsigned long orig_end = range_policy_iter->end;
-
 				if (range_policy_iter->start == addr &&	
-						range_policy_iter->end == addr + len) {
+					range_policy_iter->end == addr + len) {
+					/* same range */
 					range_policy = range_policy_iter;
 					goto mbind_update_only;
 				}
+			}
 
-				/* Overlapping partially? */
-				if (range_policy_iter->start < addr) {
-					orig_end = range_policy_iter->end;
-					range_policy_iter->end = addr;
-					adjusted = 1;
-				}
-
-				/* Do we need to keep the end? */
-				if (orig_end > addr + len) {
-					if (adjusted) {
-						/* Add a new entry after */
-						range_policy = kmalloc(sizeof(struct vm_range_numa_policy),
-								IHK_MC_AP_NOWAIT);
-						if (!range_policy) {
-							dkprintf("%s: error allocating range_policy\n",
-									__FUNCTION__);
-							error = -ENOMEM;
-							goto unlock_out;
-						}
-
-						RB_CLEAR_NODE(&range_policy->policy_rb_node);
-						range_policy->start = addr + len;
-						range_policy->end = orig_end;
-
-						error = vm_policy_insert(vm, range_policy);
-						if (error) {
-							kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
-							goto unlock_out;
-						}
-					}
-					else {
-						range_policy_iter->start = addr + len;
-					}
-				}
+			/* Clear target range */
+			error = vm_policy_clear_range(vm, addr, addr + len);
+			if (error) {
+				ekprintf("%s: ERROR: clear policy_range\n",
+						__func__);
+				goto unlock_out;
 			}
 
 			/* Add a new entry */
@@ -8900,7 +8968,6 @@ SYSCALL_DECLARE(mbind)
 			range_policy->start = addr;
 			range_policy->end = addr + len;
 
-			error = vm_policy_insert(vm, range_policy);
 			if (error) {
 				kprintf("%s: ERROR: could not insert range: %d\n",__FUNCTION__, error);
 				goto unlock_out;
