@@ -34,6 +34,7 @@
 #include <ihk/perfctr.h>
 #include <rusage_private.h>
 #include <ihk/debug.h>
+#include <lttng.h>
 
 //#define DEBUG_PRINT_HOST
 
@@ -389,6 +390,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	memcpy(proc->saved_cmdline,
 			(char *)args_envs + ((argc + 2) * sizeof(char **)),
 			proc->saved_cmdline_len);
+	proc->name = thr_name(proc->saved_cmdline);
 	dkprintf("%s: saved_cmdline: %s\n",
 			__FUNCTION__,
 			proc->saved_cmdline);
@@ -521,6 +523,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->nr_processes = pn->nr_processes;
 	proc->process_rank = pn->process_rank;
 	proc->heap_extension = pn->heap_extension;
+	proc->lttng = pn->lttng;
 
 	/* Update NUMA binding policy if requested */
 	if (pn->mpol_bind_mask) {
@@ -659,6 +662,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		thread->status = PS_RUNNING;
 		chain_thread(thread);
 		chain_process(proc);
+
 		runq_add_thread(thread, cpuid);
 
 		ret = 0;

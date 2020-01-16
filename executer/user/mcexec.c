@@ -200,6 +200,7 @@ static char *mpol_bind_nodes = NULL;
 static int uti_thread_rank = 0;
 static int uti_use_last_cpu = 0;
 static int enable_uti = 0;
+static int lttng = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1800,6 +1801,12 @@ static struct option mcexec_options[] = {
 		.flag =		&debug,
 		.val =		1,
 	},
+	{
+		.name =		"lttng",
+		.has_arg =	no_argument,
+		.flag =		&lttng,
+		.val =		1,
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2632,6 +2639,7 @@ int main(int argc, char **argv)
 
 	desc->mpol_threshold = mpol_threshold;
 	desc->heap_extension = heap_extension;
+	desc->lttng = lttng;
 
 	desc->mpol_bind_mask = 0;
 	if (mpol_bind_nodes) {

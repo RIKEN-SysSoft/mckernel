@@ -1379,6 +1379,7 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 }
 
 extern char enter_user_mode[];
+extern char kernel_entry_after_creation[];
 
 /* 
  * Release runq_lock before entering user space.
@@ -1404,7 +1405,7 @@ void release_runq_lock(void)
 void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
                               ihk_mc_user_context_t **puctx,
                               void *stack_pointer, unsigned long new_pc,
-                              unsigned long user_sp)
+                              unsigned long user_sp, char ihk_new)
 {
 	char *sp;
 	ihk_mc_user_context_t *uctx;
@@ -1423,7 +1424,11 @@ void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
 	uctx->gpr.rflags = RFLAGS_IF;
 	uctx->is_gpr_valid = 1;
 
-	ihk_mc_init_context(ctx, sp, (void (*)(void))enter_user_mode);
+	if (ihk_new)
+		ihk_mc_init_context(ctx, sp, (void (*)(void))kernel_entry_after_creation);
+	else
+		ihk_mc_init_context(ctx, sp, (void (*)(void))enter_user_mode);
+
 	ctx->rsp0 = (unsigned long)stack_pointer;
 }
 

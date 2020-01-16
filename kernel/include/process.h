@@ -530,6 +530,7 @@ struct process {
 	unsigned long saved_auxv[AUXV_LEN];
 	char *saved_cmdline;
 	long saved_cmdline_len;
+	char *name;
 	cpu_set_t cpu_set;
 
 	/* Store signal sent to parent when the process terminates. */
@@ -575,6 +576,7 @@ struct process {
 	int process_rank; /* Rank in partition */
 	int coredump_barrier_count, coredump_barrier_count2;
 	mcs_rwlock_lock_t coredump_lock; // lock for coredump
+	unsigned int lttng;
 };
 
 /*
@@ -881,6 +883,7 @@ int save_fp_regs(struct thread *proc);
 int copy_fp_regs(struct thread *from, struct thread *to);
 void restore_fp_regs(struct thread *proc);
 void clear_fp_regs(void);
+char *thr_name(char *saved_cmdline);
 
 #define VERIFY_READ 0
 #define VERIFY_WRITE 1

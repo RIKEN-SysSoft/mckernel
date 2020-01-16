@@ -34,6 +34,7 @@
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
 #include <rusage.h>
+#include <lttng.h>
 
 //#define IOCTL_FUNC_EXTENSION
 #ifdef IOCTL_FUNC_EXTENSION
@@ -271,6 +272,7 @@ static void rest_init(void)
 	uti_init();
 	time_init();
 	kmalloc_init();
+	lttng_init();
 
 	ihk_ikc_master_init();
 

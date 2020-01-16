@@ -59,6 +59,7 @@
 #include <ihk/monitor.h>
 #include <profile.h>
 #include <ihk/debug.h>
+#include <lttng.h>
 #include "../executer/include/uti.h"
 
 /* Headers taken from kitten LWK */
@@ -1176,6 +1177,9 @@ void terminate(int rc, int sig)
 	struct timespec ats;
 	int found;
 
+	if (proc->lttng)
+		lttng_trace_core_dump();
+
 	// sync perf info
 	if (proc->monitoring_event)
 		sync_child_event(proc->monitoring_event);
@@ -1219,8 +1223,6 @@ void terminate(int rc, int sig)
 	proc->status = PS_EXITED;
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
-
-	terminate_mcexec(rc, sig);
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_del(&mythread->siblings_list);
@@ -1279,6 +1281,8 @@ void terminate(int rc, int sig)
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
 	list_add_tail(&mythread->siblings_list, &proc->threads_list);
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
+
+	terminate_mcexec(rc, sig);
 
 	vm = proc->vm;
 	free_all_process_memory_range(vm);
@@ -1626,7 +1630,6 @@ out:
 
 	return NULL;
 }
-
 
 intptr_t
 do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
@@ -2618,7 +2621,7 @@ SYSCALL_DECLARE(execve)
 	preempt_disable();
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx,
 			((char *)thread) +
-			KERNEL_STACK_NR_PAGES * PAGE_SIZE, desc->entry, 0);
+			KERNEL_STACK_NR_PAGES * PAGE_SIZE, desc->entry, 0, 0);
 
 	/* map_start / map_end is used to track memory area
 	 * to which the program is loaded

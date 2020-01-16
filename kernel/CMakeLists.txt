@@ -32,7 +32,7 @@ set(MCKERNEL_SRCS
 	init.c mem.c debug.c mikc.c listeners.c ap.c syscall.c cls.c host.c process.c
 	copy.c waitq.c futex.c timer.c plist.c fileobj.c shmobj.c zeroobj.c
 	procfs.c devobj.c sysfs.c xpmem.c profile.c freeze.c rbtree.c pager.c
-	gencore.c hugefileobj.c llist.c
+	gencore.c hugefileobj.c llist.c lttng.c
 
 	${IHK_FULL_SOURCE_DIR}/ikc/manycore.c
 	${IHK_FULL_SOURCE_DIR}/ikc/master.c

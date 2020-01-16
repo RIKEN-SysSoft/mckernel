@@ -66,6 +66,15 @@ struct perf_sampling {
 	size_t len;
 };
 
+struct lttng_trace {
+	char *buffer;
+	char *user_map;
+	size_t size;
+	size_t len;
+	int fd;
+	unsigned long int lost;
+};
+
 struct cpu_local_var {
 	/* malloc */
 	struct list_head free_list;
@@ -114,6 +123,7 @@ struct cpu_local_var {
 	struct process_vm *on_fork_vm;
 
 	struct perf_sampling perf_sampling;
+	struct lttng_trace lttng_trace;
 
 	/* UTI */
 	void *uti_futex_resp;
@@ -130,6 +140,7 @@ static struct cpu_local_var *get_this_cpu_local_var(void)
 {
 	return get_cpu_local_var(ihk_mc_get_processor_id());
 }
+
 
 #define cpu_local_var(name) get_this_cpu_local_var()->name
 

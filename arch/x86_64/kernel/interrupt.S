@@ -238,6 +238,9 @@ x86_syscall:
 		iretq
 #endif
 		
+.globl kernel_entry_after_creation
+kernel_entry_after_creation:
+		callq lttng_trace_prepare_directory
 .globl enter_user_mode
 enter_user_mode:
 		callq	release_runq_lock

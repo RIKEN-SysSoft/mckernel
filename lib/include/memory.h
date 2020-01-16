@@ -17,6 +17,7 @@
 #include <arch-memory.h>
 
 struct process_vm;
+struct thread;
 
 unsigned long virt_to_phys(void *v);
 void *phys_to_virt(unsigned long p);

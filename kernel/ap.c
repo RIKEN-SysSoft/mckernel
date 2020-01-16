@@ -29,6 +29,7 @@
 #include <syscall.h>
 #include <rusage_private.h>
 #include <ihk/debug.h>
+#include <lttng.h>
 
 //#define DEBUG_PRINT_AP
 
@@ -54,6 +55,7 @@ static void ap_wait(void)
 	kmalloc_init();
 	sched_init();
 	arch_start_pvclock();
+	lttng_init();
 
 	if (find_command_line("hidos")) {
 		mcs_lock_node_t mcs_node;

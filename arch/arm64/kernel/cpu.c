@@ -1133,7 +1133,7 @@ void release_runq_lock(void)
 void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
                               ihk_mc_user_context_t **puctx,
                               void *stack_pointer, unsigned long new_pc,
-                              unsigned long user_sp)
+                              unsigned long user_sp, char ihk_new)
 {
 	char *sp = NULL;
 

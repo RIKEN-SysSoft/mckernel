@@ -99,7 +99,7 @@ int ihk_mc_interrupt_cpu(int cpu, int vector);
 void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,
                               ihk_mc_user_context_t **puctx,
                               void *stack_pointer, unsigned long user_pc,
-                              unsigned long user_sp);
+                              unsigned long user_spnc, char ihk_new);
 
 void ihk_mc_init_user_tlsbase(ihk_mc_user_context_t *ctx,
                               unsigned long tls_base_addr);

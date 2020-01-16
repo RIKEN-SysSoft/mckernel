@@ -36,6 +36,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
+#include <lttng.h>
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -273,6 +274,25 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	return 0;
 }
 
+char *thr_name(char *saved_cmdline)
+{
+	char *exec;
+
+	if (saved_cmdline) {
+		exec = strrchr(saved_cmdline, '/');
+		if (exec) {
+			/* Point after '/' */
+			++exec;
+		} else {
+			exec = saved_cmdline;
+		}
+	} else {
+		exec = "unknown";
+	}
+
+	return exec;
+}
+
 struct thread *create_thread(unsigned long user_pc,
 		unsigned long *__cpu_set, size_t cpu_set_size)
 {
@@ -347,7 +367,7 @@ struct thread *create_thread(unsigned long user_pc,
 	thread->sigstack.ss_size = 0;
 
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
-	                       KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc, 0);
+	                       KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc, 0, 1);
 
 	thread->vm = vm;
 	thread->proc = proc;
@@ -407,7 +427,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 
 	/* NOTE: sp is the user mode stack! */
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
-				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp);
+				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, pc, sp, 0);
 
 	/* copy fp_regs from parent */
 	if (save_fp_regs(org)) {
@@ -464,6 +484,7 @@ clone_thread(struct thread *org, unsigned long pc, unsigned long sp,
 		}
 		memcpy(proc->saved_cmdline, org->proc->saved_cmdline,
 		       proc->saved_cmdline_len);
+		proc->name = thr_name(proc->saved_cmdline);
 
 		dkprintf("fork(): init_process_vm()\n");
 		if (init_process_vm(proc, asp, proc->vm) != 0) {
@@ -3162,6 +3183,9 @@ void sched_init(void)
 	idle_thread->vm->vm_range_numa_policy_tree = RB_ROOT;
 	idle_thread->proc->pid = 0;
 	idle_thread->tid = ihk_mc_get_processor_id();
+	idle_thread->proc->name = kmalloc(16, IHK_MC_AP_CRITICAL);
+	snprintf(idle_thread->proc->name, 16, "swapper/%d",
+		 ihk_mc_get_processor_id());
 
 	INIT_LIST_HEAD(&cpu_local_var(runq));
 	cpu_local_var(runq_len) = 0;
@@ -3478,6 +3502,15 @@ void schedule(void)
 	if (switch_ctx) {
 		dkprintf("schedule: %d => %d \n",
 		        prev ? prev->tid : 0, next ? next->tid : 0);
+
+		if (prev) {
+			trace_sched_switch(prev->proc->name,
+					   (prev == &cpu_local_var(idle)) ? 0 : prev->tid,
+					   0, prev->status,
+					   next->proc->name,
+					   (next == &cpu_local_var(idle)) ? 0 : next->tid,
+					    0);
+		}
 
 		if (prev && prev->ptrace_debugreg) {
 			save_debugreg(prev->ptrace_debugreg);
