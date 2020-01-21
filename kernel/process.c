@@ -367,7 +367,8 @@ struct thread *create_thread(unsigned long user_pc,
 	thread->sigstack.ss_size = 0;
 
 	ihk_mc_init_user_process(&thread->ctx, &thread->uctx, ((char *)thread) +
-	                       KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc, 0, 1);
+				 KERNEL_STACK_NR_PAGES * PAGE_SIZE, user_pc,
+				 0, 1);
 
 	thread->vm = vm;
 	thread->proc = proc;

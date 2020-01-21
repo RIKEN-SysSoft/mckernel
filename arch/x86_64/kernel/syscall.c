@@ -33,6 +33,7 @@
 #include <syscall.h>
 #include <rusage_private.h>
 #include <ihk/debug.h>
+#include <lttng.h>
 
 void terminate_mcexec(int, int);
 extern long do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact);
@@ -1680,9 +1681,13 @@ SYSCALL_DECLARE(mmap)
 	size_t len;
 	int flags = flags0;
 	size_t pgsize;
+	uintptr_t ret = 0;
 
 	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			addr0, len0, prot, flags0, fd, off0);
+
+	trace_entry_mmap((uint64_t) addr0, (uint64_t) len0, (int32_t) prot,
+			 (int32_t) flags0, (int32_t) fd, (int64_t) off0);
 
 	/* check constants for flags */
 	if (1) {
@@ -1781,9 +1786,11 @@ recheck:
 
 	error = 0;
 out:
+	ret = (!error) ? addr : error;
+	trace_exit_mmap((uint64_t) ret);
 	dkprintf("sys_mmap(%lx,%lx,%x,%x,%d,%lx): %ld %lx\n",
 			addr0, len0, prot, flags0, fd, off0, error, addr);
-	return (!error)? addr: error;
+	return ret;
 }
 
 SYSCALL_DECLARE(clone)

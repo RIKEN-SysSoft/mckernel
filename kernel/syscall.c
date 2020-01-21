@@ -2054,6 +2054,8 @@ SYSCALL_DECLARE(munmap)
 	size_t len;
 	int error;
 
+	trace_entry_munmap((uint64_t) addr, (uint64_t) len0);
+
 	dkprintf("[%d]sys_munmap(%lx,%lx)\n",
 			ihk_mc_get_processor_id(), addr, len0);
 
@@ -2075,6 +2077,9 @@ SYSCALL_DECLARE(munmap)
 out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), addr, len0, error);
+
+	trace_exit_munmap((int64_t) error);
+
 	return error;
 }
 
@@ -2099,6 +2104,9 @@ SYSCALL_DECLARE(mprotect)
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, prot);
 
+	trace_entry_mprotect((uint64_t) start, (uint64_t) len0,
+			     (uint64_t) prot);
+
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	end = start + len;
 
@@ -2106,7 +2114,8 @@ SYSCALL_DECLARE(mprotect)
 	if (start & (PAGE_SIZE - 1)) {
 		ekprintf("[%d]sys_mprotect(%lx,%lx,%x): -EINVAL\n",
 				ihk_mc_get_processor_id(), start, len0, prot);
-		return -EINVAL;
+		error = -EINVAL;
+		goto early_out;
 	}
 
 	if ((start < region->user_start)
@@ -2114,12 +2123,14 @@ SYSCALL_DECLARE(mprotect)
 			|| ((region->user_end - start) < len)) {
 		ekprintf("[%d]sys_mprotect(%lx,%lx,%x): -ENOMEM\n",
 				ihk_mc_get_processor_id(), start, len0, prot);
-		return -ENOMEM;
+		error = -ENOMEM;
+		goto early_out;
 	}
 
 	if (len == 0) {
 		/* nothing to do */
-		return 0;
+		error = 0;
+		goto early_out;
 	}
 
 	flush_nfo_tlb();
@@ -2217,6 +2228,9 @@ out:
 	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
+early_out:
+	trace_exit_mprotect((int64_t) error);
+
 	return error;
 }
 
@@ -5881,7 +5895,13 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	uint32_t *uaddr2 = (uint32_t *)arg4;
 	uint32_t val3 = (uint32_t)arg5;
 	int flags = op;
+	uint64_t tns = 0;
 
+	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT))
+		tns = utime->tv_sec * NS_PER_SEC + utime->tv_nsec;
+
+	trace_entry_futex((uint64_t) uaddr, (int32_t) op, (uint32_t) val, tns,
+			  (uint64_t) uaddr2, (uint32_t) val3);
 
 	/* TODO: replace these with passing via struct smp_boot_param */
 	if (_linux_printk && !linux_printk) {
@@ -5954,7 +5974,8 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 						   ihk_mc_get_processor_id());
 
 				if (r < 0) {
-					return -EFAULT;
+					ret = -EFAULT;
+					goto out;
 				}
 
 				ats.tv_sec = tv_now->tv_sec;
@@ -5979,7 +6000,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 				struct timespec ats;
 				ret = (*linux_clock_gettime)((flags & FUTEX_CLOCK_REALTIME) ? CLOCK_REALTIME: CLOCK_MONOTONIC, &ats);
 				if (ret) {
-					return ret;
+					goto out;
 				}
 				uti_dkprintf("%s: ats=%ld.%09ld\n", __FUNCTION__, ats.tv_sec, ats.tv_nsec);
 				/* Use nsec for UTI case */
@@ -6009,6 +6030,9 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
 			(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
 			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared, ret);
+
+out:
+	trace_exit_futex(ret, (uint64_t) uaddr, (uint64_t) uaddr2);
 
 	return ret;
 }
