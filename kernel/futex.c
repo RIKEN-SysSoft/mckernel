@@ -78,11 +78,11 @@
 #ifdef DEBUG_PRINT_FUTEX
 #undef DDEBUG_DEFAULT
 #define DDEBUG_DEFAULT DDEBUG_PRINT
-#define uti_dkprintf(...) do { ((clv_override && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
+#define uti_dkprintf(...) do { ((ihk_mc_is_linux_processor() && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
 #else
 #define uti_dkprintf(...) do { } while (0)
 #endif
-#define uti_kprintf(...) do { ((clv_override && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
+#define uti_kprintf(...) do { ((ihk_mc_is_linux_processor() && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
 
 
 unsigned long ihk_mc_get_ns_per_tsc(void);
@@ -157,11 +157,11 @@ static void drop_futex_key_refs(union futex_key *key)
  * lock_page() might sleep, the caller should not hold a spinlock.
  */
 static int
-get_futex_key(uint32_t *uaddr, int fshared, union futex_key *key, struct cpu_local_var *clv_override)
+get_futex_key(uint32_t *uaddr, int fshared, union futex_key *key)
 {
 	unsigned long address = (unsigned long)uaddr;
 	unsigned long phys;
-	struct thread *thread = cpu_local_var_with_override(current, clv_override);
+	struct thread *thread = cpu_local_var(current);
 	struct process_vm *mm = thread->vm;
 
 	/*
@@ -228,7 +228,7 @@ static int cmpxchg_futex_value_locked(uint32_t __user *uaddr, uint32_t uval, uin
  * The hash bucket lock must be held when this is called.
  * Afterwards, the futex_q must not be accessed.
  */
-static void wake_futex(struct futex_q *q, struct cpu_local_var *clv_override)
+static void wake_futex(struct futex_q *q)
 {
 	struct thread *p = q->task;
 
@@ -255,7 +255,7 @@ static void wake_futex(struct futex_q *q, struct cpu_local_var *clv_override)
 		int rc;
 		uti_dkprintf("wake_futex(): waking up migrated-to-Linux thread (tid %d),uti_futex_resp=%p\n", p->tid, q->uti_futex_resp);
 		/* TODO: Add the case when a Linux thread waking up another Linux thread */
-		if (clv_override) {
+		if (ihk_mc_is_linux_processor()) {
 			uti_dkprintf("%s: ERROR: A Linux thread is waking up migrated-to-Linux thread\n", __FUNCTION__);
 		}
 		if (p->spin_sleep == 0) {
@@ -263,7 +263,7 @@ static void wake_futex(struct futex_q *q, struct cpu_local_var *clv_override)
 		}
 
 		struct ikc_scd_packet pckt;
-		struct ihk_ikc_channel_desc *resp_channel = cpu_local_var_with_override(ikc2linux, clv_override);
+		struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
 		pckt.msg = SCD_MSG_FUTEX_WAKE;
 		pckt.futex.resp = q->uti_futex_resp;
 		pckt.futex.spin_sleep = &p->spin_sleep;
@@ -304,7 +304,7 @@ double_unlock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket *hb2)
 /*
  * Wake up waiters matching bitset queued on this futex (uaddr).
  */
-static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset, struct cpu_local_var *clv_override)
+static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset)
 {
 	struct futex_hash_bucket *hb;
 	struct futex_q *this, *next;
@@ -315,7 +315,7 @@ static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset
 	if (!bitset)
 		return -EINVAL;
 
-	ret = get_futex_key(uaddr, fshared, &key, clv_override);
+	ret = get_futex_key(uaddr, fshared, &key);
 	if ((ret != 0))
 		goto out;
 
@@ -331,7 +331,7 @@ static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset
 			if (!(this->bitset & bitset))
 				continue;
 
-			wake_futex(this, clv_override);
+			wake_futex(this);
 			if (++ret >= nr_wake)
 				break;
 		}
@@ -349,8 +349,7 @@ out:
  */
 static int
 futex_wake_op(uint32_t *uaddr1, int fshared, uint32_t *uaddr2,
-			  int nr_wake, int nr_wake2, int op,
-			  struct cpu_local_var *clv_override)
+			  int nr_wake, int nr_wake2, int op)
 {
 	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
 	struct futex_hash_bucket *hb1, *hb2;
@@ -359,10 +358,10 @@ futex_wake_op(uint32_t *uaddr1, int fshared, uint32_t *uaddr2,
 	int ret, op_ret;
 
 retry:
-	ret = get_futex_key(uaddr1, fshared, &key1, clv_override);
+	ret = get_futex_key(uaddr1, fshared, &key1);
 	if ((ret != 0))
 		goto out;
-	ret = get_futex_key(uaddr2, fshared, &key2, clv_override);
+	ret = get_futex_key(uaddr2, fshared, &key2);
 	if ((ret != 0))
 		goto out_put_key1;
 
@@ -396,7 +395,7 @@ retry_private:
 
 	plist_for_each_entry_safe(this, next, head, list) {
 		if (match_futex (&this->key, &key1)) {
-			wake_futex(this, clv_override);
+			wake_futex(this);
 			if (++ret >= nr_wake)
 				break;
 		}
@@ -408,7 +407,7 @@ retry_private:
 		op_ret = 0;
 		plist_for_each_entry_safe(this, next, head, list) {
 			if (match_futex (&this->key, &key2)) {
-				wake_futex(this, clv_override);
+				wake_futex(this);
 				if (++op_ret >= nr_wake2)
 					break;
 			}
@@ -471,7 +470,7 @@ void requeue_futex(struct futex_q *q, struct futex_hash_bucket *hb1,
  */
 static int futex_requeue(uint32_t *uaddr1, int fshared, uint32_t *uaddr2,
 			 int nr_wake, int nr_requeue, uint32_t *cmpval,
-						 int requeue_pi, struct cpu_local_var *clv_override)
+						 int requeue_pi)
 {
 	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
 	int drop_count = 0, task_count = 0, ret;
@@ -479,10 +478,10 @@ static int futex_requeue(uint32_t *uaddr1, int fshared, uint32_t *uaddr2,
 	struct plist_head *head1;
 	struct futex_q *this, *next;
 
-	ret = get_futex_key(uaddr1, fshared, &key1, clv_override);
+	ret = get_futex_key(uaddr1, fshared, &key1);
 	if ((ret != 0))
 		goto out;
-	ret = get_futex_key(uaddr2, fshared, &key2, clv_override);
+	ret = get_futex_key(uaddr2, fshared, &key2);
 	if ((ret != 0))
 		goto out_put_key1;
 
@@ -517,7 +516,7 @@ static int futex_requeue(uint32_t *uaddr1, int fshared, uint32_t *uaddr2,
 		 */
 		/* RIKEN: no requeue_pi at this moment */
 		if (++task_count <= nr_wake) {
-			wake_futex(this, clv_override);
+			wake_futex(this);
 			continue;
 		}
 
@@ -576,7 +575,7 @@ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
  * state is implicit in the state of woken task (see futex_wait_requeue_pi() for
  * an example).
  */
-static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb, struct cpu_local_var *clv_override)
+static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
 {
 	int prio;
 
@@ -597,7 +596,7 @@ static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb, str
 	q->list.plist.spinlock = &hb->lock;
 #endif
 	plist_add(&q->list, &hb->chain);
-	q->task = cpu_local_var_with_override(current, clv_override);
+	q->task = cpu_local_var(current);
 	ihk_mc_spinlock_unlock_noirq(&hb->lock);
 }
 
@@ -661,11 +660,11 @@ retry:
  * time in case we are waken.
  */
 static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
-				   uint64_t timeout, struct cpu_local_var *clv_override)
+				   uint64_t timeout)
 {
 	int64_t time_remain = 0;
 	unsigned long irqstate;
-	struct thread *thread = cpu_local_var_with_override(current, clv_override);
+	struct thread *thread = cpu_local_var(current);
 	/*
 	 * The task state is guaranteed to be set before another task can
 	 * wake it. 
@@ -684,10 +683,10 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 		ihk_mc_spinlock_unlock(&thread->spin_sleep_lock, irqstate);
 	}
 
-	queue_me(q, hb, clv_override);
+	queue_me(q, hb);
 	
 	if (!plist_node_empty(&q->list)) {
-		if (clv_override) {
+		if (ihk_mc_is_linux_processor()) {
 			uti_dkprintf("%s: tid: %d is trying to sleep\n", __FUNCTION__, thread->tid);
 			/* Note that the unit of timeout is nsec */
 			time_remain = (*linux_wait_event)(q->uti_futex_resp, timeout);
@@ -741,8 +740,7 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
  * <1 - -EFAULT or -EWOULDBLOCK (uaddr does not contain val) and hb is unlcoked
  */
 static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
-			    struct futex_q *q, struct futex_hash_bucket **hb,
-			    struct cpu_local_var *clv_override)
+			    struct futex_q *q, struct futex_hash_bucket **hb)
 {
 	uint32_t uval;
 	int ret;
@@ -765,7 +763,7 @@ static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
 	 * rare, but normal.
 	 */
 	q->key = FUTEX_KEY_INIT;
-	ret = get_futex_key(uaddr, fshared, &q->key, clv_override);
+	ret = get_futex_key(uaddr, fshared, &q->key);
 	if (ret != 0)
 		return ret;
 
@@ -789,8 +787,7 @@ static int futex_wait_setup(uint32_t __user *uaddr, uint32_t val, int fshared,
 }
 
 static int futex_wait(uint32_t __user *uaddr, int fshared,
-		      uint32_t val, uint64_t timeout, uint32_t bitset, int clockrt,
-		      struct cpu_local_var *clv_override)
+		      uint32_t val, uint64_t timeout, uint32_t bitset, int clockrt)
 {
 	struct futex_hash_bucket *hb;
 	int64_t time_remain;
@@ -801,57 +798,59 @@ static int futex_wait(uint32_t __user *uaddr, int fshared,
 	if (!bitset)
 		return -EINVAL;
 
-	if (!clv_override) {
+	if (!ihk_mc_is_linux_processor()) {
 		q = &lq;
 	}
 	else {
-		q = &cpu_local_var_with_override(current,
-						 clv_override)->futex_q;
+		q = &cpu_local_var(current)->futex_q;
 	}
 
 #ifdef PROFILE_ENABLE
-	if (cpu_local_var_with_override(current, clv_override)->profile &&
-		cpu_local_var_with_override(current, clv_override)->profile_start_ts) {
-		cpu_local_var_with_override(current, clv_override)->profile_elapsed_ts +=
-			(rdtsc() - cpu_local_var_with_override(current, clv_override)->profile_start_ts);
-		cpu_local_var_with_override(current, clv_override)->profile_start_ts = 0;
+	if (cpu_local_var(current)->profile &&
+		cpu_local_var(current)->profile_start_ts) {
+		cpu_local_var(current)->profile_elapsed_ts +=
+			(rdtsc() - cpu_local_var(current)->profile_start_ts);
+		cpu_local_var(current)->profile_start_ts = 0;
 	}
 #endif
 
 	q->bitset = bitset;
 	q->requeue_pi_key = NULL;
-	q->uti_futex_resp = cpu_local_var_with_override(uti_futex_resp,
-							clv_override);
+	q->uti_futex_resp = cpu_local_var(uti_futex_resp);
 
 retry:
 	/* Prepare to wait on uaddr. */
-	ret = futex_wait_setup(uaddr, val, fshared, q, &hb, clv_override);
+	ret = futex_wait_setup(uaddr, val, fshared, q, &hb);
 	if (ret) {
-		uti_dkprintf("%s: tid=%d futex_wait_setup returns zero, no need to sleep\n", __FUNCTION__, cpu_local_var_with_override(current, clv_override)->tid);
+		uti_dkprintf("%s: tid=%d futex_wait_setup returns zero, no need to sleep\n",
+			     __func__, cpu_local_var(current)->tid);
 		goto out;
 	}
 
 	/* queue_me and wait for wakeup, timeout, or a signal. */
-	time_remain = futex_wait_queue_me(hb, q, timeout, clv_override);
+	time_remain = futex_wait_queue_me(hb, q, timeout);
 
 	/* If we were woken (and unqueued), we succeeded, whatever. */
 	ret = 0;
 	if (!unqueue_me(q)) {
-		uti_dkprintf("%s: tid=%d unqueued\n", __FUNCTION__, cpu_local_var_with_override(current, clv_override)->tid);
+		uti_dkprintf("%s: tid=%d unqueued\n",
+			     __func__, cpu_local_var(current)->tid);
 		goto out_put_key;
 	}
 	ret = -ETIMEDOUT;
 
 	/* RIKEN: timer expired case (indicated by !time_remain) */
 	if (timeout && !time_remain) {
-		uti_dkprintf("%s: tid=%d timer expired\n", __FUNCTION__, cpu_local_var_with_override(current, clv_override)->tid);
+		uti_dkprintf("%s: tid=%d timer expired\n",
+			     __func__, cpu_local_var(current)->tid);
 		goto out_put_key;
 	}
 
 	/* RIKEN: futex_wait_queue_me() returns -ERESTARTSYS when waiting on Linux CPU and woken up by signal */
-	if (hassigpending(cpu_local_var_with_override(current, clv_override)) || time_remain == -ERESTARTSYS) {
+	if (hassigpending(cpu_local_var(current)) || time_remain == -ERESTARTSYS) {
 		ret = -EINTR;
-		uti_dkprintf("%s: tid=%d woken up by signal\n", __FUNCTION__, cpu_local_var_with_override(current, clv_override)->tid);
+		uti_dkprintf("%s: tid=%d woken up by signal\n",
+			     __func__, cpu_local_var(current)->tid);
 		goto out_put_key;
 	}
 
@@ -863,21 +862,21 @@ out_put_key:
 	put_futex_key(fshared, &q->key);
 out:
 #ifdef PROFILE_ENABLE
-	if (cpu_local_var_with_override(current, clv_override)->profile) {
-		cpu_local_var_with_override(current, clv_override)->profile_start_ts = rdtsc();
+	if (cpu_local_var(current)->profile) {
+		cpu_local_var(current)->profile_start_ts = rdtsc();
 	}
 #endif
 	return ret;
 }
 
 int futex(uint32_t *uaddr, int op, uint32_t val, uint64_t timeout,
-	  uint32_t *uaddr2, uint32_t val2, uint32_t val3, int fshared,
-	  struct cpu_local_var *clv_override)
+	  uint32_t *uaddr2, uint32_t val2, uint32_t val3, int fshared)
 {
 	int clockrt, ret = -ENOSYS;
 	int cmd = op & FUTEX_CMD_MASK;
 
-	uti_dkprintf("%s: uaddr=%p, op=%x, val=%x, timeout=%ld, uaddr2=%p, val2=%x, val3=%x, fshared=%d, clv=%p\n", __FUNCTION__, uaddr, op, val, timeout, uaddr2, val2, val3, fshared, clv_override);
+	uti_dkprintf("%s: uaddr=%p, op=%x, val=%x, timeout=%ld, uaddr2=%p, val2=%x, val3=%x, fshared=%d\n",
+		     __func__, uaddr, op, val, timeout, uaddr2, val2, val3, fshared);
 
 	clockrt = op & FUTEX_CLOCK_REALTIME;
 	if (clockrt && cmd != FUTEX_WAIT_BITSET && cmd != FUTEX_WAIT_REQUEUE_PI)
@@ -887,21 +886,21 @@ int futex(uint32_t *uaddr, int op, uint32_t val, uint64_t timeout,
 	case FUTEX_WAIT:
 		val3 = FUTEX_BITSET_MATCH_ANY;
 	case FUTEX_WAIT_BITSET:
-		ret = futex_wait(uaddr, fshared, val, timeout, val3, clockrt, clv_override);
+		ret = futex_wait(uaddr, fshared, val, timeout, val3, clockrt);
 		break;
 	case FUTEX_WAKE:
 		val3 = FUTEX_BITSET_MATCH_ANY;
 	case FUTEX_WAKE_BITSET:
-		ret = futex_wake(uaddr, fshared, val, val3, clv_override);
+		ret = futex_wake(uaddr, fshared, val, val3);
 		break;
 	case FUTEX_REQUEUE:
-		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, NULL, 0, clv_override);
+		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, NULL, 0);
 		break;
 	case FUTEX_CMP_REQUEUE:
-		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, &val3, 0, clv_override);
+		ret = futex_requeue(uaddr, fshared, uaddr2, val, val2, &val3, 0);
 		break;
 	case FUTEX_WAKE_OP:
-		ret = futex_wake_op(uaddr, fshared, uaddr2, val, val2, val3, clv_override);
+		ret = futex_wake_op(uaddr, fshared, uaddr2, val, val2, val3);
 		break;
 	/* RIKEN: these calls are not supported for now.	
 	case FUTEX_LOCK_PI:

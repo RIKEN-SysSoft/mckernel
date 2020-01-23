@@ -74,9 +74,9 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-//#define DEBUG_UTI
+#define DEBUG_UTI
 #ifdef DEBUG_UTI
-#define uti_dkprintf(...) do { ((uti_clv && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
+#define uti_dkprintf(...) do { ((ihk_mc_is_linux_processor() && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
 #else
 #define uti_dkprintf(...) do { } while (0)
 #endif
@@ -1822,7 +1822,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		p = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 				IHK_MC_AP_NOWAIT | ap_flag, addr0);
 		if (p == NULL) {
-			dkprintf("%s: warning: failed to allocate %d contiguous pages "
+			kprintf("%s: warning: failed to allocate %d contiguous pages "
 					" (bytes: %lu, pgshift: %d), enabling demand paging\n",
 					__FUNCTION__,
 					npages, npages * PAGE_SIZE, p2align);
@@ -5594,16 +5594,13 @@ SYSCALL_DECLARE(shmdt)
 	return 0;
 } /* sys_shmdt() */
 
-long do_futex(int n, unsigned long arg0, unsigned long arg1,
+static long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			  unsigned long arg2, unsigned long arg3,
 			  unsigned long arg4, unsigned long arg5,
-			  unsigned long _uti_clv,
-			  void *uti_futex_resp,
 			  void *_linux_wait_event,
 			  void *_linux_printk,
 			  void *_linux_clock_gettime)
 {
-	struct cpu_local_var *uti_clv = (struct cpu_local_var *)_uti_clv;
 	uint64_t timeout = 0; // No timeout
 	uint32_t val2 = 0;
 	// Only one clock is used, ignore FUTEX_CLOCK_REALTIME
@@ -5631,17 +5628,11 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 		linux_clock_gettime = (int (*)(clockid_t clk_id, struct timespec *tp))_linux_clock_gettime;
 	}
 
-	/* Fill in clv */
-	if (uti_clv) {
-		uti_clv->uti_futex_resp = uti_futex_resp;
+	/* Don't judge a long wait as a hang */
+	if ((op & (FUTEX_WAIT | FUTEX_WAIT_BITSET)) && !ihk_mc_is_linux_processor()) {
+		cpu_local_var(monitor)->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 	}
-
-	/* monitor is per-cpu object */
-	if (!uti_clv) {
-		struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
-		monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
-	} 
-
+		
 	/* Cross-address space futex? */
 	if (op & FUTEX_PRIVATE_FLAG) {
 		fshared = 0;
@@ -5664,7 +5655,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	}
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		unsigned long nsec_timeout;
-		if (!uti_clv) {
+		if (!ihk_mc_is_linux_processor()) {
 			/* Use cycles for non-UTI case */
 
 		/* As per the Linux implementation FUTEX_WAIT specifies the duration of
@@ -5734,7 +5725,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
 		val2 = (uint32_t) (unsigned long) arg3;
 
-	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared, 0/*uti_clv*/);
+	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared);
 
 	uti_dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d, ret: %d\n", 
 			op,
@@ -5750,15 +5741,10 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	return ret;
 }
 
-SYSCALL_DECLARE(futex)
-{
-	return do_futex(n, ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
-					ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
-					ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx),
-					0UL, NULL, NULL, NULL, NULL);
-}
+extern struct smp_boot_param *boot_param;
 
-/* processor_id: processor_id in McKernel
+/* Wrapper function for uti.
+   processor_id: processor_id in McKernel, used as index of clv array
  */
 long uti_futex(int n,
 	       unsigned long arg0, unsigned long arg1,
@@ -5767,18 +5753,32 @@ long uti_futex(int n,
 	       unsigned long _uti_clv,
 	       void *uti_futex_resp, void *_linux_wait_event,
 	       void *_linux_printk, void *_linux_clock_gettime,
-	       unsigned long current, int processor_id)
+	       unsigned long current)
 {
-	struct cpu_local_var *clv = get_cpu_local_var(processor_id);
+	if (_linux_printk && !linux_printk) {
+		linux_printk = (int (*)(const char *fmt, ...))_linux_printk;
+	}
 
-	/* Fill fields used by futex() */
-	clv->current = (struct thread *)current;
+	linux_printk("%s: boot_param %lx, processor_id: %d, clv: %lx, uti_clv: %lx\n",
+		     __func__, boot_param, ihk_mc_get_processor_id(), (unsigned long)clv, _uti_clv);
+
+	/* Fill fields used by futex(). Note that this is done on context switch for non-UTI threads */
+	cpu_local_var(current) = (struct thread *)current;
+	cpu_local_var(uti_futex_resp) = uti_futex_resp;
 
 	return do_futex(n, arg0, arg1, arg2, arg3, arg4, arg5,
-			_uti_clv, uti_futex_resp,
 			_linux_wait_event,
 			_linux_printk,
 			_linux_clock_gettime);
+}
+
+SYSCALL_DECLARE(futex)
+{
+	return do_futex(n,
+			ihk_mc_syscall_arg0(ctx), ihk_mc_syscall_arg1(ctx),
+			ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
+			ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_arg5(ctx),
+			NULL, NULL, NULL);
 }
 
 static void
@@ -5807,7 +5807,7 @@ do_exit(int code)
 		setint_user((int*)thread->clear_child_tid, 0);
 		barrier();
 		futex((uint32_t *)thread->clear_child_tid,
-		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1, NULL);
+		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1);
 		thread->clear_child_tid = NULL;
 	}
 
@@ -9279,12 +9279,14 @@ int util_thread(struct uti_attr *arg)
 	request.args[4] = (unsigned long)uti_desc;
 	request.args[5] = (unsigned long)thread;
 	thread->uti_state = UTI_STATE_RUNNING_IN_LINUX;
+	kprintf("%s: c: %d, c[0]: %d, cur: %p\n", __func__, cpu_local_var(no_preempt), get_cpu_local_var(0)->no_preempt, cpu_local_var(current));
 	rc = do_syscall(&request, ihk_mc_get_processor_id());
-	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+	kprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
+	kprintf("%s: c: %d, c[0]: %d, cur: %p\n", __func__, cpu_local_var(no_preempt), get_cpu_local_var(0)->no_preempt, cpu_local_var(current));
 
 	thread->uti_state = UTI_STATE_EPILOGUE;
 
-	util_show_syscall_profile();
+	//util_show_syscall_profile();
 
 	/* Save it before freed */
 	thread->uti_refill_tid = rctx->uti_refill_tid;

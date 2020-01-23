@@ -497,14 +497,14 @@ int arch_cpu_read_write_register(struct ihk_os_cpu_register *desc,
 struct vm_range_numa_policy *vm_range_policy_search(struct process_vm *vm, uintptr_t addr);
 void calculate_time_from_tsc(struct timespec *ts);
 time_t time(void);
-long do_futex(int n, unsigned long arg0, unsigned long arg1,
-			  unsigned long arg2, unsigned long arg3,
-			  unsigned long arg4, unsigned long arg5,
-			  unsigned long _uti_clv,
-			  void *uti_futex_resp,
-			  void *_linux_wait_event,
-			  void *_linux_printk,
-			  void *_linux_clock_gettime);
+long uti_futex(int n,
+	       unsigned long arg0, unsigned long arg1,
+	       unsigned long arg2, unsigned long arg3,
+	       unsigned long arg4, unsigned long arg5,
+	       unsigned long _uti_clv,
+	       void *uti_futex_resp, void *_linux_wait_event,
+	       void *_linux_printk, void *_linux_clock_gettime,
+	       unsigned long current);
 
 struct cpu_mapping {
 	int cpu_number;

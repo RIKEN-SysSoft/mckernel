@@ -2718,7 +2718,7 @@ static long mcexec_release_user_space(struct release_user_space_desc *__user arg
 				   unsigned long _uti_clv,
 				   void *uti_futex_resp, void *_linux_wait_event,
 				   void *_linux_printk, void *_linux_clock_gettime,
-				   unsigned long uti_current, int processor_id);
+				   unsigned long uti_current);
 
  long uti_wait_event(void *_resp, unsigned long nsec_timeout) {
 	 struct uti_futex_resp *resp = _resp;
@@ -2797,7 +2797,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 				kprintf("%s: ihk_os_get_special_address failed\n", __FUNCTION__);
 				return -EINVAL;
 			}
-			dprintk("%s: mckernel_do_futex=%p\n", __FUNCTION__, mckernel_do_futex);
+			printk("%s: mckernel_uti_futex=%p\n", __FUNCTION__, mckernel_uti_futex);
 		}
 
 		pr_info("%s: current: %lx, processor_id: %d\n",
@@ -2810,7 +2810,7 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 			 param.uti_clv,
 			 (void *)&resp, (void *)uti_wait_event,
 			 (void *)uti_printk, (void *)uti_clock_gettime,
-			 param.uti_current, smp_processor_id());
+			 param.uti_current);
 		param.ret = rc;
 	} else {
 		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);

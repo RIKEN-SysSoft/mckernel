@@ -58,6 +58,7 @@ struct ihk_mc_cpu_info {
 struct ihk_mc_cpu_info *ihk_mc_get_cpu_info(void);
 void ihk_mc_boot_cpu(int cpuid, unsigned long pc);
 int ihk_mc_get_processor_id(void);
+int ihk_mc_is_linux_processor(void);
 int ihk_mc_get_hardware_processor_id(void);
 int ihk_mc_get_numa_id(void);
 int ihk_mc_get_nr_cores(void);

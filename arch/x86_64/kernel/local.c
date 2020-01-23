@@ -124,6 +124,11 @@ int ihk_mc_get_processor_id(void)
 	return id;
 }
 
+int ihk_mc_is_linux_processor(void)
+{
+	return (ihk_mc_get_processor_id() >= ihk_mc_get_nr_cores());
+}
+
 /*@
   @ ensures \result == (locals + (LOCALS_SPAN * %gs))->apic_id;
   @ assigns \nothing;

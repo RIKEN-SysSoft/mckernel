@@ -94,6 +94,11 @@ int ihk_mc_get_processor_id(void)
 	return current_thread_info()->cpu;
 }
 
+int ihk_mc_is_linux_processor(void)
+{
+	return (ihk_mc_get_processor_id() >= ihk_mc_get_nr_cores());
+}
+
 /* get current physical processor id (not equal AFFINITY !!) */
 int ihk_mc_get_hardware_processor_id(void)
 {

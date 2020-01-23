@@ -161,8 +161,7 @@ futex(
 	uint32_t __user *		uaddr2,
 	uint32_t				val2,
 	uint32_t				val3,
-	int                     fshared,
-	struct cpu_local_var *clv_override
+	int                     fshared
 );
 
 
