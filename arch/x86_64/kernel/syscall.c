@@ -1649,6 +1649,7 @@ SYSCALL_DECLARE(mmap)
 		| MAP_LOCKED		// 2000
 		| MAP_POPULATE		// 8000
 		| MAP_HUGETLB		// 00040000
+		| MAP_PAGE_REUSE	// 00080000
 		| (0x3FU << MAP_HUGE_SHIFT) // FC000000
 		;
 	const int ignored_flags = 0

@@ -58,6 +58,7 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <profile.h>
+
 #include <ihk/debug.h>
 #include <lttng.h>
 #include "../executer/include/uti.h"
@@ -1742,6 +1743,9 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 			vrflags &= ~VR_DEMAND_PAGING;
 		}
 	}
+
+	if (flags & MAP_PAGE_REUSE)
+		vrflags |= VR_PAGE_REUSE;
 
 	if (flags & (MAP_POPULATE | MAP_LOCKED)) {
 		populated_mapping = 1;

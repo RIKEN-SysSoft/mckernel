@@ -1390,8 +1390,9 @@ int add_process_memory_range(struct process_vm *vm,
 	}
 
 	/* Clear content! */
-	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
-			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
+	if (phys != NOPHYS &&
+	    !(flag & (VR_PAGE_REUSE | VR_REMOTE | VR_DEMAND_PAGING)) &&
+	    ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
 #if 1
 		memset((void *)phys_to_virt(phys), 0, end - start);
 #else
