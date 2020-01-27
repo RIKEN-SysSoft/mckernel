@@ -3438,6 +3438,9 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 		desc->val = resp.val;
 	}
 
+	/* Notify caller (for future async implementation) */
+	atomic_set(&desc->sync, 1);
+
 	dprintk("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
 		__FUNCTION__,
 		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"),
