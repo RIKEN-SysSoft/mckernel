@@ -248,6 +248,7 @@ struct ihk_os_cpu_register {
 	unsigned long addr;
 	unsigned long val;
 	unsigned long addr_ext;
+	int sync; /* atomic_t in Linux counterpart */
 };
 
 enum mcctrl_os_cpu_operation {
