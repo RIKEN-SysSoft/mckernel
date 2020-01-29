@@ -1803,6 +1803,7 @@ static int remap_user_space(uintptr_t rva, size_t len, int prot)
 	uintptr_t start;
 	pgoff_t pgoff;
 	uintptr_t map;
+	unsigned long flags = MAP_FIXED;
 
 	dprintk("remap_user_space(%lx,%lx,%x)\n", rva, len, prot);
 	down_write(&mm->mmap_sem);
@@ -1821,16 +1822,23 @@ static int remap_user_space(uintptr_t rva, size_t len, int prot)
 	start = rva;
 	pgoff = vma->vm_pgoff + ((rva - vma->vm_start) >> PAGE_SHIFT);
 
+	if (prot & PROT_WRITE) {
+		flags |= MAP_SHARED;
+	}
+	else {
+		flags |= MAP_PRIVATE;
+	}
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
 	map = do_mmap_pgoff(file, start, len,
-			prot, MAP_FIXED|MAP_SHARED, pgoff);
+			prot, flags, pgoff);
 #endif
 
 	up_write(&mm->mmap_sem);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
 	map = vm_mmap(file, start, len,
-			prot, MAP_FIXED|MAP_SHARED, pgoff << PAGE_SHIFT);
+			prot, flags, pgoff << PAGE_SHIFT);
 #endif
 
 out:
