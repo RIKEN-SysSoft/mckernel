@@ -3006,6 +3006,12 @@ retry:
 
 	if (ptep && !ptl_null(ptep, level) && (pgaddr != addr)) {
 		page = NULL;
+
+		if (level == 1) {
+			/* Don't need split */
+			goto out;
+		}
+
 		if (ptl_is_contiguous(ptep, level)) {
 			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
@@ -3180,7 +3186,9 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 	int error;
 	struct move_args args;
 	pte_t *ptep;
+	void *pgaddr;
 	size_t pgsize;
+	struct vm_range *new_range;
 
 	dkprintf("move_pte_range(%p,%p,%p,%#lx)\n", pt, src, dest, size);
 	args.src = (uintptr_t)src;
@@ -3188,7 +3196,14 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 	args.vm = vm;
 	args.range = range;
 
-	ptep = ihk_mc_pt_lookup_pte(pt, src, 0, NULL, &pgsize, NULL);
+	new_range = lookup_process_memory_range(vm,
+			(uintptr_t)dest, (uintptr_t)dest + 1);
+	if (!new_range) {
+		error = -EFAULT;
+		goto out;
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(pt, src, 0, &pgaddr, &pgsize, NULL);
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_head(ptep, pgsize)) {
 			// start pte is not contiguous head
@@ -3199,7 +3214,16 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 		}
 	}
 
-	ptep = ihk_mc_pt_lookup_pte(pt, src + size - 1, 0, NULL, &pgsize, NULL);
+	if (ptep && pgsize_to_tbllv(pgsize) > 1 && pgaddr != src) {
+		error = ihk_mc_pt_split(pt, vm, src);
+		if (error) {
+			goto out;
+		}
+		new_range->pgshift = 0;
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(pt, src + size - 1, 0,
+			&pgaddr, &pgsize, NULL);
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_tail(ptep, pgsize)) {
 			// end pte is not contiguous tail
@@ -3208,6 +3232,15 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 				goto out;
 			}
 		}
+	}
+
+	if (ptep && pgsize_to_tbllv(pgsize) > 1 &&
+			pgaddr + pgsize != src + size) {
+		error = ihk_mc_pt_split(pt, vm, src + size - 1);
+		if (error) {
+			goto out;
+		}
+		new_range->pgshift = 0;
 	}
 
 	error = visit_pte_range(pt, src, src+size, 0, VPTEF_SKIP_NULL,

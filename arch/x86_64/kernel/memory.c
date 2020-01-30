@@ -2228,11 +2228,24 @@ int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
 	intptr_t phys;
 	struct page *page;
 
+	int level;
 
 retry:
 	ptep = ihk_mc_pt_lookup_pte(pt, addr, 0, &pgaddr, &pgsize, NULL);
+	level = pgsize_to_tbllv(pgsize);
+	if (level < 1) {
+		ekprintf("%s:invalid pgsize %#lx\n", __func__, pgsize);
+		error = -EINVAL;
+		goto out;
+	}
+
 	if (ptep && !pte_is_null(ptep) && (pgaddr != addr)) {
 		page = NULL;
+		if (level == 1) {
+			/* Don't need split */
+			goto out;
+		}
+
 		if (!pte_is_fileoff(ptep, pgsize)) {
 			phys = pte_get_phys(ptep);
 			page = phys_to_page(phys);
@@ -2372,13 +2385,44 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 				   void *src, void *dest, size_t size, struct vm_range *range)
 {
 	int error;
+	pte_t *ptep;
+	size_t pgsize;
+	void *pgaddr;
 	struct move_args args;
+	struct vm_range *new_range;
 
 	dkprintf("move_pte_range(%p,%p,%p,%#lx)\n", pt, src, dest, size);
 	args.src = (uintptr_t)src;
 	args.dest = (uintptr_t)dest;
 	args.vm = vm;
 	args.range = range;
+
+	new_range = lookup_process_memory_range(vm,
+			(uintptr_t)dest, (uintptr_t)dest + 1);
+	if (!new_range) {
+		error = -EFAULT;
+		goto out;
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(pt, src, 0, &pgaddr, &pgsize, NULL);
+	if (ptep && pgsize_to_tbllv(pgsize) > 1 && pgaddr != src) {
+		error = ihk_mc_pt_split(pt, vm, src);
+		if (error) {
+			goto out;
+		}
+		new_range->pgshift = 0;
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(pt, src + size - 1, 0,
+			&pgaddr, &pgsize, NULL);
+	if (ptep && pgsize_to_tbllv(pgsize) > 1 &&
+			pgaddr + pgsize != src + size) {
+		error = ihk_mc_pt_split(pt, vm, src + size - 1);
+		if (error) {
+			goto out;
+		}
+		new_range->pgshift = 0;
+	}
 
 	error = visit_pte_range(pt, src, src+size, 0, VPTEF_SKIP_NULL,
 			&move_one_page, &args);
