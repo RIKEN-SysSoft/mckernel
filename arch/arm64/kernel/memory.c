@@ -3006,6 +3006,12 @@ retry:
 
 	if (ptep && !ptl_null(ptep, level) && (pgaddr != addr)) {
 		page = NULL;
+
+		if (level == 1) {
+			/* Don't need split */
+			goto out;
+		}
+
 		if (ptl_is_contiguous(ptep, level)) {
 			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
@@ -3199,6 +3205,13 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 		}
 	}
 
+	if (ptep && pgsize_to_tbllv(pgsize) > 1) {
+		error = ihk_mc_pt_split(pt, vm, src);
+		if (error) {
+			goto out;
+		}
+	}
+
 	ptep = ihk_mc_pt_lookup_pte(pt, src + size - 1, 0, NULL, &pgsize, NULL);
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_tail(ptep, pgsize)) {
@@ -3207,6 +3220,13 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 			if (error) {
 				goto out;
 			}
+		}
+	}
+
+	if (ptep && pgsize_to_tbllv(pgsize) > 1) {
+		error = ihk_mc_pt_split(pt, vm, src + size - 1);
+		if (error) {
+			goto out;
 		}
 	}
 
