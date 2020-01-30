@@ -908,9 +908,18 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 {
 	int error;
 	struct vm_range *newrange = NULL;
+	unsigned long page_mask;
 
 	dkprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p)\n",
 			vm, range->start, range->end, addr, splitp);
+
+	if (range->pgshift != 0) {
+		page_mask = (1 << range->pgshift) - 1;
+		if (addr & page_mask) {
+			/* split addr is not aligned */
+			range->pgshift = 0;
+		}
+	}
 
 	error = ihk_mc_pt_split(vm->address_space->page_table, vm, (void *)addr);
 	if (error) {
