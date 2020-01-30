@@ -1,0 +1,65 @@
+*** C1383T01 start *******************************
+** mmap p1: 0x2aaaaae00000 - 0x2aaaab400000
+** mmap p2: 0x2aaaab600000 - 0x2aaaabc00000
+** mmap p3: 0x2aaaabc00000 - 0x2aaaac200000
+*** mremap p4: 0x2aaaabc00000 - 0x2aaaac1ff000
+** mmap p1: 0x2aaaac200000 - 0x2aaaac800000
+** mmap p2: 0x2aaaac800000 - 0x2aaaace00000
+** mmap p3: 0x2aaaace00000 - 0x2aaaad400000
+*** mremap p4: 0x2aaaace01000 - 0x2aaaad400000
+** mmap p1: 0x2aaaad400000 - 0x2aaaada00000
+** mmap p2: 0x2aaaada00000 - 0x2aaaae000000
+** mmap p3: 0x2aaaae000000 - 0x2aaaae600000
+*** mremap p4: 0x2aaaae000000 - 0x2aaaae5ff000
+** mmap p1: 0x2aaaae600000 - 0x2aaaaec00000
+** mmap p2: 0x2aaaaec00000 - 0x2aaaaf200000
+** mmap p3: 0x2aaaaf200000 - 0x2aaaaf800000
+*** mremap p4: 0x2aaaaf201000 - 0x2aaaaf800000
+[OK] mremap on HUGETLB
+*** C1383T01 PASSED ******************************
+
+*** C1383T02 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+thp02.c:75: INFO: mremap 0x2aaaab800000 to 0x2aaaad000000
+thp02.c:75: INFO: mremap 0x2aaaadc00000 to 0x2aaaaf401000
+thp02.c:75: INFO: mremap 0x2aaab0001000 to 0x2aaab1800000
+thp02.c:75: INFO: mremap 0x2aaab2401000 to 0x2aaab3c01000
+thp02.c:85: PASS: Still alive.
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1383T02 PASSED (1)
+
+*** C1383T03 start *******************************
+mremap01    1  TPASS  :  Functionality of mremap() is correct
+*** C1383T03 PASSED (1)
+
+*** C1383T04 start *******************************
+mremap02    1  TPASS  :  mremap() Failed, 'invalid argument specified' - errno 22
+*** C1383T04 PASSED (1)
+
+*** C1383T05 start *******************************
+mremap03    1  TPASS  :  mremap() Fails, 'old region not mapped', errno 14
+*** C1383T05 PASSED (1)
+
+*** C1383T06 start *******************************
+mremap04    1  TPASS  :  mremap() failed, 'MREMAP_MAYMOVE flag unset', errno 12
+*** C1383T06 PASSED (1)
+
+*** C1383T07 start *******************************
+mremap05    1  TPASS  :  MREMAP_FIXED requires MREMAP_MAYMOVE
+mremap05    2  TPASS  :  new_addr has to be page aligned
+mremap05    3  TPASS  :  old/new area must not overlap
+mremap05    4  TPASS  :  mremap #1
+mremap05    5  TPASS  :  mremap #1 value OK
+mremap05    6  TPASS  :  mremap #2
+mremap05    7  TPASS  :  mremap #2 value OK
+*** C1383T07 PASSED (7)
+
+*** C1383T08 start *******************************
+move_pages10    1  TPASS  :  move_pages failed with EINVAL as expected
+*** C1383T08 PASSED (1)
+

@@ -8500,7 +8500,7 @@ SYSCALL_DECLARE(mremap)
 		error = add_process_memory_range(thread->vm, newstart, newend, -1,
 				range->flag, range->memobj,
 				range->objoff + (oldstart - range->start),
-				range->pgshift, NULL, NULL);
+				0, NULL, NULL);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"add failed. %d\n",
@@ -8520,6 +8520,29 @@ SYSCALL_DECLARE(mremap)
 		if (oldsize > 0) {
 			size = (oldsize < newsize)? oldsize: newsize;
 			ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
+			if (range->start != oldstart) {
+				error = split_process_memory_range(vm,
+						range, oldstart, &range);
+				if (error) {
+					ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"split range failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+					goto out;
+				}
+			}
+			if (range->end != oldstart + size) {
+				error = split_process_memory_range(vm,
+						range, oldstart + size, NULL);
+				if (error) {
+					ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
+						"split range failed. %d\n",
+						oldaddr, oldsize0, newsize0,
+						flags, newaddr, error);
+					goto out;
+				}
+			}
+
 			error = move_pte_range(vm->address_space->page_table, vm,
 								   (void *)oldstart, (void *)newstart,
 								   size, range);
