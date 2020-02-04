@@ -60,6 +60,8 @@ struct thread_info {
 	uintptr_t arch_clv;
 }; /* struct thread_info */
 
+/* Physical memory start addr (non-zero on ARM64) */
+unsigned long PHYS_OFFSET;
 /* Virtual address where McKernel is mapped to */
 unsigned long MAP_KERNEL_START;
 
@@ -605,6 +607,7 @@ static int setup_dump(char *fname) {
 	}
 
 	kernel_base = mem_chunks->kernel_base;
+	PHYS_OFFSET = mem_chunks->phys_start;
 
 	for (i = 0; i < mem_info.nr_chunks; ++i) {
 		memset(physmem_name,0,sizeof(physmem_name));

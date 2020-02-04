@@ -50,6 +50,8 @@ struct dump_mem_chunk {
 typedef struct dump_mem_chunks_s {
 	int nr_chunks;
 	unsigned long kernel_base;
+	/* memstart_addr in aarch64 */
+	unsigned long phys_start;
 	struct dump_mem_chunk chunks[];
 } dump_mem_chunks_t;
 
