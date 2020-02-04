@@ -8,7 +8,11 @@
 #include <inttypes.h>
 #include <arch-eclair.h>
 
+extern unsigned long MAP_KERNEL_START;
+
 /* common */
+int read_mem(uintptr_t va, void *buf, size_t size);
+#define NOSYMBOL ((uintptr_t)-1)
 uintptr_t lookup_symbol(char *name);
 int read_symbol_64(char *name, void *buf);
 ssize_t print_bin(char *buf, size_t buf_size, void *data, size_t size);

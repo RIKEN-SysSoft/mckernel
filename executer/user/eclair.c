@@ -60,6 +60,9 @@ struct thread_info {
 	uintptr_t arch_clv;
 }; /* struct thread_info */
 
+/* Virtual address where McKernel is mapped to */
+unsigned long MAP_KERNEL_START;
+
 static struct options opt;
 static volatile int f_done = 0;
 static bfd *symbfd = NULL;
@@ -83,7 +86,6 @@ uintptr_t lookup_symbol(char *name)
 			return (symtab[i]->section->vma + symtab[i]->value);
 		}
 	}
-#define NOSYMBOL ((uintptr_t)-1)
 	return NOSYMBOL;
 } /* lookup_symbol() */
 
