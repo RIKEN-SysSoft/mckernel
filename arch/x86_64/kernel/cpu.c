@@ -145,7 +145,7 @@ void reload_idt(void)
 }
 
 static struct list_head handlers[256 - 32];
-extern char nmi[];
+extern char nmi_handler[];
 extern char page_fault[], general_protection_exception[];
 extern char debug_exception[], int3_exception[];
 
@@ -172,7 +172,7 @@ static void init_idt(void)
 		set_idt_entry(i, generic_common_handlers[i]);
 	}
 
-	set_idt_entry(2, (uintptr_t)nmi);
+	set_idt_entry(2, (uintptr_t)nmi_handler);
 	set_idt_entry(13, (unsigned long)general_protection_exception);
 	set_idt_entry(14, (unsigned long)page_fault);
 
@@ -2001,6 +2001,92 @@ mod_nmi_ctx(void *nmi_ctx, void (*func)())
 	l[i++] = flags & ~RFLAGS_IF;		// rflags (disable interrupt)
 	l[i++] = (unsigned long)(l + 27);	// ols rsp
 	l[i++] = 0x28;				// KERNEL DS
+}
+
+void arch_save_panic_regs(void *irq_regs)
+{
+	struct thread *current = cpu_local_var(current);
+	struct x86_user_context *regs =
+		(struct x86_user_context *)irq_regs;
+	struct x86_cpu_local_variables *x86v =
+		get_x86_cpu_local_variable(ihk_mc_get_processor_id());
+	struct segment_regs {
+		uint32_t rflags;
+		uint32_t cs;
+		uint32_t ss;
+		uint32_t ds;
+		uint32_t es;
+		uint32_t fs;
+		uint32_t gs;
+	} *sregs;
+
+	/* Kernel space? */
+	if (regs->gpr.rip > USER_END) {
+		x86v->panic_regs[0] = regs->gpr.rax;
+		x86v->panic_regs[1] = regs->gpr.rbx;
+		x86v->panic_regs[2] = regs->gpr.rcx;
+		x86v->panic_regs[3] = regs->gpr.rdx;
+		x86v->panic_regs[4] = regs->gpr.rsi;
+		x86v->panic_regs[5] = regs->gpr.rdi;
+		x86v->panic_regs[6] = regs->gpr.rbp;
+		x86v->panic_regs[7] = regs->gpr.rsp;
+		x86v->panic_regs[8] = regs->gpr.r8;
+		x86v->panic_regs[9] = regs->gpr.r9;
+		x86v->panic_regs[10] = regs->gpr.r10;
+		x86v->panic_regs[11] = regs->gpr.r11;
+		x86v->panic_regs[12] = regs->gpr.r12;
+		x86v->panic_regs[13] = regs->gpr.r13;
+		x86v->panic_regs[14] = regs->gpr.r14;
+		x86v->panic_regs[15] = regs->gpr.r15;
+		x86v->panic_regs[16] = regs->gpr.rip;
+		sregs = (struct segment_regs *)&x86v->panic_regs[17];
+		sregs->rflags = regs->gpr.rflags;
+		sregs->cs = regs->gpr.cs;
+		sregs->ss = regs->gpr.ss;
+		sregs->ds = regs->sr.ds;
+		sregs->es = regs->sr.es;
+		sregs->fs = regs->sr.fs;
+		sregs->gs = regs->sr.gs;
+	}
+	/* User-space, show kernel context */
+	else {
+		kprintf("%s: in user-space: %p\n", __func__, regs->gpr.rip);
+		x86v->panic_regs[0] = 0;
+		x86v->panic_regs[1] = current->ctx.rbx;
+		x86v->panic_regs[2] = 0;
+		x86v->panic_regs[3] = 0;
+		x86v->panic_regs[4] = current->ctx.rsi;
+		x86v->panic_regs[5] = current->ctx.rdi;
+		x86v->panic_regs[6] = current->ctx.rbp;
+		x86v->panic_regs[7] = current->ctx.rsp;
+		x86v->panic_regs[8] = 0;
+		x86v->panic_regs[9] = 0;
+		x86v->panic_regs[10] = 0;
+		x86v->panic_regs[11] = 0;
+		x86v->panic_regs[12] = regs->gpr.r12;
+		x86v->panic_regs[13] = regs->gpr.r13;
+		x86v->panic_regs[14] = regs->gpr.r14;
+		x86v->panic_regs[15] = regs->gpr.r15;
+		x86v->panic_regs[16] = (unsigned long)enter_user_mode;
+		sregs = (struct segment_regs *)&x86v->panic_regs[17];
+		sregs->rflags = regs->gpr.rflags;
+		sregs->cs = regs->gpr.cs;
+		sregs->ss = regs->gpr.ss;
+		sregs->ds = regs->sr.ds;
+		sregs->es = regs->sr.es;
+		sregs->fs = regs->sr.fs;
+		sregs->gs = regs->sr.gs;
+	}
+
+	x86v->paniced = 1;
+}
+
+void arch_clear_panic(void)
+{
+	struct x86_cpu_local_variables *x86v =
+		get_x86_cpu_local_variable(ihk_mc_get_processor_id());
+
+	x86v->paniced = 0;
 }
 
 int arch_cpu_read_write_register(
