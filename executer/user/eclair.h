@@ -8,6 +8,7 @@
 #include <inttypes.h>
 #include <arch-eclair.h>
 
+extern unsigned long PHYS_OFFSET;
 extern unsigned long MAP_KERNEL_START;
 
 /* common */
