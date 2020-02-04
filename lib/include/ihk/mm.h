@@ -249,6 +249,7 @@ unsigned int ihk_mc_get_dump_level(void);
 struct ihk_dump_page_set *ihk_mc_get_dump_page_set(void);
 struct ihk_dump_page *ihk_mc_get_dump_page(void);
 void ihk_mc_query_mem_areas(void);
+void ihk_mc_clear_dump_page_completion(void);
 void ihk_mc_query_mem_user_page(void *dump_page_set);
 void ihk_mc_query_mem_free_page(void *dump_page_set);
 int ihk_mc_chk_page_address(pte_t mem_addr);

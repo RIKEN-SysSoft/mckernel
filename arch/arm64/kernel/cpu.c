@@ -33,6 +33,7 @@
 #include <hwcap.h>
 #include <virt.h>
 #include <init.h>
+#include <bootparam.h>
 
 //#define DEBUG_PRINT_CPU
 
@@ -119,51 +120,49 @@ static struct ihk_mc_interrupt_handler cpu_stop_handler = {
 };
 
 extern long freeze_thaw(void *nmi_ctx);
-static void multi_nm_interrupt_handler(void *priv)
+
+void arch_save_panic_regs(void *irq_regs)
 {
-	extern int nmi_mode;
-	struct pt_regs *regs = (struct pt_regs *)priv;
+	struct pt_regs *regs = (struct pt_regs *)irq_regs;
 	union arm64_cpu_local_variables *clv;
 
-	switch (nmi_mode) {
-	case 1:
-	case 2:
-		/* mode == 1or2, for FREEZER NMI */
-		dkprintf("%s: freeze mode NMI catch. (nmi_mode=%d)\n",
-			 __func__, nmi_mode);
-		freeze_thaw(NULL);
-		break;
+	clv = get_arm64_this_cpu_local();
 
-	case 0:
-		/* mode == 0,    for MEMDUMP NMI */
-		clv = get_arm64_this_cpu_local();
-
-		if (regs) {
-			memcpy(clv->arm64_cpu_local_thread.panic_regs,
-			       regs->regs, sizeof(regs->regs));
-			clv->arm64_cpu_local_thread.panic_regs[31] = regs->sp;
-			clv->arm64_cpu_local_thread.panic_regs[32] = regs->pc;
-			clv->arm64_cpu_local_thread.panic_regs[33] =
-				regs->pstate;
-		}
-		clv->arm64_cpu_local_thread.paniced = 1;
-		ihk_mc_query_mem_areas();
-		/* memdump-nmi is halted McKernel, break is unnecessary. */
-		/* fall through */
-	case 3:
-		/* mode == 3,    for SHUTDOWN-WAIT NMI */
-		while (1) {
-			cpu_halt();
-		}
-		break;
-
-	default:
-		ekprintf("%s: Unknown nmi-mode(%d) detected.\n",
-			 __func__, nmi_mode);
-		break;
+	/* For user-space, use saved kernel context */
+	if (regs->pc < USER_END) {
+		memset(clv->arm64_cpu_local_thread.panic_regs,
+				0, sizeof(clv->arm64_cpu_local_thread.panic_regs));
+		clv->arm64_cpu_local_thread.panic_regs[29] =
+			current_thread_info()->cpu_context.fp;
+		clv->arm64_cpu_local_thread.panic_regs[31] =
+			current_thread_info()->cpu_context.sp;
+		clv->arm64_cpu_local_thread.panic_regs[32] =
+			current_thread_info()->cpu_context.pc;
+		clv->arm64_cpu_local_thread.panic_regs[33] =
+			PSR_MODE_EL1h;
 	}
+	else {
+		memcpy(clv->arm64_cpu_local_thread.panic_regs,
+				regs->regs, sizeof(regs->regs));
+		clv->arm64_cpu_local_thread.panic_regs[31] = regs->sp;
+		clv->arm64_cpu_local_thread.panic_regs[32] = regs->pc;
+		clv->arm64_cpu_local_thread.panic_regs[33] =
+			regs->pstate;
+
+	}
+
+	clv->arm64_cpu_local_thread.paniced = 1;
 }
 
+void arch_clear_panic(void)
+{
+	union arm64_cpu_local_variables *clv;
+
+	clv = get_arm64_this_cpu_local();
+	clv->arm64_cpu_local_thread.paniced = 0;
+}
+
+extern void multi_nm_interrupt_handler(void *irq_regs);
 static struct ihk_mc_interrupt_handler multi_nmi_handler = {
 	.func = multi_nm_interrupt_handler,
 	.priv = NULL,
@@ -991,6 +990,9 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 		/* branch in ret_from_fork */
 		new_ctx->thread->cpu_context.x19 = (unsigned long)next_function;
 
+		sp -= 16;
+		new_ctx->thread->cpu_context.fp = sp;
+
 		/* set stack_pointer */
 		new_ctx->thread->cpu_context.sp = sp - sizeof(ihk_mc_user_context_t);
 
@@ -1029,6 +1031,9 @@ void ihk_mc_init_context(ihk_mc_kernel_context_t *new_ctx,
 
 		/* set stack_pointer */
 		new_ctx->thread->cpu_context.sp = sp;
+		/* use the 16 bytes padding in ihk_mc_init_user_process()
+		 * as closing frame in the frame chain */
+		new_ctx->thread->cpu_context.fp = sp + sizeof(ihk_mc_user_context_t);
 
 		/* clear pt_regs area */
 		new_uctx = (ihk_mc_user_context_t *)new_ctx->thread->cpu_context.sp;
