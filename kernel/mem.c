@@ -44,6 +44,7 @@
 #include <limits.h>
 #include <sysfs.h>
 #include <ihk/debug.h>
+#include <bootparam.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -114,28 +115,10 @@ struct pagealloc_track_entry {
 	ihk_spinlock_t addr_list_lock;
 };
 
-struct ihk_dump_page {
-	unsigned long start;
-	unsigned long map_count;
-	unsigned long map[0];
-};
-
-struct ihk_dump_page_set {
-	volatile unsigned int completion_flag;
-	unsigned int count;
-	unsigned long page_size;
-	unsigned long phy_page;
-};
-
 struct dump_pase_info {
 	struct ihk_dump_page_set *dump_page_set;
 	struct ihk_dump_page *dump_pages;
 };
-
-#define IHK_DUMP_PAGE_SET_INCOMPLETE 0
-#define IHK_DUMP_PAGE_SET_COMPLETED  1
-#define DUMP_LEVEL_ALL 0
-#define DUMP_LEVEL_USER_UNUSED_EXCLUDE 24
 
 /** Get the index in the map array */
 #define MAP_INDEX(n)    ((n) >> 6)
@@ -2512,10 +2495,13 @@ void ihk_mc_query_mem_areas(void){
 	struct ihk_dump_page_set *dump_page_set;
 	struct dump_pase_info dump_pase_info;
 
-	/* Performed only for CPU 0 */
+	/*
+	 * Performed only on the last CPU to make sure
+	 * all other cores are already stopped.
+	 */
 	cpu_id = ihk_mc_get_processor_id();
 
-	if (0 != cpu_id)
+	if (num_processors - 1 != cpu_id)
 		return;
 
 	dump_page_set = ihk_mc_get_dump_page_set();
@@ -2534,8 +2520,17 @@ void ihk_mc_query_mem_areas(void){
 	}
 
 	dump_page_set->completion_flag = IHK_DUMP_PAGE_SET_COMPLETED;
+	dkprintf("%s: IHK_DUMP_PAGE_SET_COMPLETED\n", __func__);
 
 	return;
+}
+
+void ihk_mc_clear_dump_page_completion(void)
+{
+	struct ihk_dump_page_set *dump_page_set;
+
+	dump_page_set = ihk_mc_get_dump_page_set();
+	dump_page_set->completion_flag = IHK_DUMP_PAGE_SET_INCOMPLETE;
 }
 
 void ihk_mc_query_mem_user_page(void *dump_pase_info) {
