@@ -22,6 +22,7 @@
 #include <ihk/ihk_host_user.h>
 #include <eclair.h>
 #include <arch-eclair.h>
+#include <signal.h>
 
 #define CPU_TID_BASE 1000000
 
@@ -78,6 +79,7 @@ uintptr_t kernel_base;
 static struct thread_info *tihead = NULL;
 static struct thread_info **titailp = &tihead;
 static struct thread_info *curr_thread = NULL;
+static int remote_running;
 
 uintptr_t lookup_symbol(char *name)
 {
@@ -272,13 +274,15 @@ static int setup_threads(void) {
 	uintptr_t current;
 	uintptr_t locals;
 	size_t locals_span;
+	struct thread_info *ti;
+	struct thread_info *tin;
 
 	error = read_symbol_64("num_processors", &num_processors);
 	if (error) {
 		perror("num_processors");
 		return 1;
 	}
-	printf("%s: num_processors: %d\n", __FUNCTION__, num_processors);
+	dprintf("%s: num_processors: %d\n", __func__, num_processors);
 
 	error = read_symbol_64("locals", &locals);
 	if (error) {
@@ -297,6 +301,15 @@ static int setup_threads(void) {
 		perror("clv");
 		return 1;
 	}
+
+	/* Drop previous threads */
+	for (ti = tihead; ti; ) {
+		tin = ti->next;
+		free(ti);
+		ti = tin;
+	}
+	tihead = NULL;
+	titailp = &tihead;
 
 	for (cpu = 0; cpu < num_processors; ++cpu) {
 		uintptr_t v;
@@ -558,6 +571,62 @@ static int setup_symbols(char *fname) {
 	return 0;
 } /* setup_symbols() */
 
+static int setup_dump_interactive(void)
+{
+	int error;
+	long mem_size;
+	int dump_level = DUMP_LEVEL_ALL;
+	dumpargs_t args;
+
+	args.cmd = DUMP_SET_LEVEL;
+	args.level = dump_level;
+	error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+	if (error) {
+		perror("DUMP_SET_LEVEL");
+		return 1;
+	}
+
+	args.cmd = DUMP_NMI;
+	error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+	if (error) {
+		perror("DUMP_NMI");
+		return 1;
+	}
+
+	remote_running = 0;
+
+	args.cmd = DUMP_QUERY_NUM_MEM_AREAS;
+	args.size = 0;
+	error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+	if (error) {
+		perror("DUMP_QUERY_NUM_MEM_AREAS");
+		return 1;
+	}
+
+	mem_size = args.size;
+	mem_chunks = malloc(mem_size);
+	if (!mem_chunks) {
+		perror("allocating mem_chunks");
+		return 1;
+	}
+
+	memset(mem_chunks, 0, mem_size);
+
+	args.cmd = DUMP_QUERY_MEM_AREAS;
+	args.buf = (void *)mem_chunks;
+	error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+	if (error) {
+		perror("DUMP_QUERY_MEM_AREAS");
+		return 1;
+	}
+
+	kernel_base = mem_chunks->kernel_base;
+	PHYS_OFFSET = mem_chunks->phys_start;
+
+	return 0;
+}
+
+
 static int setup_dump(char *fname) {
 	bfd_boolean ok;
 	long mem_size;
@@ -678,11 +747,13 @@ ssize_t print_bin(char *buf, size_t buf_size, void *data, size_t size) {
 static void command(const char *cmd, char *res, size_t res_size) {
 	const char *p;
 	char *rbp;
+	int error;
 
 	p = cmd;
 	rbp = res;
 
 	do {
+		dprintf("query: %s\n", p);
 		if (!strncmp(p, "qSupported", 10)) {
 			rbp += sprintf(rbp, "PacketSize=1024");
 			rbp += sprintf(rbp, ";qXfer:features:read+");
@@ -712,8 +783,79 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			}
 			rbp += sprintf(rbp, "OK");
 		}
-		else if (!strcmp(p, "Hc-1")) {
+		else if (!strncmp(p, "Hc", 2)) {
+			if (opt.interactive) {
+				rbp += sprintf(rbp, "OK");
+			}
+			else {
+				rbp += sprintf(rbp, "S02");
+			}
+		}
+		else if (opt.interactive &&
+				!strcmp(p, "vCtrlC")) {
+			if (remote_running) {
+				dumpargs_t args;
+				args.cmd = DUMP_NMI;
+
+				error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+				if (error) {
+					perror("DUMP_NMI");
+					break;
+				}
+
+				remote_running = 0;
+			}
 			rbp += sprintf(rbp, "OK");
+		}
+		else if (opt.interactive &&
+				!strcmp(p, "Ctrl-C")) {
+			if (remote_running) {
+				dumpargs_t args;
+				args.cmd = DUMP_NMI;
+
+				error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+				if (error) {
+					perror("DUMP_NMI");
+					break;
+				}
+
+				remote_running = 0;
+			}
+			rbp += sprintf(rbp, "S02");
+		}
+		else if (!strcmp(p, "vCont?")) {
+			if (opt.interactive) {
+				rbp += sprintf(rbp, "vCont;c");
+			}
+		}
+		else if (!strcmp(p, "c")) {
+			if (opt.interactive) {
+				if (!remote_running) {
+					dumpargs_t args;
+					args.cmd = DUMP_NMI_CONT;
+
+					error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+					if (error) {
+						perror("DUMP_NMI_CONT for continue");
+						break;
+					}
+
+					remote_running = 1;
+				}
+				rbp += sprintf(rbp, "OK");
+			}
+			else {
+				rbp += sprintf(rbp, "S02");
+			}
+		}
+		else if (opt.interactive &&
+				!strcmp(p, "?")) {
+			if (remote_running) {
+				rbp += sprintf(rbp, "S12");
+			}
+			else {
+				rbp += sprintf(rbp, "S02");
+			}
 		}
 		else if (!strcmp(p, "?")) {
 			rbp += sprintf(rbp, "S02");
@@ -735,12 +877,23 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			rbp += sprintf(rbp, "%s", str);
 		}
 		else if (!strcmp(p, "D")) {
+			if (opt.interactive && !remote_running) {
+				dumpargs_t args;
+				args.cmd = DUMP_NMI_CONT;
+
+				error = ioctl(opt.mcos_fd, IHK_OS_DUMP, &args);
+				if (error) {
+					perror("DUMP_NMI_CONT for continue");
+					break;
+				}
+
+				remote_running = 1;
+			}
 			rbp += sprintf(rbp, "OK");
 			f_done = 1;
 		}
 		else if (!strcmp(p, "g")) {
 			if (curr_thread->cpu < 0) {
-
 				int error;
 				struct arch_kregs kregs;
 
@@ -798,7 +951,8 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			for (addr = start; addr < (start + size); ++addr) {
 				error = read_mem(addr, &u8, sizeof(u8));
 				if (error) {
-					u8 = 0xE5;
+					//u8 = 0xE5;
+					u8 = 0x00;
 				}
 				rbp += sprintf(rbp, "%02x", u8);
 			}
@@ -807,10 +961,11 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			rbp += sprintf(rbp, "T0;tnotrun:0");
 		}
 		else if (!strncmp(p, "qXfer:memory-map:read::", 23)) {
-			char *str =
-				"<memory-map>"
-				"<memory type=\"rom\" start=\""MAP_KERNEL_TEXT"\" length=\"0x27000\"/>"
-				"</memory-map>";
+			char str[1024];
+			sprintf(str, "<memory-map>"
+					"<memory type=\"rom\" start=\"0x%lx\" length=\"0x27000\"/>"
+					"</memory-map>", MAP_KERNEL_START);
+
 			rbp += sprintf(rbp, "l");
 			if (0)
 			rbp += print_hex(rbp, res_size, str);
@@ -840,6 +995,14 @@ static void command(const char *cmd, char *res, size_t res_size) {
 		}
 		else if (!strcmp(p, "qfThreadInfo")) {
 			struct thread_info *ti;
+
+			if (opt.interactive) {
+				error = setup_threads();
+				if (error) {
+					perror("setup_threads");
+					exit(1);
+				}
+			}
 
 			for (ti = tihead; ti; ti = ti->next) {
 				if (ti == tihead) {
@@ -878,29 +1041,29 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			q = buf;
 			q += sprintf(q, "PID %d, ", ti->pid);
 			if (ti->status & PS_RUNNING) {
-				q += sprintf(q, "%srunning on cpu %d",
+				q += sprintf(q, "%srunning on CPU %d",
 					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status & (PS_INTERRUPTIBLE | PS_UNINTERRUPTIBLE)) {
-				q += sprintf(q, "%swaiting on cpu %d",
+				q += sprintf(q, "%swaiting on CPU %d",
 					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status & PS_STOPPED) {
-				q += sprintf(q, "%sstopped on cpu %d",
+				q += sprintf(q, "%sstopped on CPU %d",
 					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status & PS_TRACED) {
-				q += sprintf(q, "%straced on cpu %d",
+				q += sprintf(q, "%straced on CPU %d",
 					ti->idle ? "idle " : "", ti->lcpu);
 			}
 			else if (ti->status == CS_IDLE) {
-				q += sprintf(q, "cpu %d idle", ti->cpu);
+				q += sprintf(q, "CPU %d idle", ti->cpu);
 			}
 			else if (ti->status == CS_RUNNING) {
-				q += sprintf(q, "cpu %d running", ti->cpu);
+				q += sprintf(q, "CPU %d running", ti->cpu);
 			}
 			else if (ti->status == CS_RESERVED) {
-				q += sprintf(q, "cpu %d reserved", ti->cpu);
+				q += sprintf(q, "CPU %d reserved", ti->cpu);
 			}
 			else {
 				q += sprintf(q, "status=%#x", ti->status);
@@ -910,6 +1073,7 @@ static void command(const char *cmd, char *res, size_t res_size) {
 	} while (0);
 
 	*rbp = '\0';
+	dprintf("res: %s\n", res);
 	return;
 } /* command() */
 
@@ -972,13 +1136,23 @@ static void options(int argc, char *argv[]) {
 static int sock = -1;
 static FILE *ifp = NULL;
 static FILE *ofp = NULL;
+pid_t gdbpid;
+
+void intr_handler(int dummy)
+{
+	kill(gdbpid, SIGINT);
+}
+
 
 static int start_gdb(void) {
 	struct sockaddr_in sin;
 	socklen_t slen;
 	int error;
-	pid_t pid;
 	int ss;
+
+	if (opt.interactive) {
+		signal(SIGINT, intr_handler);
+	}
 
 	sock = socket(PF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
@@ -999,13 +1173,13 @@ static int start_gdb(void) {
 		return 1;
 	}
 
-	pid = fork();
-	if (pid == (pid_t)-1) {
+	gdbpid = fork();
+	if (gdbpid == (pid_t)-1) {
 		perror("fork");
 		return 1;
 	}
 
-	if (!pid) {
+	if (!gdbpid) {
 		char buf[32];
 
 		sprintf(buf, "target remote :%d", ntohs(sin.sin_port));
@@ -1053,8 +1227,10 @@ int main(int argc, char *argv[]) {
 	char *lbp;
 	char *p;
 
-	printf("eclair 0.20160314\n");
 	options(argc, argv);
+	printf("eclair 0.20160314 %s%s\n",
+		opt.interactive ? "live debug mode" : "using dump file: ",
+		opt.interactive ? "" : opt.dump_path);
 	if (opt.help) {
 		print_usage();
 		return 2;
@@ -1067,7 +1243,13 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	error = setup_dump(opt.dump_path);
+	if (opt.interactive) {
+		error = setup_dump_interactive();
+	}
+	else {
+		error = setup_dump(opt.dump_path);
+	}
+
 	if (error) {
 		perror("setup_dump");
 		print_usage();
@@ -1106,6 +1288,21 @@ int main(int argc, char *argv[]) {
 				mode = 1;
 				sum = 0;
 				lbp = lbuf;
+				continue;
+			}
+			// Interrupt remote
+			else if (opt.interactive &&
+					c == 0x03) {
+				mode = 0;
+				fputc('+', ofp);
+				sprintf(lbuf, "%s", "Ctrl-C");
+				command(lbuf, rbuf, sizeof(rbuf));
+				sum = 0;
+				for (p = rbuf; *p != '\0'; ++p) {
+					sum += *p;
+				}
+				fprintf(ofp, "$%s#%02x", rbuf, sum);
+				fflush(ofp);
 				continue;
 			}
 		}
