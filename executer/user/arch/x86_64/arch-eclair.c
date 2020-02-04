@@ -124,6 +124,16 @@ uintptr_t virt_to_phys(uintptr_t va)
 
 int arch_setup_constants(void)
 {
+	MAP_KERNEL_START = lookup_symbol("_head");
+	if (MAP_KERNEL_START == NOSYMBOL) {
+		fprintf(stderr, "error: obtaining MAP_KERNEL_START\n");
+		return 1;
+	}
+
+	/* One page extra head, see smp-x86.lds */
+	MAP_KERNEL_START -= 0x1000;
+	printf("x86 MAP_KERNEL_START 0x%lx\n", MAP_KERNEL_START);
+
 	if (read_symbol_64("linux_page_offset_base",
 				&linux_page_offset) != 0) {
 		fprintf(stderr, "error: obtaining Linux page offset\n");

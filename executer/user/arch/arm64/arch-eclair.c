@@ -98,8 +98,8 @@ uintptr_t virt_to_phys(uintptr_t va)
 		return (va - MAP_ST + PHYS_OFFSET);
 	}
 
-	if (va >= MAP_KERNEL) {
-		return (va - MAP_KERNEL + kernel_base);
+	if (va >= MAP_KERNEL_START) {
+		return (va - MAP_KERNEL_START + kernel_base);
 	}
 
 	return NOPHYS;
@@ -107,7 +107,13 @@ uintptr_t virt_to_phys(uintptr_t va)
 
 int arch_setup_constants(void)
 {
-	/* Nothing here */
+	MAP_KERNEL_START = lookup_symbol("_head");
+	if (MAP_KERNEL_START == NOSYMBOL) {
+		fprintf(stderr, "error: obtaining MAP_KERNEL_START\n");
+		return 1;
+	}
+	printf("arm64 MAP_KERNEL_START 0x%lx\n", MAP_KERNEL_START);
+
 	return 0;
 }
 

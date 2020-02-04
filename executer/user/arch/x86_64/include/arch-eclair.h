@@ -4,7 +4,6 @@
 
 #define MAP_ST_START       0xffff800000000000UL
 #define MAP_FIXED_START    0xffff860000000000UL
-#define MAP_KERNEL_START   0xFFFFFFFFFE800000UL
 extern unsigned long linux_page_offset;
 #define ARCH_CLV_SPAN	"x86_cpu_local_variables_span"
 
