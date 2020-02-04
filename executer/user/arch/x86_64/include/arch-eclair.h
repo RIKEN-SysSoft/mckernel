@@ -11,9 +11,8 @@ extern unsigned long linux_page_offset;
 
 #define ARCH_REGS	21
 
-#define PANIC_REGS_OFFSET	240
-
-#define MAP_KERNEL_TEXT	"0xffffffff80001000"
+/* See struct x86_cpu_local_variables */
+#define PANIC_REGS_OFFSET	288
 
 struct arch_kregs {
 	uintptr_t rsp, rbp, rbx, rsi;
