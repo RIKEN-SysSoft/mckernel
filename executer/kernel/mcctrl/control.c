@@ -3186,9 +3186,45 @@ out:
 	return rc;
 }
 
+static int __mcctrl_control_perm(unsigned int request)
+{
+	int ret = 0;
+	kuid_t euid;
+
+	/* blacklist */
+	switch (request) {
+	case IHK_OS_AUX_PERF_NUM:
+	case IHK_OS_AUX_PERF_SET:
+	case IHK_OS_AUX_PERF_GET:
+	case IHK_OS_AUX_PERF_ENABLE:
+	case IHK_OS_AUX_PERF_DISABLE:
+	case IHK_OS_AUX_PERF_DESTROY:
+		euid = current_euid();
+		dprintf("%s: request: %x, euid: %u\n",
+			__func__, request, euid.val);
+		if (euid.val) {
+			ret = -EPERM;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return ret;
+}
+
 long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
                       struct file *file)
 {
+	int ret;
+
+	ret = __mcctrl_control_perm(req);
+	if (ret) {
+		dprintf("%s: permission denied, req: %x, ret: %d\n",
+			__func__, req, ret);
+		return ret;
+	}
+
 	switch (req) {
 	case MCEXEC_UP_PREPARE_IMAGE:
 		return mcexec_prepare_image(os,

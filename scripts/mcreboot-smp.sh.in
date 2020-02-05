@@ -116,7 +116,7 @@ if [ "${pid}" != "" ]; then
     ${SUDO} kill -9 ${pid} > /dev/null 2> /dev/null
 fi
 if [ "${redirect_kmsg}" != "0" -o "${mon_interval}" != "-1" ]; then
-    ${SBINDIR}/ihkmond -f ${facility} -k ${redirect_kmsg} -i ${mon_interval}
+    ${SUDO} ${SBINDIR}/ihkmond -f ${facility} -k ${redirect_kmsg} -i ${mon_interval}
 fi
 
 disable_irqbalance_mck() {
