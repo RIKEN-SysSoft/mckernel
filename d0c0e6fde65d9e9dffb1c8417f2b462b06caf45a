@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c0314b16_024cc417",
+        "filename": "arch/arm64/kernel/memory.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3222,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-02-05T07:11:09Z",
+      "side": 1,
+      "message": "(1) vm_rangeをsplitすることで、startとendがページ教会になるようにする\n(2) move_pte_rangeでPTEを移動する\n\n(1) split_process_memory_rangeでlarge pageがsplitされたら、range-\u003epgshiftを0にする処理を追加しましょう。\n(2) destのvm_rangeのpgshiftを0にしましょう。srcがsplitされている以内に関わらず、dstのアドレスがsrcと同じようなalignにならないことがあるため。\n\nまた、以下のコメントを書いて、前提条件を記録しておきましょう。\n/* Assuming anonymous map and it\u0027s allowed to set pgshift to zero */",
+      "range": {
+        "startLine": 3222,
+        "startChar": 2,
+        "endLine": 3222,
+        "endChar": 11
+      },
+      "revId": "d0c0e6fde65d9e9dffb1c8417f2b462b06caf45a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
