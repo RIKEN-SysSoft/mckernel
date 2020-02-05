@@ -4628,7 +4628,7 @@ SYSCALL_DECLARE(rt_sigtimedwait)
 	struct list_head *head;
 	mcs_rwlock_lock_t *lock;
 	struct mcs_rwlock_node_irqsave mcs_rw_node;
-	int w;
+	__sigset_t w;
 	int sig;
         struct timespec ats;
         struct timespec ets;
