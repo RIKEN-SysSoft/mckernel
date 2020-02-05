@@ -1313,7 +1313,6 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 	struct list_head *head = NULL;
 	int rc;
 	unsigned long irqstate = 0;
-	struct k_sigaction *k;
 	int doint;
 	int found = 0;
 	siginfo_t info0;
@@ -1323,6 +1322,7 @@ do_kill(struct thread *thread, int pid, int tid, int sig, siginfo_t *info,
 	struct process_hash *phash = rset->process_hash;
 	struct mcs_rwlock_node lock;
 	struct mcs_rwlock_node updatelock;
+	struct sig_pending *pending = NULL;
 
 	if(sig > 64 || sig < 0)
 		return -EINVAL;
@@ -1544,44 +1544,36 @@ done:
 
 	mcs_rwlock_writer_lock_noirq(savelock, &mcs_rw_node);
 
-	/* Put signal event even when handler is SIG_IGN or SIG_DFL
-	   because target ptraced thread must call ptrace_report_signal 
-	   in check_signal */
 	rc = 0;
-	k = tthread->sigcommon->action + sig - 1;
-	if ((sig != SIGKILL && (tthread->ptrace & PT_TRACED)) ||
-	    (k->sa.sa_handler != (void *)1 &&
-	     (k->sa.sa_handler != NULL ||
-	      (sig != SIGCHLD && sig != SIGURG && sig != SIGCONT)))) {
-		struct sig_pending *pending = NULL;
-		if (sig < 33) { // SIGRTMIN - SIGRTMAX
-			list_for_each_entry(pending, head, list){
-				if(pending->sigmask.__val[0] == mask &&
-				   pending->ptracecont == ptracecont)
-					break;
-			}
-			if(&pending->list == head)
-				pending = NULL;
+
+	if (sig < 33) { // SIGRTMIN - SIGRTMAX
+		list_for_each_entry(pending, head, list) {
+			if (pending->sigmask.__val[0] == mask &&
+			    pending->ptracecont == ptracecont)
+				break;
 		}
-		if(pending == NULL){
-			doint = 1;
-			pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
-			if(!pending){
-				rc = -ENOMEM;
-			}
-			else{
-				memset(pending, 0, sizeof(struct sig_pending));
-				pending->sigmask.__val[0] = mask;
-				memcpy(&pending->info, info, sizeof(siginfo_t));
-				pending->ptracecont = ptracecont;
-				if(sig == SIGKILL || sig == SIGSTOP)
-					list_add(&pending->list, head);
-				else
-					list_add_tail(&pending->list, head);
-				tthread->sigevent = 1;
-			}
+		if (&pending->list == head)
+			pending = NULL;
+	}
+	if (pending == NULL) {
+		doint = 1;
+		pending = kmalloc(sizeof(struct sig_pending), IHK_MC_AP_NOWAIT);
+		if (!pending) {
+			rc = -ENOMEM;
+		}
+		else {
+			memset(pending, 0, sizeof(struct sig_pending));
+			pending->sigmask.__val[0] = mask;
+			memcpy(&pending->info, info, sizeof(siginfo_t));
+			pending->ptracecont = ptracecont;
+			if (sig == SIGKILL || sig == SIGSTOP)
+				list_add(&pending->list, head);
+			else
+				list_add_tail(&pending->list, head);
+			tthread->sigevent = 1;
 		}
 	}
+
 	mcs_rwlock_writer_unlock_noirq(savelock, &mcs_rw_node);
 	cpu_restore_interrupt(irqstate);
 
