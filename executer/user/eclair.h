@@ -28,4 +28,11 @@ uintptr_t virt_to_phys(uintptr_t va);
 
 int arch_setup_constants(void);
 
+//#define DEBUG
+#ifdef DEBUG
+#define dprintf printf
+#else
+#define dprintf(...) do {} while (0)
+#endif
+
 #endif	/* HEADER_USER_COMMON_ECLAIR_H */
