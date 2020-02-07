@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1bef1b43_8cbdd326",
+        "filename": "executer/user/arch/arm64/arch-eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T04:48:27Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint error;\n+\terror \u003d read_mem(ctx, \u0026ctx, sizeof(ctx));",
+      "revId": "7713a8e90fd737111bbfa23731afedff989e745f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a5fe89f1_2c06f703",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T04:48:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d print_bin(rbp, rbp_size, (void *)\u0026kregs-\u003erbx, sizeof(uint64_t));\t/* rbx */",
+      "revId": "7713a8e90fd737111bbfa23731afedff989e745f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c4fe1db2_6b6b353d",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T04:48:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tret \u003d print_bin(rbp, rbp_size, (void *)regs_1[i], sizeof(regs_1[0]));",
+      "revId": "7713a8e90fd737111bbfa23731afedff989e745f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89549473_d8395122",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T04:48:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tret \u003d print_bin(rbp, rbp_size, (void *)regs_2[i], sizeof(regs_2[0]));",
+      "revId": "7713a8e90fd737111bbfa23731afedff989e745f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "42cbfb9c_7010b18d",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T04:48:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d print_bin(rbp, rbp_size, (void *)\u0026ihk_mc_switch_context, sizeof(uint64_t));\t/* rip */",
+      "revId": "7713a8e90fd737111bbfa23731afedff989e745f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ac5877d_274e8b9a",
+        "filename": "executer/user/arch/x86_64/arch-eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T04:48:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d print_bin(rbp, rbp_size, (void *)\u0026kregs-\u003erflags, sizeof(uint32_t));\t/* rflags */",
+      "revId": "7713a8e90fd737111bbfa23731afedff989e745f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca503854_d4f6dff5",
+        "filename": "executer/user/eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 734,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T04:48:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\terror \u003d arch_read_kregs(curr_thread-\u003eprocess+K(CTX_OFFSET),",
+      "revId": "7713a8e90fd737111bbfa23731afedff989e745f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
