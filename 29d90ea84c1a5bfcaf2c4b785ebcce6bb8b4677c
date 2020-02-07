@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8bbc7ace_e439d7e8",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 8527,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T02:15:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tekprintf(\"sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):\"",
+      "revId": "29d90ea84c1a5bfcaf2c4b785ebcce6bb8b4677c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "67921639_9bf93d5c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 8538,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-07T02:15:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tekprintf(\"sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):\"",
+      "revId": "29d90ea84c1a5bfcaf2c4b785ebcce6bb8b4677c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
