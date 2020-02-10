@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7778941e_98b74555",
+        "filename": "arch/arm64/kernel/ptrace.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 984,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T04:30:30Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t * Report no change. */",
+      "revId": "8e82c81a77ee0646123ebf5b0d796adec4c8ca6a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1f5faf3e_ca121ad1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10007,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T04:30:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t * XXX: After PTRACE_EVENT_EXEC we need to report an extra SIGTRAP.",
+      "revId": "8e82c81a77ee0646123ebf5b0d796adec4c8ca6a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "29297097_19bd7bde",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10008,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T04:30:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t * This is a tmp fix and should be moved into ptrace_report_exec()",
+      "revId": "8e82c81a77ee0646123ebf5b0d796adec4c8ca6a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cbb95c6c_5386bd55",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10011,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T04:30:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tarch_ptrace_syscall_event(cpu_local_var(current), ctx, 0);",
+      "revId": "8e82c81a77ee0646123ebf5b0d796adec4c8ca6a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75807914_1c1383d1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10012,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T04:30:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tcpu_local_var(current)-\u003eptrace \u0026\u003d ~(PT_TRACED_AFTER_EXEC);",
+      "revId": "8e82c81a77ee0646123ebf5b0d796adec4c8ca6a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "92d4ae0f_72c1b4c1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 10016,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T04:30:30Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\t\t\tctx, -ENOSYS);",
+      "revId": "8e82c81a77ee0646123ebf5b0d796adec4c8ca6a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
