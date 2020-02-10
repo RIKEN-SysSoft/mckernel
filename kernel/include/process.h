@@ -80,6 +80,7 @@
 #define PT_TRACED 0x80     /* The process is ptraced */
 #define PT_TRACE_EXEC 0x100 /* Trace execve(2) */
 #define PT_TRACE_SYSCALL 0x200 /* Trace syscall enter */
+#define PT_TRACED_AFTER_EXEC 0x1000
 
 // ptrace(2) request
 #define	PTRACE_TRACEME 0
@@ -127,6 +128,7 @@
 #define	PTRACE_EVENT_EXEC 4
 #define	PTRACE_EVENT_VFORK_DONE 5
 #define	PTRACE_EVENT_EXIT 6
+#define	PTRACE_EVENT_SECCOMP 7
 
 #define NT_X86_XSTATE 0x202 /* x86 XSAVE extended state */
 
