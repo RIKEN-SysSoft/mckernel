@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3584ab56_8485ee1d",
+        "filename": "executer/user/eclair.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 800,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T07:21:40Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\tchar str[1024];\n+\t\t\tsprintf(str, \"\u003cmemory-map\u003e\"",
+      "revId": "2acf4de53b4417fdac15ea6406f28c3bef30382c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
