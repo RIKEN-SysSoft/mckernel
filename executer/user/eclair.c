@@ -60,6 +60,9 @@ struct thread_info {
 	uintptr_t arch_clv;
 }; /* struct thread_info */
 
+/* Virtual address where McKernel is mapped to */
+unsigned long MAP_KERNEL_START;
+
 static struct options opt;
 static volatile int f_done = 0;
 static bfd *symbfd = NULL;
@@ -83,7 +86,6 @@ uintptr_t lookup_symbol(char *name)
 			return (symtab[i]->section->vma + symtab[i]->value);
 		}
 	}
-#define NOSYMBOL ((uintptr_t)-1)
 	return NOSYMBOL;
 } /* lookup_symbol() */
 
@@ -794,10 +796,11 @@ static void command(const char *cmd, char *res, size_t res_size) {
 			rbp += sprintf(rbp, "T0;tnotrun:0");
 		}
 		else if (!strncmp(p, "qXfer:memory-map:read::", 23)) {
-			char *str =
-				"<memory-map>"
-				"<memory type=\"rom\" start=\""MAP_KERNEL_TEXT"\" length=\"0x27000\"/>"
-				"</memory-map>";
+			char str[1024];
+			sprintf(str, "<memory-map>"
+					"<memory type=\"rom\" start=\"0x%lx\" length=\"0x27000\"/>"
+					"</memory-map>", MAP_KERNEL_START);
+
 			rbp += sprintf(rbp, "l");
 			if (0)
 			rbp += print_hex(rbp, res_size, str);
