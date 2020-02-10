@@ -2312,6 +2312,7 @@ static int ptrace_report_exec(struct thread *thread)
 		ptrace_report_signal(thread, sig);
 		preempt_disable();
 		memcpy(&thread->ctx, &ctx, sizeof ctx);
+		thread->ptrace |= PT_TRACED_AFTER_EXEC;
 	}
 	return 0;
 }
@@ -2591,10 +2592,6 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 			kfree(kfilename);
 		ret = envp_flat_len;
 		goto end;
-	}
-
-	if (thread->ptrace) {
-		arch_ptrace_syscall_event(thread, ctx, 0);
 	}
 
 	/* Unmap all memory areas of the process, userspace will be gone */
@@ -6826,7 +6823,8 @@ static int ptrace_setoptions(int pid, int flags)
 				PTRACE_O_TRACEVFORK|
 				PTRACE_O_TRACECLONE|
 				PTRACE_O_TRACEEXEC|
-				PTRACE_O_TRACEVFORKDONE)) {
+				PTRACE_O_TRACEVFORKDONE|
+				PTRACE_O_TRACEEXIT)) {
 		kprintf("ptrace_setoptions: not supported flag %x\n", flags);
 		ret = -EINVAL;
 		goto out;
@@ -10005,8 +10003,17 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	cpu_enable_interrupt();
 
 	if (cpu_local_var(current)->ptrace) {
+		/*
+		 * XXX: After PTRACE_EVENT_EXEC we need to report an extra SIGTRAP.
+		 * This is a tmp fix and should be moved into ptrace_report_exec()
+		 */
+		if (cpu_local_var(current)->ptrace & PT_TRACED_AFTER_EXEC) {
+			arch_ptrace_syscall_event(cpu_local_var(current), ctx, 0);
+			cpu_local_var(current)->ptrace &= ~(PT_TRACED_AFTER_EXEC);
+		}
+
 		arch_ptrace_syscall_event(cpu_local_var(current),
-					  ctx, -ENOSYS);
+				ctx, -ENOSYS);
 		num = ihk_mc_syscall_number(ctx);
 	}
 
@@ -10051,17 +10058,15 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		l = syscall_generic_forwarding(num, ctx);
 	}
 
+	/* Store return value so that PTRACE_GETREGSET will see it */
+	save_syscall_return_value(num, l);
+
 	if (cpu_local_var(current)->ptrace) {
 		/* arm64: The return value modified by the tracer is
 		 * stored to x0 in the following check_signal().
 		 */
 		l = arch_ptrace_syscall_event(cpu_local_var(current), ctx, l);
 	}
-
-	/* x86_64: Setting l to rax is done in the
-	 * following return.
-	 */
-	save_syscall_return_value(num, l);
 
 #ifdef PROFILE_ENABLE
 	{

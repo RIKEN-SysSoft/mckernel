@@ -964,6 +964,7 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	/* save thread_info, if called by ptrace_report_exec() */
 	if (sig == ((SIGTRAP | (PTRACE_EVENT_EXEC << 8)))) {
 		memcpy(&tinfo, thread->ctx.thread, sizeof(struct thread_info));
+		thread->uctx->user_regs.regs[0] = 0;
 	}
 
 	mcs_rwlock_writer_lock(&proc->update_lock, &lock);
@@ -976,6 +977,13 @@ void ptrace_report_signal(struct thread *thread, int sig)
 	thread->exit_status = sig;
 	thread->status = PS_TRACED;
 	thread->ptrace &= ~PT_TRACE_SYSCALL;
+	if (sig == ((SIGTRAP | (PTRACE_EVENT_EXEC << 8))) &&
+				thread->ptrace & PTRACE_O_TRACEEXEC) {
+		/* PTRACE_O_TRACEEXEC: since Linux 3.0, the former
+		 * thread ID can be retrieved with PTRACE_GETEVENTMSG.
+		 * Report no change. */
+		thread->ptrace_eventmsg = thread->tid;
+	}
 	save_debugreg(thread->ptrace_debugreg);
 	if (sig == SIGSTOP || sig == SIGTSTP ||
 	    sig == SIGTTIN || sig == SIGTTOU) {
