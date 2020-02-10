@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b9ce62ba_41308f32",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T07:56:20Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t0, sizeof(clv-\u003earm64_cpu_local_thread.panic_regs));",
+      "revId": "55faba77a551b6a542f71634398c9e94b2e064b9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "32246c82_9edbf882",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1064,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T07:56:20Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t * as closing frame in the frame chain */",
+      "revId": "55faba77a551b6a542f71634398c9e94b2e064b9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2fd5b633_b8a396dc",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1065,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T07:56:20Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tnew_ctx-\u003ethread-\u003ecpu_context.fp \u003d sp + sizeof(ihk_mc_user_context_t);",
+      "revId": "55faba77a551b6a542f71634398c9e94b2e064b9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a03e86c1_aadc963b",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 148,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T07:56:20Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern char nmi_handler[];",
+      "revId": "55faba77a551b6a542f71634398c9e94b2e064b9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "492d7c1a_d38856da",
+        "filename": "kernel/freeze.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-10T07:56:20Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void arch_clear_panic(void);",
+      "revId": "55faba77a551b6a542f71634398c9e94b2e064b9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
