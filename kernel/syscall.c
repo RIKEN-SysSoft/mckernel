@@ -251,8 +251,9 @@ long do_syscall(struct syscall_request *req, int cpu)
 
 			/* Spin by default, but if re-schedule is requested let
 			 * the other thread run */
-			runq_irqstate =
-				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+			runq_irqstate = cpu_disable_interrupt_save();
+			ihk_mc_spinlock_lock_noirq(
+				&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
 
 			if (v->flags & CPU_FLAG_NEED_RESCHED ||
@@ -261,7 +262,8 @@ long do_syscall(struct syscall_request *req, int cpu)
 				do_schedule = 1;
 			}
 
-			ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
+			ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
+			cpu_restore_interrupt(runq_irqstate);
 
 			if (!do_schedule) {
 				continue;
@@ -2672,9 +2674,13 @@ end:
 	ihk_mc_free_pages(desc, 4);
 
 	if (!ret) {
+		unsigned long irqstate;
+
 		/* Lock run queue because enter_user_mode expects to release it */
-		cpu_local_var(runq_irqstate) = 
-			ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+		irqstate = cpu_disable_interrupt_save();
+		ihk_mc_spinlock_lock_noirq(
+			&(get_this_cpu_local_var()->runq_lock));
+		cpu_local_var(runq_irqstate) = irqstate;
 		preempt_enable();
 
 		ihk_mc_switch_context(NULL, &thread->ctx, thread);
@@ -4957,15 +4963,17 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 			long runq_irqstate;
 
 			thread->status = PS_INTERRUPTIBLE;
-			runq_irqstate =
-				ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+			runq_irqstate = cpu_disable_interrupt_save();
+			ihk_mc_spinlock_lock_noirq(
+				&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
 
 			if (v->flags & CPU_FLAG_NEED_RESCHED) {
 				do_schedule = 1;
 			}
 
-			ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
+			ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
+			cpu_restore_interrupt(runq_irqstate);
 			
 			if (do_schedule) {
 				schedule();
