@@ -1157,7 +1157,8 @@ check_signal(unsigned long rc, void *regs0, int num)
 	if(thread == NULL || thread == &cpu_local_var(idle)){
 		struct thread *t;
 
-		irqstate = ihk_mc_spinlock_lock(&(cpu_local_var(runq_lock)));
+		irqstate = cpu_disable_interrupt_save();
+		ihk_mc_spinlock_lock_noirq(&(cpu_local_var(runq_lock)));
 		list_for_each_entry(t, &(cpu_local_var(runq)), sched_list){
 			if(t == &cpu_local_var(idle))
 				continue;
@@ -1167,7 +1168,8 @@ check_signal(unsigned long rc, void *regs0, int num)
 				break;
 			}
 		}
-		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)), irqstate);
+		ihk_mc_spinlock_unlock_noirq(&(cpu_local_var(runq_lock)));
+		cpu_restore_interrupt(irqstate);
 		goto out;
 	}
 

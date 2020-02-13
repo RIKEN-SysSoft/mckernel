@@ -3290,15 +3290,17 @@ void spin_sleep_or_schedule(void)
 
 	for (;;) {
 		/* Check if we need to reschedule */
-		irqstate =
-			ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+		irqstate = cpu_disable_interrupt_save();
+		ihk_mc_spinlock_lock_noirq(
+			&(get_this_cpu_local_var()->runq_lock));
 		v = get_this_cpu_local_var();
 
 		if (v->flags & CPU_FLAG_NEED_RESCHED || v->runq_len > 1) {
 			do_schedule = 1;
 		}
 
-		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
+		cpu_restore_interrupt(irqstate);
 
 		/* Check if we were woken up */
 		irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
@@ -3340,6 +3342,7 @@ void schedule(void)
 	int switch_ctx = 0;
 	struct thread *last;
 	int prevpid;
+	unsigned long irqstate = 0;
 
 	if (cpu_local_var(no_preempt)) {
 		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
@@ -3347,8 +3350,9 @@ void schedule(void)
 		return;
 	}
 
-	cpu_local_var(runq_irqstate) = 
-		ihk_mc_spinlock_lock(&(get_this_cpu_local_var()->runq_lock));
+	irqstate = cpu_disable_interrupt_save();
+	ihk_mc_spinlock_lock_noirq(&(get_this_cpu_local_var()->runq_lock));
+	cpu_local_var(runq_irqstate) = irqstate;
 	v = get_this_cpu_local_var();
 
 	next = NULL;
@@ -3463,8 +3467,8 @@ void schedule(void)
 		 * Since we may be migrated to another core meanwhile, we refer
 		 * directly to cpu_local_var.
 		 */
-		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),
-			cpu_local_var(runq_irqstate));
+		ihk_mc_spinlock_unlock_noirq(&(cpu_local_var(runq_lock)));
+		cpu_restore_interrupt(cpu_local_var(runq_irqstate));
 
 		if ((last != NULL) && (last->status == PS_EXITED)) {
 			v->prevpid = 0;
@@ -3498,8 +3502,8 @@ void schedule(void)
 		}
 	}
 	else {
-		ihk_mc_spinlock_unlock(&(cpu_local_var(runq_lock)),
-			cpu_local_var(runq_irqstate));
+		ihk_mc_spinlock_unlock_noirq(&(cpu_local_var(runq_lock)));
+		cpu_restore_interrupt(cpu_local_var(runq_irqstate));
 	}
 }
 
