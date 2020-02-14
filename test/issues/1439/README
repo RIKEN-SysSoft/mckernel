@@ -1,0 +1,31 @@
+【Issue#1439 動作確認】
+
+□ テスト内容
+
+mcreboot で確保したCPUのセットについて
+sysfs デバイスファイル
+/sys/devices/system/cpu/cpuX/topology/core_id
+の値を取得し、
+core_id が連番で振りなおされていることを確認する。
+Linuxのときのcore_idをあらかじめ取得しておき、
+Linuxのときに同じcore_idが降られているCPUについては
+McKernelでも同じcore_idが降られていることを確認する。
+
+□ 実行手順
+
+$ export MCK_DIR <mckernel install dir>
+$ make test
+
+□ 実行結果
+
+以下のような出力が得られ、最後にSUCCESSが出力されていることを確認する。
+
+$ make test MCK_DIR=/home/toshi/install/dev-mckernel
+python C1439.py 1-4,30-33,56-61
+cpu_list = 1-4,30-33,56-61
+linux:
+{32: 4, 1: 1, 2: 2, 3: 3, 4: 4, 33: 5, 56: 256, 57: 257, 58: 258, 59: 259, 60: 260, 61: 261, 30: 2, 31: 3}
+mckernel:
+{0: 0, 1: 1, 2: 2, 3: 3, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7, 11: 8, 12: 9, 13: 10}
+SUCCESS
+
