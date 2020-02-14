@@ -56,6 +56,7 @@
 #define VR_PAGEOUT	   0x10000000
 #define VR_DONTDUMP	   0x20000000
 #define VR_PAGE_REUSE	   0x40000000
+#define VR_MMAP_CACHE	   0x80000000
 
 #define	PROT_TO_VR_FLAG(prot)	(((unsigned long)(prot) << 16) & VR_PROT_MASK)
 #define	VRFLAG_PROT_TO_MAXPROT(vrflag)	(((vrflag) & VR_PROT_MASK) << 4)
@@ -578,6 +579,13 @@ struct process {
 	int coredump_barrier_count, coredump_barrier_count2;
 	mcs_rwlock_lock_t coredump_lock; // lock for coredump
 	unsigned int lttng;
+
+	size_t mmap_cache_size;
+	uintptr_t mmap_cache_start;
+	uintptr_t mmap_cache_end;
+	unsigned long mmap_cache_flags;
+	unsigned long mmap_cache_pgshift;
+	size_t mmap_cache_min;
 };
 
 /*
@@ -810,6 +818,8 @@ int split_process_memory_range(struct process_vm *vm,
 		struct vm_range *range, uintptr_t addr, struct vm_range **splitp);
 int join_process_memory_range(struct process_vm *vm, struct vm_range *surviving,
 		struct vm_range *merging);
+void *mmap_cache_alloc(const size_t len, const int flags);
+void init_mmap_cache(struct process *proc, size_t len0);
 int change_prot_process_memory_range(
 		struct process_vm *vm, struct vm_range *range,
 		unsigned long newflag);

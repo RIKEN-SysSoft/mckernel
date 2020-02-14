@@ -1052,7 +1052,7 @@ static int free_process_memory_range(struct process_vm *vm,
 
 	start = range->start;
 	end = range->end;
-	if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
+	if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED | VR_MMAP_CACHE))) {
 		neighbor = previous_process_memory_range(vm, range);
 		pgsize = -1;
 		for (;;) {
@@ -1114,7 +1114,7 @@ static int free_process_memory_range(struct process_vm *vm,
 		}
 		// memory_stat_rss_sub() is called downstream, i.e. ihk_mc_pt_free_range() to deal with empty PTE
 	}
-	else {
+	else if (!(range->flag & VR_MMAP_CACHE)) {
 		// memory_stat_rss_sub() isn't called because free_physical is set to zero in clear_range()
 		dkprintf("%s,memory_stat_rss_sub() isn't called, VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED case, %lx-%lx\n", __FUNCTION__, start, end);
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
@@ -1132,6 +1132,10 @@ static int free_process_memory_range(struct process_vm *vm,
 	if (range->memobj) {
 		memobj_unref(range->memobj);
 	}
+
+	//if (range->flag & VR_MMAP_CACHE)
+	//	kprintf("mmap_cache: unmapping range at %p - %p (%zu)\n",
+	//		range->start, range->end, range->end - range->start);
 
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
@@ -1413,6 +1417,313 @@ int add_process_memory_range(struct process_vm *vm,
 
 	return 0;
 }
+
+int search_unallocated_hole(struct process_vm *vm, size_t size,
+			    uintptr_t limit_min, uintptr_t limit_max,
+			    uintptr_t *addr)
+{
+	struct rb_root *root = &vm->vm_range_tree;
+	struct rb_node *next;
+	struct vm_range *vma_next, *vma_prev;
+	uintptr_t start, end, gap;
+	int ret;
+
+	//TODO this is just too inneficient, vma extra support is needed to do
+	//an efficient search. We need vma->vm_next and vma->vm_prev at least.
+
+	next = rb_first(root);
+	vma_next = rb_entry(next, struct vm_range, vm_rb_node);
+	vma_prev = vma_next;
+	end = vma_next->start;
+
+	// advance until the end of the gap passes limit_min or no more vmas are
+	// found before reaching limit_min.
+	while (end < limit_min) {
+		next = rb_next(next);
+		if (!next) {
+			start = (vma_prev->end > limit_min) ?
+				vma_prev->end : limit_min;
+			if (start + size < limit_max) {
+				//kprintf("exit 1: vma_prev->end=%p\n", vma_prev->end);
+				*addr = start;
+				return 0;
+			} else {
+				return -ENOMEM;
+			}
+		}
+		vma_prev = vma_next;
+		vma_next = rb_entry(next, struct vm_range, vm_rb_node);
+		end = vma_next->start;
+	}
+
+	// check gap between limint_min and first vma start after limit_min
+	start = limit_min;
+	if (unlikely(end - start >= size)) {
+		*addr = start;
+		//kprintf("exit 2: limit_min=%p\n", limit_min);
+		return 0;
+	}
+
+	// check for all the other cases
+	ret = -ENOMEM;
+	do {
+		vma_prev = vma_next;
+		next = rb_next(next);
+		if (!next) {
+			start = vma_prev->end;
+			if (start + size < limit_max) {
+				*addr = start;
+				ret = 0;
+				//kprintf("exit 3: vma_prev->end=%p\n", vma_prev->end);
+			}
+			break;
+		}
+		vma_next = rb_entry(next, struct vm_range, vm_rb_node);
+
+		start = vma_prev->end;
+		end = (vma_next->start < limit_max) ?
+			vma_next->start : limit_max;
+
+		gap = end - start;
+		if (gap >= size) {
+			*addr = start;
+			ret = 0;
+			//kprintf("exit 4: vma_prev->end=%p\n", vma_prev->end);
+			break;
+		}
+	} while (vma_prev->end + size < limit_max);
+
+	return ret;
+}
+
+void *mmap_cache_alloc(const size_t len, const int flags)
+{
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct vm_range *range;
+	uintptr_t addr, start, end;
+	int rc;
+
+	//if (len < proc->mmap_cache_min) {
+	//	kprintf("mmap_cache: allocation too small %zu\n", len);
+	//	return NULL;
+	//}
+
+	// search for available memory in the mmap cache
+	rc = search_unallocated_hole(proc->vm, len,
+				     proc->mmap_cache_start,
+				     proc->mmap_cache_end,
+				     &addr);
+
+	kprintf("search_unallocated_hole(%zu): addr=%p ret=%d\n", len, addr, rc);
+
+	// fall back to standard mmap if mmap cache is full or too small.
+	if (rc)
+		return NULL;
+
+	start = addr;
+	end = addr + len;
+
+	if (!(flags & MAP_PAGE_REUSE))
+		memset((void *)addr, 0, end - start);
+
+	// prepare vma structure corresponding to the mmap cache range found
+	range = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
+	if (!range) {
+		kprintf("%s: ERROR: allocating vm range\n", __func__);
+		return NULL;
+	}
+
+	RB_CLEAR_NODE(&range->vm_rb_node);
+	range->start = start;
+	range->end = end;
+	range->flag = proc->mmap_cache_flags;
+	range->memobj = NULL;
+	range->objoff = 0;
+	range->pgshift = proc->mmap_cache_pgshift;
+	range->private_data = NULL;
+
+	rc = vm_range_insert(proc->vm, range);
+	if (rc) {
+		kprintf("%s: ERROR: could not insert range: %d\n",
+			__func__, rc);
+		return NULL;
+	}
+
+	kprintf("mmap_cache: serviced allocation of %zu bytes at address %p\n",
+		len, addr);
+
+	return (void *) addr;
+}
+
+void init_mmap_cache(struct process *proc, size_t len0)
+{
+	struct process_vm *vm = proc->vm;
+	struct vm_regions *region = &proc->vm->region;
+	struct vm_range *range;
+
+	unsigned long int npages;
+	uintptr_t addr;
+	size_t pgsize;
+	int pgshift;
+	int p2align = PAGE_P2ALIGN;
+	struct vm_range vma;
+	size_t len;
+	int flags;
+
+	void *p = NULL;
+	uintptr_t phys;
+
+	uintptr_t start, end;
+	enum ihk_mc_pt_attribute attr;
+	int node;
+
+	int error;
+
+	 // TODO which page shift/size?
+	pgshift = PTL1_SHIFT;
+	pgsize = (size_t)1 << pgshift;
+	len = (len0 + pgsize - 1) & ~(pgsize - 1);
+	npages =  len >> pgshift;
+	// VR_MMAP_CACHE prevents merging with other non cache vm ranges
+	flags = VR_PROT_READ | VR_PROT_WRITE | VR_PROT_EXEC |
+		VR_DONTFORK | VR_MMAP_CACHE;
+
+	kprintf("%s: pgshift: %zu pgsize: %zu p2align: %d len0: %zu len: %zu npages: %zu\n",
+		__func__, pgshift, pgsize, p2align, len0, len, npages);
+
+	//pgsize = -1;
+	//error = arch_get_smaller_page_size(NULL, pgsize, &pgsize, NULL);
+	//if (error) {
+	//	kprintf("free_process_memory_range:"
+	//			"arch_get_smaller_page_size failed."
+	//			" %d\n", error);
+	//	break;
+	//}
+
+
+	/////////////////////////////////////////////
+	///// search for free virtual address space
+	/////////////////////////////////////////////
+
+	// this is checking using "current", but we don't have it yet
+	//addr = 0;
+	//error = search_free_space(len, p2align, &addr);
+	//if (error) {
+	//	ekprintf("%s:search_free_space(%lx,%lx,%d) failed with error %d. Disabling mmap cache.\n",
+	//		 __func__, len, region->map_end, p2align, error);
+	//	proc->mmap_cache_size = 0;
+	//	return;
+	//}
+	//start = addr;
+	//end = start + len;
+
+	addr = region->map_end;
+	for (;;) {
+		addr = (addr + pgsize - 1) & ~(pgsize - 1);
+		if ((region->user_end <= addr)
+				|| ((region->user_end - len) < addr)) {
+			ekprintf("%s: error: addr 0x%lx is outside the user region\n",
+				__func__, addr);
+
+			proc->mmap_cache_size = 0;
+			return;
+		}
+
+		range = lookup_process_memory_range(vm, addr, addr + len);
+		if (range == NULL) {
+			break;
+		}
+		addr = range->end;
+	}
+	region->map_end = addr + len;
+	start = addr;
+	end = start + len;
+
+	kprintf("%s: virtual address range found: %p - %p\n", __func__,
+		start, end);
+
+	/////////////////////////////////////////////
+	///// Allocate physical pages
+	/////////////////////////////////////////////
+
+	// TODO are the allocation flags correct? what about the ap flag as used
+	// in mmap syscall ?
+	// TODO alloc physical pages for each numa node
+	node = -1;
+	p = ihk_mc_alloc_aligned_pages_node_user(npages, p2align,
+						 IHK_MC_AP_NOWAIT, node, -1);
+	if (p == NULL) {
+		ekprintf("%s: warning: failed to allocate %d contiguous pages "
+			 " (bytes: %lu, pgshift: %d). Disabling mmap cache.\n",
+			__func__, npages, npages * PAGE_SIZE, p2align);
+		proc->mmap_cache_size = 0;
+		return;
+	}
+	phys = virt_to_phys(p);
+
+	kprintf("%s: allocated physical pages: %p linear: %p\n", __func__,
+		phys, p);
+
+	/////////////////////////////////////////////
+	///// Update process page table
+	/////////////////////////////////////////////
+
+	//error = add_process_memory_range(thread->vm, addr, addr+len, phys,
+	//		vrflags, memobj, off, pgshift, &range);
+
+	RB_CLEAR_NODE(&vma.vm_rb_node);
+	vma.start = start;
+	vma.end = end;
+	vma.flag = flags;
+	vma.memobj = NULL;
+	vma.objoff = 0;
+	vma.pgshift = pgshift;
+	vma.private_data = NULL;
+
+	attr = arch_vrflag_to_ptattr(vma.flag, PF_POPULATE, NULL);
+	error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
+				    (void *)vma.start, (void *)vma.end,
+				    phys, attr, vma.pgshift, &vma, 0);
+	if (error) {
+		ekprintf("%s:ihk_mc_pt_set_range failed. %d\n",
+			 __func__, error);
+		proc->mmap_cache_size = 0;
+		return;
+	}
+
+	kprintf("%s: set range done\n", __func__);
+
+
+	//rc = update_process_page_table(vm, &range, phys, 0);
+	//if (rc != 0) {
+	//	kprintf("%s: ERROR: preparing page tables\n", __func__);
+	//	return rc;
+	//}
+
+	proc->mmap_cache_start = start;
+	proc->mmap_cache_end   = end;
+	proc->mmap_cache_pgshift = pgshift;
+	proc->mmap_cache_flags = flags;
+	proc->mmap_cache_min   = 1024*1024UL;
+
+	//if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
+	//			pn->sections[i].len > LARGE_PAGE_SIZE ?
+	//			LARGE_PAGE_SHIFT : PAGE_SHIFT,
+	//			&range) != 0) {
+	//	kprintf("ERROR: adding memory range for ELF section %i\n", i);
+	//	goto err;
+	//}
+
+	//if ((up_v = ihk_mc_alloc_pages_user(range_npages,
+	//				IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
+	//	kprintf("ERROR: alloc pages for ELF section %i\n", i);
+	//	goto err;
+	//}
+
+	//up = virt_to_phys(up_v);
+}
+
 
 struct vm_range *lookup_process_memory_range(
 		struct process_vm *vm, uintptr_t start, uintptr_t end)

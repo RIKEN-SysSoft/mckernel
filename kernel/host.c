@@ -524,6 +524,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->process_rank = pn->process_rank;
 	proc->heap_extension = pn->heap_extension;
 	proc->lttng = pn->lttng;
+	proc->mmap_cache_size = pn->mmap_cache_size;
 
 	/* Update NUMA binding policy if requested */
 	if (pn->mpol_bind_mask) {
@@ -578,6 +579,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        vm->address_space->page_table);
+
+	init_mmap_cache(proc, proc->mmap_cache_size);
 
 	kfree(pn);
 

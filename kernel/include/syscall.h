@@ -205,6 +205,7 @@ struct program_load_desc {
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	unsigned int lttng;
+	unsigned long mmap_cache_size;
 	unsigned long mpol_flags;
 	unsigned long mpol_threshold;
 	unsigned long heap_extension;
@@ -487,6 +488,7 @@ void set_cputime(enum set_cputime_mode mode);
 int do_munmap(void *addr, size_t len, int holding_memory_range_lock);
 intptr_t do_mmap(uintptr_t addr0, size_t len0, int prot, int flags, int fd,
 		off_t off0);
+int search_free_space(size_t len, int pgshift, uintptr_t *addrp);
 void clear_host_pte(uintptr_t addr, size_t len, int holding_memory_range_lock);
 typedef int32_t key_t;
 int do_shmget(key_t key, size_t size, int shmflg);

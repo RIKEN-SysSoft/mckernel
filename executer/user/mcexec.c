@@ -201,6 +201,7 @@ static int uti_thread_rank = 0;
 static int uti_use_last_cpu = 0;
 static int enable_uti = 0;
 static int lttng = 0;
+static unsigned long mmap_cache_size = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1807,6 +1808,12 @@ static struct option mcexec_options[] = {
 		.flag =		&lttng,
 		.val =		1,
 	},
+	{
+		.name =		"mmap-cache-size",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'C',
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2203,6 +2210,9 @@ int main(int argc, char **argv)
 
 			case 'M':
 				mpol_threshold = atobytes(optarg);
+				break;
+			case 'C':
+				mmap_cache_size = atobytes(optarg);
 				break;
 
 			case 'm':
@@ -2647,6 +2657,7 @@ int main(int argc, char **argv)
 	desc->mpol_threshold = mpol_threshold;
 	desc->heap_extension = heap_extension;
 	desc->lttng = lttng;
+	desc->mmap_cache_size = mmap_cache_size;
 
 	desc->mpol_bind_mask = 0;
 	if (mpol_bind_nodes) {

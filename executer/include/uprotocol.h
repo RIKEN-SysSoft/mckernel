@@ -140,6 +140,7 @@ struct program_load_desc {
 	struct rlimit rlimit[MCK_RLIM_MAX];
 	unsigned long interp_align;
 	unsigned int lttng;
+	unsigned long mmap_cache_size;
 	unsigned long mpol_flags;
 	unsigned long mpol_threshold;
 	unsigned long heap_extension;

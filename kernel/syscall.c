@@ -1539,7 +1539,7 @@ int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 	return error;
 }
 
-static int search_free_space(size_t len, int pgshift, uintptr_t *addrp)
+int search_free_space(size_t len, int pgshift, uintptr_t *addrp)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
@@ -1639,6 +1639,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	uintptr_t addr = addr0;
+	void *addrc;
 	size_t len = len0;
 	size_t populate_len = 0;
 	off_t off;
@@ -1659,6 +1660,13 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	int pgshift;
 	struct vm_range *range = NULL;
 	
+	kprintf("tid: %d pid: %d do_mmap(%lx,%lx,%x,%x,%d,%lx)\n"
+		"mmap_cache_range: %p - %p (%zu)\n",
+		proc->pid, thread->tid,
+		addr0, len0, prot, flags, fd, off0,
+		(proc->mmap_cache_size)? proc->mmap_cache_start : 0,
+		(proc->mmap_cache_size)? proc->mmap_cache_end: 0,
+		proc->mmap_cache_size);
 	dkprintf("do_mmap(%lx,%lx,%x,%x,%d,%lx)\n",
 			addr0, len0, prot, flags, fd, off0);
 
@@ -1712,6 +1720,18 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	}
 
 	ihk_mc_spinlock_lock_noirq(&thread->vm->memory_range_lock);
+
+	// TODO should I consider some other MMAP flags here?
+	if ((proc->mmap_cache_size) &&
+	    (flags & MAP_ANONYMOUS) &&
+	    (flags & MAP_PRIVATE) &&
+	    !(flags & MAP_FIXED)) {
+		addrc = mmap_cache_alloc(len, flags);
+		if (addrc) {
+			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+			return (intptr_t) addrc;
+		}
+	}
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
@@ -1947,7 +1967,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	if (error) {
 		kprintf("%s: add_process_memory_range failed for 0x%lx:%lu"
 				" flags: %lx, vrflags: %lx, pgshift: %d, error: %d\n",
-				__FUNCTION__, addr, addr+len,
+				__func__, addr, len,
 				flags, vrflags, pgshift, error);
 		goto out;
 	}
@@ -2161,6 +2181,15 @@ SYSCALL_DECLARE(mprotect)
 			goto out;
 		}
 
+		// TODO do something on mprotect that extends before and/or
+		// after the mmap cache
+		if (range->flag & VR_MMAP_CACHE) {
+			kprintf("mprotect on mmap_cache range\n");
+			error = 0;
+			ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+			goto early_out;
+		}
+
 		denied = protflags & ~VRFLAG_MAXPROT_TO_PROT(range->flag);
 		if (denied) {
 			ekprintf("sys_mprotect(%lx,%lx,%x):denied %lx. %lx %lx\n",
@@ -2230,9 +2259,9 @@ out:
 		}
 	}
 	ihk_mc_spinlock_unlock_noirq(&thread->vm->memory_range_lock);
+early_out:
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
-early_out:
 	trace_exit_mprotect((int64_t) error);
 
 	return error;
@@ -8247,6 +8276,9 @@ SYSCALL_DECLARE(mremap)
 				range?range->end:0, range?range->flag:0);
 		goto out;
 	}
+
+	if (range->flag & VR_MMAP_CACHE)
+		kprintf("mremap on mmap_cache range\n");
 
 	/* determine new mapping range */
 	need_relocate = 0;
