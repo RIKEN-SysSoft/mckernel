@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6f5f4c2a_1bb59f62",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-14T03:16:00Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+     int linux_core_id;$",
+      "revId": "d7ff67a12ef3052454cc42e9951c914e5c0be93f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25c284e0_3e15cf42",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-14T03:16:00Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+     int mckernel_core_id;$",
+      "revId": "d7ff67a12ef3052454cc42e9951c914e5c0be93f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86466ca3_e9011916",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-14T03:16:00Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+     struct hlist_node next;$",
+      "revId": "d7ff67a12ef3052454cc42e9951c914e5c0be93f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30f565ee_77dca18b",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 372,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-14T03:16:00Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+\tstatic int nr_mckernel_core \u003d 0;",
+      "revId": "d7ff67a12ef3052454cc42e9951c914e5c0be93f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
