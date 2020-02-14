@@ -1,0 +1,91 @@
+□ テスト内容
+
+/sys/devices/system/cpu/cpuX/topology/core_idについて、以下を確かめる。
+
+(A) 物理コア番号の振り方について以下を確かめる
+    1) 物理コアの第1の論理コアのcore_idはCPU番号(=cpu_id)と一致する
+    2) 論理コアのcore_idは、それが属する物理コアの第1の論理コアのcore_idと一致する
+
+(B) McKernelがcpu_idをrenumberすることによる悪影響がないか確認する
+    1) 富士通OpenMPで、OMP_PROC_BINDのcloseとspreadについて、期待通りのバインディングになることを確認する
+
+
+□ 実行手順
+
+(1) $HOME/.mck_test_configを、MCK_DIRがMcKernelのインストール先を指すように編集する
+
+(2) apolloログインノードにおいて一般ユーザで以下のコマンドを実行し、
+    富士通コンパイラでテストに使うOpenMPアプリケーションバイナリを作成する。
+　　ソースコードはmckernelユーザでcheckoutしていると思われるが、その場合、
+    本ディレクトリを、その一般ユーザが書き込めるようにwrite permissionを
+    つけておく必要がある。
+
+    $ make
+
+(3) (2)で作られたバイナリを(mckernelユーザの)apolloの計算ノードにて
+    動かすために、富士通コンパイラのDLLを当該ユーザが読める場所に
+    コピーして、その場所にLD_LIBRARY_PATHを通す。
+    コピー元のディレクトリは富士通コンパイラ0.36では以下のディレクトリである。
+
+    /usr/local/FJSVxtclang/fujitsu_compilers_sve_own_20191226/sve_own/lib64
+ 
+(4) apolloの計算ノードにおいてmckernelユーザで以下のコマンドを実行し、
+    (A)(B)のテストを実行する。
+
+    $ make test-core # .... (A)
+    $ make test-omp  # .... (B)
+
+
+□ 確認方法
+
+(A) (B) いずれにおいてもSUCCESSが出力され、FAILが出力されていないこと。
+
+サンプル出力は以下のとおり
+    (A) aarch64_result_core.log
+    (B) aarch64_result_omp.log
+
+
+□ テスト内容補足
+
+
+(A) 物理コア番号の振り方について以下を確かめる
+    1) 物理コアの第1の論理コアのcore_idはCPU番号(=cpu_id)と一致する
+    2) 論理コアのcore_idは、それが属する物理コアの第1の論理コアのcore_idと一致する
+
+    こちらの確認をするために、C1439.pyでは以下の確認を行っている。
+    a) McKernelのsysfsファイルシステムが/sys/devices/system/cpu/cpuXで利用する
+    cpuX の id は 0 からはじまる連番で、mcreboot.sh で指定したcpu list のぶんだけ
+    存在する。
+    b) Linuxにおいては、物理コア、論理コアの関係が (A)-1 (A)-2 を満たすことを前提
+    と考え、Linux における物理コア、論理コアの対応関係が、McKernel 起動後
+    維持されていることを確認する。(compare_cores 関数)
+
+
+(B) McKernelがcpu_idをrenumberすることによる悪影響がないかを確認する
+    1) 富士通OpenMPで、OMP_PROC_BINDのcloseとspreadについて、期待通りのバインディングになることを確認する
+
+    富士通コンパイラ0.36マニュアル draft-lang-0005-jp.pdf 4.2.2.4節によると
+    スレッドのCPUバインドは、OMP_PROC_BIND, OMP_PLACES で決められる。
+    OMP_PLACES はthreads, cores, sockets の値をとる。threads とcores は同じで物理コア単位で
+    まとめられたPLACE (論理コア番号の集合) が物理コアの数だけ作られる。
+    本テストにおいてはOMP_PLACES=cores であることを前提とした。
+    OMP_PROC_BINDについてはcloseの場合と、spreadの場合について試すこととした。
+
+　  OMP_PROC_BINDがcloseやspreadの場合、どのようなアルゴリズムでスレッドがPLACEと紐づけられるか
+    上記の富士通コンパイラマニュアルには記述がないため、
+　　OpenMPの標準マニュアルを参照した。
+    https://www.openmp.org/spec-html/5.0/openmpsu36.html#x56-900002.6.2    
+    この標準マニュアルには、PLACE数(P)、スレッド数(T)において、
+    P/T や T/P が割り切れる場合、PLACEとスレッドの紐づけが定まる定義が
+    記述されているが、割り切れなかった場合、どのスレッドに「余り」のPLACEを割り付けるか
+    の仕様は定義されていない。(implementation define)
+    通常の利用では、割り切れない場合はあまり利用しないと考えられるため、
+    今回のテストにおいて、そのようなP, Tは選択しないこととした。
+    Pとしては、/sys/devices/system/cpu/cpuX/topology/thread_siblings_list を読んで
+    得られる物理コア個数を用い、
+    T としては、2 からP*4 の値まで動かし、P/T または T/P が割り切れないケースは
+    採用しないことにした。
+　　そこで選ばれたT,Pのペアについて、OMP_PROC_BINDがcloseやspreadだった場合の
+    スレッドとPLACEの割り付けをあらかじめ計算しておき、これを回答例とした。
+    その一方で、make test-ompを実行すると、OpenMPアプリであるshow-omp-cpu-affinityの
+    実行結果が回答例を一致することを確認し、一致した場合SUCCESSを出力することにした。
