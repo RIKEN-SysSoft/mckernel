@@ -1,0 +1,14 @@
+□ テスト内容
+
+/sys/devices/system/cpu/cpuX/topology/core_idについて、以下を確かめる。
+(1) 番号の振り方について以下を確かめる
+    1) 物理コアの第1の論理コアのcore_idはCPU番号(=cpu_id)と一致する
+    2) 論理コアのcore_idは、それが属する物理コアの第1の論理コアのcore_idと一致する
+(2) McKernelがcpu_idをrenumberすることによる悪影響がないか確認する
+    1) 富士通OpenMPで、scatterとcompactについて、期待通りのバインディングになることを確認する
+
+□ 実行手順
+
+(1) $HOME/.mck_test_configを、MCK_DIRがMcKernelのインストール先を指すように編集する
+(2) 以下を実行する
+$ make test
