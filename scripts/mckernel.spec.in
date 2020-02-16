@@ -11,6 +11,7 @@
 %{!?kernel_version: %global kernel_version @UNAME_R@}
 %{!?kernel_dir: %global kernel_dir /usr/src/kernels/%{kernel_version}}
 %define krequires %(echo %{kernel_version} | sed "s/.%{_target_cpu}$//")
+%define krequiresu %(echo %{krequires} | awk -F'.' '{printf("%s.%s.%s\n", $1, $2, $3 + 1)}')
 %define ktag %(echo %{krequires} | tr '-' '_' | sed -e 's/\.el[0-9]*$//' | sed -e 's/\.\([a-zA-Z]\)/_\1/')
 
 Name: mckernel
@@ -23,14 +24,20 @@ Source0: mckernel-%{version}.tar.gz
 # kernel_module_package macro does not handle cross build...
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
 %define cross_compile 1
+%if 0%{?rhel} == 8
+%else
 Requires: kernel = %{krequires}
+%endif
 Requires(post):   /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
 %else
 BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel
-BuildRequires: %kernel_module_package_buildreqs = %{krequires}
-
+%if 0%{?rhel} >= 8 && %{undefined kernel_module_package_buildreqs}
+BuildRequires: redhat-rpm-config kernel-rpm-macros elfutils-libelf-devel kmod
+%else
+BuildRequires: %kernel_module_package_buildreqs
 %kernel_module_package %{?kmod_flavors}
+%endif
 %endif
 
 %description
