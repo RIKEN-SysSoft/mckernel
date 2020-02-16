@@ -23,13 +23,20 @@ Source0: mckernel-%{version}.tar.gz
 # kernel_module_package macro does not handle cross build...
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
 %define cross_compile 1
+%if 0%{?rhel} >= 8
+Requires: kernel >= %{krequires}
+%else
 Requires: kernel = %{krequires}
+%endif
 Requires(post):   /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
 %else
 BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel
+%if 0%{?rhel} >= 8
+BuildRequires: %kernel_module_package_buildreqs >= %{krequires}
+%else
 BuildRequires: %kernel_module_package_buildreqs = %{krequires}
-
+%endif
 %kernel_module_package %{?kmod_flavors}
 %endif
 
