@@ -251,7 +251,6 @@ static char *charstat[] = {
 	[IHK_OS_STATUS_FREEZING] = "Freezing",	/* OS is freezing */
 	[IHK_OS_STATUS_FROZEN] = "Frozen",	/* OS is frozen */
 	[IHK_OS_STATUS_SHUTDOWN] = "Shutdown",	/* OS is shutting down */
-	[IHK_OS_STATUS_STOPPED] = "Stopped",	/* OS stopped successfully */
 	[IHK_OS_STATUS_FAILED] = "Panic",	/* OS panics or failed to boot */
 	[IHK_OS_STATUS_HUNGUP] = "Hangup",	/* OS is hungup */
 	[IHK_OS_STATUS_COUNT] = NULL,		/* End mark */
