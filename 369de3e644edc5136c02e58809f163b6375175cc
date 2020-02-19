@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5e092fcd_b12260bc",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-19T12:40:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+     int linux_core_id;$",
+      "revId": "369de3e644edc5136c02e58809f163b6375175cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48f5fec2_02659882",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-19T12:40:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+     int mckernel_core_id;$",
+      "revId": "369de3e644edc5136c02e58809f163b6375175cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0555de0d_fdf99a87",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-19T12:40:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+     struct hlist_node next;$",
+      "revId": "369de3e644edc5136c02e58809f163b6375175cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be0be74d_24c32cc6",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 372,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-19T12:40:30Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+\tstatic int nr_mckernel_core \u003d 0;",
+      "revId": "369de3e644edc5136c02e58809f163b6375175cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8204052b_6e60e6f6",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 427,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-19T12:40:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\thash_add(physical_core_id_map, \u0026entry-\u003enext, entry-\u003elinux_core_id);",
+      "revId": "369de3e644edc5136c02e58809f163b6375175cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
