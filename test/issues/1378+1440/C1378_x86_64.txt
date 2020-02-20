@@ -1,0 +1,147 @@
+Script started on Thu Feb 20 10:36:48 2020
+bash-4.2$ uname -m
+x86_64
+bash-4.2$ make test
+sh ./C1378.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    1  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    2  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    3  TPASS  :  Test passed
+rt_sigtimedwait01    3  TPASS  :  sigwaitinfo restored the original mask
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    4  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    5  TPASS  :  Test passed
+rt_sigtimedwait01    5  TPASS  :  sigwaitinfo restored the original mask
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    6  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    7  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 10
+rt_sigtimedwait01    8  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 0
+rt_sigtimedwait01    9  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 12
+rt_sigtimedwait01   10  TPASS  :  Test passed
+rt_sigtimedwait01   10  TPASS  :  sigwaitinfo restored the original mask
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 12
+rt_sigtimedwait01   11  TPASS  :  Test passed
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, 15
+rt_sigtimedwait01   12  TPASS  :  Test passed
+rt_sigtimedwait01   12  TPASS  :  sigwaitinfo restored the original mask
+rt_sigtimedwait01    0  TINFO  :  0x401ba0, -1
+rt_sigtimedwait01   13  TPASS  :  Test passed
+rt_sigtimedwait01   13  TPASS  :  Test passed
+rt_sigtimedwait01   13  TPASS  :  sigwaitinfo restored the original mask
+*** C1378T01: rt_sigtimedwait01 PASS (19)
+kill02      1  TPASS  :  The signal was sent to all processes in the process group.
+kill02      2  TPASS  :  The signal was not sent to selective processes that were not in the process group.
+*** C1378T02: kill02 PASS (2)
+kill09      1  TPASS  :  kill(8015, SIGKILL) returned 0
+*** C1378T03: kill09 PASS (1)
+kill12      1  TPASS  :  Test passed
+*** C1378T04: kill12 PASS (1)
+llseek01    1  TPASS  :  Functionality of llseek() on tmp_file successful
+*** C1378T05: llseek01 PASS (1)
+signal01    1  TPASS  :  signal(SIGKILL, 0x1(SIG_IGN)) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  signal(SIGKILL, (nil)(SIG_DFL)) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  signal(SIGKILL, 0x4023d0(catchsig())) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  Child killed with SIGKILL
+signal01    2  TPASS  :  Child killed with SIGKILL
+signal01    3  TPASS  :  Child killed with SIGKILL
+*** C1378T06: signal01 PASS (9)
+signal02    1  TPASS  :  expected failure - errno = 22 - Invalid argument
+signal02    2  TPASS  :  expected failure - errno = 22 - Invalid argument
+signal02    3  TPASS  :  expected failure - errno = 22 - Invalid argument
+*** C1378T07: signal02 PASS (3)
+signal03    1  TPASS  :  signal03 call succeeded
+signal03    2  TPASS  :  signal03 call succeeded
+signal03    3  TPASS  :  signal03 call succeeded
+signal03    4  TPASS  :  signal03 call succeeded
+signal03    5  TPASS  :  signal03 call succeeded
+signal03    6  TPASS  :  signal03 call succeeded
+signal03    7  TPASS  :  signal03 call succeeded
+signal03    8  TPASS  :  signal03 call succeeded
+signal03    9  TPASS  :  signal03 call succeeded
+signal03   10  TPASS  :  signal03 call succeeded
+signal03   11  TPASS  :  signal03 call succeeded
+signal03   12  TPASS  :  signal03 call succeeded
+signal03   13  TPASS  :  signal03 call succeeded
+signal03   14  TPASS  :  signal03 call succeeded
+signal03   15  TPASS  :  signal03 call succeeded
+signal03   16  TPASS  :  signal03 call succeeded
+signal03   17  TPASS  :  signal03 call succeeded
+signal03   18  TPASS  :  signal03 call succeeded
+signal03   19  TPASS  :  signal03 call succeeded
+signal03   20  TPASS  :  signal03 call succeeded
+signal03   21  TPASS  :  signal03 call succeeded
+signal03   22  TPASS  :  signal03 call succeeded
+signal03   23  TPASS  :  signal03 call succeeded
+signal03   24  TPASS  :  signal03 call succeeded
+signal03   25  TPASS  :  signal03 call succeeded
+signal03   26  TPASS  :  signal03 call succeeded
+signal03   27  TPASS  :  signal03 call succeeded
+signal03   28  TPASS  :  signal03 call succeeded
+signal03   29  TPASS  :  signal03 call succeeded
+signal03   30  TPASS  :  signal03 call succeeded
+signal03   31  TPASS  :  signal03 call succeeded
+*** C1378T08: signal03 PASS (31)
+getrusage03    0  TINFO  :  allocate 100MB
+getrusage03    0  TINFO  :  Testcase #01: fork inherit
+getrusage03    0  TINFO  :  initial.self = 103344
+getrusage03    0  TINFO  :  child.self = 105368
+getrusage03    1  TPASS  :  initial.self ~= child.self
+getrusage03    0  TINFO  :  Testcase #02: fork inherit(cont.)
+getrusage03    0  TINFO  :  initial.children = 105372
+getrusage03    2  TPASS  :  initial.children ~= 100MB
+getrusage03    0  TINFO  :  child.children = 0
+getrusage03    3  TPASS  :  child.children == 0
+getrusage03    0  TINFO  :  Testcase #03: fork + malloc
+getrusage03    0  TINFO  :  initial.self = 103344
+getrusage03    0  TINFO  :  child allocate +50MB
+getrusage03    0  TINFO  :  child.self = 156572
+getrusage03    4  TPASS  :  initial.self + 50MB ~= child.self
+getrusage03    0  TINFO  :  Testcase #04: grandchild maxrss
+getrusage03    0  TINFO  :  initial.children = 156572
+getrusage03_child    0  TINFO  :  grandchild allocate 300MB
+getrusage03    0  TINFO  :  post_wait.children = 310116
+getrusage03    5  TPASS  :  child.children ~= 300MB
+getrusage03    0  TINFO  :  Testcase #05: zombie
+getrusage03    0  TINFO  :  initial.children = 310116
+getrusage03_child    0  TINFO  :  child allocate 400MB
+getrusage03    0  TINFO  :  pre_wait.children = 310116
+getrusage03    6  TPASS  :  initial.children ~= pre_wait.children
+getrusage03    0  TINFO  :  post_wait.children = 412084
+getrusage03    7  TPASS  :  post_wait.children ~= 400MB
+getrusage03    0  TINFO  :  Testcase #06: SIG_IGN
+getrusage03    0  TINFO  :  initial.children = 412084
+getrusage03_child    0  TINFO  :  child allocate 500MB
+getrusage03    0  TINFO  :  after_zombie.children = 412084
+getrusage03    8  TPASS  :  initial.children ~= after_zombie.children
+getrusage03    0  TINFO  :  Testcase #07: exec without fork
+getrusage03    0  TINFO  :  initial.self = 103344, initial.children = 412084
+getrusage03_child    0  TINFO  :  exec.self = 103344, exec.children = 412084
+getrusage03_child    1  TPASS  :  initial.self ~= exec.self
+getrusage03_child    2  TPASS  :  initial.children ~= exec.children
+*** C1378T09: getrusage03 PASS (10)
+write05     0  TINFO  :  Enter Block 1: test with bad fd
+write05     1  TPASS  :  received EBADF as expected.
+write05     0  TINFO  :  Exit Block 1
+write05     0  TINFO  :  Enter Block 2: test with a bad address
+write05     2  TPASS  :  received EFAULT as expected.
+write05     0  TINFO  :  Exit Block 2
+write05     0  TINFO  :  Enter Block 3: test with invalid pipe
+write05     3  TPASS  :  received EPIPE as expected.
+write05     0  TINFO  :  Exit Block 3
+*** C1378T10: write05 PASS (3)
+bash-4.2$ exit
+exit
+
+Script done on Thu Feb 20 10:37:30 2020

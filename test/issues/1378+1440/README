@@ -1,0 +1,28 @@
+【Issue#1378, Issue#1440 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+C1378T01 LTP rt_sigtimedwait01を実行し、全てのテストケースがPASSすること。
+
+2. LTP を用いて既存処理に影響しないことを確認
+   シグナルのSIG_IGN処理を変更したため、SIG_IGNを使っているLTPを選定した。
+   全てPASSすること。
+C1378T02 kill02: kill の基本機能の確認
+C1378T03 kill09: kill の基本機能の確認
+C1378T04 kill12: kill の基本機能の確認
+C1378T05 llseek01: llseek の基本機能の確認
+C1378T06 signal01: signal の基本機能の確認
+C1378T07 signal01: signal の基本機能の確認
+C1378T08 signal01: signal の基本機能の確認
+C1378T09 getrusage03: getrusage の基本機能の確認
+C1378T10 write05: write の基本機能の確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+□ 実行結果
+C1378_x86_64.txt(x86_64実行結果)、C1378_arm64.txt(arm64実行結果)参照。
+全ての項目が PASS していることを確認。
