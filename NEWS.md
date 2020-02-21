@@ -1,19 +1,22 @@
-===========================================
-What's new in V1.7.0 (Nov 15, 2019)
-===========================================
+=============================================
+What's new in version 1.7.0rc4 (Apr 15, 2020)
+=============================================
 
 ----------------------
 McKernel major updates
 ----------------------
 1. arm64: Contiguous PTE support
 2. arm64: Scalable Vector Extension (SVE) support
-3. arm64 port: Direct access to Mckernel memory from Linux
-4. arm64 port: utility thread offloading, which spawns thread onto
+3. arm64: PMU overflow interrupt support
+4. xpmem: Support large page attachment
+5. arm64 port: Direct access to Mckernel memory from Linux
+6. arm64 port: utility thread offloading, which spawns thread onto
    Linux CPU
-5. Crash utility extension
-6. Replace mcoverlayfs with a soft userspace overlay
-7. Build system is switched to cmake
-8. Core dump includes thread information
+7. eclair: support for live debug
+8. Crash utility extension
+9. Replace mcoverlayfs with a soft userspace overlay
+10. Build system is switched to cmake
+11. Core dump includes thread information
 
 ------------------------
 McKernel major bug fixes
@@ -93,6 +96,13 @@ McKernel major bug fixes
 73. arm64: Fix PMU related functions
 74. page_fault_process_memory_range: Disable COW for VM region with zeroobj
 75. extend_process_region: Fall back to demand paging when not contiguous
+76. munmap: fix deadlock with remote pagefault on vm range lock
+77. procfs: if memory_range_lock fails, process later
+78. migrate-cpu: Prevent migration target from calling schedule() twice
+79. sched_request_migrate(): fix race condition between migration req and IRQs
+80. get_one_cpu_topology: Renumber core_id (physical core id)
+81. bb7e140 procfs cpuinfo: use sequence number as processor
+82. set_host_vma(): do NOT read protect Linux VMA
 
 ===========================================
 What's new in V1.6.0 (Nov 11, 2018)
@@ -512,5 +522,13 @@ Restrictions on McKernel
 21. brk() and mmap() doesn't report out-of-memory through its return
     value. Instead, page-fault reports the error.
 
-22. anonymous mmap pre-maps requested number of pages when contiguous
+22. Anonymous mmap pre-maps requested number of pages when contiguous
     pages are available. Demand paging is used when not available.
+
+23. Mixing page sizes in anonymous shared mapping is not allowed. mmap
+    creates vm_range with one page size. And munmap or mremap that
+    needs the reduced page size changes the sizes of all the pages of
+    the vm_range.
+
+24. ihk_os_getperfevent() could time-out when invoked from Fujitsu TCS
+    (job-scheduler).
