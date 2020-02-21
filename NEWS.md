@@ -512,5 +512,9 @@ Restrictions on McKernel
 21. brk() and mmap() doesn't report out-of-memory through its return
     value. Instead, page-fault reports the error.
 
-22. anonymous mmap pre-maps requested number of pages when contiguous
+22. Anonymous mmap pre-maps requested number of pages when contiguous
     pages are available. Demand paging is used when not available.
+
+23. Mixing page sizes in anonymous shared mapping is not allowed. mmap
+    creates vm_range with one page size. And munmap or mremap that
+    would reduce the page size returns EINVAL.
