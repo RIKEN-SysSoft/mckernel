@@ -29,6 +29,7 @@
 #define IMP_PF_INJECTION_DISTANCE5_EL0		sys_reg(3, 3, 11, 7, 5)
 #define IMP_PF_INJECTION_DISTANCE6_EL0		sys_reg(3, 3, 11, 7, 6)
 #define IMP_PF_INJECTION_DISTANCE7_EL0		sys_reg(3, 3, 11, 7, 7)
+#define IMP_PF_PMUSERENR_EL0			sys_reg(3, 3, 9, 14, 0)
 #define IMP_BARRIER_CTRL_EL1			sys_reg(3, 0, 11, 12, 0)
 #define IMP_BARRIER_BST_BIT_EL1			sys_reg(3, 0, 11, 12, 4)
 #define IMP_BARRIER_INIT_SYNC_BB0_EL1		sys_reg(3, 0, 15, 13, 0)
