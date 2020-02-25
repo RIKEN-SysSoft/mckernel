@@ -16,6 +16,24 @@
       "revId": "eba96c82a73d7a03b174b9a034e00ddee682dd4e",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0d02fbae_3170e3ed",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 4549,
+      "author": {
+        "id": 1014941
+      },
+      "writtenOn": "2020-02-25T05:57:11Z",
+      "side": 1,
+      "message": "struct perf_event_attr の sample_period は、sample_freq との共用体で定義されています。\nこの共用体は、struct perf_event_attr::freq が 0 の時に sample_period、非0の時に sample_freq が有効となります。\n対して struct hw_perf_event の sample_period は単独の変数です。\n\nここの制御は、struct hw_perf_event::sample_period をフラグ利用可能にするためと解釈しています。\nstruct hw_perf_event::sample_period が 0 の時は、struct perf_event_attr::sample_freq にユーザ指定の値は無い。\nstruct hw_perf_event::sample_period が 1 の時は、struct perf_event_attr::sample_freq にユーザが値を指定した。\n\nここで設定した情報を、どのように利用するかは perf 固有部によると思っています。\narm64 向けの初期化関数(hw_perf_event_init)では特に利用しておりません。\nstruct hw_perf_event::sample_period を 0, 1 の 2 値にすると都合が良い制御もあるかもしれませんが、それは把握しておりません。",
+      "parentUuid": "8485f165_47452e16",
+      "revId": "eba96c82a73d7a03b174b9a034e00ddee682dd4e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
