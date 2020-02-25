@@ -20,6 +20,16 @@ Summary: IHK/McKernel
 License: GPLv2
 Source0: mckernel-%{version}.tar.gz
 
+%description
+Interface for Heterogeneous Kernels and McKernel.
+
+%package	devel
+Summary:	Headers and libraries required for build apps using IHK/McKernel
+Requires:	%{name} = %{version}-%{release}
+
+%description	devel
+This package contains headers and libraries required for build apps using IHK/McKernel.
+
 # kernel_module_package macro does not handle cross build...
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
 %define cross_compile 1
@@ -44,9 +54,6 @@ BuildRequires: %kernel_module_package_buildreqs = %{krequires}
 %kernel_module_package %{?kmod_flavors}
 %endif
 %endif
-
-%description
-Interface for Heterogeneous Kernels and McKernel.
 
 %prep
 %setup -q
@@ -91,13 +98,9 @@ Interface for Heterogeneous Kernels and McKernel.
 %{_bindir}/eclair
 %{_bindir}/vmcore2mckdump
 %{_bindir}/mcstat
-%{_libdir}/libihk.so
 %{_libdir}/libsched_yield.so.1.0.0
 %{_libdir}/libsched_yield.so
 %{_libdir}/libldump2mcdump.so
-%{_includedir}/ihklib.h
-%{_includedir}/ihk/affinity.h
-%{_includedir}/ihk/ihk_rusage.h
 %{_sysconfdir}/irqbalance_mck.in
 %{_mandir}/man1/mcreboot.1.gz
 %{_mandir}/man1/ihkconfig.1.gz
@@ -115,6 +118,12 @@ Interface for Heterogeneous Kernels and McKernel.
 %endif
 %endif
 
+%files	devel
+%{_libdir}/libihk.so
+%{_includedir}/ihklib.h
+%{_includedir}/ihk/affinity.h
+%{_includedir}/ihk/ihk_rusage.h
+%{_includedir}/ihk/ihk_host_driver.h
 
 %if 0%{?cross_compile}
 # scripts from /usr/lib/rpm/redhat/kmodtool (kernel_module_package) as well
