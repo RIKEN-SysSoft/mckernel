@@ -7,6 +7,8 @@
 # you will need to setup your your environment as per
 # cmake/README.cross_compilation
 
+# Prevent rpmbuild from including build-id directories into package
+%define _build_id_links none
 
 %{!?kernel_version: %global kernel_version @UNAME_R@}
 %{!?kernel_dir: %global kernel_dir /usr/src/kernels/%{kernel_version}}
