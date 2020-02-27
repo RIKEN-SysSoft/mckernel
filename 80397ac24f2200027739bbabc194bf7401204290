@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "cf355ede_d9c32439",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 372,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-27T10:09:31Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0x0\n+\tstatic int nr_mckernel_core \u003d 0x0;",
+      "revId": "80397ac24f2200027739bbabc194bf7401204290",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
