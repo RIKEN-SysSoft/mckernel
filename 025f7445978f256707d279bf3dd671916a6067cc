@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f2051c99_900514c2",
+        "filename": "test/issues/1381/C1381.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-02-27T06:10:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in futex_wake04 shmat01 shmat02 shmat03 shmctl01 shmctl02 shmctl03 shmctl04 shmdt01 shmdt02 shmget01 shmget02 shmget03 shmget04 shmget05",
+      "revId": "025f7445978f256707d279bf3dd671916a6067cc",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
