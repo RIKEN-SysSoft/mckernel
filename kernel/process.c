@@ -3372,6 +3372,7 @@ void spin_sleep_or_schedule(void)
 		v = get_this_cpu_local_var();
 
 		if (v->flags & CPU_FLAG_NEED_RESCHED || v->runq_len > 1) {
+			v->flags &= ~CPU_FLAG_NEED_RESCHED;
 			do_schedule = 1;
 		}
 
@@ -3397,6 +3398,11 @@ void spin_sleep_or_schedule(void)
 		}
 
 		if (woken) {
+			if (do_schedule) {
+				irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+				v->flags |= CPU_FLAG_NEED_RESCHED;
+				ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
+			}
 			return;
 		}
 
@@ -3423,6 +3429,16 @@ void schedule(void)
 	if (cpu_local_var(no_preempt)) {
 		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
 			__FUNCTION__, cpu_local_var(no_preempt));
+
+		irqstate = cpu_disable_interrupt_save();
+		ihk_mc_spinlock_lock_noirq(
+			&(get_this_cpu_local_var()->runq_lock));
+		v = get_this_cpu_local_var();
+
+		v->flags |= CPU_FLAG_NEED_RESCHED;
+
+		ihk_mc_spinlock_unlock_noirq(&v->runq_lock);
+		cpu_restore_interrupt(irqstate);
 		return;
 	}
 
@@ -3435,8 +3451,6 @@ void schedule(void)
 	prev = v->current;
 	prevpid = v->prevpid;
 	
-	v->flags &= ~CPU_FLAG_NEED_RESCHED;
-
 	/* All runnable processes are on the runqueue */
 	if (prev && prev != &cpu_local_var(idle)) {
 		list_del(&prev->sched_list);
@@ -3567,7 +3581,6 @@ void schedule(void)
 		/* Have we migrated to another core meanwhile? */
 		if (v != get_this_cpu_local_var()) {
 			v = get_this_cpu_local_var();
-			v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		}
 	}
 	else {
@@ -3601,6 +3614,7 @@ void check_need_resched(void)
 			ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 			return;
 		}
+		v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 		schedule();
 	}
