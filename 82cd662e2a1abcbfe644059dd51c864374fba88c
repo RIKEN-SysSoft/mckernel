@@ -1,0 +1,44 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c571d122_748d6b79",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 141,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-02T07:08:44Z",
+      "side": 1,
+      "message": "/* To serialize SCD_MSG_SCHEDULE_PROCESS and SCD_MSG_CLEANUP_PROCESS */\nと書いておいてください。",
+      "range": {
+        "startLine": 141,
+        "startChar": 0,
+        "endLine": 141,
+        "endChar": 23
+      },
+      "revId": "82cd662e2a1abcbfe644059dd51c864374fba88c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "faa51e85_773c5527",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-02T07:08:44Z",
+      "side": 1,
+      "message": "/* Used as SCD_MSG_CLEANUP_PROCESS target which isn\u0027t scheduled with SCD_MSG_SCHEDULE_PROCESS */\nと書き換えてください。",
+      "revId": "82cd662e2a1abcbfe644059dd51c864374fba88c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
