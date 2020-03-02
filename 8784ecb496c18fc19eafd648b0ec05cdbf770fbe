@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "51435831_47d6b6c7",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-02T04:36:28Z",
+      "side": 1,
+      "message": "A thread could call schedule() twice. This happens in the following steps:\n(1) The migrator raises rescheduling flag\n(2) The thread calls check_need_resched() for other reason than the migrate IPI, for example, response of system call offload. And it try to call schedule().\n(3) The thread takes the migrate IPI and calls schedule()\n(4) The thread resume the execution of (2) and call schedule()",
+      "range": {
+        "startLine": 11,
+        "startChar": 0,
+        "endLine": 11,
+        "endChar": 29
+      },
+      "revId": "8784ecb496c18fc19eafd648b0ec05cdbf770fbe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
