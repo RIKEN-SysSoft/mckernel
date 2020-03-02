@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5522c2f1_a7d90f79",
+        "filename": "test/perf_overflow/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-02T03:38:26Z",
+      "side": 1,
+      "message": "Test overflow handling of performance counter.\nThe steps of the test programs are as follows:\n(1) Starts counting with the initial counter value set to -30\n(2) Executes 40 nops\n(3) Repeat (4)-(5) with the commands specified by the test-case\n(4) Executes sys_read or sys_ioctl(PERF_EVENT_IOC_RESET) or sys_ioctl(PERF_EVENT_IOC_REFRESH)\n(5) Executes 40 nops\n(6) Checks if the counter value read in (4) is the same as Linux run",
+      "range": {
+        "startLine": 15,
+        "startChar": 0,
+        "endLine": 15,
+        "endChar": 117
+      },
+      "revId": "d4449d2c59f27b2c6c7bf3ab4fb3751bab160230",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
