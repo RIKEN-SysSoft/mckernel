@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6786a603_fa834364",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 298,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-02T07:44:46Z",
+      "side": 1,
+      "message": "これは必要でしょうか。というのは、上記でschedule()を呼んで、起きてきて、while (res.status \u003d\u003d STATUS_IN_PROGRESS)を抜けた場合に、NEED_RESCHEDがついたままになって、system callのexceptionから戻るときに不要なscheduleを呼んでしまうのではないでしょうか。",
+      "revId": "abe2bc93a551f19ccf793fa7649f5f40379e2c9e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
