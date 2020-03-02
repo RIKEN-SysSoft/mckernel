@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2db24f86_0785222e",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-02T04:24:03Z",
+      "side": 1,
+      "message": "runq_lock of the migration source is acquired on the migration destination CPU. This happens in the following steps:\n(1) The thread stores value of cpu_local_var(runq_lock) to its register when trying to perform ihk_mc_spinlock_lock() on the lock variable.\n(2) The thread takes IPI and migrates to another CPU\n(3) The thread acquires the wrong lock.",
+      "revId": "e700b919cd8d78e78d793eed9f72e3acb86ed981",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
