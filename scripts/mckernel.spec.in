@@ -126,6 +126,10 @@ BuildRequires: %kernel_module_package_buildreqs = %{krequires}
 %{_includedir}/ihk/affinity.h
 %{_includedir}/ihk/ihk_rusage.h
 %{_includedir}/ihk/ihk_host_driver.h
+%{_includedir}/ihk/archdefs.h
+%{_includedir}/ihk/status.h
+%{_includedir}/ihk/ihk_monitor.h
+%{_includedir}/ihk/ihk_debug.h
 
 %if 0%{?cross_compile}
 # scripts from /usr/lib/rpm/redhat/kmodtool (kernel_module_package) as well
