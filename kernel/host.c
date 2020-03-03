@@ -269,7 +269,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		argenv_page_count += (map_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 	}
 	else {
-		argenv_page_count = (envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+		argenv_page_count += (envs_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
 	}
 	addr = vm->region.map_start - PAGE_SIZE * argenv_page_count;
 	e = addr + PAGE_SIZE * argenv_page_count;
