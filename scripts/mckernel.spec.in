@@ -1,6 +1,7 @@
 # mckernel spec file usage:
 # cmake /path/to/mckernel && make dist
-# rpmbuild -ta mckernel-@MCKERNEL_VERSION@.tar.gz
+# put mckernel.spec to SPECS and mckernel-@MCKERNEL_VERSION@.tar.gz to SOURCES
+# rpmbuild -ba mckernel.spec
 #
 # for cross compilation also pass at least the following to rpmbuild:
 # --target aarch64 -D 'kernel_version <target kernel>'
@@ -100,6 +101,7 @@ BuildRequires: %kernel_module_package_buildreqs = %{krequires}
 %{_bindir}/eclair
 %{_bindir}/vmcore2mckdump
 %{_bindir}/mcstat
+%{_libdir}/libihk.so
 %{_libdir}/libsched_yield.so.1.0.0
 %{_libdir}/libsched_yield.so
 %{_libdir}/libldump2mcdump.so
@@ -109,7 +111,6 @@ BuildRequires: %kernel_module_package_buildreqs = %{krequires}
 %{_mandir}/man1/ihkosctl.1.gz
 %{_mandir}/man1/mcexec.1.gz
 
-%if 0%{?cross_compile}
 /lib/modules/%{kernel_version}/extra/mckernel/ihk.ko
 /lib/modules/%{kernel_version}/extra/mckernel/mcctrl.ko
 %ifarch x86_64
@@ -118,14 +119,17 @@ BuildRequires: %kernel_module_package_buildreqs = %{krequires}
 %ifarch aarch64
 /lib/modules/%{kernel_version}/extra/mckernel/ihk-smp-arm64.ko
 %endif
-%endif
 
 %files	devel
-%{_libdir}/libihk.so
 %{_includedir}/ihklib.h
 %{_includedir}/ihk/affinity.h
 %{_includedir}/ihk/ihk_rusage.h
+%{_includedir}/ihk/archdefs.h
+%{_includedir}/ihk/status.h
+%{_includedir}/ihk/ihk_monitor.h
+%{_includedir}/ihk/ihk_debug.h
 %{_includedir}/ihk/ihk_host_driver.h
+/lib/modules/%{kernel_version}/extra/mckernel/ihk/linux/core/Module.symvers
 
 %if 0%{?cross_compile}
 # scripts from /usr/lib/rpm/redhat/kmodtool (kernel_module_package) as well
