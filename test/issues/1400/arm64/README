@@ -1,0 +1,57 @@
+/* README COPYRIGHT FUJITSU LIMITED 2020 */
+
+ostest-sched_yield.000: 親プロセスが子プロセスと自信を同一CPUにバインドしてsched_yield()しても子プロセスがスケジュールされない
+https://postpeta.pccluster.org/redmine/issues/1400
+
+テストセットREADME
+
+(0) 事前準備
+  1. $HOME/.mck_test_configを用意する
+
+(1) テスト実行方法
+  1. make test
+
+(2) テスト終了方法
+  1. touch ./1400_stop
+
+  テスト項目全項目を1セットとして行うため、終了までにタイムラグがあることがある。
+
+(3) テスト項目詳細
+
+  1400_arm64.c
+    親プロセスが子プロセスと自身を同一CPUにバインドしてsched_yield()した場合、
+    子プロセス、親プロセスの順序で実行されることを確認する。
+
+  本修正が既存機能へのレベルダウンとなっていないか確認するため、
+  下記のLTP項目についても実施対象とする。
+    - sched_yield01
+    - signal01,02,03,04,05
+    - rt_sigaction01,02,03
+    - rt_sigprocmask01,02
+    - rt_sigsuspend01
+    - rt_tgsigqueueinfo01
+    - futex_wait01,02,03,04
+    - futex_wake01,03
+    - futex_wait_bitset01,02
+    - execveat02
+
+  現象はタイミングによって発生有無が変化するため、テストは無限ループによる
+  長時間実行を行う。
+  12時間以上の実行継続、テスト成功を目安とし、合否判定とする。
+
+  なお、本テストの実行は別障害のため、NGとなることがある。
+  別障害は https://postpeta.pccluster.org/redmine/issues/1454 で管理。
+
+
+  また、本修正により明らかになった上記とは別の障害により以下のLTP項目が
+　FAILになる。
+   - msgrcv05
+   - msgsnd05
+   - semctl01
+   - semop05
+
+  こちらの別障害については、
+  https://postpeta.pccluster.org/redmine/issues/1455
+  にて管理する。
+
+以上。
