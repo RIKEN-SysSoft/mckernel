@@ -264,6 +264,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			if (v->flags & CPU_FLAG_NEED_RESCHED ||
 			    v->runq_len > 1 ||
 			    req->number == __NR_sched_setaffinity) {
+				v->flags &= ~CPU_FLAG_NEED_RESCHED;
 				do_schedule = 1;
 			}
 
@@ -293,6 +294,16 @@ schedule:
 				schedule();
 				waitq_finish_wait(&thread->scd_wq, &scd_wq_entry);
 				continue;
+			}
+			else {
+				if (do_schedule) {
+					runq_irqstate =
+						ihk_mc_spinlock_lock(
+							&v->runq_lock);
+					v->flags |= CPU_FLAG_NEED_RESCHED;
+					ihk_mc_spinlock_unlock(
+						&v->runq_lock, runq_irqstate);
+				}
 			}
 
 			cpu_restore_interrupt(flags);
@@ -4551,6 +4562,7 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 			v = get_this_cpu_local_var();
 
 			if (v->flags & CPU_FLAG_NEED_RESCHED) {
+				v->flags &= ~CPU_FLAG_NEED_RESCHED;
 				do_schedule = 1;
 			}
 
@@ -7543,6 +7555,7 @@ SYSCALL_DECLARE(sched_yield)
 	runq_irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 
 	if (v->flags & CPU_FLAG_NEED_RESCHED || v->runq_len > 1) {
+		v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		do_schedule = 1;
 	}
 
