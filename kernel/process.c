@@ -749,8 +749,13 @@ static int copy_user_pte(void *arg0, page_table_t src_pt, pte_t *src_ptep, void 
 			src_kvirt = ihk_mc_map_virtual(src_lphys, 1, attr);
 		}
 
-		memcpy(virt, src_kvirt, pgsize);
-		dkprintf("copy_user_pte(): memcpy OK\n");
+		if (args->new_vrflag & VR_WIPEONFORK) {
+			memset(virt, 0, pgsize);
+			dkprintf("%s(): memset OK\n", __func__);
+		} else {
+			memcpy(virt, src_kvirt, pgsize);
+			dkprintf("%s(): memcpy OK\n", __func__);
+		}
 
 		if (!is_mckernel) {
 			ihk_mc_unmap_virtual(src_kvirt, 1);

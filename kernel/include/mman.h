@@ -54,6 +54,8 @@
 #define	MADV_NOHUGEPAGE		15
 #define	MADV_DONTDUMP		16
 #define	MADV_DODUMP		17
+#define	MADV_WIPEONFORK		18 /* Zero memory on fork, child only */
+#define	MADV_KEEPONFORK		19 /* Undo MADV_WIPEONFORK */
 #define	MADV_HWPOISON		100
 #define	MADV_SOFT_OFFLINE	101
 
