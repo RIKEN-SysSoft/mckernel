@@ -1,0 +1,22 @@
+/* REDME COPYRIGHT FUJITSU LIMITED 2020 */
+
+ltp: madvise08: MADV_{DONT,DO}DUMPが期待通りに動作しない。
+https://postpeta.pccluster.org/redmine/issues/1373
+
+テストセットREADME
+
+(0) 事前準備
+  1. LTP に madvise08-mck-core-pattern.patch を適用
+  2. LTP のビルド及びインストール
+  3. $HOME/.mck_test_configを用意する
+
+(1) テスト実行方法
+  1. ./run.sh
+
+(2) テスト項目詳細
+
+  LTPの下記項目を実行し期待通りに動作することを確認する
+  "test OK." が書き出されれば合格判定となる。具体例はresult.logを参照。
+  - madvise08
+
+以上。

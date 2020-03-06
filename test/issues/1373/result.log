@@ -1,0 +1,19 @@
+[root@hostname 1373]# ./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 512M@4 ... done
+test run.
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+madvise08.c:87: INFO: System core pattern is '|/usr/lib/systemd/systemd-coredump'
+madvise08.c:91: INFO: McKernel core pattern is '/tmp/IQxynJ/mccore-madvise08.%p'
+madvise08.c:133: INFO: Dump file should be mccore-madvise08.17327
+madvise08.c:217: PASS: madvise(..., MADV_DONTDUMP)
+madvise08.c:133: INFO: Dump file should be mccore-madvise08.17378
+madvise08.c:221: PASS: madvise(..., MADV_DODUMP)
+
+Summary:
+passed   2
+failed   0
+skipped  0
+warnings 0
+test OK.
+mcstop+release.sh ... done
