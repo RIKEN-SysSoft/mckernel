@@ -1,0 +1,35 @@
+[root@hostname 1371]# ./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 512M@4 ... done
+test run.
+Script started, file is tmp.dCXi5LtX9k
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+madvise01.c:121: PASS: madvise test for MADV_NORMAL PASSED
+madvise01.c:121: PASS: madvise test for MADV_RANDOM PASSED
+madvise01.c:121: PASS: madvise test for MADV_SEQUENTIAL PASSED
+madvise01.c:121: PASS: madvise test for MADV_WILLNEED PASSED
+madvise01.c:121: PASS: madvise test for MADV_DONTNEED PASSED
+madvise01.c:121: PASS: madvise test for MADV_REMOVE PASSED
+madvise01.c:121: PASS: madvise test for MADV_DONTFORK PASSED
+madvise01.c:121: PASS: madvise test for MADV_DOFORK PASSED
+madvise01.c:118: FAIL: madvise test for MADV_HWPOISON failed with return = -1, errno = 1 : ???
+madvise01.c:113: CONF: MADV_MERGEABLE is not supported
+madvise01.c:113: CONF: MADV_UNMERGEABLE is not supported
+madvise01.c:118: FAIL: madvise test for MADV_HUGEPAGE failed with return = -1, errno = 9 : ???
+madvise01.c:118: FAIL: madvise test for MADV_NOHUGEPAGE failed with return = -1, errno = 9 : ???
+madvise01.c:121: PASS: madvise test for MADV_DONTDUMP PASSED
+madvise01.c:121: PASS: madvise test for MADV_DODUMP PASSED
+madvise01.c:113: CONF: MADV_FREE is not supported
+madvise01.c:121: PASS: madvise test for MADV_WIPEONFORK PASSED
+madvise01.c:121: PASS: madvise test for MADV_KEEPONFORK PASSED
+safe_macros.c:773: WARN: madvise01.c:102: umount(tmp_madvise) failed: EBUSY
+
+Summary:
+passed   12
+failed   3
+skipped  3
+warnings 1
+tst_tmpdir.c:330: WARN: tst_rmdir: rmobj(/tmp/EEcwqf) failed: remove(/tmp/EEcwqf/tmp_madvise) failed; errno=16: EBUSY
+Script done, file is tmp.dCXi5LtX9k
+test OK.
+mcstop+release.sh ... done
