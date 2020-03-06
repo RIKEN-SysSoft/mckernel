@@ -1220,7 +1220,7 @@ ptl_shift(int level)
 }
 
 static void
-pte_print_(ulong pte, ulong virt, int level)
+pte_print_(ulong pte, ulong virt, int level, int lookup)
 {
 	int others = 0;
 	int pgshift = level ? ptl_shift(level) : 0;
@@ -1290,10 +1290,14 @@ pte_print_(ulong pte, ulong virt, int level)
 		fprintf(fp, "%016lx", pte);
 #endif
 	fprintf(fp, ")\n");
+
+	if (lookup && pte) {
+		fprintf(fp, "PTE: %lx\n", pte);
+	}
 }
 
 static void
-pte_print(ulong pte, ulong virt, int level)
+pte_print(ulong pte, ulong virt, int level, int lookup)
 {
 	static ulong prev_pte, prev_virt;
 	static int prev_pgshift, prev_level, skipped_pte;
@@ -1313,14 +1317,14 @@ pte_print(ulong pte, ulong virt, int level)
 		if (skipped_pte > 1)
 			fprintf(fp, "...\n");
 		if (skipped_pte)
-			pte_print_(prev_pte, prev_virt, prev_level);
+			pte_print_(prev_pte, prev_virt, prev_level, lookup);
 		prev_pte = skipped_pte = 0;
 	}
 
 	if (!pte)
 		return;
 
-	pte_print_(pte, virt, level);
+	pte_print_(pte, virt, level, lookup);
 	prev_pte = pte;
 	prev_virt = virt;
 	prev_pgshift = pgshift;
@@ -1353,7 +1357,7 @@ pte_do_walk(ulong pt, ulong virt, int level, int lookup,
 			continue;
 		if (pte_is_type_page(pte, level)) {
 			pte_print(pte, (virt | prefix) +
-					(i << ptl_shift(level)), level);
+					(i << ptl_shift(level)), level, lookup);
 			if (lookup)
 				return;
 		} else if (level > 1) {
@@ -1375,7 +1379,7 @@ pte_walk(ulong pt, int lookup, ulong addr, ulong prefix)
 {
 	fprintf(fp, "%-16s %-16s %s %s\n", "VIRT", "PHYS", "SIZE", "FLAGS");
 	pte_do_walk(pt, 0, PGTABLE_LEVELS, lookup, addr, prefix);
-	pte_print(0, 0, 0); // flush last one if any
+	pte_print(0, 0, 0, lookup); // flush last one if any
 }
 
 static void
