@@ -1,0 +1,27 @@
+madvise08-mck-core-pattern.patch COPYRIGHT FUJITSU LIMITED 2020
+diff --git a/testcases/kernel/syscalls/madvise/madvise08.c b/testcases/kernel/syscalls/madvise/madvise08.c
+index a6fd967..4cdba31 100644
+--- a/testcases/kernel/syscalls/madvise/madvise08.c
++++ b/testcases/kernel/syscalls/madvise/madvise08.c
+@@ -87,9 +87,9 @@ static void setup(void)
+ 	tst_res(TINFO, "System core pattern is '%s'", cpattern);
+ 
+ 	SAFE_GETCWD(cwd, sizeof(cwd));
+-	snprintf(tmpcpattern, sizeof(tmpcpattern), "%s/dump-%%p", cwd);
+-	tst_res(TINFO, "Temporary core pattern is '%s'", tmpcpattern);
+-	SAFE_FILE_PRINTF(CORE_PATTERN, "%s", tmpcpattern);
++	snprintf(tmpcpattern, sizeof(tmpcpattern), "%s/mccore-madvise08.%%p", cwd);
++	tst_res(TINFO, "McKernel core pattern is '%s'", tmpcpattern);
++	//SAFE_FILE_PRINTF(CORE_PATTERN, "%s", tmpcpattern);
+ 
+ 	fmem = SAFE_MMAP(NULL,
+ 			 FMEMSIZE,
+@@ -129,7 +129,7 @@ static int find_sequence(int pid)
+ 	int ycount = 0;
+ 	char dumpname[256];
+ 
+-	snprintf(dumpname, 256, "dump-%d", pid);
++	snprintf(dumpname, 256, "mccore-madvise08.%d", pid);
+ 	tst_res(TINFO, "Dump file should be %s", dumpname);
+ 	if (access(dumpname, F_OK))
+ 		tst_brk(TBROK | TERRNO, "Dump file was not found.");

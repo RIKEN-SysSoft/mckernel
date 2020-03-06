@@ -1,0 +1,42 @@
+[root@hostname 1373]# ./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 512M@4 ... done
+test run.
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+madvise08.c:87: INFO: System core pattern is '|/usr/lib/systemd/systemd-coredump'
+madvise08.c:91: INFO: McKernel core pattern is '/tmp/l2JnVb/mccore-madvise08.%p'
+madvise08.c:133: INFO: Dump file should be mccore-madvise08.17555
+madvise08.c:217: PASS: madvise(..., MADV_DONTDUMP)
+madvise08.c:133: INFO: Dump file should be mccore-madvise08.17606
+madvise08.c:221: PASS: madvise(..., MADV_DODUMP)
+
+Summary:
+passed   2
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+madvise10.c:143: INFO: MADV_WIPEONFORK zeroes memory in child
+madvise10.c:117: PASS: madvise(0x1000001c0000, 16384, 0x0)
+madvise10.c:117: PASS: madvise(0x1000001c0000, 16384, 0x12)
+madvise10.c:98: PASS: In PID 17758, Matched expected pattern
+madvise10.c:143: INFO: MADV_WIPEONFORK with zero length does nothing
+madvise10.c:117: PASS: madvise(0x1000001d0000, 0, 0x0)
+madvise10.c:117: PASS: madvise(0x1000001d0000, 0, 0x12)
+madvise10.c:98: PASS: In PID 17808, Matched expected pattern
+madvise10.c:143: INFO: MADV_WIPEONFORK zeroes memory in grand-child
+madvise10.c:117: PASS: madvise(0x1000001e0000, 16384, 0x0)
+madvise10.c:117: PASS: madvise(0x1000001e0000, 16384, 0x12)
+madvise10.c:98: PASS: In PID 17908, Matched expected pattern
+madvise10.c:143: INFO: MADV_KEEPONFORK will undo MADV_WIPEONFORK
+madvise10.c:117: PASS: madvise(0x1000001f0000, 16384, 0x12)
+madvise10.c:117: PASS: madvise(0x1000001f0000, 16384, 0x13)
+madvise10.c:98: PASS: In PID 17958, Matched expected pattern
+
+Summary:
+passed   12
+failed   0
+skipped  0
+warnings 0
+test OK.
+mcstop+release.sh ... done
