@@ -5339,6 +5339,8 @@ SYSCALL_DECLARE(madvise)
 			}
 		}
 		else if(advice == MADV_DONTFORK || advice == MADV_DOFORK);
+		else if (advice == MADV_DONTDUMP || advice == MADV_DODUMP) {
+		}
 		else if (advice == MADV_NORMAL) {
 			/*
 			 * Normally, the settings of MADV_RANDOM and
