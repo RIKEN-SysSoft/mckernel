@@ -1,0 +1,27 @@
+[root@hostname 1372]# ./run.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-59 -m 512M@4 ... done
+test run.
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+madvise02.c:189: PASS: MADV_NORMAL failed as expected: EINVAL
+madvise02.c:189: PASS: MADV_NORMAL failed as expected: EINVAL
+madvise02.c:189: PASS: MADV_REMOVE failed as expected: EINVAL
+madvise02.c:189: PASS: MADV_DONTNEED failed as expected: EINVAL
+madvise02.c:182: CONF: MADV_MERGEABLE is not supported
+madvise02.c:182: CONF: MADV_UNMERGEABLE is not supported
+madvise02.c:189: PASS: MADV_NORMAL failed as expected: ENOMEM
+madvise02.c:189: PASS: MADV_WILLNEED failed as expected: ENOMEM
+madvise02.c:182: CONF: MADV_WILLNEED is not supported
+madvise02.c:189: PASS: MADV_FREE failed as expected: EINVAL
+madvise02.c:189: PASS: MADV_WIPEONFORK failed as expected: EINVAL
+madvise02.c:189: PASS: MADV_WIPEONFORK shared_anon failed as expected: EINVAL
+madvise02.c:189: PASS: MADV_WIPEONFORK private file backed failed as expected: EINVAL
+
+Summary:
+passed   10
+failed   0
+skipped  3
+warnings 0
+tst_tmpdir.c:330: WARN: tst_rmdir: rmobj(/tmp/Ql3dOH) failed: remove(/tmp/Ql3dOH) failed; errno=39: ENOTEMPTY
+test OK.
+mcstop+release.sh ... done
