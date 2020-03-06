@@ -56,6 +56,7 @@
 #define VR_PAGEOUT	   0x10000000
 #define VR_DONTDUMP	   0x20000000
 #define VR_XPMEM	   0x40000000
+#define VR_WIPEONFORK	   0x80000000
 
 #define	PROT_TO_VR_FLAG(prot)	(((unsigned long)(prot) << 16) & VR_PROT_MASK)
 #define	VRFLAG_PROT_TO_MAXPROT(vrflag)	(((vrflag) & VR_PROT_MASK) << 4)
