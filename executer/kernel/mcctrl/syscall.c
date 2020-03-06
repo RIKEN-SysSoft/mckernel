@@ -974,6 +974,10 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
+	if (!strcmp(inode->i_sb->s_type->name, "tmpfs")) {
+		mf_flags = MF_IS_REMOVABLE;
+	}
+
 	if (!strcmp(inode->i_sb->s_type->name, "proc")) {
 		error = -ESRCH;
 		goto out;
