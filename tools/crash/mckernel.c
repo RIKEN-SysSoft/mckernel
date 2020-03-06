@@ -1645,9 +1645,8 @@ static void
 cmd_mcinfo(void)
 {
 #ifdef x86
-
-#endif
 	fprintf(fp, "LINUX_PAGE_OFFSET: 0x%lx\n", LINUX_PAGE_OFFSET);
+#endif
 #ifdef ARM64
 	fprintf(fp, "V2PHYS_OFFSET: 0x%lx\n", V2PHYS_OFFSET);
 
