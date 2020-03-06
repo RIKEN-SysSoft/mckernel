@@ -5280,6 +5280,8 @@ SYSCALL_DECLARE(madvise)
 	case MADV_REMOVE:
 	case MADV_DONTDUMP:
 	case MADV_DODUMP:
+	case MADV_WIPEONFORK:
+	case MADV_KEEPONFORK:
 		break;
 
 	case MADV_HWPOISON:
@@ -5332,6 +5334,27 @@ SYSCALL_DECLARE(madvise)
 			}
 		}
 		else if(advice == MADV_DONTFORK || advice == MADV_DOFORK);
+		else if (advice == MADV_NORMAL) {
+			/*
+			 * Normally, the settings of MADV_RANDOM and
+			 * MADV_SEQUENTIAL are cleared.
+			 * MADV_RANDOM and MADV_SEQUENTIAL are not supported,
+			 * so do nothing.
+			 */
+		}
+		else if (advice == MADV_WIPEONFORK
+			 || advice == MADV_KEEPONFORK) {
+			if (range->memobj && memobj_has_pager(range->memobj)) {
+				/* device mapping, file mapping */
+				error = -EINVAL;
+				goto out;
+			}
+			if (!(range->flag & VR_PRIVATE)) {
+				/* VR_SHARED */
+				error = -EINVAL;
+				goto out;
+			}
+		}
 		else if (!range->memobj || !memobj_has_pager(range->memobj)) {
 			dkprintf("[%d]sys_madvise(%lx,%lx,%x):has not pager"
 					"[%lx-%lx) %lx\n",
@@ -5418,6 +5441,24 @@ SYSCALL_DECLARE(madvise)
 	if(advice == MADV_DONTFORK ||
 	   advice == MADV_DOFORK){
 		error = syscall_generic_forwarding(__NR_madvise, ctx);
+	}
+	if (advice == MADV_WIPEONFORK) {
+		error = change_attr_process_memory_range(
+				thread->vm, start, end,
+				set_memory_range_flag,
+				VR_WIPEONFORK);
+		if (error) {
+			goto out;
+		}
+	}
+	if (advice == MADV_KEEPONFORK) {
+		error = change_attr_process_memory_range(
+				thread->vm, start, end,
+				clear_memory_range_flag,
+				VR_WIPEONFORK);
+		if (error) {
+			goto out;
+		}
 	}
 
 	error = 0;
