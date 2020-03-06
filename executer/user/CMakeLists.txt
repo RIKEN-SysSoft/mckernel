@@ -29,6 +29,7 @@ if (NOT LIBDWARF)
 else()
 	target_link_libraries(mcinspect ${LIBDWARF})
 endif()
+target_link_libraries(mcinspect ${LIBBFD})
 
 add_executable(eclair eclair.c arch/${ARCH}/arch-eclair.c)
 target_link_libraries(eclair ${LIBBFD})
