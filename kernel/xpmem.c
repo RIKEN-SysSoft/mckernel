@@ -451,7 +451,9 @@ static int xpmem_make(
 	 * The start of the segment must be page aligned and it must be a
 	 * multiple of pages in size.
 	 */
-	if (offset_in_page(vaddr) != 0 || offset_in_page(size) != 0) {
+	if (offset_in_page(vaddr) != 0 ||
+			/* Special treatment of -1UL */
+			(offset_in_page(size) != 0 && size != 0xffffffffffffffff)) {
 		xpmem_tg_deref(seg_tg);
 		XPMEM_DEBUG("return: ret=%d", -EINVAL);
 		return -EINVAL;
