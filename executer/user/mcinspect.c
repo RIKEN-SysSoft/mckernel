@@ -22,6 +22,7 @@
 #include <libdwarf/libdwarf.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <bfd.h>
 
 void usage(char **argv)
 {
@@ -32,22 +33,88 @@ void usage(char **argv)
 	printf("    --help                      Display this help message.\n");
 	printf("    --kernel PATH               Path to kernel image.\n");
 	printf("    --ps                        List processes running on LWK.\n");
-	printf("    -v, --vtop [ADDR]           Display page table corresponding to ADDR\n");
-	printf("                                or dump all page tables.\n");
+	printf("    --vtop                      Dump page tables.\n");
+	printf("    -v, --va ADDR               Dump page tables for ADDR only.\n");
+	printf("    -p, --pid PID               Use process PID for vtop.\n");
 	printf("    --debug                     Enable debug mode.\n");
 	printf("\n");
-	printf("Example: \n");
+	printf("Examples: \n");
 	printf("    %s --kernel=smp-x86/kernel/mckernel.img --ps\n", basename(argv[0]));
+	printf("    %s --kernel=smp-x86/kernel/mckernel.img --vtop --pid 100 --va 0x3fffff800000\n",
+			basename(argv[0]));
 }
-
 
 int debug;
 int mcfd;
 
 /*
+ * BFD based symbol table
+ */
+bfd *symbfd = NULL;
+asymbol **symtab = NULL;
+ssize_t nsyms;
+#define NOSYMBOL (-1UL)
+
+unsigned long int lookup_bfd_symbol(char *name)
+{
+	int i;
+
+	for (i = 0; i < nsyms; ++i) {
+		if (!strcmp(symtab[i]->name, name)) {
+			return (symtab[i]->section->vma + symtab[i]->value);
+		}
+	}
+
+	return NOSYMBOL;
+}
+
+int init_bfd_symbols(char *fname) {
+	ssize_t needs;
+	bfd_boolean ok;
+
+	symbfd = bfd_openr(fname, NULL);
+
+	if (!symbfd) {
+		bfd_perror("bfd_openr");
+		return -1;
+	}
+
+	ok = bfd_check_format(symbfd, bfd_object);
+	if (!ok) {
+		bfd_perror("bfd_check_format");
+		return -1;
+	}
+
+	needs = bfd_get_symtab_upper_bound(symbfd);
+	if (needs < 0) {
+		bfd_perror("bfd_get_symtab_upper_bound");
+		return -1;
+	}
+
+	if (!needs) {
+		printf("no symbols\n");
+		return -1;
+	}
+
+	symtab = malloc(needs);
+	if (!symtab) {
+		perror("malloc");
+		return -1;
+	}
+
+	nsyms = bfd_canonicalize_symtab(symbfd, symtab);
+	if (nsyms < 0) {
+		bfd_perror("bfd_canonicalize_symtab");
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
  * Walk DWARF tree and call func with arg for each Die
  */
-static int dwarf_walk_tree(Dwarf_Debug dbg,
+int dwarf_walk_tree(Dwarf_Debug dbg,
 	int (*func)(Dwarf_Debug dbg, Dwarf_Die die, void *arg), void *arg)
 {
 	Dwarf_Bool is_info;
@@ -191,7 +258,7 @@ static int dwarf_walk_tree(Dwarf_Debug dbg,
 	return -1;
 }
 
-static int dwarf_get_size(Dwarf_Debug dbg,
+int dwarf_get_size(Dwarf_Debug dbg,
 		Dwarf_Die die,
 		unsigned long *psize,
 		Dwarf_Error *perr)
@@ -345,7 +412,7 @@ out:
 })
 
 
-static int dwarf_get_offset(Dwarf_Debug dbg,
+int dwarf_get_offset(Dwarf_Debug dbg,
 		Dwarf_Die die,
 		unsigned long *poffset,
 		Dwarf_Error *perr)
@@ -560,7 +627,7 @@ out:
 /*
  * Find the address of a global variable.
  */
-static int dwarf_get_address(Dwarf_Debug dbg,
+int dwarf_get_address(Dwarf_Debug dbg,
 		Dwarf_Die die,
 		unsigned long *paddr,
 		Dwarf_Error *perr)
@@ -611,6 +678,7 @@ static int dwarf_get_address(Dwarf_Debug dbg,
 		if (attr_i != DW_AT_location) {
 			continue;
 		}
+		printf("%s: DW_AT_location\n", __func__);
 
 		rc = dwarf_whatform(attr, &form, perr);
 		if (rc != DW_DLV_OK) {
@@ -779,8 +847,11 @@ int dwarf_global_var_addr(Dwarf_Debug dbg, Dwarf_Die die, void *arg)
 		goto out;
 	}
 
+	printf("%s: inspecting %s\n", __func__, name);
+
 	rc = dwarf_get_address(dbg, die, &addr, &err);
 	if (rc == DW_DLV_NO_ENTRY) {
+		printf("%s: inspecting %s -> DW_DLV_NO_ENTRY for addr?\n", __func__, name);
 		goto out;
 	}
 	else if (rc != DW_DLV_OK) {
@@ -812,11 +883,14 @@ out:
 		.variable = #__variable__, \
 		.addrp = &addr, \
 	}; \
-	rc = dwarf_walk_tree(dbg, dwarf_global_var_addr, &gva); \
-	if (rc != DW_DLV_OK) { \
-		fprintf(stderr, "%s: error: finding addr of %s\n", \
-			__func__, gva.variable); \
-		exit(1); \
+	addr = lookup_bfd_symbol(gva.variable); \
+	if (addr == NOSYMBOL) { \
+		rc = dwarf_walk_tree(dbg, dwarf_global_var_addr, &gva); \
+		if (rc != DW_DLV_OK) { \
+			fprintf(stderr, "%s: error: finding addr of %s\n", \
+				__func__, gva.variable); \
+			exit(1); \
+		} \
 	} \
 	addr; \
 })
@@ -831,7 +905,7 @@ struct ihk_os_read_kaddr_desc {
 	void *ubuf;
 };
 
-static void ihk_read_kernel(unsigned long addr,
+void ihk_read_kernel(unsigned long addr,
 	unsigned long len, void *buf)
 {
 	struct ihk_os_read_kaddr_desc desc;
@@ -850,6 +924,14 @@ static void ihk_read_kernel(unsigned long addr,
 #define ihk_read_val(addr, pval) \
 	ihk_read_kernel(addr, sizeof(*pval), (void *)pval)
 
+#define get_pointer_symbol_val(__variable__, pval) \
+({ \
+	unsigned long addr; \
+	addr = DWARF_GET_VARIABLE_ADDRESS(__variable__); \
+	ihk_read_kernel(addr, sizeof(*pval), (void *)pval); \
+})
+
+
 #define PS_RUNNING           0x1
 #define PS_INTERRUPTIBLE     0x2
 #define PS_UNINTERRUPTIBLE   0x4
@@ -857,6 +939,9 @@ static void ihk_read_kernel(unsigned long addr,
 #define PS_EXITED            0x10
 #define PS_STOPPED           0x20
 
+/*
+ * Globals
+ */
 int nr_cpus;
 unsigned long clv;
 unsigned long clv_size;
@@ -868,10 +953,44 @@ unsigned long thread_sched_list_offset;
 unsigned long thread_proc_offset;
 unsigned long thread_status_offset;
 unsigned long process_pid_offset;
+unsigned long process_vm_offset;
 unsigned long process_saved_cmdline_offset;
 unsigned long process_saved_cmdline_len_offset;
+unsigned long vm_address_space_offset;
+unsigned long address_space_page_table_offset;
 
-static void print_thread(int cpu,
+void init_globals(Dwarf_Debug dbg)
+{
+	unsigned long num_processors_addr;
+
+	num_processors_addr = DWARF_GET_VARIABLE_ADDRESS(mck_num_processors);
+	ihk_read_val(num_processors_addr, &num_processors_addr);
+	ihk_read_val(num_processors_addr, &nr_cpus);
+	ihk_read_val(DWARF_GET_VARIABLE_ADDRESS(clv), &clv);
+	clv_size = DWARF_GET_SIZE(cpu_local_var);
+
+	clv_runq_offset = DWARF_GET_OFFSET_IN_STRUCT(cpu_local_var, runq);
+	clv_idle_offset = DWARF_GET_OFFSET_IN_STRUCT(cpu_local_var, idle);
+	clv_current_offset = DWARF_GET_OFFSET_IN_STRUCT(cpu_local_var, current);
+	thread_tid_offset = DWARF_GET_OFFSET_IN_STRUCT(thread, tid);
+	thread_proc_offset = DWARF_GET_OFFSET_IN_STRUCT(thread, proc);
+	thread_status_offset = DWARF_GET_OFFSET_IN_STRUCT(thread, status);
+	thread_sched_list_offset =
+		DWARF_GET_OFFSET_IN_STRUCT(thread, sched_list);
+	process_pid_offset = DWARF_GET_OFFSET_IN_STRUCT(process, pid);
+	process_saved_cmdline_offset =
+		DWARF_GET_OFFSET_IN_STRUCT(process, saved_cmdline);
+	process_saved_cmdline_len_offset =
+		DWARF_GET_OFFSET_IN_STRUCT(process, saved_cmdline_len);
+	process_vm_offset =
+		DWARF_GET_OFFSET_IN_STRUCT(process, vm);
+	vm_address_space_offset =
+		DWARF_GET_OFFSET_IN_STRUCT(process_vm, address_space);
+	address_space_page_table_offset =
+		DWARF_GET_OFFSET_IN_STRUCT(address_space, page_table);
+}
+
+void print_thread(int cpu,
 		unsigned long thread,
 		unsigned long idle,
 		int active)
@@ -925,31 +1044,9 @@ static void print_thread(int cpu,
 		free(cmd_line);
 }
 
-
-static int mcps(Dwarf_Debug dbg)
+int mcps(Dwarf_Debug dbg)
 {
 	int cpu;
-	unsigned long num_processors_addr;
-
-	num_processors_addr = DWARF_GET_VARIABLE_ADDRESS(mck_num_processors);
-	ihk_read_val(num_processors_addr, &num_processors_addr);
-	ihk_read_val(num_processors_addr, &nr_cpus);
-	ihk_read_val(DWARF_GET_VARIABLE_ADDRESS(clv), &clv);
-	clv_size = DWARF_GET_SIZE(cpu_local_var);
-
-	clv_runq_offset = DWARF_GET_OFFSET_IN_STRUCT(cpu_local_var, runq);
-	clv_idle_offset = DWARF_GET_OFFSET_IN_STRUCT(cpu_local_var, idle);
-	clv_current_offset = DWARF_GET_OFFSET_IN_STRUCT(cpu_local_var, current);
-	thread_tid_offset = DWARF_GET_OFFSET_IN_STRUCT(thread, tid);
-	thread_proc_offset = DWARF_GET_OFFSET_IN_STRUCT(thread, proc);
-	thread_status_offset = DWARF_GET_OFFSET_IN_STRUCT(thread, status);
-	thread_sched_list_offset =
-		DWARF_GET_OFFSET_IN_STRUCT(thread, sched_list);
-	process_pid_offset = DWARF_GET_OFFSET_IN_STRUCT(process, pid);
-	process_saved_cmdline_offset =
-		DWARF_GET_OFFSET_IN_STRUCT(process, saved_cmdline);
-	process_saved_cmdline_len_offset =
-		DWARF_GET_OFFSET_IN_STRUCT(process, saved_cmdline_len);
 
 	printf("%3s %s%6s %6s %18s %2s %s\n",
 		"CPU", " ", "TID", "PID", "Thread", "ST", "exe");
@@ -991,12 +1088,107 @@ static int mcps(Dwarf_Debug dbg)
 	return 0;
 }
 
+int find_proc(Dwarf_Debug dbg, int pid, unsigned long *rproc)
+{
+	int cpu;
+
+	/* Iterate CPUs */
+	for (cpu = 0; cpu < nr_cpus; ++cpu) {
+		unsigned long per_cpu;
+		unsigned long runq;
+		unsigned long thread;
+		unsigned long thread_sched_list;
+		int ipid;
+
+		per_cpu = clv + (clv_size * cpu);
+		runq = per_cpu + clv_runq_offset;
+		ihk_read_val(per_cpu + clv_runq_offset, &thread_sched_list);
+
+		/* Iterate threads */
+		for (; thread_sched_list != runq;
+				ihk_read_val(thread_sched_list, &thread_sched_list)) {
+			unsigned long proc;
+
+			thread = thread_sched_list - thread_sched_list_offset;
+
+			ihk_read_val(thread + thread_proc_offset, &proc);
+			ihk_read_val(proc + process_pid_offset, &ipid);
+
+			if (pid == ipid) {
+				*rproc = proc;
+				return 0;
+			}
+		}
+	}
+
+	return -1;
+}
+
+
+#if 0
+void do_pte_walk_single(Dwarf_Debug dbg,
+	unsigned long pt, int level, unsigned long va)
+{
+	unsigned long pte;
+	int idx = va >> ptl_shift(level);
+
+	ihk_read_val(pt + idx * sizeof(pte), &pte);
+	if (pte_is_type_page(pte, level)) {
+
+	}
+
+	if (level > 1) {
+		pt =
+		do_pte_walk_single();
+	}
+}
+
+
+int print_pte_single(Dwarf_Debug dbg,
+	unsigned long pt, unsigned long va)
+{
+	int level = PGTABLE_LEVELS;
+	printf("VA: 0x%lx -> \n", va);
+	do_pte_walk_single(dbg, pt, PGTABLE_LEVELS, va);
+}
+
+#endif
+
+
+int mcvtop(Dwarf_Debug dbg, int pid, unsigned long vtop_addr)
+{
+	unsigned long proc = 0;
+	unsigned long init_pt;
+	unsigned long vm, ap, pt = 0;
+
+	if (pid != 0) {
+		if (find_proc(dbg, pid, &proc) < 0) {
+			fprintf(stderr, "%s: error: finding PID %d\n",
+				__func__, pid);
+			return -1;
+		}
+	}
+
+	get_pointer_symbol_val(swapper_page_table, &init_pt);
+	printf("%s: init_pt: 0x%lx\n", __func__, init_pt);
+
+	if (proc) {
+		ihk_read_val(proc + process_vm_offset, &vm);
+		ihk_read_val(vm + vm_address_space_offset, &ap);
+		ihk_read_val(ap + address_space_page_table_offset, &pt);
+	}
+
+	return 0;
+}
+
+
 int help;
 int ps;
 int vtop;
+int pid;
 unsigned long vtop_addr;
 
-static struct option mcinspect_options[] = {
+struct option mcinspect_options[] = {
 	{
 		.name =		"kernel",
 		.has_arg =	required_argument,
@@ -1016,16 +1208,28 @@ static struct option mcinspect_options[] = {
 		.val =		1,
 	},
 	{
+		.name =		"debug",
+		.has_arg =	no_argument,
+		.flag =		&debug,
+		.val =		1,
+	},
+	{
 		.name =		"vtop",
+		.has_arg =	no_argument,
+		.flag =		&vtop,
+		.val =		1,
+	},
+	{
+		.name =		"va",
 		.has_arg =	required_argument,
 		.flag =		NULL,
 		.val =		'v',
 	},
 	{
-		.name =		"debug",
-		.has_arg =	no_argument,
-		.flag =		&debug,
-		.val =		1,
+		.name =		"pid",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'p',
 	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
@@ -1048,9 +1252,10 @@ int main(int argc, char **argv)
 	help = 0;
 	ps = 0;
 	vtop = 0;
-	vtop_addr = -1;
+	vtop_addr = -1UL;
+	pid = 0;
 
-	while ((opt = getopt_long(argc, argv, "+k:v:",
+	while ((opt = getopt_long(argc, argv, "+k:v:p:",
 					mcinspect_options, NULL)) != -1) {
 		switch (opt) {
 		case 'k':
@@ -1058,7 +1263,17 @@ int main(int argc, char **argv)
 			break;
 
 		case 'v':
-			vtop_addr = strtoul(optarg, 0, 0);
+			vtop_addr = strtoul(optarg, 0, 16);
+			if (vtop_addr == 0 ||
+					errno == EINVAL || errno == ERANGE) {
+				fprintf(stderr, "error: invalid VA? (expected format: 0xXXXX)\n\n");
+				usage(argv);
+				exit(1);
+			}
+			break;
+
+		case 'p':
+			pid = atoi(optarg);
 			break;
 		}
 	}
@@ -1075,7 +1290,13 @@ int main(int argc, char **argv)
 	}
 
 	if (!ps && !vtop) {
+		printf("PID: %d\n", pid);
 		usage(argv);
+		exit(1);
+	}
+
+	if (init_bfd_symbols(kernel_path) < 0) {
+		fprintf(stderr, "error: accessing ELF image %s\n", kernel_path);
 		exit(1);
 	}
 
@@ -1097,12 +1318,13 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	init_globals(dbg);
+
 	if (ps)
 		mcps(dbg);
 
 	if (vtop) {
-		fprintf(stderr, "error: not implemented\n");
-		exit(1);
+		mcvtop(dbg, pid, vtop_addr);
 	}
 
 	dwarf_finish(dbg, &error);
