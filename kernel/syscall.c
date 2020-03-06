@@ -5324,6 +5324,11 @@ SYSCALL_DECLARE(madvise)
 		}
 
 		if (advice == MADV_REMOVE) {
+			if (range->flag & VR_LOCKED) {
+				error = -EINVAL;
+				goto out;
+			}
+
 			if (!range->memobj || !memobj_is_removable(range->memobj)) {
 				dkprintf("sys_madvise(%lx,%lx,%x):"
 						"not removable [%lx-%lx)\n",
