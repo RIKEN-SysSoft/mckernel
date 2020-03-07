@@ -1829,49 +1829,6 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, sizeof(*res));
 }
 
-static int remap_user_space(uintptr_t rva, size_t len, int prot)
-{
-	struct mm_struct *mm = current->mm;
-	struct vm_area_struct *vma;
-	struct file *file;
-	uintptr_t start;
-	pgoff_t pgoff;
-	uintptr_t map;
-
-	dprintk("remap_user_space(%lx,%lx,%x)\n", rva, len, prot);
-	down_write(&mm->mmap_sem);
-	vma = find_vma(mm, rva);
-	if (!vma || (rva < vma->vm_start)) {
-		printk("remap_user_space(%lx,%lx,%x):find_vma failed. %p %lx %lx\n",
-				rva, len, prot, vma,
-				(vma)? vma->vm_start: -1,
-				(vma)? vma->vm_end: 0);
-		up_write(&mm->mmap_sem);
-		map = -ENOMEM;
-		goto out;
-	}
-
-	file = vma->vm_file;
-	start = rva;
-	pgoff = vma->vm_pgoff + ((rva - vma->vm_start) >> PAGE_SHIFT);
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,5,0)
-	map = do_mmap_pgoff(file, start, len,
-			prot, MAP_FIXED|MAP_SHARED, pgoff);
-#endif
-
-	up_write(&mm->mmap_sem);
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
-	map = vm_mmap(file, start, len,
-			prot, MAP_FIXED|MAP_SHARED, pgoff << PAGE_SHIFT);
-#endif
-
-out:
-	dprintk("remap_user_space(%lx,%lx,%x): %lx (%ld)\n",
-			rva, len, prot, (long)map, (long)map);
-	return (IS_ERR_VALUE(map))? (int)map: 0;
-}
 
 int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len)
 {
@@ -2137,8 +2094,9 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 		break;
 
 	case __NR_mprotect:
-		ret = remap_user_space(sc->args[0], sc->args[1], sc->args[2]);
-		break;
+		/* Handle in user-space */
+		error = -ENOSYS;
+		goto out;
 
 	case __NR_exit_group: {
 	

@@ -3913,7 +3913,6 @@ int main_loop(struct thread_data_s *my_thread)
 
 		case __NR_mmap:
 		case __NR_munmap:
-		case __NR_mprotect:
 			/* reserved for internal use */
 			do_syscall_return(fd, cpu, -ENOSYS, 0, 0, 0, 0);
 			break;
