@@ -209,6 +209,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_SEND_SIGNAL_ACK:
 	case SCD_MSG_PROCFS_ANSWER:
 	case SCD_MSG_REMOTE_PAGE_FAULT_ANSWER:
+	case SCD_MSG_CPU_RW_REG_RESP:
 		mcctrl_wakeup_cb(__os, pisp);
 		break;
 
@@ -237,10 +238,6 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_GET_VDSO_INFO:
 		get_vdso_info(__os, pisp->arg);
-		break;
-
-	case SCD_MSG_CPU_RW_REG_RESP:
-		mcctrl_os_read_write_cpu_response(__os, pisp);
 		break;
 
 	case SCD_MSG_EVENTFD:
