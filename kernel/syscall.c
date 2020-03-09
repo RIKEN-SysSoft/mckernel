@@ -7027,6 +7027,16 @@ static int ptrace_setoptions(int pid, int flags)
 	
 	child->ptrace &= ~PTRACE_O_MASK;	/* PT_TRACE_EXEC remains */
 	child->ptrace |= flags;
+	dkprintf("%s: (PT_TRACED%s%s%s%s%s%s)\n",
+		__func__,
+		flags & PTRACE_O_TRACESYSGOOD ? "|PTRACE_O_TRACESYSGOOD" : "",
+		flags & PTRACE_O_TRACEFORK ? "|PTRACE_O_TRACEFORK" : "",
+		flags & PTRACE_O_TRACEVFORK ? "|PTRACE_O_TRACEVFORK" : "",
+		flags & PTRACE_O_TRACECLONE ? "|PTRACE_O_TRACECLONE" : "",
+		flags & PTRACE_O_TRACEEXEC ? "|PTRACE_O_TRACEEXEC" : "",
+		flags & PTRACE_O_TRACEVFORKDONE ? "|PTRACE_O_TRACEVFORKDONE" : "",
+		flags & PTRACE_O_TRACEEXIT ? "|PTRACE_O_TRACEEXIT" : "");
+
 	ret = 0;
 
 unlockout:
