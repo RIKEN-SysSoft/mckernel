@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "45119cc4_d3be6239",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 456,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-09T07:26:47Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(offset_in_page(size) !\u003d 0 \u0026\u0026 size !\u003d 0xffffffffffffffff)) {",
+      "revId": "92d191de9ea16ce48adf99da62398ff2fd2eb698",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
