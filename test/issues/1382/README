@@ -1,0 +1,27 @@
+/* REDME COPYRIGHT FUJITSU LIMITED 2020 */
+
+ltp: thp01: execvpが、argsが大きすぎる際にE2BIGを返さずkernel page faultまたはSEGVを起こす
+https://postpeta.pccluster.org/redmine/issues/1382
+
+テストセットREADME
+
+(0) 事前準備
+  1. $HOME/.mck_test_configを用意する
+
+(1) テスト実行方法
+  1. ./1382.sh
+
+(2) テスト項目詳細
+
+  LTPの下記項目を実行し、すべての項目でPASSになることを確認する
+  - thp01,02
+  - execl01
+  - execle01
+  - execlp01
+  - execv01
+  - execve01,02,03,05
+  - execvp01
+  - execveat01,02,03
+
+
+以上。
