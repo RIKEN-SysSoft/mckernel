@@ -3169,7 +3169,7 @@ int overlay_blacklist(const char *path)
  * returns path to use *with dirfd* if it was provided.
  */
 const char *
-overlay_path(int dirfd, const char *in, char *buf)
+overlay_path(int dirfd, const char *in, char *buf, int *resolvelinks)
 {
 	const char *path = in;
 	char *linkpath, *tmppath;
@@ -3178,6 +3178,10 @@ overlay_path(int dirfd, const char *in, char *buf)
 	struct stat sb;
 	ssize_t n;
 	int rc;
+
+	if (resolvelinks) {
+		*resolvelinks = 0;
+	}
 
 	__dprintf("considering fd %d path %s\n", dirfd, in);
 
@@ -3315,6 +3319,10 @@ checkexist_resolvelinks:
 					      "/%s/%s", tmppath, tmpbuf2);
 				if (n >= PATH_MAX)
 					return in;
+			}
+
+			if (resolvelinks) {
+				*resolvelinks = 1;
 			}
 		}
 		linkpath[0] = '/';
@@ -3864,7 +3872,8 @@ int main_loop(struct thread_data_s *my_thread)
 			__dprintf("openat: %d, %s,tid=%d\n", (int)w.sr.args[0],
 				  pathbuf, my_thread->remote_tid);
 
-			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
+			fn = overlay_path((int)w.sr.args[0],
+					  pathbuf, tmpbuf, NULL);
 
 			ret = openat(w.sr.args[0], fn, w.sr.args[2],
 				     w.sr.args[3]);
@@ -4474,7 +4483,8 @@ return_execve2:
 			pathbuf[ret] = 0;
 			__dprintf("readlinkat: %d, %s\n", (int)w.sr.args[0], pathbuf);
 
-			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
+			fn = overlay_path((int)w.sr.args[0],
+					  pathbuf, tmpbuf, NULL);
 
 			ret = readlinkat(w.sr.args[0], fn, (char *)w.sr.args[2],
 					 w.sr.args[3]);
@@ -4494,7 +4504,7 @@ return_execve2:
 				break;
 			}
 
-			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf, NULL);
 
 			ret = readlink(fn, (char *)w.sr.args[1], w.sr.args[2]);
 			SET_ERR(ret);
@@ -4515,7 +4525,8 @@ return_execve2:
 			}
 			pathbuf[ret] = 0;
 
-			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
+			fn = overlay_path((int)w.sr.args[0],
+					  pathbuf, tmpbuf, NULL);
 
 			ret = fstatat((int)w.sr.args[0],
 				      fn,
@@ -4539,7 +4550,7 @@ return_execve2:
 				break;
 			}
 
-			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf, NULL);
 
 			ret = stat(fn, (struct stat *)w.sr.args[1]);
 			SET_ERR(ret);
@@ -4548,7 +4559,9 @@ return_execve2:
 			break;
 #endif /* __NR_stat */
 
-		case __NR_faccessat:
+		case __NR_faccessat: {
+			int resolvelinks = 0;
+
 			ret = do_strncpy_from_user(fd, pathbuf,
 					(void *)w.sr.args[1], PATH_MAX);
 			if (ret >= PATH_MAX) {
@@ -4560,14 +4573,16 @@ return_execve2:
 			}
 			pathbuf[ret] = 0;
 
-			fn = overlay_path((int)w.sr.args[0], pathbuf, tmpbuf);
+			fn = overlay_path((int)w.sr.args[0],
+					  pathbuf, tmpbuf, &resolvelinks);
 
 			/* the syscall doesn't take flags argument, link
 			 * resolution happened first so don't do it again
 			 */
 			ret = faccessat((int)w.sr.args[0], fn,
 					(int)w.sr.args[2],
-					AT_SYMLINK_NOFOLLOW);
+					resolvelinks == 0 ?
+						0 : AT_SYMLINK_NOFOLLOW);
 			SET_ERR(ret);
 			__dprintf("faccessat: dirfd=%d, pathname=%s, mode=%d, ret=%ld\n",
 				  (int)w.sr.args[0], fn, (int)w.sr.args[2],
@@ -4575,7 +4590,7 @@ return_execve2:
 
 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
 			break;
-
+		}
 #ifdef __NR_access
 		case __NR_access:
 			ret = do_strncpy_from_user(fd, pathbuf,
@@ -4588,7 +4603,7 @@ return_execve2:
 				break;
 			}
 
-			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf, NULL);
 
 			ret = access(fn, (int)w.sr.args[1]);
 			SET_ERR(ret);
@@ -4607,7 +4622,7 @@ return_execve2:
 				break;
 			}
 
-			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf, NULL);
 
 			ret = getxattr(fn, (char *)w.sr.args[1],
 				       (void *)w.sr.args[2],
@@ -4628,7 +4643,7 @@ return_execve2:
 				break;
 			}
 
-			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf, NULL);
 
 			ret = lgetxattr(fn, (char *)w.sr.args[1],
 					(void *)w.sr.args[2],
@@ -4862,7 +4877,7 @@ return_linux_spawn:
 			}
 			__dprintf("open: %s\n", pathbuf);
 
-			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf);
+			fn = overlay_path(AT_FDCWD, pathbuf, tmpbuf, NULL);
 
 			ret = open(fn, w.sr.args[1], w.sr.args[2]);
 			SET_ERR(ret);
