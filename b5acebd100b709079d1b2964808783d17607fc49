@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6679aea8_d0a718ea",
+        "filename": "test/issues/1349/README",
+        "patchSetId": 4
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-09T01:03:04Z",
+      "side": 1,
+      "message": "以下のように、説明を追加してください。\nCheck for memory leak when child processes exit without reaped by the parent\u0027s wait.",
+      "range": {
+        "startLine": 15,
+        "startChar": 0,
+        "endLine": 15,
+        "endChar": 51
+      },
+      "revId": "b5acebd100b709079d1b2964808783d17607fc49",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
