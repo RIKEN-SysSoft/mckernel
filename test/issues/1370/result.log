@@ -1,0 +1,275 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 12-15 -m 512M@4 -O ... done
+issue-1370 test run.
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+access01.c:243: PASS: access(accessfile_rwx, F_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, F_OK) as nobody
+access01.c:243: PASS: access(accessfile_rwx, X_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, X_OK) as nobody
+access01.c:243: PASS: access(accessfile_rwx, W_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, W_OK) as nobody
+access01.c:243: PASS: access(accessfile_rwx, R_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, R_OK) as nobody
+access01.c:243: PASS: access(accessfile_rwx, R_OK|W_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, R_OK|W_OK) as nobody
+access01.c:243: PASS: access(accessfile_rwx, R_OK|X_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, R_OK|X_OK) as nobody
+access01.c:243: PASS: access(accessfile_rwx, W_OK|X_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, W_OK|X_OK) as nobody
+access01.c:243: PASS: access(accessfile_rwx, R_OK|W_OK|X_OK) as root
+access01.c:243: PASS: access(accessfile_rwx, R_OK|W_OK|X_OK) as nobody
+access01.c:243: PASS: access(accessfile_x, X_OK) as root
+access01.c:243: PASS: access(accessfile_x, X_OK) as nobody
+access01.c:243: PASS: access(accessfile_w, W_OK) as root
+access01.c:243: PASS: access(accessfile_w, W_OK) as nobody
+access01.c:243: PASS: access(accessfile_r, R_OK) as root
+access01.c:243: PASS: access(accessfile_r, R_OK) as nobody
+access01.c:263: PASS: access(accessfile_r, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_x, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_x, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, W_OK|X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, W_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, R_OK|X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, R_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, R_OK|W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, R_OK|W_OK|X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_r, R_OK|W_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, W_OK|X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, W_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, R_OK|X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, R_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, R_OK|W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, R_OK|W_OK|X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessfile_w, R_OK|W_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_x, W_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_x, R_OK|X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_x, R_OK|W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessfile_x, R_OK|W_OK|X_OK) as nobody: EACCES (13)
+access01.c:243: PASS: access(accessfile_r, W_OK) as root
+access01.c:243: PASS: access(accessfile_r, R_OK|W_OK) as root
+access01.c:243: PASS: access(accessfile_w, R_OK) as root
+access01.c:243: PASS: access(accessfile_w, R_OK|W_OK) as root
+access01.c:243: PASS: access(accessfile_x, R_OK) as root
+access01.c:243: PASS: access(accessfile_x, W_OK) as root
+access01.c:243: PASS: access(accessfile_x, R_OK|W_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_r, F_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_r, R_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_r, W_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_w, F_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_w, R_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_w, W_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_x, F_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_x, R_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_x, W_OK) as root
+access01.c:243: PASS: access(accessdir_r/accessfile_x, X_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_r, F_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_r, R_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_r, W_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_w, F_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_w, R_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_w, W_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_x, F_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_x, R_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_x, W_OK) as root
+access01.c:243: PASS: access(accessdir_w/accessfile_x, X_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_r, F_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_r, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_x/accessfile_r, R_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_r, R_OK) as nobody
+access01.c:243: PASS: access(accessdir_x/accessfile_r, W_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_w, F_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_w, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_x/accessfile_w, R_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_w, W_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_w, W_OK) as nobody
+access01.c:243: PASS: access(accessdir_x/accessfile_x, F_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_x, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_x/accessfile_x, R_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_x, W_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_x, X_OK) as root
+access01.c:243: PASS: access(accessdir_x/accessfile_x, X_OK) as nobody
+access01.c:243: PASS: access(accessdir_rw/accessfile_r, F_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_r, R_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_r, W_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_w, F_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_w, R_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_w, W_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_x, F_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_x, R_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_x, W_OK) as root
+access01.c:243: PASS: access(accessdir_rw/accessfile_x, X_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_r, F_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_r, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_rx/accessfile_r, R_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_r, R_OK) as nobody
+access01.c:243: PASS: access(accessdir_rx/accessfile_r, W_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_w, F_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_w, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_rx/accessfile_w, R_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_w, W_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_w, W_OK) as nobody
+access01.c:243: PASS: access(accessdir_rx/accessfile_x, F_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_x, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_rx/accessfile_x, R_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_x, W_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_x, X_OK) as root
+access01.c:243: PASS: access(accessdir_rx/accessfile_x, X_OK) as nobody
+access01.c:243: PASS: access(accessdir_wx/accessfile_r, F_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_r, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_wx/accessfile_r, R_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_r, R_OK) as nobody
+access01.c:243: PASS: access(accessdir_wx/accessfile_r, W_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_w, F_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_w, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_wx/accessfile_w, R_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_w, W_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_w, W_OK) as nobody
+access01.c:243: PASS: access(accessdir_wx/accessfile_x, F_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_x, F_OK) as nobody
+access01.c:243: PASS: access(accessdir_wx/accessfile_x, R_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_x, W_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_x, X_OK) as root
+access01.c:243: PASS: access(accessdir_wx/accessfile_x, X_OK) as nobody
+access01.c:263: PASS: access(accessdir_r/accessfile_r, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_r, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_r, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_r, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_r, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_w, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_w, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_w, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_w, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_w, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_x, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_x, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_x, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_r/accessfile_x, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_r, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_r, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_r, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_r, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_r, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_w, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_w, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_w, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_w, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_w, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_x, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_x, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_x, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_w/accessfile_x, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_r, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_r, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_r, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_w, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_w, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_w, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_x, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_x/accessfile_x, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_r, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_r, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_r, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_r, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_r, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_w, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_w, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_w, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_w, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_w, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_x, F_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_x, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_x, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rw/accessfile_x, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_r, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_r, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_r, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_w, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_w, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_w, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_x, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_rx/accessfile_x, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_r, W_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_r, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_r, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_w, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_w, X_OK) as root: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_w, X_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_x, R_OK) as nobody: EACCES (13)
+access01.c:263: PASS: access(accessdir_wx/accessfile_x, W_OK) as nobody: EACCES (13)
+
+Summary:
+passed   199
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+access02.c:144: PASS: access(file_f, F_OK) as root behaviour is correct.
+access02.c:144: PASS: access(file_f, F_OK) as nobody behaviour is correct.
+access02.c:144: PASS: access(file_r, R_OK) as root behaviour is correct.
+access02.c:144: PASS: access(file_r, R_OK) as nobody behaviour is correct.
+access02.c:144: PASS: access(file_w, W_OK) as root behaviour is correct.
+access02.c:144: PASS: access(file_w, W_OK) as nobody behaviour is correct.
+access02.c:144: PASS: access(file_x, X_OK) as root behaviour is correct.
+access02.c:144: PASS: access(file_x, X_OK) as nobody behaviour is correct.
+access02.c:144: PASS: access(symlink_f, F_OK) as root behaviour is correct.
+access02.c:144: PASS: access(symlink_f, F_OK) as nobody behaviour is correct.
+access02.c:144: PASS: access(symlink_r, R_OK) as root behaviour is correct.
+access02.c:144: PASS: access(symlink_r, R_OK) as nobody behaviour is correct.
+access02.c:144: PASS: access(symlink_w, W_OK) as root behaviour is correct.
+access02.c:144: PASS: access(symlink_w, W_OK) as nobody behaviour is correct.
+access02.c:144: PASS: access(symlink_x, X_OK) as root behaviour is correct.
+access02.c:144: PASS: access(symlink_x, X_OK) as nobody behaviour is correct.
+
+Summary:
+passed   16
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+access03.c:47: PASS: access(0xffffffffffffffff, F_OK) as root: EFAULT (14)
+access03.c:47: PASS: access(0xffffffffffffffff, F_OK) as nobody: EFAULT (14)
+access03.c:47: PASS: access(0xffffffffffffffff, R_OK) as root: EFAULT (14)
+access03.c:47: PASS: access(0xffffffffffffffff, R_OK) as nobody: EFAULT (14)
+access03.c:47: PASS: access(0xffffffffffffffff, W_OK) as root: EFAULT (14)
+access03.c:47: PASS: access(0xffffffffffffffff, W_OK) as nobody: EFAULT (14)
+access03.c:47: PASS: access(0xffffffffffffffff, X_OK) as root: EFAULT (14)
+access03.c:47: PASS: access(0xffffffffffffffff, X_OK) as nobody: EFAULT (14)
+
+Summary:
+passed   8
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+access04.c:75: PASS: access as root failed expectedly: EINVAL (22)
+access04.c:75: PASS: access as nobody failed expectedly: EINVAL (22)
+access04.c:75: PASS: access as root failed expectedly: ENOENT (2)
+access04.c:75: PASS: access as nobody failed expectedly: ENOENT (2)
+access04.c:75: PASS: access as root failed expectedly: ENAMETOOLONG (36)
+access04.c:75: PASS: access as nobody failed expectedly: ENAMETOOLONG (36)
+access04.c:75: PASS: access as root failed expectedly: ENOTDIR (20)
+access04.c:75: PASS: access as nobody failed expectedly: ENOTDIR (20)
+access04.c:75: PASS: access as root failed expectedly: ELOOP (40)
+access04.c:75: PASS: access as nobody failed expectedly: ELOOP (40)
+access04.c:75: PASS: access as root failed expectedly: EROFS (30)
+access04.c:75: PASS: access as nobody failed expectedly: EROFS (30)
+
+Summary:
+passed   12
+failed   0
+skipped  0
+warnings 0
+overlay_path: readlink /proc/self/fd/100 failed: 2
+faccessat01    1  TPASS  :  faccessat() returned the expected  errno 0: Success
+faccessat01    2  TPASS  :  faccessat() returned the expected  errno 0: Success
+faccessat01    3  TPASS  :  faccessat() returned the expected  errno 20: Not a directory
+faccessat01    4  TPASS  :  faccessat() returned the expected  errno 9: Bad file descriptor
+faccessat01    5  TPASS  :  faccessat() returned the expected  errno 0: Success
+faccessat01    6  TPASS  :  faccessat() returned the expected  errno 0: Success
+issue-1370 test OK.
+mcstop+release.sh ... done

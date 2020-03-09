@@ -1,0 +1,21 @@
+/* REDME COPYRIGHT FUJITSU LIMITED 2020 */
+
+ltp: access04: アクセスできないはずのファイルがアクセスできる
+https://postpeta.pccluster.org/redmine/issues/1370
+
+テストセットREADME
+
+(0) 事前準備
+  1. $HOME/.mck_test_configを用意する
+
+(1) テスト実行方法
+  1. ./1370.sh
+
+(2) テスト項目詳細
+
+  LTPの下記項目を実行し、すべての項目でPASSになることを確認する
+  - access01,02,03,04
+  - faccessat01
+
+
+以上。
