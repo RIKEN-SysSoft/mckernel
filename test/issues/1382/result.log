@@ -1,0 +1,340 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 12-15 -m 4G@4,4G@5,4G@6,4G@7 -O ... done
+issue-1382 test run.
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+thp01.c:123: INFO: Using 8192 args of size 65536
+thp01.c:81: INFO: left: 4096, right: 8192, mid: 4096
+thp01.c:81: INFO: left: 6144, right: 8192, mid: 6144
+thp01.c:81: INFO: left: 7168, right: 8192, mid: 7168
+thp01.c:81: INFO: left: 7680, right: 8192, mid: 7680
+thp01.c:81: INFO: left: 7936, right: 8192, mid: 7936
+thp01.c:81: INFO: left: 8064, right: 8192, mid: 8064
+thp01.c:81: INFO: left: 8128, right: 8192, mid: 8128
+thp01.c:81: INFO: left: 8160, right: 8192, mid: 8160
+thp01.c:81: INFO: left: 8176, right: 8192, mid: 8176
+thp01.c:81: INFO: left: 8184, right: 8192, mid: 8184
+thp01.c:81: INFO: left: 8188, right: 8192, mid: 8188
+thp01.c:81: INFO: left: 8190, right: 8192, mid: 8190
+thp01.c:81: INFO: left: 8191, right: 8192, mid: 8191
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+thp01.c:98: PASS: system didn't crash.
+
+Summary:
+passed   33
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+thp02.c:75: INFO: mremap (0x100000600000-0x100000df0000) to (0x100001200000-0x1000019f0000)
+thp02.c:75: INFO: mremap (0x100000600000-0x100000df0000) to (0x100001210000-0x100001a00000)
+thp02.c:75: INFO: mremap (0x100000610000-0x100000e00000) to (0x100001200000-0x1000019f0000)
+thp02.c:75: INFO: mremap (0x100000610000-0x100000e00000) to (0x100001210000-0x100001a00000)
+thp02.c:99: PASS: Still alive.
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execl01_child.c:20: PASS: execl01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execle01_child.c:34: PASS: execle01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execlp01_child.c:20: PASS: execlp01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execv01_child.c:23: PASS: execv01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execve01_child.c:34: PASS: execve01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execve02.c:54: PASS: execve() failed expectedly: EACCES (13)
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execve03.c:124: PASS: execve failed as expected: ENAMETOOLONG (36)
+execve03.c:124: PASS: execve failed as expected: ENOENT (2)
+execve03.c:124: PASS: execve failed as expected: ENOTDIR (20)
+execve03.c:124: PASS: execve failed as expected: EFAULT (14)
+execve03.c:124: PASS: execve failed as expected: EACCES (13)
+execve03.c:124: PASS: execve failed as expected: ENOEXEC (8)
+
+Summary:
+passed   6
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:22: PASS: argv[1] is canary, expected 'canary'
+
+Summary:
+passed   160
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execvp01_child.c:20: PASS: execvp01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execveat_child.c:17: PASS: execveat_child run as expected
+execveat_child.c:17: PASS: execveat_child run as expected
+execveat_child.c:17: PASS: execveat_child run as expected
+execveat_child.c:17: PASS: execveat_child run as expected
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execveat02.c:64: PASS: execveat() fails as expected: EBADF (9)
+execveat02.c:64: PASS: execveat() fails as expected: EINVAL (22)
+execveat02.c:64: PASS: execveat() fails as expected: ELOOP (40)
+execveat02.c:64: PASS: execveat() fails as expected: ENOTDIR (20)
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+tst_device.c:87: INFO: Found free device 1 '/dev/loop1'
+tst_mkfs.c:90: INFO: Formatting /dev/loop1 with ext2 opts='' extra opts=''
+mke2fs 1.44.3 (10-July-2018)
+tst_test.c:1217: INFO: Timeout per run is 0h 05m 00s
+execveat_child.c:17: PASS: execveat_child run as expected
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+issue-1382 test OK.
+mcstop+release.sh ... done
