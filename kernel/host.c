@@ -619,6 +619,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 {
 	struct ikc_scd_packet *packet = __packet;
 	struct ikc_scd_packet pckt;
+	struct ihk_os_cpu_register *cpu_desc;
 	struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
 	int rc;
 	struct thread *thread;
@@ -839,12 +840,17 @@ out_remote_pf:
 		break;
 
 	case SCD_MSG_CPU_RW_REG:
+		pp = ihk_mc_map_memory(NULL, packet->pdesc,
+				sizeof(struct ihk_os_cpu_register));
+		cpu_desc = (struct ihk_os_cpu_register *)ihk_mc_map_virtual(
+				pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 
 		pckt.msg = SCD_MSG_CPU_RW_REG_RESP;
-		memcpy(&pckt.desc, &packet->desc,
-				sizeof(struct ihk_os_cpu_register));
-		pckt.resp = packet->resp;
-		pckt.err = arch_cpu_read_write_register(&pckt.desc, packet->op);
+		pckt.reply = packet->reply;
+		pckt.err = arch_cpu_read_write_register(cpu_desc, packet->op);
+
+		ihk_mc_unmap_virtual(cpu_desc, 1);
+		ihk_mc_unmap_memory(NULL, pp, sizeof(struct ihk_os_cpu_register));
 
 		ihk_ikc_send(resp_channel, &pckt, 0);
 		break;
