@@ -287,7 +287,7 @@ struct ikc_scd_packet {
 
 		/* SCD_MSG_CPU_RW_REG */
 		struct {
-			struct ihk_os_cpu_register desc;
+			unsigned long pdesc; /* Physical addr of the descriptor */
 			enum mcctrl_os_cpu_operation op;
 			void *resp;
 		};

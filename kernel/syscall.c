@@ -2868,11 +2868,11 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 	if (clone_pthread_start_routine) {
 		unsigned long irqflags;
 
-		memory_range_read_lock(old->vm, &irqflags);
+		ihk_mc_spinlock_lock_noirq(&old->vm->memory_range_lock);
 		range = lookup_process_memory_range(old->vm,
 				clone_pthread_start_routine,
 				clone_pthread_start_routine + 1);
-		memory_range_read_unlock(old->vm, &irqflags);
+		ihk_mc_spinlock_unlock_noirq(&old->vm->memory_range_lock);
 
 		if (range && range->memobj && range->memobj->path) {
 			if (!strstr(range->memobj->path, "omp.so")) {
