@@ -3399,14 +3399,6 @@ long __mcctrl_control(ihk_os_t os, unsigned int req, unsigned long arg,
 	return -EINVAL;
 }
 
-/* Per-CPU register manipulation functions */
-struct mcctrl_os_cpu_response {
-	int done;
-	unsigned long val;
-	int err;
-	wait_queue_head_t wq;
-};
-
 int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 {
 	struct mcctrl_usrdata *usrdata;
@@ -3470,31 +3462,14 @@ out_put_ppd:
 	return ret;
 }
 
-void mcctrl_os_read_write_cpu_response(ihk_os_t os,
-		struct ikc_scd_packet *pisp)
-{
-	struct mcctrl_os_cpu_response *resp;
-
-	/* XXX: What if caller thread is unblocked by a signal
-	 * before this message arrives? */
-	resp = pisp->resp;
-	if (!resp) {
-		return;
-	}
-
-	resp->val = pisp->desc.val;
-	resp->done = 1;
-	resp->err = pisp->err;
-	wake_up_interruptible(&resp->wq);
-}
-
 int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet isp;
-	struct mcctrl_os_cpu_response resp;
+	struct ihk_os_cpu_register *ldesc = NULL;
+	int do_free = 0;
 	int ret = -EINVAL;
 
 	if (!udp) {
@@ -3511,50 +3486,43 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 
 	}
 
+	/* Keep a dynamic structure around that can
+	 * survive an early return due to a signal */
+	ldesc = kmalloc(sizeof(*ldesc), GFP_KERNEL);
+	if (!ldesc) {
+		printk("%s: ERROR: allocating cpu register desc\n", __FUNCTION__);
+		return -ENOMEM;
+	}
+	*ldesc = *desc;
+
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
 	isp.msg = SCD_MSG_CPU_RW_REG;
 	isp.op = op;
-	isp.desc = *desc;
-	isp.resp = &resp;
+	isp.pdesc = virt_to_phys(ldesc);
 
-	resp.done = 0;
-	resp.err = 0;
-	init_waitqueue_head(&resp.wq);
-
-	mb();
-	ret = mcctrl_ikc_send(os, cpu, &isp);
-	if (ret < 0) {
+	ret = mcctrl_ikc_send_wait(os, cpu, &isp, 0, NULL, &do_free, 1, ldesc);
+	if (ret != 0) {
 		printk("%s: ERROR sending IKC msg: %d\n", __FUNCTION__, ret);
 		goto out;
 	}
 
-	/* Wait for response */
-	ret = wait_event_interruptible(resp.wq, resp.done);
-	if (ret < 0) {
-		printk("%s: ERROR after wait: %d\n", __FUNCTION__, ret);
-		goto out;
-	}
-
-	ret = resp.err;
-	if (ret != 0) {
-		printk("%s: ERROR receive: %d\n", __FUNCTION__, resp.err);
-		goto out;
-	}
-
 	/* Update if read */
-	if (ret == 0 && op == MCCTRL_OS_CPU_READ_REGISTER) {
-		desc->val = resp.val;
+	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
+		desc->val = ldesc->val;
 	}
 
 	/* Notify caller (for future async implementation) */
 	atomic_set(&desc->sync, 1);
 
-	dprintk("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
+	dprintk("%s: MCCTRL_OS_CPU_%s_REGISTER: CPU: %d, addr_ext: 0x%lx, val: 0x%lx\n",
 		__FUNCTION__,
-		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"),
-		desc->addr, desc->val);
+		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"), cpu,
+		desc->addr_ext, desc->val);
 
 out:
+	if (do_free) {
+		kfree(ldesc);
+	}
 	return ret;
 }
 
