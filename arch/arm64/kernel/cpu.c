@@ -1880,6 +1880,11 @@ int arch_cpu_read_write_register(
 		ret = -1;
 	}
 
+	dkprintf("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
+			__FUNCTION__,
+			(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"),
+			desc->addr, desc->val);
+
 	return ret;
 }
 
