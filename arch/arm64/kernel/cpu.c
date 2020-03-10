@@ -1349,7 +1349,7 @@ long ihk_mc_show_cpuinfo(char *buf, size_t buf_size, unsigned long read_off, int
 
 		/* generate strings */
 		loff += scnprintf(lbuf + loff, lbuf_size - loff,
-				  "processor\t: %d\n", cpuinfo->hwid);
+				  "processor\t: %d\n", i);
 		loff += scnprintf(lbuf + loff, lbuf_size - loff, "Features\t:");
 
 		for (j = 0; hwcap_str[j]; j++) {
