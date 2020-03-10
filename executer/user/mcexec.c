@@ -1933,7 +1933,11 @@ opendev()
 }
 
 #define LD_PRELOAD_PREPARE(name) do { \
-		sprintf(elembuf, "%s%s/" name, nelem > 0 ? ":" : "", libdir); \
+		if (snprintf(elembuf, PATH_MAX, "%s%s/" name, \
+			nelem > 0 ? ":" : "", libdir) < 0) {\
+			fprintf(stderr, "%s: warning: LD_PRELOAD line is too long\n", __FUNCTION__); \
+			return; \
+		} \
 	} while (0)
 
 #define LD_PRELOAD_APPEND do {	\
