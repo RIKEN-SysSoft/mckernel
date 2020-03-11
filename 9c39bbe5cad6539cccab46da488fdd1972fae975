@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "114cb4b4_1c5fe01e",
+        "filename": "test/issues/1457/C1457.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T08:40:37Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+        print \u0027ERROR: # of processors is not equal to # of cpus\u0027 $",
+      "revId": "9c39bbe5cad6539cccab46da488fdd1972fae975",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
