@@ -1,0 +1,293 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f8b086da_04a1e981",
+        "filename": "test/issues/1439/README",
+        "patchSetId": 8
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2615af6a_04f082a7",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: Bad function definition - int main() should probably be int main(void)\n+int main() {",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f12641f_df819cd6",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int main() {",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c1a66548_baf662f9",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    {$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0576468_32ba5051",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        int thread_num \u003d omp_get_thread_num();$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8cf6916f_5a17044c",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        int thread_num \u003d omp_get_thread_num();$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8eb31075_3b613dde",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        int cpu_num \u003d sched_getcpu();$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4aad10ff_ce4ecd1d",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        int cpu_num \u003d sched_getcpu();$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "817645d8_5c70fac4",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        printf(\"Thread %d CPU %d\\n\", thread_num, cpu_num);$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2af8c9b_a8d351d3",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+        int cpu_num \u003d sched_getcpu();\n+        printf(\"Thread %d CPU %d\\n\", thread_num, cpu_num);",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a39b8940_134602ae",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        printf(\"Thread %d CPU %d\\n\", thread_num, cpu_num);$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34fb3282_80424865",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    }$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "62dee583_05da0b12",
+        "filename": "test/issues/1439/show-omp-cpu-affinity.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    return 0;$",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7081ca8e_1108f4c5",
+        "filename": "test/issues/1439/test-affinity.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+    $",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da4e5e98_3a0407d3",
+        "filename": "test/issues/1439/test-affinity.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 125,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+        place_idx \u003d index_of_place(places, master_cpu)        $",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d1afaf28_f602c51a",
+        "filename": "test/issues/1439/test-affinity.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 131,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+            $",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9fc16395_a56dbb6c",
+        "filename": "test/issues/1439/test-affinity.sh",
+        "patchSetId": 8
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-11T03:49:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#sudo ${MCK_DIR}/sbin/mcreboot.sh -m 1G@0,1G@1 -c 4-27,32-55,60-83,88-111 -r 4-7,32-35:0+8-11,36-39:1+12-15,40-43:2+16-19,44-47:3+20-23,48-51:28+24-27,52-55:29+60-63,88-91:56+64-67,92-95:57+68-71,96-99:58+72-75,100-103:59+76-79,104-107:84+80-83,108-111:85 -O",
+      "revId": "362d886feb11715a52f34c7a9d2d700c97fdf2db",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
