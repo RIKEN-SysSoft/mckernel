@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5dd5c126_ba6f0ab5",
+        "filename": "test/issues/1439/test-affinity.sh",
+        "patchSetId": 10
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-12T05:17:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#sudo ${MCK_DIR}/sbin/mcreboot.sh -m 1G@0,1G@1 -c 4-27,32-55,60-83,88-111 -r 4-7,32-35:0+8-11,36-39:1+12-15,40-43:2+16-19,44-47:3+20-23,48-51:28+24-27,52-55:29+60-63,88-91:56+64-67,92-95:57+68-71,96-99:58+72-75,100-103:59+76-79,104-107:84+80-83,108-111:85 -O",
+      "revId": "459c8eefeef1ee16272f0b3de28e30e99a4a339f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
