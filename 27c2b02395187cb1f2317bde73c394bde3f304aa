@@ -16,6 +16,29 @@
       "revId": "27c2b02395187cb1f2317bde73c394bde3f304aa",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6814a1d1_066b1005",
+        "filename": "test/issues/1381/C1381T01.c",
+        "patchSetId": 11
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-12T06:40:14Z",
+      "side": 1,
+      "message": "munamp-\u003emunmap",
+      "range": {
+        "startLine": 79,
+        "startChar": 0,
+        "endLine": 79,
+        "endChar": 37
+      },
+      "revId": "27c2b02395187cb1f2317bde73c394bde3f304aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
