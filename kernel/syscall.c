@@ -1497,6 +1497,23 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory
 	ihk_mc_syscall_arg1(&ctx) = len;
 	ihk_mc_syscall_arg2(&ctx) = prot;
 
+	/*
+	 * XXX: Certain fabric drivers (e.g., the Tofu driver) use read-only
+	 * mappings for the completion queue on which the kernel driver calls
+	 * get_user_pages() with FOLL_FORCE and FOLL_WRITE flags requested.
+	 * get_user_pages() on read-only mappings with FOLL_WRITE, however, only
+	 * works if the underlying mapping is copy-on-write (i.e., private
+	 * ANONYMOUS or private file mapping).  Because mcexec's address space
+	 * reservation uses a shared pseudo-file mapping to cover McKernel
+	 * ANONYMOUS areas, we would need to mark it private so that the condition
+	 * holds. However, that would cause Linux to COW its pages and map to
+	 * different physical memory thus make it inconsistent with the original
+	 * McKernel mapping.
+	 *
+	 * For the above reason, we do NOT set the host VMA read-only.
+	 */
+	return 0;
+
 	dkprintf("%s: offloading __NR_mprotect\n", __FUNCTION__);
 	/* #986: Let remote page fault code skip
 	   read-locking memory_range_lock. It's safe because other writers are warded off 
