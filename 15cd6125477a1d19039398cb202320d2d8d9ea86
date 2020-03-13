@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ab76a003_cfdc6fc0",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1521,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-13T02:45:34Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t * ANONYMOUS areas, we would need to mark it private so that the condition",
+      "revId": "15cd6125477a1d19039398cb202320d2d8d9ea86",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
