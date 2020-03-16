@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "04366cb8_65a15ae1",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-03-16T05:15:59Z",
+      "side": 1,
+      "message": "WARNING: \u0027commited\u0027 may be misspelled - perhaps \u0027committed\u0027?\nSubject: [PATCH] test: Add Makefile not commited.",
+      "revId": "5ae86d95f5652af7bcaca35665fddba1e9cd42c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
