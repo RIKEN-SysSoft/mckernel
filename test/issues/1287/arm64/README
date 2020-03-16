@@ -1,0 +1,30 @@
+/* REDME COPYRIGHT FUJITSU LIMITED 2020 */
+
+arm: ptraceでsystem callの返り値を取得できない可能性がある
+https://postpeta.pccluster.org/redmine/issues/1287
+
+テストセットREADME
+
+(0) 事前準備
+  1. $HOME/.mck_test_configを用意する
+
+(1) テスト実行方法
+  1. make test
+
+(2) テスト項目詳細
+
+  TEST001: PTRACE_SYSCALLによる停止時、システムコールへの引数および
+           システムコールからの戻り値がPTRACE_GETREGSETによって獲得できること
+
+  本修正が既存機能へのレベルダウンとなっていないか確認するため、
+  LTPのptraceテストケースについても実施する
+   - ptrace01,02,03,05
+
+  なお、本テストの実行は別障害のため、NGとなることがある。
+  別障害は
+    https://postpeta.pccluster.org/redmine/issues/1451
+    https://postpeta.pccluster.org/redmine/issues/1452
+  で管理する。
+
+
+以上。
