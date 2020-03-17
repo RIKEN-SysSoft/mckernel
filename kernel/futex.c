@@ -311,6 +311,7 @@ static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset
 	struct plist_head *head;
 	union futex_key key = FUTEX_KEY_INIT;
 	int ret;
+	unsigned long irqstate;
 
 	if (!bitset)
 		return -EINVAL;
@@ -320,7 +321,7 @@ static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset
 		goto out;
 
 	hb = hash_futex(&key);
-	ihk_mc_spinlock_lock_noirq(&hb->lock);
+	irqstate = ihk_mc_spinlock_lock(&hb->lock);
 	head = &hb->chain;
 
 	plist_for_each_entry_safe(this, next, head, list) {
@@ -337,7 +338,7 @@ static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake, uint32_t bitset
 		}
 	}
 
-	ihk_mc_spinlock_unlock_noirq(&hb->lock);
+	ihk_mc_spinlock_unlock(&hb->lock, irqstate);
 	put_futex_key(fshared, &key);
 out:
 	return ret;
