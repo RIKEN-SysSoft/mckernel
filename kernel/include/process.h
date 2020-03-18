@@ -782,52 +782,6 @@ static inline int has_cap_sys_admin(struct thread *th)
 	return !(th->proc->euid);
 }
 
-static inline void  memory_range_read_lock(struct process_vm *vm,
-					   unsigned long *flags)
-{
-	for (;;) {
-		*flags = cpu_disable_interrupt_save();
-		preempt_disable();
-		if (ihk_mc_read_trylock(&vm->memory_range_lock)) {
-			break;
-		}
-		preempt_enable();
-		cpu_restore_interrupt(*flags);
-		cpu_pause();
-	}
-}
-
-static inline void  memory_range_write_lock(struct process_vm *vm,
-					    unsigned long *flags)
-{
-	for (;;) {
-		*flags = cpu_disable_interrupt_save();
-		preempt_disable();
-		if (ihk_mc_write_trylock(&vm->memory_range_lock)) {
-			break;
-		}
-		preempt_enable();
-		cpu_restore_interrupt(*flags);
-		cpu_pause();
-	}
-}
-
-static inline void  memory_range_read_unlock(struct process_vm *vm,
-					     unsigned long *flags)
-{
-	ihk_mc_read_unlock(&vm->memory_range_lock);
-	preempt_enable();
-	cpu_restore_interrupt(*flags);
-}
-
-static inline void  memory_range_write_unlock(struct process_vm *vm,
-					      unsigned long *flags)
-{
-	ihk_mc_write_unlock(&vm->memory_range_lock);
-	preempt_enable();
-	cpu_restore_interrupt(*flags);
-}
-
 void hold_address_space(struct address_space *);
 void release_address_space(struct address_space *);
 struct thread *create_thread(unsigned long user_pc,
