@@ -1933,7 +1933,15 @@ opendev()
 }
 
 #define LD_PRELOAD_PREPARE(name) do { \
-		sprintf(elembuf, "%s%s/" name, nelem > 0 ? ":" : "", libdir); \
+		int n = 0;\
+		\
+		n += snprintf(elembuf, PATH_MAX, "%s", nelem > 0 ? ":" : ""); \
+		strncat(elembuf, libdir, PATH_MAX - n); \
+		n = n + strlen(libdir) > PATH_MAX ? \
+			PATH_MAX : n + strlen(libdir); \
+		strncat(elembuf, "/", PATH_MAX - n); \
+		n = n + 1 > PATH_MAX ? PATH_MAX : n + 1; \
+		strncat(elembuf, name, PATH_MAX - n); \
 	} while (0)
 
 #define LD_PRELOAD_APPEND do {	\
