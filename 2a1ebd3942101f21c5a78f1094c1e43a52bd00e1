@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "5ae74623_5cb13da5",
+        "filename": "test/issues/1373/README",
+        "patchSetId": 6
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-03-19T23:29:16Z",
+      "side": 1,
+      "message": "テスト項目数を5件以上にするため、リグレッションテストとして、他のmadviseのテストを追加して下さい。",
+      "range": {
+        "startLine": 20,
+        "startChar": 0,
+        "endLine": 20,
+        "endChar": 13
+      },
+      "revId": "2a1ebd3942101f21c5a78f1094c1e43a52bd00e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "945404a7_db7855ef",
         "filename": "test/issues/1373/madvise08-mck-core-pattern.patch",
         "patchSetId": 6
