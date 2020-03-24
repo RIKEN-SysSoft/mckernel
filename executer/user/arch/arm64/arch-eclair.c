@@ -107,7 +107,7 @@ uintptr_t virt_to_phys(uintptr_t va)
 	return NOPHYS;
 } /* virt_to_phys() */
 
-int arch_setup_constants(int mcos_fd)
+int arch_setup_constants(int mcos_fd, int interactive)
 {
 	int error;
 	dumpargs_t args;
@@ -115,14 +115,19 @@ int arch_setup_constants(int mcos_fd)
 	MAP_KERNEL_START = lookup_symbol("_head");
 	if (MAP_KERNEL_START == NOSYMBOL) {
 		fprintf(stderr, "error: obtaining MAP_KERNEL_START\n");
-		return 1;
+		error = 1;
+		goto out;
 	}
 	printf("arm64 MAP_KERNEL_START 0x%lx\n", MAP_KERNEL_START);
 
-	args.cmd = DUMP_QUERY_PHYS_START;
-	args.buf = &PHYS_OFFSET;
+	if (interactive) {
+		args.cmd = DUMP_QUERY_PHYS_START;
+		args.buf = &PHYS_OFFSET;
+		error = ioctl(mcos_fd, IHK_OS_DUMP, &args);
+	}
 
-	error = ioctl(mcos_fd, IHK_OS_DUMP, &args);
+	error = 0;
+ out:
 	return error;
 }
 
