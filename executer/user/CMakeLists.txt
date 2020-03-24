@@ -8,7 +8,7 @@ include_directories(
 	"${PROJECT_BINARY_DIR}/ihk/linux/include"
 )
 
-add_subdirectory(lib)
+#add_subdirectory(lib)
 add_library(libmcexec STATIC arch/${ARCH}/archdep.S)
 SET_TARGET_PROPERTIES(libmcexec PROPERTIES OUTPUT_NAME mcexec)
 set_property(TARGET libmcexec PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -20,15 +20,15 @@ target_include_directories(mcexec PUBLIC "${KERNEL_DIR}")
 set_property(TARGET mcexec PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET mcexec PROPERTY LINK_FLAGS "-fPIE -pie")
 
-add_executable(mcinspect mcinspect.c)
-if (NOT LIBDWARF)
-	target_include_directories(mcinspect PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/lib/")
-	target_include_directories(mcinspect PRIVATE
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/libdwarf/libdwarf/libdwarf/")
-	target_link_libraries(mcinspect dwarf z elf)
-else()
-	target_link_libraries(mcinspect ${LIBDWARF})
-endif()
+# add_executable(mcinspect mcinspect.c)
+# if (NOT LIBDWARF)
+# 	target_include_directories(mcinspect PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/lib/")
+# 	target_include_directories(mcinspect PRIVATE
+# 		"${CMAKE_CURRENT_SOURCE_DIR}/lib/libdwarf/libdwarf/libdwarf/")
+# 	target_link_libraries(mcinspect dwarf z elf)
+# else()
+# 	target_link_libraries(mcinspect ${LIBDWARF})
+# endif()
 
 add_executable(eclair eclair.c arch/${ARCH}/arch-eclair.c)
 target_link_libraries(eclair ${LIBBFD})
@@ -86,7 +86,7 @@ configure_file(vmcore2mckdump.in vmcore2mckdump @ONLY)
 configure_file(mcexec.1in mcexec.1 @ONLY)
 configure_file(mcps.in mcps @ONLY)
 
-install(TARGETS mcexec eclair mcinspect
+install(TARGETS mcexec eclair #mcinspect
 	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 install(PROGRAMS
 	"${CMAKE_CURRENT_BINARY_DIR}/vmcore2mckdump"
