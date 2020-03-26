@@ -120,6 +120,21 @@ static struct ihk_mc_interrupt_handler cpu_stop_handler = {
 };
 
 extern long freeze_thaw(void *nmi_ctx);
+static void multi_interrupt_handler(void *priv)
+{
+	switch (multi_intr_mode) {
+	case 1:
+	case 2: /* mode == 1or2, for FREEZER intr */
+		dkprintf("%s: freeze mode intr catch. (multi_intr_mode=%d)\n",
+			 __func__, multi_intr_mode);
+		freeze_thaw(NULL);
+		break;
+	default:
+		ekprintf("%s: Unknown multi-intr-mode(%d) detected.\n",
+			 __func__, multi_intr_mode);
+		break;
+	}
+}
 
 void arch_save_panic_regs(void *irq_regs)
 {
@@ -162,7 +177,46 @@ void arch_clear_panic(void)
 	clv->arm64_cpu_local_thread.paniced = 0;
 }
 
-extern void multi_nm_interrupt_handler(void *irq_regs);
+static struct ihk_mc_interrupt_handler multi_intr_handler = {
+	.func = multi_interrupt_handler,
+	.priv = NULL,
+};
+
+static void multi_nm_interrupt_handler(void *irq_regs)
+{
+	extern int nmi_mode;
+
+	dkprintf("%s: ...\n", __func__);
+	switch (nmi_mode) {
+	case 0:
+		/* mode == 0, for MEMDUMP NMI */
+		arch_save_panic_regs(irq_regs);
+		ihk_mc_query_mem_areas();
+		/* memdump-nmi is halted McKernel, break is unnecessary. */
+		/* fall through */
+	case 3:
+		/* mode == 3, for SHUTDOWN-WAIT NMI */
+		kprintf("%s: STOP\n", __func__);
+		while (nmi_mode != 4)
+			cpu_halt();
+		break;
+
+	case 4:
+		/* mode == 4, continue NMI */
+		arch_clear_panic();
+		if (!ihk_mc_get_processor_id()) {
+			ihk_mc_clear_dump_page_completion();
+		}
+		kprintf("%s: RESUME, nmi_mode: %d\n", __func__, nmi_mode);
+		break;
+
+	default:
+		ekprintf("%s: Unknown nmi-mode(%d) detected.\n",
+			 __func__, nmi_mode);
+		break;
+	}
+}
+
 static struct ihk_mc_interrupt_handler multi_nmi_handler = {
 	.func = multi_nm_interrupt_handler,
 	.priv = NULL,
@@ -427,6 +481,8 @@ void ihk_mc_init_ap(void)
 
 	ihk_mc_register_interrupt_handler(INTRID_CPU_STOP, &cpu_stop_handler);
 	ihk_mc_register_interrupt_handler(INTRID_MULTI_NMI, &multi_nmi_handler);
+	ihk_mc_register_interrupt_handler(INTRID_MULTI_INTR,
+					  &multi_intr_handler);
 	ihk_mc_register_interrupt_handler(
 		ihk_mc_get_vector(IHK_TLB_FLUSH_IRQ_VECTOR_START),
 		&remote_tlb_flush_handler);
