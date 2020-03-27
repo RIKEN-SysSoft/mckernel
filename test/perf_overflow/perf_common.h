@@ -25,6 +25,7 @@ void print_usage(void);
 //system call
 long perf_event_open(struct perf_event_attr *event_attr, pid_t pid,
 			int cpu, int group_fd, unsigned long flags);
+int perf_event_ioc_refresh(int fd, void *_args);
 int init_perf_event_attr(struct perf_event_attr *event_attr);
 int asm_ioctl3(int fd, unsigned long arg1, unsigned long arg2);
 int asm_read(int fd, void *buf, size_t size);
