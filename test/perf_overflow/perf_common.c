@@ -164,9 +164,12 @@ static void build_perf_event_ioc_reset(struct command *cmd)
 }
 
 // perf_event_ioc_refresh command
-static int perf_event_ioc_refresh(int fd, void *_args)
+int perf_event_ioc_refresh(int fd, void *_args)
 {
-	int ret = asm_ioctl3(fd, PERF_EVENT_IOC_REFRESH, 0);
+	/* Prevent overflow counter from stopping counter
+	 * Note that it starts counter as well
+	 */
+	int ret = asm_ioctl3(fd, PERF_EVENT_IOC_REFRESH, 256);
 
 	if (ret < 0) {
 		errno = -ret;

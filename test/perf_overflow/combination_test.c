@@ -1,5 +1,6 @@
 /* combination_test.c COPYRIGHT FUJITSU LIMITED 2019 */
 #include "combination_test.h"
+#include "perf_common.h"
 
 //
 // main
@@ -23,6 +24,31 @@ static int combination_test(struct command_set *cmd_set)
 	fd = perf_event_open(&pe, 0, -1, -1, 0);
 	if (fd == -1) {
 		perror("pef_event_open");
+		goto out;
+	}
+
+	ret = ioctl(fd, PERF_EVENT_IOC_RESET, 0);
+	if (ret < 0) {
+		perror("ioctl(PERF_EVENT_IOC_RESET)");
+		goto out;
+	}
+
+	/* Set reasonable value to overflow counter so as not to stop
+	 * counter on Linux. Reset must precede to prevent
+	 * uninitialized value is accumulated on McKernel for the case
+	 * REFRESH includes ENABLE
+	 */
+	ret = perf_event_ioc_refresh(fd, NULL);
+	if (ret < 0) {
+		perror("perf_event_ioc_refresh");
+		goto out;
+	}
+
+	/* Stop counter for the case REFRESH includes ENABLE */
+	ret = asm_ioctl3(fd, PERF_EVENT_IOC_DISABLE, 0);
+	if (ret < 0) {
+		errno = -ret;
+		perror("asm_ioctl(PERF_EVENT_IOC_DISABLE)");
 		goto out;
 	}
 
