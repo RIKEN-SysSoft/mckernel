@@ -4358,7 +4358,8 @@ perf_ioctl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 		if(event->attr.inherit)
 			return -EINVAL;
 
-		perf_start(event);
+		/* REFRESH doesn't need to include ENABLE */
+		/* perf_start(event); */
 
 		break;
 	default :
