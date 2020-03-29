@@ -2672,7 +2672,7 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
 
 	phys = args->phys + (base - start);
 
-#if 0
+#ifndef CONFIG_DISABLE_CONTIGUOUS_PTE
 	if (__page_offset(base, PTL1_CONT_SIZE) == 0) { //check head pte
 		uintptr_t next_addr = base + PTL1_CONT_SIZE;
 
@@ -2773,7 +2773,7 @@ retry:
 
 				phys = args->phys + (base - start);
 
-#if 0
+#ifndef CONFIG_DISABLE_CONTIGUOUS_PTE
 				//check head pte
 				if (__page_offset(base, tbl.cont_pgsize) == 0) {
 					uintptr_t next_addr = base +

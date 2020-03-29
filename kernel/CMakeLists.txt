@@ -143,6 +143,7 @@ elseif (BUILD_TARGET STREQUAL "smp-arm64")
 		   CPU_VARIANT STREQUAL "0x1" AND CPU_PART STREQUAL "0x0af")
 			# Don't add "-DCONFIG_HAS_NMI=n" because it'll be added to KBUILD_C_FLAGS
 			message("CONFIG_HAS_NMI isn't defined for ThunderX2")
+			add_definitions(-DCONFIG_DISABLE_CONTIGUOUS_PTE)
 		else()
 			add_definitions(-DCONFIG_HAS_NMI=y)
 			message("CONFIG_HAS_NMI is defined")
