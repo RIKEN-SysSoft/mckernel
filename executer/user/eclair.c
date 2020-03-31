@@ -23,6 +23,7 @@
 #include <eclair.h>
 #include <arch-eclair.h>
 #include <signal.h>
+#include <errno.h>
 
 #define CPU_TID_BASE 1000000
 
@@ -1117,7 +1118,9 @@ static void options(int argc, char *argv[]) {
 
 		opt.mcos_fd = open(fn, O_RDONLY);
 		if (opt.mcos_fd < 0) {
-			perror("open");
+			fprintf(stderr, "%s:%d error: "
+				"opening /dev/mcos%d, errno: %d\n",
+				__FILE__, __LINE__, opt.os_id, errno);
 			exit(1);
 		}
 	}
