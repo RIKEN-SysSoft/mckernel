@@ -3501,6 +3501,10 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 	isp.desc = *desc;
 	isp.resp = &resp;
 
+	pr_info("%s: cpu: %d, addr: %lx, val: %lx, addr_ext: %lx, sync: %x\n",
+		__func__, cpu, desc->addr, desc->val, desc->addr_ext,
+		atomic_read(&desc->sync));
+
 	resp.done = 0;
 	resp.err = 0;
 	init_waitqueue_head(&resp.wq);
@@ -3533,7 +3537,11 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 	/* Notify caller (for future async implementation) */
 	atomic_set(&desc->sync, 1);
 
-	dprintk("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
+	pr_info("%s: addr: %lx, val: %lx, addr_ext: %lx, sync: %x\n",
+		__func__, desc->addr, desc->val, desc->addr_ext,
+		atomic_read(&desc->sync));
+
+	pr_info("%s: MCCTRL_OS_CPU_%s_REGISTER: reg: 0x%lx, val: 0x%lx\n",
 		__FUNCTION__,
 		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"),
 		desc->addr, desc->val);

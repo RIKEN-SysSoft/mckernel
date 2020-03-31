@@ -1788,6 +1788,8 @@ static inline int arch_cpu_read_register(struct ihk_os_cpu_register *desc)
 	} else {
 		ret = -EINVAL;
 	}
+	kprintf("%s: addr_ext: %lx, val: %lx, ret: %d\n",
+		__func__, desc->addr_ext, desc->val, ret);
 	return ret;
 }
 
@@ -1861,6 +1863,8 @@ static inline int arch_cpu_write_register(struct ihk_os_cpu_register *desc)
 	} else {
 		ret = -EINVAL;
 	}
+	kprintf("%s: addr_ext: %lx, val: %lx, ret: %d\n",
+		__func__, desc->addr_ext, desc->val, ret);
 	return ret;
 }
 
@@ -1868,6 +1872,7 @@ int arch_cpu_read_write_register(
 		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
+	kprintf("%s: enter\n", __func__);
 	int ret;
 	if (op == MCCTRL_OS_CPU_READ_REGISTER) {
 		ret = arch_cpu_read_register(desc);

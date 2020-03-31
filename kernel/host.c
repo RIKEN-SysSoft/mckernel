@@ -839,7 +839,7 @@ out_remote_pf:
 		break;
 
 	case SCD_MSG_CPU_RW_REG:
-
+		kprintf("%s: SCD_MSG_CPU_RW_REG: enter\n", __func__);
 		pckt.msg = SCD_MSG_CPU_RW_REG_RESP;
 		memcpy(&pckt.desc, &packet->desc,
 				sizeof(struct ihk_os_cpu_register));
