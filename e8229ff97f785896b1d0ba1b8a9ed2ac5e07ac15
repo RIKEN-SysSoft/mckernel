@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ad2d5290_204eb6bc",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2020-04-01T13:29:26Z",
+      "side": 1,
+      "message": "(While I am here:) there actually is a standard git tag for that\n\nFixes: \u003ccommit short hash\u003e (\"commit message\")\n\n(as a tag, so along with the Change-Id ; summary could just be \"spec: fix mckernel-devel package\" then)",
+      "revId": "e8229ff97f785896b1d0ba1b8a9ed2ac5e07ac15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "13300b5b_9b115c8c",
+        "filename": "ihk",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2020-04-01T13:29:26Z",
+      "side": 1,
+      "message": "(unrelated, or is it pulling update for a similar ihk spec fix?)",
+      "revId": "e8229ff97f785896b1d0ba1b8a9ed2ac5e07ac15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}

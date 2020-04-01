@@ -16,6 +16,24 @@
       "revId": "d62f80a7c07506e05024fdc3c0e14f7a788685ce",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9247a413_ff57ace5",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 3
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2020-04-01T13:29:26Z",
+      "side": 0,
+      "message": "The `%kernel_module_package` takes care of it in the native case. We cannot use it for cross-compile.\n\nIf you remove the if I believe this will complain files are included twice or similar?",
+      "parentUuid": "d53b4ace_ee6d68e0",
+      "revId": "d62f80a7c07506e05024fdc3c0e14f7a788685ce",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
