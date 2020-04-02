@@ -10,7 +10,7 @@
 #include <smp.h>
 #include <arm-gic-v3.h>
 
-#define KERNEL_RAM_VADDR	MAP_KERNEL_START
+/* KERNEL_RAM_VADDR is defined by cmake */
 
 //#ifndef CONFIG_SMP
 //# define PTE_FLAGS	PTE_TYPE_PAGE | PTE_AF
