@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b19d62ef_416ddee4",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 4
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-02T05:53:47Z",
+      "side": 1,
+      "message": "is it okay to remove \"\u003d %{krequires}\"?",
+      "range": {
+        "startLine": 43,
+        "startChar": 0,
+        "endLine": 43,
+        "endChar": 47
+      },
+      "revId": "c85113ee534451a030de71bfe0bb29082bcf89e4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
