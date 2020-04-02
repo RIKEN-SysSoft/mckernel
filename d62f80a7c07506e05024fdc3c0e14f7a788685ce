@@ -52,6 +52,24 @@
       "revId": "d62f80a7c07506e05024fdc3c0e14f7a788685ce",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "887c4cce_646b32af",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 3
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-02T06:37:07Z",
+      "side": 0,
+      "message": "with the patchset 4, rpmbuild installs *.ko into kmod-mckernel*.rpm with \"%if 0%{?cross_compile}\". Thanks!",
+      "parentUuid": "7d4feed8_29881b80",
+      "revId": "d62f80a7c07506e05024fdc3c0e14f7a788685ce",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
