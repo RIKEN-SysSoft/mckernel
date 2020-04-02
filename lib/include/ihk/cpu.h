@@ -18,6 +18,7 @@
 #include <ihk/context.h>
 #include <arch/cpu.h>
 #include <mc_perf_event.h>
+#include <affinity.h>
 
 extern int num_processors;
 
@@ -50,11 +51,17 @@ int ihk_mc_get_vector(enum ihk_mc_gv_type type);
 int ihk_mc_interrupt_host(int cpu, int vector);
 
 struct ihk_mc_cpu_info {
+	/* XXX: The order of these fields matters,
+	 * keep the order intact! */
 	int ncpus;
+	int nlinux_cpus;
 	int *hw_ids;
 	int *nodes;
+	/* Linux CPU ids (indexed by McKernel CPU ids) */
 	int *linux_cpu_ids;
 	int *ikc_cpus;
+	/* McKernel CPU ids (indexed by Linux CPU ids) */
+	int *mckernel_cpu_ids;
 };
 
 struct ihk_mc_cpu_info *ihk_mc_get_cpu_info(void);
@@ -167,4 +174,7 @@ struct cpu_mapping;
 int arch_get_cpu_mapping(struct cpu_mapping **buf, int *nelemsp);
 int ihk_mc_ikc_arch_issue_host_ipi(int cpu, int vector);
 
+#define LINUX_2_MCKERNEL	0
+#define MCKERNEL_2_LINUX	1
+int translate_cpu_set(cpu_set_t *src, cpu_set_t *dst, int direction);
 #endif
