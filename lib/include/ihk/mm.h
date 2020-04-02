@@ -207,6 +207,11 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 uint64_t ihk_mc_pt_virt_to_pagemap(struct page_table *pt, unsigned long virt);
 
 int ihk_mc_get_nr_numa_nodes(void);
+
+#define IHK_TOPOLOGY_VIEW_LWK	0
+#define IHK_TOPOLOGY_VIEW_FULL	1
+int ihk_mc_get_topology_view(void);
+
 struct smp_coreset;
 int ihk_mc_get_numa_node(int id, int *linux_numa_id, int *type);
 int ihk_mc_get_numa_distance(int i, int j);
@@ -216,6 +221,8 @@ int ihk_mc_get_memory_chunk(int id,
 	unsigned long *start,
 	unsigned long *end,
 	int *numa_id);
+int ihk_mc_linux_cpu_2_mckernel_cpu(int cpu);
+int ihk_mc_mckernel_cpu_2_linux_cpu(int cpu);
 
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);

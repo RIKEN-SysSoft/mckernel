@@ -23,193 +23,6 @@
 #define wprintk(...) do { if (1) printk(KERN_WARNING __VA_ARGS__); } while (0)
 #define eprintk(...) do { if (1) printk(KERN_ERR __VA_ARGS__); } while (0)
 
-static ssize_t
-show_int(struct sysfsm_ops *ops, void *instance, void *buf, size_t size)
-{
-	int *p = instance;
-
-	return snprintf(buf, size, "%d\n", *p);
-} /* show_int() */
-
-struct sysfsm_ops show_int_ops = {
-	.show = &show_int,
-};
-
-void setup_local_snooping_samples(ihk_os_t os)
-{
-	static long lvalue = 0xf123456789abcde0;
-	static char *svalue = "string(local)";
-	int error;
-	struct sysfsm_bitmap_param param;
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_d32, &lvalue, 0444, "/sys/test/local/d32");
-	if (error) {
-		panic("setup_local_snooping_samples: d32");
-	}
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_d64, &lvalue, 0444, "/sys/test/local/d64");
-	if (error) {
-		panic("setup_local_snooping_samples: d64");
-	}
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u32, &lvalue, 0444, "/sys/test/local/u32");
-	if (error) {
-		panic("setup_local_snooping_samples: u32");
-	}
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u64, &lvalue, 0444, "/sys/test/local/u64");
-	if (error) {
-		panic("setup_local_snooping_samples: u64");
-	}
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_s, svalue, 0444, "/sys/test/local/s");
-	if (error) {
-		panic("setup_local_snooping_samples: s");
-	}
-
-	param.nbits = 40;
-	param.ptr = &lvalue;
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444, "/sys/test/local/pbl");
-	if (error) {
-		panic("setup_local_snooping_samples: pbl");
-	}
-
-	param.nbits = 40;
-	param.ptr = &lvalue;
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pb, &param, 0444, "/sys/test/local/pb");
-	if (error) {
-		panic("setup_local_snooping_samples: pb");
-	}
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u32K, &lvalue, 0444, "/sys/test/local/u32K");
-	if (error) {
-		panic("setup_local_snooping_samples: u32K");
-	}
-
-	return;
-}
-
-void setup_local_snooping_files(ihk_os_t os)
-{
-	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
-	struct sysfsm_bitmap_param param;
-	static unsigned long cpu_offline = 0x0;
-	int i;
-	int error;
-
-	if (!udp) {
-		panic("%s: error: mcctrl_usrdata not found\n",
-		      __func__);
-	}
-
-	memset(udp->cpu_online, 0, sizeof(udp->cpu_online));
-	for (i = 0; i < udp->cpu_info->n_cpus; i++) {
-		set_bit(i, udp->cpu_online);
-	}
-
-	param.nbits = CPU_LONGS * BITS_PER_LONG;
-	param.ptr = &udp->cpu_online;
-	dprintk("mcctrl:setup_local_snooping_files: CPU_LONGS=%d, BITS_PER_LONG=%d\n", 
-		CPU_LONGS, BITS_PER_LONG);
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
-		"/sys/devices/system/cpu/online");
-	if (error) {
-		panic("setup_local_snooping_files: devices/system/cpu/online");
-	}
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
-		"/sys/devices/system/cpu/possible");
-	if (error) {
-		panic("setup_local_snooping_files: devices/system/cpu/possible");
-	}
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
-		"/sys/devices/system/cpu/present");
-	if (error) {
-		panic("setup_local_snooping_files: devices/system/cpu/present");
-	}
-
-	param.nbits = BITS_PER_LONG;
-	param.ptr = &cpu_offline;
-
-	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
-		"/sys/devices/system/cpu/offline");
-	if (error) {
-		panic("setup_local_snooping_files: devices/system/cpu/offline");
-	}
-
-	return;
-}
-
-static void free_node_topology(struct mcctrl_usrdata *udp)
-{
-	struct node_topology *node;
-	struct node_topology *next;
-
-	list_for_each_entry_safe(node, next, &udp->node_topology_list, chain) {
-		list_del(&node->chain);
-		kfree(node);
-	}
-
-	return;
-} /* free_node_topology() */
-
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
-static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
-		struct mcctrl_cpu_topology *cpu)
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
-		struct cpu_topology *cpu)
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
-{
-	struct cache_topology *cache;
-	struct cache_topology *next;
-
-	list_for_each_entry_safe(cache, next, &cpu->cache_list, chain) {
-		list_del(&cache->chain);
-		kfree(cache);
-	}
-
-	kfree(cpu);
-	return;
-} /* free_cpu_topology_one() */
-
-static void free_cpu_topology(struct mcctrl_usrdata *udp)
-{
-#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
-	struct mcctrl_cpu_topology *cpu;
-	struct mcctrl_cpu_topology *next;
-#else /* POSTK_DEBUG_ARCH_DEP_40 */
-	struct cpu_topology *cpu;
-	struct cpu_topology *next;
-#endif /* POSTK_DEBUG_ARCH_DEP_40 */
-
-	list_for_each_entry_safe(cpu, next, &udp->cpu_topology_list, chain) {
-		list_del(&cpu->chain);
-		free_cpu_topology_one(udp, cpu);
-	}
-
-	return;
-} /* free_cpu_topology() */
-
-void free_topology_info(ihk_os_t os)
-{
-	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
-
-	if (!udp) {
-		pr_warn("%s: warning: mcctrl_usrdata not found\n", __func__);
-		return;
-	}
-
-	free_node_topology(udp);
-	free_cpu_topology(udp);
-
-	return;
-} /* free_topology_info() */
-
 /*
  * CPU and NUMA node mapping conversion functions.
  */
@@ -292,28 +105,256 @@ int linux_numa_2_mckernel_numa(struct mcctrl_usrdata *udp, int numa_id)
 }
 
 
+/*
+ * /sysfs
+ */
+static int online = 1;
+static int offline = 0;
+/* XXX: Shouldn't these be in mcctrl_usrdata? */
+static unsigned long cpu_offline[CPU_LONGS];
+static unsigned long cpu_online[CPU_LONGS];
+static unsigned long cpu_empty[CPU_LONGS];
 
-static int translate_cpumap(struct mcctrl_usrdata *udp,
-		cpumask_t *linmap, cpumask_t *mckmap)
+static ssize_t
+show_int(struct sysfsm_ops *ops, void *instance, void *buf, size_t size)
+{
+	int *p = instance;
+
+	return snprintf(buf, size, "%d\n", *p);
+} /* show_int() */
+
+struct sysfsm_ops show_int_ops = {
+	.show = &show_int,
+};
+
+void setup_local_snooping_samples(ihk_os_t os)
+{
+	static long lvalue = 0xf123456789abcde0;
+	static char *svalue = "string(local)";
+	int error;
+	struct sysfsm_bitmap_param param;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_d32, &lvalue, 0444, "/sys/test/local/d32");
+	if (error) {
+		panic("setup_local_snooping_samples: d32");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_d64, &lvalue, 0444, "/sys/test/local/d64");
+	if (error) {
+		panic("setup_local_snooping_samples: d64");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u32, &lvalue, 0444, "/sys/test/local/u32");
+	if (error) {
+		panic("setup_local_snooping_samples: u32");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u64, &lvalue, 0444, "/sys/test/local/u64");
+	if (error) {
+		panic("setup_local_snooping_samples: u64");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_s, svalue, 0444, "/sys/test/local/s");
+	if (error) {
+		panic("setup_local_snooping_samples: s");
+	}
+
+	param.nbits = 40;
+	param.ptr = &lvalue;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444, "/sys/test/local/pbl");
+	if (error) {
+		panic("setup_local_snooping_samples: pbl");
+	}
+
+	param.nbits = 40;
+	param.ptr = &lvalue;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pb, &param, 0444, "/sys/test/local/pb");
+	if (error) {
+		panic("setup_local_snooping_samples: pb");
+	}
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_u32K, &lvalue, 0444, "/sys/test/local/u32K");
+	if (error) {
+		panic("setup_local_snooping_samples: u32K");
+	}
+
+	return;
+}
+
+void setup_local_snooping_files(ihk_os_t os)
+{
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+	struct sysfsm_bitmap_param param;
+	int i;
+	int error;
+
+	if (!udp) {
+		panic("%s: error: mcctrl_usrdata not found\n",
+		      __func__);
+	}
+
+	memset(cpu_offline, 0, sizeof(cpu_offline));
+	memset(cpu_online, 0, sizeof(cpu_online));
+
+	/* Full system view */
+	if (ihk_os_get_topology_view(udp->os) == IHK_TOPOLOGY_VIEW_FULL) {
+		for_each_cpu(i, cpu_possible_mask) {
+			if (linux_cpu_2_mckernel_cpu(udp, i) >= 0) {
+				set_bit(i, (unsigned long *)cpu_online);
+			}
+			else {
+				set_bit(i, (unsigned long *)cpu_offline);
+			}
+		}
+	}
+	/* LWK view */
+	else {
+		for (i = 0; i < udp->cpu_info->n_cpus; i++) {
+			set_bit(i, (unsigned long *)cpu_online);
+		}
+	}
+
+	param.nbits = CPU_LONGS * BITS_PER_LONG;
+	param.ptr = cpu_online;
+	dprintk("mcctrl:setup_local_snooping_files: CPU_LONGS=%d, BITS_PER_LONG=%d\n", 
+		CPU_LONGS, BITS_PER_LONG);
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+		"/sys/devices/system/cpu/online");
+	if (error) {
+		panic("setup_local_snooping_files: devices/system/cpu/online");
+	}
+
+	/* LWK view */
+	if (ihk_os_get_topology_view(udp->os)
+			== IHK_TOPOLOGY_VIEW_LWK) {
+		error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+				"/sys/devices/system/cpu/possible");
+		if (error) {
+			panic("setup_local_snooping_files: devices/system/cpu/possible");
+		}
+
+		error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+				"/sys/devices/system/cpu/present");
+		if (error) {
+			panic("setup_local_snooping_files: devices/system/cpu/present");
+		}
+	}
+
+	param.nbits = CPU_LONGS * BITS_PER_LONG;
+	param.ptr = cpu_offline;
+
+	error = sysfsm_createf(os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+		"/sys/devices/system/cpu/offline");
+	if (error) {
+		panic("setup_local_snooping_files: devices/system/cpu/offline");
+	}
+
+	return;
+}
+
+static void free_node_topology(struct mcctrl_usrdata *udp)
+{
+	struct node_topology *node;
+	struct node_topology *next;
+
+	list_for_each_entry_safe(node, next, &udp->node_topology_list, chain) {
+		list_del(&node->chain);
+		kfree(node);
+	}
+
+	return;
+} /* free_node_topology() */
+
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
+		struct mcctrl_cpu_topology *cpu)
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
+static void free_cpu_topology_one(struct mcctrl_usrdata *udp,
+		struct cpu_topology *cpu)
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
+{
+	struct cache_topology *cache;
+	struct cache_topology *next;
+
+	list_for_each_entry_safe(cache, next, &cpu->cache_list, chain) {
+		list_del(&cache->chain);
+		kfree(cache);
+	}
+
+	kfree(cpu);
+	return;
+} /* free_cpu_topology_one() */
+
+static void free_cpu_topology(struct mcctrl_usrdata *udp)
+{
+#ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
+	struct mcctrl_cpu_topology *cpu;
+	struct mcctrl_cpu_topology *next;
+#else /* POSTK_DEBUG_ARCH_DEP_40 */
+	struct cpu_topology *cpu;
+	struct cpu_topology *next;
+#endif /* POSTK_DEBUG_ARCH_DEP_40 */
+
+	list_for_each_entry_safe(cpu, next, &udp->cpu_topology_list, chain) {
+		list_del(&cpu->chain);
+		free_cpu_topology_one(udp, cpu);
+	}
+
+	return;
+} /* free_cpu_topology() */
+
+void free_topology_info(ihk_os_t os)
+{
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
+
+	if (!udp) {
+		pr_warn("%s: warning: mcctrl_usrdata not found\n", __func__);
+		return;
+	}
+
+	free_node_topology(udp);
+	free_cpu_topology(udp);
+
+	return;
+} /* free_topology_info() */
+
+
+int translate_cpumap(struct mcctrl_usrdata *udp,
+		cpumask_t *origmap,
+		cpumask_t *mckmap,
+		cpumask_t *linmap)
 {
 	int error;
 	int lincpu;
 	int mckcpu;
 
-	dprintk("translate_cpumap(%p,%p,%p)\n", udp, linmap, mckmap);
+	dprintk("%s(%p,%p,%p)\n",
+		__func__, udp, origmap, mckmap);
 	cpumask_clear(mckmap);
-	for_each_cpu(lincpu, linmap) {
+	if (linmap)
+		cpumask_clear(linmap);
+
+	for_each_cpu(lincpu, origmap) {
 		mckcpu = linux_cpu_2_mckernel_cpu(udp, lincpu);
 
 		if (mckcpu >= 0) {
 			cpumask_set_cpu(mckcpu, mckmap);
+			if (linmap) {
+				dprintk("%s: setting CPU %d in NUMA %d\n",
+					__func__, lincpu, cpu_to_node(lincpu));
+				cpumask_set_cpu(lincpu, linmap);
+			}
 		}
 	}
 
 	error = 0;
-	dprintk("translate_cpumap(%p,%p,%p): %d\n", udp, linmap, mckmap, error);
+	dprintk("%s(%p,%p,%p): %d\n",
+		__func__, udp, origmap, mckmap, error);
 	return error;
-} /* translate_cpumap() */
+}
 
 #ifdef POSTK_DEBUG_ARCH_DEP_40 /* cpu_topology name change */
 static struct cache_topology *get_cache_topology(struct mcctrl_usrdata *udp,
@@ -337,8 +378,10 @@ static struct cache_topology *get_cache_topology(struct mcctrl_usrdata *udp,
 
 	topo->saved = saved;
 
-	error = translate_cpumap(udp, &topo->saved->shared_cpu_map,
-			&topo->shared_cpu_map);
+	error = translate_cpumap(udp,
+				&topo->saved->shared_cpu_map,
+				&topo->shared_cpu_map,
+				NULL);
 	if (error) {
 		eprintk("mcctrl:get_cache_topology:"
 				"translate_cpumap failed. %d\n", error);
@@ -396,8 +439,9 @@ static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 	}
 
 	error = translate_cpumap(udp, 
-			&topology->saved->core_siblings,
-			&topology->core_siblings);
+				&topology->saved->core_siblings,
+				&topology->core_siblings,
+				&topology->linux_core_siblings);
 	if (error) {
 		eprintk("mcctrl:get_one_cpu_topology:"
 				"translate_cpumap(core_siblings) failed."
@@ -406,8 +450,9 @@ static struct cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *udp,
 	}
 
 	error = translate_cpumap(udp, 
-			&topology->saved->thread_siblings,
-			&topology->thread_siblings);
+				&topology->saved->thread_siblings,
+				&topology->thread_siblings,
+				&topology->linux_thread_siblings);
 	if (error) {
 		eprintk("mcctrl:get_one_cpu_topology:"
 				"translate_cpumap(thread_siblings) failed."
@@ -539,12 +584,22 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 #endif /* POSTK_DEBUG_ARCH_DEP_40 */
 {
 	char *prefix = "/sys/devices/system/cpu";
-	int cpu_number = cpu->mckernel_cpu_id;
+	int cpu_number;
 	struct sysfsm_bitmap_param param;
 	struct cache_topology *cache;
 
+	if (ihk_os_get_topology_view(udp->os) == IHK_TOPOLOGY_VIEW_FULL) {
+		cpu_number = mckernel_cpu_2_linux_cpu(udp, cpu->mckernel_cpu_id);
+	}
+	else {
+		cpu_number = cpu->mckernel_cpu_id;
+	}
+
 	dprintk("setup_cpu_sysfs_files(%p,%p)\n", udp, cpu);
 
+	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_d32,
+			&online, 0444,
+			"%s/cpu%d/online", prefix, cpu_number);
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_d32,
 			&cpu->saved->physical_package_id, 0444,
 			"%s/cpu%d/topology/physical_package_id",
@@ -555,7 +610,12 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 			prefix, cpu_number);
 
 	param.nbits = nr_cpu_ids;
-	param.ptr = &cpu->core_siblings;
+	if (ihk_os_get_topology_view(udp->os) == IHK_TOPOLOGY_VIEW_FULL) {
+		param.ptr = &cpu->linux_core_siblings;
+	}
+	else {
+		param.ptr = &cpu->core_siblings;
+	}
 
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
 			"%s/cpu%d/topology/core_siblings",
@@ -565,7 +625,12 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 			prefix, cpu_number);
 
 	param.nbits = nr_cpu_ids;
-	param.ptr = &cpu->thread_siblings;
+	if (ihk_os_get_topology_view(udp->os) == IHK_TOPOLOGY_VIEW_FULL) {
+		param.ptr = &cpu->linux_thread_siblings;
+	}
+	else {
+		param.ptr = &cpu->thread_siblings;
+	}
 
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
 			"%s/cpu%d/topology/thread_siblings",
@@ -598,9 +663,31 @@ static void setup_cpus_sysfs_files(struct mcctrl_usrdata *udp)
 		goto out;
 	}
 
+	/* Full system view: mask non-McKernel CPUs as offline */
+	if (ihk_os_get_topology_view(udp->os) == IHK_TOPOLOGY_VIEW_FULL) {
+		char *prefix = "/sys/devices/system/cpu";
+		int lincpu;
+
+		for_each_cpu(lincpu, cpu_possible_mask) {
+			/*
+			 * NOTE: For valid CPUs the online file is taken care of
+			 * in setup_cpu_sysfs_files() called below.
+			 */
+			if (linux_cpu_2_mckernel_cpu(udp, lincpu) >= 0) {
+				continue;
+			}
+
+			sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_d32,
+					&offline, 0444,
+					"%s/cpu%d/online",
+					prefix, lincpu);
+		}
+	}
+
 	list_for_each_entry(cpu, &udp->cpu_topology_list, chain) {
 		setup_cpu_sysfs_files(udp, cpu);
 	}
+
 	error = 0;
 out:
 	dprintk("setup_cpu_file(%p):\n", udp);
@@ -623,7 +710,10 @@ static struct node_topology *get_one_node_topology(struct mcctrl_usrdata *udp,
 
 	node->saved = saved;
 
-	error = translate_cpumap(udp, &node->saved->cpumap, &node->cpumap);
+	error = translate_cpumap(udp,
+				&node->saved->cpumap,
+				&node->cpumap,
+				&node->linux_cpumap);
 	if (error) {
 		eprintk("mcctrl:get_one_node_topology:"
 				"translate_cpumap failed. %d\n", error);
@@ -698,86 +788,158 @@ static int setup_node_files(struct mcctrl_usrdata *udp)
 		node_set(node, udp->numa_online);
 	}
 
-	param.nbits = MAX_NUMNODES;
-	param.ptr = &udp->numa_online;
-	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
-			"/sys/devices/system/node/online");
-	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
-			"/sys/devices/system/node/possible");
-
-
-	list_for_each_entry(p, &udp->node_topology_list, chain) {
+	/* Full system view */
+	if (ihk_os_get_topology_view(udp->os) == IHK_TOPOLOGY_VIEW_FULL) {
 		struct sysfs_handle node_handle, cpu_handle;
-		int cpu;
-		size_t offset = 0;
-		param.nbits = nr_cpu_ids;
-		param.ptr = &p->cpumap;
+		int node;
+		int mckernel_numa_id;
+		memset(cpu_empty, 0, sizeof(cpu_empty));
 
-		for (node = 0; node < udp->mem_info->n_numa_nodes; ++node) {
-			if (node > 0) {
-				offset += snprintf(&p->mckernel_numa_distance_s[offset],
-						NODE_DISTANCE_S_SIZE - offset, "%s", " ");
+		for_each_online_node(node) {
+			int cpu;
+
+			param.nbits = nr_cpu_ids;
+			param.ptr = &cpu_empty;
+
+			mckernel_numa_id = linux_numa_2_mckernel_numa(udp, node);
+
+			/* Valid McKernel node? */
+			if (mckernel_numa_id >= 0) {
+				list_for_each_entry(p, &udp->node_topology_list, chain) {
+					if (p->mckernel_numa_id == mckernel_numa_id)
+						break;
+				}
+
+				param.ptr = &p->linux_cpumap;
 			}
-			offset += snprintf(&p->mckernel_numa_distance_s[offset],
-					NODE_DISTANCE_S_SIZE - offset, "%d",
-					node_distance(
-						mckernel_numa_2_linux_numa(udp, p->mckernel_numa_id),
-						mckernel_numa_2_linux_numa(udp, node)
-						));
+
+			sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
+					"/sys/devices/system/node/node%d/cpumap", node);
+			sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+					"/sys/devices/system/node/node%d/cpulist", node);
+
+			error = sysfsm_lookupf(udp->os, &node_handle,
+					"/sys/devices/system/node/node%d",
+					node);
+			if (error) {
+				panic("sysfsm_lookupf(node)");
+			}
+
+			/* Add CPU symlinks for this node and vica versa */
+			for (cpu = 0; cpu < udp->cpu_info->n_cpus; ++cpu) {
+				int linux_cpu = mckernel_cpu_2_linux_cpu(udp, cpu);
+
+				if (cpu_to_node(linux_cpu) != node) {
+					continue;
+				}
+
+				dprintk("%s: creating symlinks for NUMA %d CPU %d\n",
+					__func__, node, linux_cpu);
+
+				error = sysfsm_symlinkf(udp->os, node_handle,
+						"/sys/devices/system/cpu/cpu%d/node%d",
+						linux_cpu, node);
+				if (error) {
+					panic("sysfsm_symlinkf(node in CPU)");
+				}
+
+				error = sysfsm_lookupf(udp->os, &cpu_handle,
+						"/sys/devices/system/cpu/cpu%d", linux_cpu);
+				if (error) {
+					panic("sysfsm_lookupf(CPU in node)");
+				}
+
+				error = sysfsm_symlinkf(udp->os, cpu_handle,
+						"/sys/devices/system/node/node%d/cpu%d",
+						node, linux_cpu);
+				if (error) {
+					panic("sysfsm_symlinkf(CPU in node)");
+				}
+			}
 		}
-
-		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_s,
-				p->mckernel_numa_distance_s, 0444,
-				"/sys/devices/system/node/node%d/distance",
-				p->mckernel_numa_id);
-
-		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
-				"/sys/devices/system/node/node%d/cpumap",
-				p->mckernel_numa_id);
+	}
+	/* LWK View */
+	else {
+		param.nbits = MAX_NUMNODES;
+		param.ptr = &udp->numa_online;
 		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
-				"/sys/devices/system/node/node%d/cpulist",
-				p->mckernel_numa_id);
+				"/sys/devices/system/node/online");
+		sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+				"/sys/devices/system/node/possible");
 
-		error = sysfsm_lookupf(udp->os, &node_handle,
-				       "/sys/devices/system/node/node%d",
-				       p->mckernel_numa_id);
-		if (error) {
-			panic("sysfsm_lookupf(node)");
-		}
+		list_for_each_entry(p, &udp->node_topology_list, chain) {
+			struct sysfs_handle node_handle, cpu_handle;
+			int cpu;
+			size_t offset = 0;
+			param.nbits = nr_cpu_ids;
+			param.ptr = &p->cpumap;
 
-		error = sysfsm_symlinkf(udp->os, node_handle,
-					"/sys/bus/node/devices/node%d",
+			for (node = 0; node < udp->mem_info->n_numa_nodes; ++node) {
+				if (node > 0) {
+					offset += snprintf(&p->mckernel_numa_distance_s[offset],
+							NODE_DISTANCE_S_SIZE - offset, "%s", " ");
+				}
+				offset += snprintf(&p->mckernel_numa_distance_s[offset],
+						NODE_DISTANCE_S_SIZE - offset, "%d",
+						node_distance(
+							mckernel_numa_2_linux_numa(udp, p->mckernel_numa_id),
+							mckernel_numa_2_linux_numa(udp, node)
+							));
+			}
+
+			sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_s,
+					p->mckernel_numa_distance_s, 0444,
+					"/sys/devices/system/node/node%d/distance",
 					p->mckernel_numa_id);
-		if (error) {
-			panic("sysfsm_symlinkf(bus node)");
-		}
 
-		/* Add CPU symlinks for this node */
-		for (cpu = 0; cpu < udp->cpu_info->n_cpus; ++cpu) {
-			if (linux_numa_2_mckernel_numa(udp,
-						cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))
-					!= p->mckernel_numa_id) {
-				continue;
+			sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pb, &param, 0444,
+					"/sys/devices/system/node/node%d/cpumap",
+					p->mckernel_numa_id);
+			sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_pbl, &param, 0444,
+					"/sys/devices/system/node/node%d/cpulist",
+					p->mckernel_numa_id);
+
+			error = sysfsm_lookupf(udp->os, &node_handle,
+					"/sys/devices/system/node/node%d",
+					p->mckernel_numa_id);
+			if (error) {
+				panic("sysfsm_lookupf(node)");
 			}
 
 			error = sysfsm_symlinkf(udp->os, node_handle,
-					"/sys/devices/system/cpu/cpu%d/node%d",
-					cpu, p->mckernel_numa_id);
+					"/sys/bus/node/devices/node%d",
+					p->mckernel_numa_id);
 			if (error) {
-				panic("sysfsm_symlinkf(node in CPU)");
+				panic("sysfsm_symlinkf(bus node)");
 			}
 
-			error = sysfsm_lookupf(udp->os, &cpu_handle,
-					"/sys/devices/system/cpu/cpu%d", cpu);
-			if (error) {
-				panic("sysfsm_lookupf(CPU in node)");
-			}
+			/* Add CPU symlinks for this node */
+			for (cpu = 0; cpu < udp->cpu_info->n_cpus; ++cpu) {
+				if (linux_numa_2_mckernel_numa(udp,
+							cpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))
+						!= p->mckernel_numa_id) {
+					continue;
+				}
 
-			error = sysfsm_symlinkf(udp->os, cpu_handle,
-					"/sys/devices/system/node/node%d/cpu%d",
-					p->mckernel_numa_id, cpu);
-			if (error) {
-				panic("sysfsm_symlinkf(CPU in node)");
+				error = sysfsm_symlinkf(udp->os, node_handle,
+						"/sys/devices/system/cpu/cpu%d/node%d",
+						cpu, p->mckernel_numa_id);
+				if (error) {
+					panic("sysfsm_symlinkf(node in CPU)");
+				}
+
+				error = sysfsm_lookupf(udp->os, &cpu_handle,
+						"/sys/devices/system/cpu/cpu%d", cpu);
+				if (error) {
+					panic("sysfsm_lookupf(CPU in node)");
+				}
+
+				error = sysfsm_symlinkf(udp->os, cpu_handle,
+						"/sys/devices/system/node/node%d/cpu%d",
+						p->mckernel_numa_id, cpu);
+				if (error) {
+					panic("sysfsm_symlinkf(CPU in node)");
+				}
 			}
 		}
 	}
