@@ -51,4 +51,4 @@ endif
 all: mckernel.so
 
 mckernel.so: $(INCDIR)/defs.h mckernel.c
-	gcc -Wall -g -I$(INCDIR) -shared -rdynamic -o mckernel.so mckernel.c -fPIC -D$(TARGET) $(TARGET_CFLAGS) $(GDB_FLAGS)
+	gcc -Wall -g -I$(INCDIR) -shared -rdynamic -o mckernel.so mckernel.c -fPIC -D$(TARGET) -DMAP_KERNEL_START=@MAP_KERNEL_START@UL $(TARGET_CFLAGS) $(GDB_FLAGS)
