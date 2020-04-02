@@ -83,7 +83,7 @@ static struct mck_size_table {
 
 #ifdef X86_64
 #define MAP_FIXED_START    0xffff860000000000UL
-#define MAP_KERNEL_START   0xffffffff80000000UL
+/* MAP_KERNEL_START is defined by cmake */
 #define MAP_ST_START       0xffff800000000000UL
 unsigned long LINUX_PAGE_OFFSET = -1UL;
 unsigned long x86_kernel_phys_base = -1UL;

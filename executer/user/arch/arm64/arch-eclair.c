@@ -112,13 +112,6 @@ int arch_setup_constants(int mcos_fd)
 	int error;
 	dumpargs_t args;
 
-	MAP_KERNEL_START = lookup_symbol("_head");
-	if (MAP_KERNEL_START == NOSYMBOL) {
-		fprintf(stderr, "error: obtaining MAP_KERNEL_START\n");
-		return 1;
-	}
-	printf("arm64 MAP_KERNEL_START 0x%lx\n", MAP_KERNEL_START);
-
 	args.cmd = DUMP_QUERY_PHYS_START;
 	args.buf = &PHYS_OFFSET;
 
