@@ -67,8 +67,8 @@
  * Placing the LWK image in the virtual address space at the end of
  * the Linux modules section enables us to map the LWK TEXT in Linux
  * as well, so that Linux can also call into LWK text.
+ * It's defined by cmake.
  */
-#define MAP_KERNEL_START   0xFFFFFFFFFE800000UL
 #define STACK_TOP(region)  ((region)->user_end)
 
 #define MAP_VMAP_SIZE      0x0000000100000000UL
