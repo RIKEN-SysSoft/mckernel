@@ -6,7 +6,8 @@ configure_file(include/swapfmt.h.in include/swapfmt.h)
 
 execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include
 	OUTPUT_VARIABLE SYSTEM_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
-add_definitions(-D__KERNEL__ -DIHK_OS_MANYCORE)
+add_definitions(-D__KERNEL__ -DIHK_OS_MANYCORE
+	-DMAP_KERNEL_START=${MAP_KERNEL_START}UL -DKERNEL_RAM_VADDR=${MAP_KERNEL_START})
 add_compile_options(-ffreestanding -O2 -nostdinc -isystem ${SYSTEM_INCLUDE} -fno-omit-frame-pointer)
 include_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}/include"
@@ -163,12 +164,17 @@ elseif (BUILD_TARGET STREQUAL "smp-arm64")
 	add_definitions(-DCONFIG_ARM64_SVE)
 endif()
 
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/config/${LINKER_SCRIPT}.in
+  ${CMAKE_CURRENT_BINARY_DIR}/config/${LINKER_SCRIPT}
+  @ONLY
+  )
 
 add_executable(mckernel.img ${MCKERNEL_SRCS})
 
 set_target_properties(mckernel.img PROPERTIES INSTALL_RPATH "")
 set_target_properties(mckernel.img PROPERTIES LINK_FLAGS
-	"-e arch_start -T ${CMAKE_CURRENT_SOURCE_DIR}/config/${LINKER_SCRIPT} --build-id")
+	"-e arch_start -T ${CMAKE_CURRENT_BINARY_DIR}/config/${LINKER_SCRIPT} --build-id")
 
 install(TARGETS "mckernel.img"
 	DESTINATION "${MCKERNELDIR}")

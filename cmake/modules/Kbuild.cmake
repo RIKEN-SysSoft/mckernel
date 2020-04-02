@@ -14,6 +14,28 @@ mark_as_advanced(
 	KBUILD_MAKE_FLAGS
 )
 
+if (${CMAKE_GENERATOR} STREQUAL Ninja)
+	set(MAKE "make")
+	list(APPEND KBUILD_MAKE_FLAGS "-j")
+else ()
+	set(MAKE "$(MAKE)")
+endif ()
+
+# Convert McKernel "arm64" into Linux "aarch64"
+if ("${ARCH}" STREQUAL "arm64")
+	set(LINUX_ARCH "aarch64")
+else ()
+	set(LINUX_ARCH "${ARCH}")
+endif ()
+
+if (NOT "${LINUX_ARCH}" STREQUAL "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+	string(REGEX REPLACE "ld$" "" CROSS_COMPILE "${CMAKE_LINKER}")
+	list(APPEND KBUILD_MAKE_FLAGS "ARCH=${ARCH}")
+	list(APPEND KBUILD_MAKE_FLAGS "CROSS_COMPILE=${CROSS_COMPILE}")
+endif()
+
+string(REPLACE ";" " " KBUILD_MAKE_FLAGS_STR "${KBUILD_MAKE_FLAGS}")
+
 function(kmod MODULE_NAME)
 	cmake_parse_arguments(KMOD "" "INSTALL_DEST" "C_FLAGS;SOURCES;EXTRA_SYMBOLS;DEPENDS" ${ARGN})
 
@@ -32,25 +54,6 @@ else(ENABLE_WERROR)
 endif(ENABLE_WERROR)
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/modules/Kbuild.in
 		${CMAKE_CURRENT_BINARY_DIR}/Kbuild)
-
-	if (${CMAKE_GENERATOR} STREQUAL Ninja)
-		set(MAKE "make")
-		list(APPEND KBUILD_MAKE_FLAGS "-j")
-	else ()
-		set(MAKE "$(MAKE)")
-	endif ()
-
-	# Convert McKernel "arm64" into Linux "aarch64"
-	if ("${ARCH}" STREQUAL "arm64")
-		set(LINUX_ARCH "aarch64")
-	else ()
-		set(LINUX_ARCH "${ARCH}")
-	endif ()
-
-	if (NOT "${LINUX_ARCH}" STREQUAL "${CMAKE_HOST_SYSTEM_PROCESSOR}")
-		string(REGEX REPLACE "ld$" "" CROSS_COMPILE "${CMAKE_LINKER}")
-		list(APPEND KBUILD_MAKE_FLAGS "ARCH=${ARCH};CROSS_COMPILE=${CROSS_COMPILE}")
-	endif()
 
 	string(REGEX REPLACE "\\.c(;|$)" ".o.cmd\\1" KMOD_O_CMD "${KMOD_SOURCES}")
 	string(REGEX REPLACE "[^/;]+(;|$)" ".\\0" KMOD_O_CMD "${KMOD_O_CMD}")
