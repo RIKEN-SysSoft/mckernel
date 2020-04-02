@@ -46,6 +46,30 @@
       "revId": "c85113ee534451a030de71bfe0bb29082bcf89e4",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "14781c7c_99663072",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 4
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2020-04-02T06:01:23Z",
+      "side": 1,
+      "message": "We have it on all our kernel packages at CEA, because otherwise the rpm might be pull the wrong kernel when building in mock for example. We sometimes need to build packages against a kernel that is not the latest.\nHere the build itself specifies kernel version and kernel dir so if the incorrect package is installed the build will fail and it might not be obvious to understand; I would rather keep the \u003d %{krequires} unless that caused problems.\n(not sure why there was a \u003e\u003d before though, \u003d should always be used for BuildReq. \u003e\u003d is ok for Requires because of weak symbols though)",
+      "parentUuid": "b19d62ef_416ddee4",
+      "range": {
+        "startLine": 43,
+        "startChar": 0,
+        "endLine": 43,
+        "endChar": 47
+      },
+      "revId": "c85113ee534451a030de71bfe0bb29082bcf89e4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
