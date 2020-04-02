@@ -34,6 +34,24 @@
       "revId": "d62f80a7c07506e05024fdc3c0e14f7a788685ce",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7d4feed8_29881b80",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 3
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-02T05:47:48Z",
+      "side": 0,
+      "message": "(1) rpmbuild failed to find missing package kernel-rpm-macro because the location of \"BuildRequires: kernel-rpm-macros\" was incorrect\n(2) somehow it proceeds without %kernel_module_package and complain those files will be not installed",
+      "parentUuid": "9247a413_ff57ace5",
+      "revId": "d62f80a7c07506e05024fdc3c0e14f7a788685ce",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }

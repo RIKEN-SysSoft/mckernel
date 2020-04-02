@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "83f76ef6_135abc8e",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-02T05:47:48Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "ad2d5290_204eb6bc",
+      "revId": "e8229ff97f785896b1d0ba1b8a9ed2ac5e07ac15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "13300b5b_9b115c8c",
         "filename": "ihk",
         "patchSetId": 3
@@ -30,6 +48,24 @@
       "writtenOn": "2020-04-01T13:29:26Z",
       "side": 1,
       "message": "(unrelated, or is it pulling update for a similar ihk spec fix?)",
+      "revId": "e8229ff97f785896b1d0ba1b8a9ed2ac5e07ac15",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "444cc3f5_965cb3ab",
+        "filename": "ihk",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-02T05:47:48Z",
+      "side": 1,
+      "message": "The commit installs ihk/linux/core/Module.symvers.",
+      "parentUuid": "13300b5b_9b115c8c",
       "revId": "e8229ff97f785896b1d0ba1b8a9ed2ac5e07ac15",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
