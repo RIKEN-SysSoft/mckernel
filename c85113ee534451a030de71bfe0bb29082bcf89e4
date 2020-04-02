@@ -70,6 +70,30 @@
       "revId": "c85113ee534451a030de71bfe0bb29082bcf89e4",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "198de013_45c498af",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 4
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1003556
+      },
+      "writtenOn": "2020-04-02T06:03:19Z",
+      "side": 1,
+      "message": "hmm you are right we no longer have it on el8\nGo for it.",
+      "parentUuid": "14781c7c_99663072",
+      "range": {
+        "startLine": 43,
+        "startChar": 0,
+        "endLine": 43,
+        "endChar": 47
+      },
+      "revId": "c85113ee534451a030de71bfe0bb29082bcf89e4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
