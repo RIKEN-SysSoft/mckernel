@@ -18,7 +18,7 @@ extern char data_start[], data_end[];
 #define LARGE_PAGE_MASK  (~((unsigned long)LARGE_PAGE_SIZE - 1))
 
 #define MAP_ST_START       0xffff800000000000UL
-#define MAP_KERNEL_START   0xffffffff80000000UL
+/* MAP_KERNEL_START is defined by cmake */
 
 #define PTL4_SHIFT         39
 #define PTL3_SHIFT         30

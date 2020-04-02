@@ -1,18 +1,19 @@
-PHDRS 
+/* smp-arm64_type3.lds COPYRIGHT FUJITSU LIMITED 2017-2018 */
+PHDRS
 {
 	text PT_LOAD FLAGS(5);
 	data PT_LOAD FLAGS(7);
 }
 SECTIONS
 {
-	. = 0xFFFFFFFFFE801000;
+	. = @MAP_KERNEL_START@;
 	_head = .;
 
 	.text : {
 		*(.text);
 	} : text
 
-	. = ALIGN(4096);
+	. = ALIGN(0x10000);
 	.data : {
 		*(.data)
 		*(.data.*)
@@ -29,25 +30,18 @@ SECTIONS
 	.note.gnu.build-id : {
 	}
 
-	.vsyscall : ALIGN(0x1000) {
-		vsyscall_page = .;
-
-		. = vsyscall_page + 0x000;
-		*(.vsyscall.gettimeofday)
-		*(.vsyscall.gettimeofday.*)
-
-		. = vsyscall_page + 0x400;
-		*(.vsyscall.time)
-
-		. = vsyscall_page + 0x800;
-		*(.vsyscall.getcpu)
-
-		. = ALIGN(4096);
-	} : data = 0xf4
-
 	.bss : {
 		*(.bss .bss.*)
 	}
-	. = ALIGN(4096);
+	. = ALIGN(0x10000);
+	idmap_page_table = .;
+	. += 0x10000;	/* PAGE_SIZE */
+	swapper_page_table = .;
+	. += 0x10000;	/* PAGE_SIZE */
+	idmap_pg_dir = .;
+	. += 0x30000;	/* IDMAP_DIR_SIZE */
+	swapper_pg_dir = .;
+	. += 0x20000;	/* SWAPPER_DIR_SIZE */
+
 	_end = .;
 }
