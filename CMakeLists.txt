@@ -81,6 +81,25 @@ elseif (BUILD_TARGET STREQUAL "smp-arm64")
 endif()
 set_property(CACHE BUILD_TARGET PROPERTY STRINGS smp-x86 smp-arm64)
 
+# define MAP_KERNEL_START by resolving MODULES_END
+
+set(tmpdir ${CMAKE_CURRENT_BINARY_DIR}/tmp.resolve_MODULES_END)
+
+file(REMOVE_RECURSE ${tmpdir})
+file(MAKE_DIRECTORY ${tmpdir})
+file(WRITE ${tmpdir}/driver.c "#include <linux/module.h>\n")
+file(APPEND ${tmpdir}/driver.c "unsigned long MAP_KERNEL_START = MODULES_END - (1UL << 23);\n")
+file(WRITE ${tmpdir}/Makefile "obj-m := driver.o\n")
+file(APPEND ${tmpdir}/Makefile "all:\n")
+file(APPEND ${tmpdir}/Makefile "\tmake -C ${KERNEL_DIR} M=${tmpdir} modules\n")
+
+execute_process(COMMAND make -C ${tmpdir})
+execute_process(COMMAND bash -c "offset=`readelf -S ${tmpdir}/driver.ko | grep .data | sed 's/.* //g'`; echo $((0x$offset))"
+  OUTPUT_VARIABLE MAP_KERNEL_START_OFFSET OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND bash -c "dd if=${tmpdir}/driver.ko bs=1 skip=${MAP_KERNEL_START_OFFSET} count=8 2>/dev/null | od -tx8 -Ax | head -1 | sed 's|.* |0x|g'"
+  OUTPUT_VARIABLE MAP_KERNEL_START OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+
 set(ENABLE_MEMDUMP ON)
 option(ENABLE_PERF "Enable perf support" ON)
 option(ENABLE_RUSAGE "Enable rusage support" ON)
@@ -155,6 +174,7 @@ add_subdirectory(executer/kernel/mcctrl)
 add_subdirectory(executer/user)
 add_subdirectory(kernel)
 add_subdirectory(tools/mcstat)
+add_subdirectory(tools/crash)
 
 configure_file(scripts/mcreboot-smp.sh.in mcreboot.sh @ONLY)
 configure_file(scripts/mcstop+release-smp.sh.in mcstop+release.sh @ONLY)
@@ -190,6 +210,7 @@ message("KERNEL_DIR: ${KERNEL_DIR}")
 message("SYSTEM_MAP: ${SYSTEM_MAP}")
 message("VMLINUX: ${VMLINUX}")
 message("KBUILD_C_FLAGS: ${KBUILD_C_FLAGS}")
+message("MAP_KERNEL_START: ${MAP_KERNEL_START}")
 message("ENABLE_MEMDUMP: ${ENABLE_MEMDUMP}")
 message("ENABLE_PERF: ${ENABLE_PERF}")
 message("ENABLE_RUSAGE: ${ENABLE_RUSAGE}")
