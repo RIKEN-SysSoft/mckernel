@@ -21,6 +21,7 @@ set_property(TARGET mcexec PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET mcexec PROPERTY LINK_FLAGS "-fPIE -pie")
 
 add_executable(eclair eclair.c arch/${ARCH}/arch-eclair.c)
+target_compile_definitions(eclair PRIVATE -DMAP_KERNEL_START=${MAP_KERNEL_START}UL)
 target_link_libraries(eclair ${LIBBFD})
 
 add_library(sched_yield SHARED libsched_yield.c)

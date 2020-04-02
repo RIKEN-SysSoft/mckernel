@@ -9,7 +9,7 @@
 #include <arch-eclair.h>
 
 extern unsigned long PHYS_OFFSET;
-extern unsigned long MAP_KERNEL_START;
+/* MAP_KERNEL_START is defined by cmake */
 
 /* common */
 int read_mem(uintptr_t va, void *buf, size_t size);
