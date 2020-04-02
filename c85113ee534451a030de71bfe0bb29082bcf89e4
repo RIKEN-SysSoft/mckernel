@@ -22,6 +22,30 @@
       "revId": "c85113ee534451a030de71bfe0bb29082bcf89e4",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5cf9abf0_3c20cb7b",
+        "filename": "scripts/mckernel.spec.in",
+        "patchSetId": 4
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-02T05:56:56Z",
+      "side": 1,
+      "message": "since rpmbuild can\u0027t parse the expanded string of \"BuildRequires: kernel-devel .... kmod \u003d 4.18.0-147.el8\".",
+      "parentUuid": "b19d62ef_416ddee4",
+      "range": {
+        "startLine": 43,
+        "startChar": 0,
+        "endLine": 43,
+        "endChar": 47
+      },
+      "revId": "c85113ee534451a030de71bfe0bb29082bcf89e4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
