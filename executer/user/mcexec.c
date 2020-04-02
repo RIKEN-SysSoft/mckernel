@@ -3015,7 +3015,10 @@ struct overlay_blacklist_entry {
 	{ "/sys/devices/system/cpu/cpu%d/node%d", 0, 1, -1 },
 	{ "/sys/bus/cpu/devices/cpu%d", 0, -1, -1 },
 	{ "/sys/bus/cpu/drivers/processor/cpu%d", 0, -1, -1 },
+#if 0
+	/* Disable this for IHK_TOPOLOGY_VIEW_FULL */
 	{ "/sys/devices/system/node/node%d", -1, 0, -1 },
+#endif
 	{ "/sys/devices/system/node/node%d/cpu%d", 1, 0, -1 },
 	{ "/sys/devices/system/node/node%d/memor%c", -1, -1, 'y' },
 	{ "/sys/bus/node/devices/node%d", -1, 0, -1 },

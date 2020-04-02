@@ -556,12 +556,23 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 		struct mcs_rwlock_node_irqsave lock;
 		struct thread *thread_iter;
 		int nr_threads = 0;
+		cpu_set_t cpu_set;
 
 		bitmasks = kmalloc(BITMASKS_BUF_SIZE, IHK_MC_AP_CRITICAL);
 		if (!bitmasks) {
 			kprintf("%s: error allocating /proc/self/status bitmaks buffer\n",
 				__FUNCTION__);
 			goto err;
+		}
+
+		if (ihk_mc_get_topology_view() == IHK_TOPOLOGY_VIEW_FULL) {
+			if ((err = translate_cpu_set(&thread->cpu_set,
+						&cpu_set, MCKERNEL_2_LINUX) < 0)) {
+				goto err;
+			}
+		}
+		else {
+			memcpy(&cpu_set, &thread->cpu_set, sizeof(cpu_set_t));
 		}
 
 		if (!ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
@@ -575,6 +586,7 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 			}
 			goto out;
 		}
+
 		range = lookup_process_memory_range(vm, 0, -1);
 		while (range) {
 			if(range->flag & VR_LOCKED)
@@ -586,13 +598,13 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 		cpu_bitmask = &bitmasks[bitmasks_offset];
 		bitmasks_offset += bitmap_scnprintf(cpu_bitmask,
 				BITMASKS_BUF_SIZE - bitmasks_offset,
-				thread->cpu_set.__bits, num_processors);
+				cpu_set.__bits, __CPU_SETSIZE);
 		bitmasks_offset++;
 
 		cpu_list = &bitmasks[bitmasks_offset];
 		bitmasks_offset += bitmap_scnlistprintf(cpu_list,
 				BITMASKS_BUF_SIZE - bitmasks_offset,
-				thread->cpu_set.__bits, __CPU_SETSIZE);
+				cpu_set.__bits, __CPU_SETSIZE);
 		bitmasks_offset++;
 
 		numa_bitmask = &bitmasks[bitmasks_offset];
@@ -810,7 +822,11 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 		    0L, 0L, 0L, 0L,	      // rsslim...
 		    0L, 0L, 0L, 0L,	      // kstkesp...
 		    0L, 0L, 0L, 0L,	      // sigignore...
-		    0L, 0, thread->cpu_id, 0, // cnswap...
+			0L, 0, (ihk_mc_get_topology_view() ==
+					IHK_TOPOLOGY_VIEW_FULL ?
+					ihk_mc_mckernel_cpu_2_linux_cpu(thread->cpu_id) :
+					thread->cpu_id),
+			0, // cnswap...
 		    0, 0LL, 0L, 0L	      // policy...
 		);
 

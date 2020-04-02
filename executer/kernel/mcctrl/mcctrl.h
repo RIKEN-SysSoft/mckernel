@@ -301,6 +301,12 @@ struct mcctrl_cpu_topology {
 	int mckernel_core_id;
 	cpumask_t core_siblings;
 	cpumask_t thread_siblings;
+	/*
+	 * Cpumasks that hold Linux IDs.
+	 * Used for IHK_TOPOLOGY_VIEW_FULL.
+	 */
+	cpumask_t linux_core_siblings;
+	cpumask_t linux_thread_siblings;
 
 	struct list_head chain;
 	struct list_head cache_list;
@@ -313,6 +319,14 @@ struct node_topology {
 	int mckernel_numa_id;
 	char mckernel_numa_distance_s[NODE_DISTANCE_S_SIZE];
 	cpumask_t cpumap;
+	/*
+	 * Cpumask that holds Linux logical CPU ids.
+	 * Note that it may not hold all the CPUs that would be
+	 * otherwise in the NUMA node.
+	 * Used for IHK_TOPOLOGY_VIEW_FULL.
+	 */
+	cpumask_t linux_cpumap;
+	char linux_numa_distance_s[NODE_DISTANCE_S_SIZE];
 
 	struct list_head chain;
 };
@@ -371,7 +385,6 @@ struct mcctrl_usrdata {
 
 	void **keys;
 	struct sysfsm_data sysfsm_data;
-	unsigned long cpu_online[CPU_LONGS];
 	struct ihk_cpu_info *cpu_info;
 	struct ihk_mem_info *mem_info;
 	nodemask_t numa_online;
@@ -557,4 +570,10 @@ struct uti_futex_resp {
 	int done;
 	wait_queue_head_t wq;
 };
+
+int mckernel_cpu_2_linux_cpu(struct mcctrl_usrdata *udp, int cpu_id);
+int mckernel_cpu_2_hw_id(struct mcctrl_usrdata *udp, int cpu_id);
+int linux_cpu_2_mckernel_cpu(struct mcctrl_usrdata *udp, int cpu_id);
+int mckernel_numa_2_linux_numa(struct mcctrl_usrdata *udp, int numa_id);
+int linux_numa_2_mckernel_numa(struct mcctrl_usrdata *udp, int numa_id);
 #endif
