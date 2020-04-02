@@ -337,7 +337,6 @@ static void setup_remote_snooping_samples(void)
 
 static void populate_sysfs(void)
 {
-	cpu_sysfs_setup();
 	numa_sysfs_setup();
 	dynamic_debug_sysfs_setup();
 	//setup_remote_snooping_samples();

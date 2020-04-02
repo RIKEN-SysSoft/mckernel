@@ -1857,6 +1857,12 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 					p2align = PAGE_P2ALIGN;
 					populated_mapping = 1;
 				}
+
+				dkprintf("%s: dev: %s\n",
+					__func__, memobj->path);
+					pgshift = PAGE_SHIFT;
+					p2align = PAGE_P2ALIGN;
+					populated_mapping = 1;
 			}
 		}
 		if (error) {
@@ -7634,13 +7640,50 @@ SYSCALL_DECLARE(sched_rr_get_interval)
 	return retval;
 }
 
+int translate_cpu_set(cpu_set_t *src,
+		cpu_set_t *dst,
+		int direction)
+{
+	int cpu;
+	int dstcpu;
+
+	CPU_ZERO(dst);
+	for (cpu = 0; cpu < (direction == LINUX_2_MCKERNEL ?
+				ihk_mc_get_cpu_info()->nlinux_cpus :
+				ihk_mc_get_cpu_info()->ncpus); ++cpu) {
+		if (!CPU_ISSET(cpu, src))
+			continue;
+
+		if (direction == LINUX_2_MCKERNEL) {
+			dstcpu = ihk_mc_linux_cpu_2_mckernel_cpu(cpu);
+		}
+		else {
+			dstcpu = ihk_mc_mckernel_cpu_2_linux_cpu(cpu);
+		}
+
+		if (dstcpu == -1) {
+			kprintf("%s: WARNING: failed to translate CPU %d"
+				" in direction: %s\n",
+				__func__,
+				cpu, (direction == LINUX_2_MCKERNEL ?
+					"Linux -> McKernel" :
+					"McKernel -> Linux"));
+			return -EINVAL;
+		}
+
+		CPU_SET(dstcpu, dst);
+	}
+
+	return 0;
+}
+
 #define MIN2(x,y) (x) < (y) ? (x) : (y)
 SYSCALL_DECLARE(sched_setaffinity)
 {
 	int tid = (int)ihk_mc_syscall_arg0(ctx);
 	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
 	cpu_set_t *u_cpu_set = (cpu_set_t *)ihk_mc_syscall_arg2(ctx);
-	cpu_set_t k_cpu_set, cpu_set;
+	cpu_set_t k_cpu_set, __k_cpu_set, cpu_set;
 	struct thread *thread;
 	int cpu_id;
 	int empty_set = 1; 
@@ -7655,12 +7698,22 @@ SYSCALL_DECLARE(sched_setaffinity)
 
 	len = MIN2(len, sizeof(k_cpu_set));
 
-	if (copy_from_user(&k_cpu_set, u_cpu_set, len)) {
+	if (copy_from_user(&__k_cpu_set, u_cpu_set, len)) {
 		dkprintf("%s: error: copy_from_user failed for %p:%d\n",
 				__FUNCTION__, u_cpu_set, len);
 		return -EFAULT;
 	}
-	
+
+	if (ihk_mc_get_topology_view() == IHK_TOPOLOGY_VIEW_FULL) {
+		if (translate_cpu_set(&__k_cpu_set,
+					&k_cpu_set, LINUX_2_MCKERNEL) < 0) {
+			return -EINVAL;
+		}
+	}
+	else {
+		memcpy(&k_cpu_set, &__k_cpu_set, sizeof(cpu_set_t));
+	}
+
 	/* Find thread */
 	if (tid == 0) {
 		tid = cpu_local_var(current)->tid;
@@ -7761,7 +7814,17 @@ SYSCALL_DECLARE(sched_getaffinity)
 		thread_unlock(thread);
 	}
 
-	ret = copy_to_user(u_cpu_set, &thread->cpu_set, len);
+	if (ihk_mc_get_topology_view() == IHK_TOPOLOGY_VIEW_FULL) {
+		if (translate_cpu_set(&thread->cpu_set,
+					&k_cpu_set, MCKERNEL_2_LINUX) < 0) {
+			return -EINVAL;
+		}
+	}
+	else {
+		memcpy(&k_cpu_set, &thread->cpu_set, sizeof(cpu_set_t));
+	}
+
+	ret = copy_to_user(u_cpu_set, &k_cpu_set, len);
 	release_thread(thread);
 	if (ret < 0) {
 		ret = -EFAULT;
@@ -8969,9 +9032,14 @@ SYSCALL_DECLARE(getcpu)
 {
 	const uintptr_t cpup = ihk_mc_syscall_arg0(ctx);
 	const uintptr_t nodep = ihk_mc_syscall_arg1(ctx);
-	const int cpu = ihk_mc_get_processor_id();
-	const int node = ihk_mc_get_numa_id();
+	int cpu = ihk_mc_get_processor_id();
+	int node = ihk_mc_get_numa_id();
 	int error;
+
+	if (ihk_mc_get_topology_view() == IHK_TOPOLOGY_VIEW_FULL) {
+		cpu = ihk_mc_mckernel_cpu_2_linux_cpu(cpu);
+		/* TODO: translate NUMA */
+	}
 
 	if (cpup) {
 		error = copy_to_user((void *)cpup, &cpu, sizeof(cpu));
