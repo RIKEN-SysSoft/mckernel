@@ -1,4 +1,4 @@
-/* smp-arm64_type3.lds COPYRIGHT FUJITSU LIMITED 2017-2018 */
+/* smp-arm64_type4.lds COPYRIGHT FUJITSU LIMITED 2017-2018 */
 PHDRS
 {
 	text PT_LOAD FLAGS(5);
@@ -6,7 +6,7 @@ PHDRS
 }
 SECTIONS
 {
-	. = 0xfffffc0007800000; /* KERNEL_START */
+	. = @MAP_KERNEL_START@;
 	_head = .;
 
 	.text : {
@@ -41,7 +41,7 @@ SECTIONS
 	idmap_pg_dir = .;
 	. += 0x30000;	/* IDMAP_DIR_SIZE */
 	swapper_pg_dir = .;
-	. += 0x20000;	/* SWAPPER_DIR_SIZE */
+	. += 0x30000;	/* SWAPPER_DIR_SIZE */
 
 	_end = .;
 }

@@ -64,7 +64,7 @@ struct thread_info {
 /* Physical memory start addr (non-zero on ARM64) */
 unsigned long PHYS_OFFSET;
 /* Virtual address where McKernel is mapped to */
-unsigned long MAP_KERNEL_START;
+/* MAP_KERNEL_START is defined by cmake */
 
 static struct options opt;
 static volatile int f_done = 0;
