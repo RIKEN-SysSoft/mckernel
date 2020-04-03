@@ -3491,9 +3491,24 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 		struct ihk_os_cpu_register *desc,
 		enum mcctrl_os_cpu_operation op)
 {
+	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
 	struct ikc_scd_packet isp;
 	struct mcctrl_os_cpu_response resp;
 	int ret = -EINVAL;
+
+	if (!udp) {
+		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (cpu < 0 || cpu >= udp->cpu_info->n_cpus) {
+		pr_err("%s: error: cpu (%d) is out of range\n",
+		       __func__, cpu);
+		ret = -EINVAL;
+		goto out;
+
+	}
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
 	isp.msg = SCD_MSG_CPU_RW_REG;
