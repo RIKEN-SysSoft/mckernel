@@ -3458,7 +3458,8 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	*ret_cpu = ch->send.queue->read_cpu;
 	ret = 0;
 
-	printk("%s: OS: %p, CPU: %d\n", __FUNCTION__, os, *ret_cpu);
+	pr_info("%s: OS: %lx, CPU: %d\n",
+		__func__, (unsigned long)os, *ret_cpu);
 
 out_put_ppd:
 	mcctrl_put_per_thread_data(ptd);
