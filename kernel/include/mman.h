@@ -72,4 +72,11 @@
 #define	MS_INVALIDATE	0x02
 #define	MS_SYNC		0x04
 
+/* include/uapi/linux/mman.h */
+#define OVERCOMMIT_GUESS		0
+#define OVERCOMMIT_ALWAYS		1
+#define OVERCOMMIT_NEVER		2
+
+extern int sysctl_overcommit_memory;
+
 #endif /* HEADER_MMAN_H */

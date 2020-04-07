@@ -535,3 +535,6 @@ Restrictions on McKernel
 
 25. The behaviors of madvise and mbind are changed to do nothing and
     report success as a workaround for Fugaku.
+
+26. mmap() allows unlimited overcommit. Note that it corresponds to
+    setting sysctl ``vm.overcommit_memory`` to 1.
