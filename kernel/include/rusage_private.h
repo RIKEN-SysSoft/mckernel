@@ -11,6 +11,7 @@
 #include <ihk/ihk_monitor.h>
 #include <ihk/debug.h>
 #include <memory.h>
+#include <mman.h>
 
 #ifdef ENABLE_RUSAGE
 
@@ -54,6 +55,24 @@ rusage_total_memory_add(unsigned long size)
 #ifdef RUSAGE_DEBUG
 	kprintf("%s: total_memory=%ld\n", __FUNCTION__, rusage.total_memory);
 #endif
+}
+
+static inline unsigned long
+rusage_get_total_memory()
+{
+	return rusage.total_memory;
+}
+
+static inline unsigned long
+rusage_get_free_memory()
+{
+	return rusage.total_memory - rusage.total_memory_usage;
+}
+
+static inline unsigned long
+rusage_get_usage_memory()
+{
+	return rusage.total_memory_usage;
 }
 
 static inline void
@@ -293,6 +312,9 @@ rusage_check_overmap(size_t len, int pgshift)
 {
 	int npages = 0, remain_pages = 0;
 
+	if (sysctl_overcommit_memory == OVERCOMMIT_ALWAYS)
+		return 0;
+
 	npages = (len + (1UL << pgshift) - 1) >> pgshift;
 	remain_pages = (rusage.total_memory - rusage.total_memory_usage)
 			>> pgshift;
@@ -397,6 +419,24 @@ rusage_total_memory_add(unsigned long size)
 static inline void
 rusage_rss_add(unsigned long size)
 {
+}
+
+static inline unsigned long
+rusage_get_total_memory()
+{
+	return 0;
+}
+
+static inline unsigned long
+rusage_get_free_memory()
+{
+	return 0;
+}
+
+static inline unsigned long
+rusage_get_usage_memory()
+{
+	return 0;
 }
 
 static inline void
