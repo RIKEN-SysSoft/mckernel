@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "fb0d622c_6b972b82",
+        "filename": "CMakeLists.txt",
+        "patchSetId": 13
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-09T01:11:19Z",
+      "side": 1,
+      "message": "yes, I tested it on wallaby7.",
+      "parentUuid": "2dc68caa_1287f1af",
+      "revId": "57e4b4d4569d405b6d7f65f605d3fd2a706a1b24",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "0e48477b_58ad3caa",
         "filename": "CMakeLists.txt",
         "patchSetId": 13
@@ -30,6 +48,24 @@
       "writtenOn": "2020-04-09T01:06:30Z",
       "side": 1,
       "message": "if we add this we should first check whether crash-dev is available, or at least crash.h, otherwise this might fail at compile time..",
+      "revId": "57e4b4d4569d405b6d7f65f605d3fd2a706a1b24",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9dd06241_58b71807",
+        "filename": "CMakeLists.txt",
+        "patchSetId": 13
+      },
+      "lineNbr": 178,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-04-09T01:11:19Z",
+      "side": 1,
+      "message": "cmake won\u0027t compile it in the original design, but just puts Makefile and source code so that user can copy them on the crash source tree and build it. I added this because it needs configure_file().",
+      "parentUuid": "0e48477b_58ad3caa",
       "revId": "57e4b4d4569d405b6d7f65f605d3fd2a706a1b24",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
