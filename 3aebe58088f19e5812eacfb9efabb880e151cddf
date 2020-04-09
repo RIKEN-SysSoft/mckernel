@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ed216b14_f065d12b",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 181,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-04-09T20:11:22Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+       .func \u003d multi_interrupt_handler,$",
+      "revId": "3aebe58088f19e5812eacfb9efabb880e151cddf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2484311f_495043be",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 182,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-04-09T20:11:22Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+       .priv \u003d NULL,$",
+      "revId": "3aebe58088f19e5812eacfb9efabb880e151cddf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "76191470_4372e481",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 187,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-04-09T20:11:22Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern int nmi_mode;",
+      "revId": "3aebe58088f19e5812eacfb9efabb880e151cddf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "be47c212_73dcf1c6",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 484,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-04-09T20:11:22Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_mc_register_interrupt_handler(INTRID_MULTI_INTR, \u0026multi_intr_handler);",
+      "revId": "3aebe58088f19e5812eacfb9efabb880e151cddf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f1898e95_f12c3a89",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2248,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-04-09T20:11:22Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern long freeze_thaw(void *nmi_ctx);",
+      "revId": "3aebe58088f19e5812eacfb9efabb880e151cddf",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
