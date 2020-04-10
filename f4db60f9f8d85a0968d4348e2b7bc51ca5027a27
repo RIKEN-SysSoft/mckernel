@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "659098e5_910632dc",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 187,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-04-10T01:30:34Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern int nmi_mode;",
+      "revId": "f4db60f9f8d85a0968d4348e2b7bc51ca5027a27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "262d0b23_4ff64c8b",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2248,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-04-10T01:30:34Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern long freeze_thaw(void *nmi_ctx);",
+      "revId": "f4db60f9f8d85a0968d4348e2b7bc51ca5027a27",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
