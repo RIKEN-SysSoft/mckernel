@@ -15,7 +15,7 @@ set_property(TARGET libmcexec PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_executable(mcexec mcexec.c)
 target_link_libraries(mcexec
-	libmcexec ihklib ${LIBRT} ${LIBNUMA} $<$<BOOL:ENABLE_QLMPI>:${LIBMPI}> pthread)
+	libmcexec ${LIBRT} ${LIBNUMA} $<$<BOOL:ENABLE_QLMPI>:${LIBMPI}> pthread)
 target_include_directories(mcexec PUBLIC "${KERNEL_DIR}")
 set_property(TARGET mcexec PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET mcexec PROPERTY LINK_FLAGS "-fPIE -pie")

@@ -83,8 +83,6 @@
 #include <sys/un.h>
 #include "../include/pmi.h"
 #include "../include/qlmpi.h"
-#include <ihk/ihklib.h>
-#include <sys/epoll.h>
 #include <sys/xattr.h>
 #include "../../lib/include/list.h"
 
@@ -1060,89 +1058,6 @@ pid_t master_tid;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_barrier_t init_ready;
 pthread_barrier_t uti_init_ready;
-
-pthread_attr_t watchdog_thread_attr;
-pthread_t watchdog_thread;
-
-/* Detects hang of McKernel */
-static void *watchdog_thread_func(void *arg) {
-    int ret = 0;
-	int evfd = -1;
-    int epfd = -1;
-    struct epoll_event event_in;
-    struct epoll_event event_out;
-
-	if ((evfd = ihk_os_get_eventfd(0, IHK_OS_EVENTFD_TYPE_STATUS)) < 0) {
-		fprintf(stderr, "%s: Error: geteventfd failed (%d)\n", __FUNCTION__, evfd);
-		goto out;
-	}
-
-    if ((epfd = epoll_create(1)) == -1) {
-		fprintf(stderr, "%s: Error: epoll_create failed (%d)\n", __FUNCTION__, epfd);
-		goto out;
-	}
-
-	memset(&event_in, 0, sizeof(struct epoll_event));
-	event_in.events = EPOLLIN;
-	event_in.data.fd = evfd;
-	if ((ret = epoll_ctl(epfd, EPOLL_CTL_ADD, evfd, &event_in)) != 0) {
-		fprintf(stderr, "%s: Error: epoll_ctl failed (%d)\n", __FUNCTION__, ret);
-		goto out;
-	}
-
-    do {
-        int nfd;
-		uint64_t counter;
-		ssize_t nread;
-
-		nfd = epoll_wait(epfd, &event_out, 1, -1);
-		if (nfd == -1) {
-			if (errno == EINTR) {
-				continue;
-			}
-			fprintf(stderr, "%s: Error: epoll_wait failed (%s)\n", __FUNCTION__, strerror(errno));
-			goto out;
-		}
-
-		if (nfd == 0) {
-			fprintf(stderr, "%s: Error: epoll_wait timed out unexpectedly\n", __FUNCTION__);
-			goto out;
-		}
-		
-		if (nfd > 1) {
-			fprintf(stderr, "%s: Error: Too many (%d) events\n", __FUNCTION__, nfd);
-			goto out;
-		}
-		
-		if (event_out.data.fd != evfd) {
-			fprintf(stderr, "%s: Error: Unknown event (fd:%d)\n", __FUNCTION__, event_out.data.fd);
-			goto out;
-		}
-
-		nread = read(evfd, &counter, sizeof(counter));
-		if (nread == 0) {
-			fprintf(stderr, "%s: Error: read got EOF\n", __FUNCTION__);
-			goto out;
-		}
-		
-		if (nread == -1) {
-			fprintf(stderr, "%s: Error: read failed (%s)\n", __FUNCTION__, strerror(errno));
-			goto out;
-		}
-		
-		fprintf(stderr, "mcexec detected hang of McKernel\n");
-		exit(EXIT_FAILURE);
-    } while (1);
-
- out:
-	if (evfd != -1) {
-		close(evfd);
-	}
-	if (epfd != -1) {
-		close(epfd);
-	}
-    return NULL;
-}
 
 static void *main_loop_thread_func(void *arg)
 {
@@ -2702,26 +2617,6 @@ int main(int argc, char **argv)
 #endif
 
 	init_sigaction();
-
-	/* Initialize watchdog thread which detects hang of McKernel */
-
-	if ((error = pthread_attr_init(&watchdog_thread_attr))) {
-		fprintf(stderr, "Error: pthread_attr_init failed (%d)\n", error);
-		close(fd);
-		return 1;
-	}
-	
-	if ((error = pthread_attr_setdetachstate(&watchdog_thread_attr, PTHREAD_CREATE_DETACHED))) {
-		fprintf(stderr, "Error: pthread_attr_getdetachstate failed (%d)\n", error);
-		close(fd);
-		return 1;
-	}
-
-	if ((error = pthread_create(&watchdog_thread, &watchdog_thread_attr, watchdog_thread_func, NULL))) {
-		fprintf(stderr, "Error: pthread_create failed (%d)\n", error);
-		close(fd);
-		return 1;
-	}
 
 	if ((error = init_worker_threads(fd)) != 0) {
 		fprintf(stderr, "%s: Error: creating worker threads: %s\n",
