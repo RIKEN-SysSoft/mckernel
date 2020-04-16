@@ -1875,25 +1875,43 @@ static ssize_t find_libdir(char *libdir, size_t len)
 	ssize_t rc;
 	size_t linelen = 0;
 	char *line = NULL;
-	char *ihklib, *slash;
+	char *slash;
+	char path[PATH_MAX];
+	char cmd[PATH_MAX];
 
-	filep = fopen("/proc/self/maps", "r");
-	if (!filep) {
+	rc = readlink("/proc/self/exe", path, sizeof(path));
+	if (rc < 0) {
 		rc = -errno;
-		fprintf(stderr, "could not open /proc/self/maps: %zd\n", -rc);
-		return rc;
+		fprintf(stderr, "readlink /proc/self/exe: %ld\n", -rc);
+		goto out;
+	} else if (rc >= sizeof(path)) {
+		strcpy(path, "/proc/self/exe");
+	} else {
+		path[rc] = '\0';
 	}
 
-	while ((rc = getline(&line, &linelen, filep)) > 0) {
-		ihklib = strstr(line, "libihk.so");
-		if (ihklib)
-			break;
-	}
-	if (!ihklib) {
-		fprintf(stderr, "mcexec does not have libihk.so loaded?\n");
-		rc = -ENOENT;
+	rc = snprintf(cmd, sizeof(cmd),
+		      "objdump -x %s | awk '/RPATH/ { print $2 }'",
+		      path);
+	if (rc >= sizeof(cmd)) {
+		rc = -ERANGE;
 		goto out;
 	}
+
+	filep = popen(cmd, "r");
+	if (!filep) {
+		rc = -errno;
+		fprintf(stderr, "objdump /proc/self/exe: %ld\n", -rc);
+		goto out;
+	}
+
+	rc = getline(&line, &linelen, filep);
+	if (rc <= 0) {
+		rc = -errno;
+		fprintf(stderr, "RPATH not found: %ld\n", -rc);
+		goto out;
+	}
+	line[rc - 1] = 0;
 
 	slash = strchr(line, '/');
 	if (!slash) {
@@ -1901,13 +1919,7 @@ static ssize_t find_libdir(char *libdir, size_t len)
 		goto out;
 	}
 
-	/* leave / iff root of filesystem */
-	if (slash + 1 != ihklib)
-		ihklib--;
-
-	*ihklib = 0;
-
-	rc = snprintf(libdir, len, "%s", slash);
+	rc = snprintf(libdir, len, "%s", line);
 
 	if (rc > len) {
 		rc = -ERANGE;
@@ -1915,7 +1927,7 @@ static ssize_t find_libdir(char *libdir, size_t len)
 	}
 
 out:
-	fclose(filep);
+	pclose(filep);
 	free(line);
 	return rc;
 }
