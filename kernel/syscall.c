@@ -1690,11 +1690,13 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 	populate_len = len;
 
 	if (!(flags & MAP_ANONYMOUS)) {
+		if (memobj->size - off < populate_len)
+			populate_len = memobj->size - off;
+
 		memobj_lock(memobj);
 		if (memobj->status == MEMOBJ_TO_BE_PREFETCHED) {
 			memobj->status = MEMOBJ_READY;
 			populated_mapping = 1;
-			populate_len = memobj->size;
 		}
 		memobj_unlock(memobj);
 
@@ -1723,12 +1725,11 @@ do_mmap(const intptr_t addr0, const size_t len0, const int prot,
 			dkprintf("%s: memobj 0x%lx pre-mapped\n", __FUNCTION__, memobj);
 			// 	fileobj && MF_PREMAP && MPOL_SHM_PREMAP case: memory_stat_rss_add() is called in fileobj_create()
 		}
-/*
-		else if (memobj->flags & MF_REG_FILE) {
+
+		if (memobj->flags & MF_REG_FILE &&
+				memobj->flags & MF_PREMAP) {
 			populated_mapping = 1;
-			populate_len = memobj->size;
 		}
-*/
 	}
 
 	error = 0;

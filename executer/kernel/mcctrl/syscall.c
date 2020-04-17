@@ -1187,7 +1187,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 								strstr(fullpath, "libiomp") ||
 								strstr(fullpath, "libpthread") ||
 								strstr(fullpath, "libc.so")) {
-							mf_flags = MF_PREFETCH;
+							mf_flags = MF_PREFETCH | MF_PREMAP;
 							dprintk("%s: filename: %s, prefetch\n",
 									__FUNCTION__, fullpath);
 						}

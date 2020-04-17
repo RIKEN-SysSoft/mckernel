@@ -599,7 +599,8 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	profile_event_add(PROFILE_page_fault_file, PAGE_SIZE);
 #endif // PROFILE_ENABLE
 
-	if (memobj->flags & MF_PREMAP) {
+	if (memobj->flags & MF_PREMAP &&
+			memobj->flags & MF_ZEROFILL) {
 		int page_ind = off >> PAGE_SHIFT;
 
 		if (!memobj->pages[page_ind]) {
