@@ -1184,6 +1184,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 									__FUNCTION__, fullpath);
 						}
 						else if (strstr(fullpath, "libmpi") ||
+								strstr(fullpath, "libpsm") ||
 								strstr(fullpath, "libiomp") ||
 								strstr(fullpath, "libpthread") ||
 								strstr(fullpath, "libc.so")) {
