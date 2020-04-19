@@ -1847,17 +1847,22 @@ opendev()
 	return fd;
 }
 
-#define LD_PRELOAD_PREPARE(name) do { \
-		int n = 0;\
-		\
-		n += snprintf(elembuf, PATH_MAX, "%s", nelem > 0 ? ":" : ""); \
-		strncat(elembuf, libdir, PATH_MAX - n); \
-		n = n + strlen(libdir) > PATH_MAX ? \
-			PATH_MAX : n + strlen(libdir); \
-		strncat(elembuf, "/", PATH_MAX - n); \
-		n = n + 1 > PATH_MAX ? PATH_MAX : n + 1; \
-		strncat(elembuf, name, PATH_MAX - n); \
-	} while (0)
+#define LD_PRELOAD_PREPARE(name) do {	\
+	int n = 0;	\
+	\
+        if (1 + strnlen(libdir, PATH_MAX) + 1 +	\
+		strnlen(name, PATH_MAX) + 1 > PATH_MAX) {	\
+		fprintf(stderr,	\
+			"%s: warning: LD_PRELOAD path is too long\n",	\
+			__func__);	\
+		return;	\
+	}	\
+	if (nelem > 0)	\
+		n += snprintf(elembuf, PATH_MAX, ":");	\
+	n += snprintf(elembuf + n, PATH_MAX - n - 1, libdir); \
+	n += snprintf(elembuf + n, PATH_MAX - n - 1, "/"); \
+	n += snprintf(elembuf + n, PATH_MAX - n - 1, name); \
+} while (0)
 
 #define LD_PRELOAD_APPEND do {	\
 		if (strlen(elembuf) + 1 > remainder) { \
