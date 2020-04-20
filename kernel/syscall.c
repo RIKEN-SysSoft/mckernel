@@ -243,7 +243,8 @@ long do_syscall(struct syscall_request *req, int cpu)
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
 			if (req->number == __NR_epoll_wait ||
-				req->number == __NR_epoll_pwait)
+				req->number == __NR_epoll_pwait ||
+				req->number == __NR_ppoll)
 				goto schedule;
 
 			cpu_pause();
@@ -2875,7 +2876,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		ihk_mc_spinlock_unlock_noirq(&old->vm->memory_range_lock);
 
 		if (range && range->memobj && range->memobj->path) {
-			if (!strstr(range->memobj->path, "omp.so")) {
+			if (!strstr(range->memobj->path, "omp.so") &&
+					!strstr(range->memobj->path, "libfj90")) {
 				helper_thread = 1;
 			}
 			dkprintf("clone(): %s thread from %s\n",
@@ -10350,7 +10352,11 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
-	if (smp_load_acquire(&v->flags) & CPU_FLAG_NEED_RESCHED) {
+	/* Do not deschedule when returning from an event (e.g., MPI) */
+	if (!(num == __NR_epoll_wait ||
+				num == __NR_epoll_pwait ||
+				num == __NR_ppoll) &&
+			smp_load_acquire(&v->flags) & CPU_FLAG_NEED_RESCHED) {
 		check_need_resched();
 	}
 
