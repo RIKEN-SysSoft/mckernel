@@ -1141,6 +1141,15 @@ void cpu_halt(void)
   @ assigns \nothing;
   @ ensures \interrupt_disabled == 0;
   @*/
+void cpu_halt_panic(void)
+{
+    cpu_halt();
+}
+
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
 void cpu_safe_halt(void)
 {
     asm volatile("sti; hlt");
@@ -1519,6 +1528,14 @@ void arch_print_stack(void)
 	asm("mov %%rbp, %0" : "=r"(rbp) );
 
 	__print_stack(rbp, 0);
+}
+
+unsigned long arch_get_instruction_address(const void *reg)
+{
+	const struct x86_user_context *uctx = reg;
+	const struct x86_basic_regs *regs = &uctx->gpr;
+
+	return regs->rip;
 }
 
 /*@

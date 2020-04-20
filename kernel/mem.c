@@ -1254,6 +1254,7 @@ void tlb_flush_handler(int vector)
 	}
 #endif // PROFILE_ENABLE
 }
+extern unsigned long arch_get_instruction_address(const void *reg);
 
 static void unhandled_page_fault(struct thread *thread, void *fault_addr,
 				 uint64_t reason, void *regs)
@@ -1283,6 +1284,20 @@ static void unhandled_page_fault(struct thread *thread, void *fault_addr,
 				    (void *)address);
 	} else {
 		__kprintf("address is out of range!\n");
+	}
+
+	{
+		unsigned long pc = arch_get_instruction_address(regs);
+		range = lookup_process_memory_range(vm, pc, pc + 1);
+		if (range) {
+			__kprintf("PC: 0x%lx (%lx in %s)\n",
+					pc,
+					(range->memobj && range->memobj->flags & MF_REG_FILE) ?
+					pc - range->start + range->objoff :
+					pc - range->start,
+					(range->memobj && range->memobj->path) ?
+						range->memobj->path : "(unknown)");
+		}
 	}
 
 	kprintf_unlock(irqflags);
@@ -1348,6 +1363,11 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			reason, error);
 		unhandled_page_fault(thread, fault_addr, reason, regs);
 		preempt_enable();
+
+		kprintf("%s: sending SIGSTOP to TID: %d\n", __func__, thread->tid);
+		do_kill(thread, thread->proc->pid, thread->tid, SIGSTOP, NULL, 0);
+		goto out;
+
 		memset(&info, '\0', sizeof info);
 		if (error == -ERANGE) {
 			info.si_signo = SIGBUS;
