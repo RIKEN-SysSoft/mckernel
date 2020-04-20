@@ -718,9 +718,11 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		dkprintf("remote page fault,pid=%d,va=%lx,reason=%x\n",
 			 thread->proc->pid, packet->fault_address,
 			 packet->fault_reason|PF_POPULATE);
+		preempt_disable();
 		pckt.err = page_fault_process_vm(thread->vm,
 					(void *)packet->fault_address,
 					packet->fault_reason|PF_POPULATE);
+		preempt_enable();
 
 #ifdef PROFILE_ENABLE
 		if (thread->profile) {
