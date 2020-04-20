@@ -9,6 +9,8 @@
 #include "affinity.h"
 #include <lwk/compiler.h>
 #include "config.h"
+#include <ihk/debug.h>
+
 
 //#define DEBUG_SPINLOCK
 //#define DEBUG_MCS_RWLOCK
@@ -30,6 +32,8 @@ typedef struct {
 	uint16_t next;
 #endif /* __AARCH64EB__ */
 } __attribute__((aligned(4))) ihk_spinlock_t;
+
+extern ihk_spinlock_t *get_this_cpu_runq_lock(void);
 
 extern void preempt_enable(void);
 extern void preempt_disable(void);
@@ -98,6 +102,16 @@ static int __ihk_mc_spinlock_trylock_noirq(ihk_spinlock_t *lock)
 	: "memory");
 
 	success = !tmp;
+
+#if 0
+	if (success) {
+		if (get_this_cpu_runq_lock() == lock &&
+				!cpu_interrupt_disabled()) {
+			kprintf("%s: WARNING: runq lock held without IRQs disabled?\n", __func__); \
+		}
+	}
+#endif
+
 	if (!success) {
 		preempt_enable();
 	}
@@ -182,6 +196,12 @@ static void __ihk_mc_spinlock_lock_noirq(ihk_spinlock_t *lock)
 	: "=&r" (lockval), "=&r" (newval), "=&r" (tmp), "+Q" (*lock)
 	: "Q" (lock->owner), "I" (1 << TICKET_SHIFT)
 	: "memory");
+#if 0
+	if (get_this_cpu_runq_lock() == lock &&
+			!cpu_interrupt_disabled()) {
+		kprintf("%s: WARNING: runq lock held without IRQs disabled?\n", __func__); \
+	}
+#endif
 }
 
 #ifdef DEBUG_SPINLOCK
