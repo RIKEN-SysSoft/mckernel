@@ -2816,6 +2816,7 @@ int populate_process_memory(struct process_vm *vm, void *start, size_t len)
 	uintptr_t addr;
 
 	end = (uintptr_t)start + len;
+	preempt_disable();
 	for (addr = (uintptr_t)start; addr < end; addr += PAGE_SIZE) {
 		error = page_fault_process_vm(vm, (void *)addr, reason);
 		if (error) {
@@ -2829,6 +2830,7 @@ int populate_process_memory(struct process_vm *vm, void *start, size_t len)
 
 	error = 0;
 out:
+	preempt_enable();
 	return error;
 }
 
