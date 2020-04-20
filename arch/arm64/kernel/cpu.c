@@ -725,6 +725,47 @@ static void show_context_stack(struct pt_regs *regs)
 	}
 }
 
+void __show_context_stack(struct thread *thread,
+        unsigned long pc, uintptr_t sp, int kprintf_locked)
+{
+    uintptr_t stack_top;
+    unsigned long irqflags = 0;
+
+    stack_top = ALIGN_UP(sp, (uintptr_t)KERNEL_STACK_SIZE);
+
+    if (!kprintf_locked)
+        irqflags = kprintf_lock();
+
+    __kprintf("TID: %d, call stack (most recent first):\n",
+        thread->tid);
+    __kprintf("PC: %016lx, SP: %016lx\n", pc, sp);
+    for (;;) {
+        extern char _head[], _end[];
+        uintptr_t *fp, *lr;
+        fp = (uintptr_t *)sp;
+        lr = (uintptr_t *)(sp + 8);
+
+        if ((*fp <= sp)) {
+            break;
+        }
+
+        if ((*fp > stack_top)) {
+            break;
+        }
+
+        if ((*lr < (unsigned long)_head) ||
+            (*lr > (unsigned long)_end)) {
+            break;
+        }
+
+        __kprintf("PC: %016lx, SP: %016lx, FP: %016lx\n", *lr - 4, sp, *fp);
+        sp = *fp;
+    }
+
+    if (!kprintf_locked)
+        kprintf_unlock(irqflags);
+}
+
 void handle_IPI(unsigned int vector, struct pt_regs *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
@@ -784,6 +825,17 @@ void cpu_safe_halt(void)
 {
 	cpu_do_idle();
 	cpu_enable_interrupt();
+}
+
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
+void cpu_halt_panic(void)
+{
+	extern void __cpu_do_idle(void);
+	cpu_enable_interrupt();
+	__cpu_do_idle();
 }
 
 #if defined(CONFIG_HAS_NMI)
@@ -849,6 +901,19 @@ unsigned long cpu_enable_interrupt_save(void)
 		: "r" (masked)
 		: "memory");
 	return flags;
+}
+
+int cpu_interrupt_disabled(void)
+{
+	unsigned long flags;
+	unsigned long masked = ICC_PMR_EL1_MASKED;
+
+	asm volatile(
+		"mrs_s  %0, " __stringify(ICC_PMR_EL1)
+		: "=&r" (flags)
+		:
+		: "memory");
+	return (flags == masked);
 }
 
 #else /* defined(CONFIG_HAS_NMI) */
@@ -1370,6 +1435,12 @@ void ihk_mc_delay_us(int us)
 
 void arch_print_stack(void)
 {
+}
+
+unsigned long arch_get_instruction_address(const void *reg)
+{
+	const struct pt_regs *regs = (struct pt_regs *)reg;
+	return regs->pc;
 }
 
 void arch_show_interrupt_context(const void *reg)

@@ -170,7 +170,7 @@ static void devobj_free(struct memobj *memobj)
 
 	error = syscall_generic_forwarding(__NR_mmap, &ctx);
 	if (error) {
-		kprintf("%s(%p %lx): release failed. %d\n",
+		dkprintf("%s(%p %lx): release failed. %d\n",
 			__func__, obj, handle, error);
 		/* through */
 	}

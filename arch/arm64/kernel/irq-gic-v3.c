@@ -7,6 +7,7 @@
 #include <process.h>
 #include <syscall.h>
 #include <ihk/debug.h>
+#include <ihk/monitor.h>
 #include <arch-timer.h>
 #include <cls.h>
 
@@ -311,30 +312,38 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 	uint64_t irqnr;
 	const int from_user = interrupt_from_user(regs);
 	struct cpu_local_var *v = get_this_cpu_local_var();
-	unsigned long irqflags;
+	//unsigned long irqflags;
 	int do_check = 0;
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
+	++v->in_interrupt;
 	irqnr = gic_read_iar();
 	cpu_enable_nmi();
 	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	while (irqnr != ICC_IAR1_EL1_SPURIOUS) {
 		if ((irqnr < 1020) || (irqnr >= 8192)) {
 			gic_write_eoir(irqnr);
-			handle_IPI(irqnr, regs);
+			/* Once paniced, only allow CPU stop and NMI IRQs */
+			if (monitor->status != IHK_OS_MONITOR_PANIC ||
+					irqnr == INTRID_CPU_STOP ||
+					irqnr == INTRID_MULTI_NMI) {
+				handle_IPI(irqnr, regs);
+			}
 		}
 		irqnr = gic_read_iar();
 	}
 	set_cputime(from_user ? CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 
-	irqflags = ihk_mc_spinlock_lock(&v->runq_lock);
+	//irqflags = ihk_mc_spinlock_lock(&v->runq_lock);
 	/* For migration by IPI or by timesharing */
 	if (get_this_cpu_local_var()->flags &
 			(CPU_FLAG_NEED_MIGRATE || CPU_FLAG_NEED_RESCHED)) {
 		do_check = 1;
 	}
-	ihk_mc_spinlock_unlock(&v->runq_lock, irqflags);
+	//ihk_mc_spinlock_unlock(&v->runq_lock, irqflags);
 
-	if (do_check) {
+	--v->in_interrupt;
+	if (monitor->status != IHK_OS_MONITOR_PANIC && do_check) {
 		check_signal(0, regs, 0);
 		schedule();
 	}
