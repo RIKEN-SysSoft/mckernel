@@ -33,6 +33,7 @@ struct pager_create_result {
 	int		maxprot;
 	uint32_t flags;
 	size_t size;
+	int pgshift;
 	char path[PATH_MAX];
 };
 
