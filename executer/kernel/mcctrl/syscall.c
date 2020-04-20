@@ -44,6 +44,7 @@
 #include <linux/spinlock.h>
 #include <linux/mount.h>
 #include <linux/kdev_t.h>
+#include <linux/hugetlb.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -874,6 +875,7 @@ struct pager_create_result {
 	int		maxprot;
 	uint32_t flags;
 	size_t size;
+	int pgshift;
 	char path[PATH_MAX];
 };
 
@@ -935,6 +937,7 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	struct kstat st;
 	int mf_flags = 0;
 	unsigned long irqflags;
+	int pgshift = 0;
 
 	dprintk("pager_req_create(%d,%lx)\n", fd, (long)result_pa);
 
@@ -999,13 +1002,14 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 	}
 
 	if (inode->i_op == mcctrl_hugetlbfs_inode_operations) {
+		struct hstate *h = hstate_file(file);
+
+		pgshift = PAGE_SHIFT + huge_page_order(h);
 		mf_flags = MF_HUGETLBFS;
 		/* pager is used as handle id on mckernel side, use inode */
 		pager = (void *)st.ino;
-		/* retrofit blksize in resp as well through st.size field;
-		 * the actual file size is not used
-		 */
-		st.size = st.blksize;
+		/* file size is not used */
+		st.size = 0;
 		goto out_reply;
 	}
 
@@ -1092,6 +1096,7 @@ out_reply:
 	resp->maxprot = maxprot;
 	resp->flags = mf_flags;
 	resp->size = st.size;
+	resp->pgshift = pgshift;
 
 	error = pager_get_path(file, resp->path);
 

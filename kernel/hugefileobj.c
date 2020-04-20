@@ -10,20 +10,14 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-struct hugefilechunk {
-	struct list_head list;
-	off_t pgoff;
-	int npages;
-	void *mem;
-};
-
 struct hugefileobj {
 	struct memobj memobj;
 	size_t pgsize;
 	uintptr_t handle;
 	unsigned int pgshift;
-	struct list_head chunk_list;
-	ihk_spinlock_t chunk_lock;
+	size_t nr_pages;
+	void **pages;
+	ihk_spinlock_t lock;
 	struct list_head obj_list;
 };
 
@@ -65,8 +59,9 @@ static int hugefileobj_get_page(struct memobj *memobj, off_t off,
 				unsigned long *pflag, uintptr_t virt_addr)
 {
 	struct hugefileobj *obj = to_hugefileobj(memobj);
-	struct hugefilechunk *chunk;
-	off_t pgoff;
+	off_t pgind;
+	int ret = 0;
+	int npages;
 
 	if (p2align != obj->pgshift - PTL1_SHIFT) {
 		kprintf("%s: p2align %d but expected %d\n",
@@ -74,45 +69,71 @@ static int hugefileobj_get_page(struct memobj *memobj, off_t off,
 		return -ENOMEM;
 	}
 
-	pgoff = off >> obj->pgshift;
-	ihk_mc_spinlock_lock_noirq(&obj->chunk_lock);
-	list_for_each_entry(chunk, &obj->chunk_list, list) {
-		if (pgoff >= chunk->pgoff + chunk->npages)
-			continue;
-		if (pgoff >= chunk->pgoff)
-			break;
-		kprintf("%s: no segment found for pgoff %lx (obj %p)\n",
-			__func__, pgoff, obj);
-		chunk = NULL;
-		break;
+	pgind = off >> obj->pgshift;
+	npages = obj->pgsize >> PAGE_SHIFT;
+	ihk_mc_spinlock_lock_noirq(&obj->lock);
+	if (!obj->pages[pgind]) {
+		obj->pages[pgind] = ihk_mc_alloc_aligned_pages_user(npages,
+				p2align, IHK_MC_AP_NOWAIT | IHK_MC_AP_USER,
+				virt_addr);
+		if (!obj->pages[pgind]) {
+			kprintf("%s: error: could not allocate page for off: "
+				"%lu, page size: %lu\n", __func__, off,
+				obj->pgsize);
+			ret = -EIO;
+			goto out;
+		}
+
+		memset(obj->pages[pgind], 0, obj->pgsize);
+		dkprintf("%s: obj: 0x%lx, allocated page for off: %lu"
+				" (ind: %d), page size: %lu\n",
+				__func__, obj, off, pgind, obj->pgsize);
 	}
-	ihk_mc_spinlock_unlock_noirq(&obj->chunk_lock);
-	if (!chunk)
-		return -EIO;
 
-	*physp = virt_to_phys(chunk->mem + (off - chunk->pgoff * PAGE_SIZE));
+	*physp = virt_to_phys(obj->pages[pgind]);
 
-	return 0;
+out:
+	ihk_mc_spinlock_unlock_noirq(&obj->lock);
+
+	return ret;
+}
+
+static void __hugefileobj_free(struct memobj *memobj)
+{
+	struct hugefileobj *obj = to_hugefileobj(memobj);
+
+	ihk_mc_spinlock_lock_noirq(&obj->lock);
+	kfree(memobj->path);
+	memobj->path = NULL;
+
+	if (obj->pages) {
+		int i;
+
+		for (i = 0; i < obj->nr_pages; ++i) {
+			if (obj->pages[i]) {
+				ihk_mc_free_pages_user(obj->pages[i],
+						obj->pgsize >> PAGE_SHIFT);
+				dkprintf("%s: obj: 0x%lx, freed page at "
+					 "ind: %d\n", __func__, obj, i);
+			}
+		}
+
+		kfree(obj->pages);
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&obj->lock);
+	kfree(obj);
 }
 
 static void hugefileobj_free(struct memobj *memobj)
 {
 	struct hugefileobj *obj = to_hugefileobj(memobj);
-	struct hugefilechunk *chunk, *next;
-
-	dkprintf("Destroying hugefileobj %p\n", memobj);
 
 	ihk_mc_spinlock_lock_noirq(&hugefileobj_list_lock);
 	list_del(&obj->obj_list);
 	ihk_mc_spinlock_unlock_noirq(&hugefileobj_list_lock);
 
-	kfree(memobj->path);
-	/* don't bother with chunk_lock, memobj refcounting makes this safe */
-	list_for_each_entry_safe(chunk, next, &obj->chunk_list, list) {
-		ihk_mc_free_pages_user(chunk->mem, chunk->npages);
-		kfree(chunk);
-	}
-	kfree(memobj);
+	__hugefileobj_free(memobj);
 }
 
 struct memobj_ops hugefileobj_ops = {
@@ -124,7 +145,6 @@ struct memobj_ops hugefileobj_ops = {
 void hugefileobj_cleanup(void)
 {
 	struct hugefileobj *obj;
-	int refcnt;
 
 	while (true) {
 		ihk_mc_spinlock_lock_noirq(&hugefileobj_list_lock);
@@ -134,13 +154,10 @@ void hugefileobj_cleanup(void)
 		}
 		obj = list_first_entry(&hugefileobj_list, struct hugefileobj,
 				       obj_list);
+		list_del(&obj->obj_list);
 		ihk_mc_spinlock_unlock_noirq(&hugefileobj_list_lock);
 
-		if ((refcnt = memobj_unref(to_memobj(obj))) != 0) {
-			kprintf("%s: obj %p had refcnt %ld > 1, destroying anyway\n",
-				__func__, obj, refcnt + 1);
-			hugefileobj_free(to_memobj(obj));
-		}
+		__hugefileobj_free(to_memobj(obj));
 	}
 }
 
@@ -148,156 +165,131 @@ int hugefileobj_pre_create(struct pager_create_result *result,
 			   struct memobj **objp, int *maxprotp)
 {
 	struct hugefileobj *obj;
+	int ret = 0;
 
 	ihk_mc_spinlock_lock_noirq(&hugefileobj_list_lock);
 	obj = hugefileobj_lookup(result->handle);
-	if (obj)
+	if (obj) {
+		dkprintf("%s: found obj: 0x%lx %s (ino: %lu)\n",
+			 __func__,
+			 obj->memobj,
+			 obj->memobj.path ? obj->memobj.path : "(unknown)",
+			 obj->handle);
+
+		*maxprotp = result->maxprot;
+		*objp = to_memobj(obj);
+		ret = 0;
+
 		goto out_unlock;
+	}
 
 	obj = kmalloc(sizeof(*obj), IHK_MC_AP_NOWAIT);
-	if (!obj)
-		return -ENOMEM;
+	if (!obj) {
+		kprintf("%s: error: allocating hugefileobj\n", __func__);
+		ret = -ENOMEM;
+		goto out_unlock;
+	}
 
 	obj->handle = result->handle;
-	obj->pgsize = result->size;
-	obj->pgshift = 0;
-	INIT_LIST_HEAD(&obj->chunk_list);
-	ihk_mc_spinlock_init(&obj->chunk_lock);
+	obj->pgsize = (1UL << result->pgshift);
+	obj->pgshift = result->pgshift;
+	obj->pages = NULL;
+	obj->nr_pages = 0;
+	ihk_mc_spinlock_init(&obj->lock);
 	obj->memobj.flags = result->flags;
-	obj->memobj.status = MEMOBJ_TO_BE_PREFETCHED;
+	obj->memobj.status = MEMOBJ_READY;
 	obj->memobj.ops = &hugefileobj_ops;
+
 	/* keep mapping around when process is gone */
 	ihk_atomic_set(&obj->memobj.refcnt, 2);
+
 	if (result->path[0]) {
 		obj->memobj.path = kmalloc(PATH_MAX, IHK_MC_AP_NOWAIT);
 		if (!obj->memobj.path) {
+			kprintf("%s: error: allocating path\n", __func__);
 			kfree(obj);
-			return -ENOMEM;
+			ret = -ENOMEM;
+			goto out_unlock;
 		}
 		strncpy(obj->memobj.path, result->path, PATH_MAX);
 	}
 
 	list_add(&obj->obj_list, &hugefileobj_list);
-out_unlock:
-	ihk_mc_spinlock_unlock_noirq(&hugefileobj_list_lock);
+	dkprintf("%s: created obj: 0x%lx %s (ino: %lu)\n",
+		__func__,
+		obj->memobj,
+		obj->memobj.path ? obj->memobj.path : "(unknown)",
+		obj->handle);
 
 	*maxprotp = result->maxprot;
 	*objp = to_memobj(obj);
+	ret = 0;
 
-	return 0;
+out_unlock:
+	ihk_mc_spinlock_unlock_noirq(&hugefileobj_list_lock);
+
+	return ret;
 }
 
 int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 		       int *pgshiftp, uintptr_t virt_addr)
 {
 	struct hugefileobj *obj = to_hugefileobj(memobj);
-	struct hugefilechunk *chunk = NULL, *old_chunk = NULL;
-	int p2align;
-	unsigned int pgshift;
-	int npages, npages_left;
-	void *v;
-	off_t pgoff, next_pgoff;
-	int error;
+	int nr_pages;
+	int ret;
 
-	error = arch_get_smaller_page_size(NULL, obj->pgsize + 1, NULL,
-					   &p2align);
-	if (error)
-		return error;
-	pgshift = p2align + PTL1_SHIFT;
-	if (1 << pgshift != obj->pgsize) {
-		dkprintf("invalid hugefileobj pagesize: %d\n",
-			obj->pgsize);
-		return -EINVAL;
+	dkprintf("%s: obj: 0x%lx, VA: 0x%lx, path: \"%s\","
+			" len: %lu, off: %lu, pgshift: %d\n",
+			__func__,
+			obj,
+			virt_addr,
+			memobj->path ? memobj->path : "(unknown)",
+			len,
+			off,
+			obj->pgshift);
+
+	nr_pages = (off + len) >> obj->pgshift;
+
+	ihk_mc_spinlock_lock_noirq(&obj->lock);
+	/* Expand or allocate if needed */
+	if (obj->nr_pages < nr_pages) {
+		void **pages = kmalloc(nr_pages * sizeof(void *),
+				       IHK_MC_AP_NOWAIT);
+
+		if (!pages) {
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		if (obj->nr_pages) {
+			memcpy(pages, obj->pages,
+			       obj->nr_pages * sizeof(void *));
+		}
+
+		memset(pages + (obj->nr_pages * sizeof(void *)), 0,
+				(nr_pages - obj->nr_pages) * sizeof(void *));
+
+		if (obj->nr_pages) {
+			kfree(obj->pages);
+		}
+
+		obj->nr_pages = nr_pages;
+		obj->pages = pages;
+		dkprintf("%s: obj: 0x%lx, VA: 0x%lx, page array allocated"
+				" for %d pages, pagesize: %lu\n",
+				__func__,
+				obj,
+				virt_addr,
+				nr_pages,
+				obj->pgsize);
 	}
 
-	if (len & ((1 << pgshift) - 1)) {
-		dkprintf("invalid hugetlbfs mmap size %d (pagesize %d)\n",
-			len, 1 << pgshift);
-		obj->pgshift = 0;
-		return -EINVAL;
-	}
-	if (off & ((1 << pgshift) - 1)) {
-		dkprintf("invalid hugetlbfs mmap offset %d (pagesize %d)\n",
-			off, 1 << pgshift);
-		obj->pgshift = 0;
-		return -EINVAL;
-	}
-
-
-	ihk_mc_spinlock_lock_noirq(&obj->chunk_lock);
-	if (obj->pgshift && obj->pgshift != pgshift) {
-		kprintf("pgshift changed between two calls on same inode?! had %d now %d\n",
-			obj->pgshift, pgshift);
-		ihk_mc_spinlock_unlock_noirq(&obj->chunk_lock);
-		return -EINVAL;
-	}
-	obj->pgshift = pgshift;
-
-	/* Prealloc upfront, we need to fail here if not enough memory. */
-	if (!list_empty(&obj->chunk_list))
-		old_chunk = list_first_entry(&obj->chunk_list,
-					     struct hugefilechunk, list);
-	pgoff = off >> PAGE_SHIFT;
-	npages_left = len >> PAGE_SHIFT;
-	npages = npages_left;
-	while (npages_left) {
-		while (old_chunk &&
-				pgoff >= old_chunk->pgoff + old_chunk->npages) {
-			if (list_is_last(&old_chunk->list, &obj->chunk_list)) {
-				old_chunk = NULL;
-				break;
-			}
-			old_chunk = list_entry(old_chunk->list.next,
-					       struct hugefilechunk, list);
-		}
-		if (old_chunk) {
-			next_pgoff = old_chunk->pgoff + old_chunk->npages;
-			if (pgoff >= old_chunk->pgoff && pgoff < next_pgoff) {
-				npages_left -= next_pgoff - pgoff;
-				pgoff = next_pgoff;
-				continue;
-			}
-		}
-		if (!chunk) {
-			chunk = kmalloc(sizeof(*chunk), IHK_MC_AP_NOWAIT);
-		}
-		if (!chunk) {
-			kprintf("could not allocate hugefileobj chunk\n");
-			return -ENOMEM;
-		}
-		if (npages > npages_left)
-			npages = npages_left;
-		v = ihk_mc_alloc_aligned_pages_user(npages, p2align,
-				IHK_MC_AP_NOWAIT | IHK_MC_AP_USER, virt_addr);
-		if (!v) {
-			if (npages == 1) {
-				dkprintf("could not allocate more pages wth pgshift %d\n",
-					 pgshift);
-				kfree(chunk);
-				/* caller will cleanup the rest */
-				return -ENOMEM;
-			}
-			/* exponential backoff, try less aggressive? */
-			npages /= 2;
-			continue;
-		}
-		memset(v, 0, npages * PAGE_SIZE);
-		chunk->npages = npages;
-		chunk->mem = v;
-		chunk->pgoff = pgoff;
-		/* ordered list: insert before next (bigger) element */
-		if (old_chunk)
-			list_add(&chunk->list, old_chunk->list.prev);
-		else
-			list_add(&chunk->list, obj->chunk_list.prev);
-		pgoff += npages;
-		npages_left -= npages;
-	}
 	obj->memobj.size = len;
+	*pgshiftp = obj->pgshift;
+	ret = 0;
 
-	ihk_mc_spinlock_unlock_noirq(&obj->chunk_lock);
+out:
+	ihk_mc_spinlock_unlock_noirq(&obj->lock);
 
-	*pgshiftp = pgshift;
-
-	return 0;
+	return ret;
 }
