@@ -1,0 +1,96 @@
+#!/usr/bin/expect
+
+set INST_DIR "@prefix@"
+
+spawn $INST_DIR/bin/eclair -k $INST_DIR/smp-@ARCH@/kernel/mckernel.img -i -l
+
+set state "init"
+set thread_id 0
+set timeout -1
+
+expect {
+	"Quit anyway? (y or n) " {
+		send "y\r"
+		wait
+		exit 0
+	}
+	"Unknown thread*" {
+		send "quit\r"
+		exp_continue
+	}
+	"in ?? ()" {
+		switch -- $state {
+			"thread_chosen" {
+				set state "thread_skip"
+			}
+			"thread_bt" {
+				set state "thread_skip"
+			}
+		}
+
+		exp_continue
+	}
+	"(eclair) " {
+		switch -- $state {
+			"init" {
+				set state "threads_list"
+				send "info threads\r"
+			}
+			"threads_list" {
+				incr thread_id
+				set state "thread_chosen"
+				send "thread $thread_id\r"
+			}
+			"thread_bt" {
+				incr thread_id
+				set state "thread_chosen"
+				send "thread $thread_id\r"
+			}
+			"thread_skip" {
+				incr thread_id
+				set state "thread_chosen"
+				send "thread $thread_id\r"
+			}
+			"thread_chosen" {
+				set state "thread_bt"
+				send "bt\r"
+			}
+		}
+
+		exp_continue
+	}
+	"Type <RET> for more, q to quit, c to continue without paging--" {
+		switch -- $state {
+			"threads_list" {
+				send "\r"
+			}
+			"thread_bt" {
+				send "q\r"
+			}
+			"thread_skip" {
+				send "q\r"
+			}
+		}
+		exp_continue
+	}
+	"Type <return> to continue, or q <return> to quit" {
+		switch -- $state {
+			"threads_list" {
+				send "\r"
+			}
+			"thread_bt" {
+				send "\r"
+			}
+			"thread_skip" {
+				send "q\r"
+			}
+		}
+		exp_continue
+	}
+	" not known." {
+		expect "(eclair) " { send "quit\r" }
+		expect "Quit anyway? (y or n) " { send "y\r" }
+		exit 0
+	}
+}
+

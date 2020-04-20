@@ -210,10 +210,14 @@ add_subdirectory(tools/crash)
 configure_file(scripts/mcreboot-smp.sh.in mcreboot.sh @ONLY)
 configure_file(scripts/mcstop+release-smp.sh.in mcstop+release.sh @ONLY)
 configure_file(scripts/mcreboot.1in mcreboot.1 @ONLY)
+configure_file(scripts/eclair-dump-backtrace.exp.in eclair-dump-backtrace.exp @ONLY)
 install(PROGRAMS
 		"${CMAKE_CURRENT_BINARY_DIR}/mcreboot.sh"
 		"${CMAKE_CURRENT_BINARY_DIR}/mcstop+release.sh"
 	DESTINATION "${CMAKE_INSTALL_SBINDIR}")
+install(PROGRAMS
+		"${CMAKE_CURRENT_BINARY_DIR}/eclair-dump-backtrace.exp"
+	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 install(FILES "scripts/irqbalance_mck.in"
 	DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mcreboot.1"
