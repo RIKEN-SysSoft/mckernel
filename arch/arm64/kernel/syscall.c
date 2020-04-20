@@ -1106,6 +1106,7 @@ static int setup_rt_frame(int usig, unsigned long rc, int to_restart,
 
 	if (k->sa.sa_flags & SA_RESTORER){
 		regs->regs[30] = (unsigned long)k->sa.sa_restorer;
+		kprintf("%s: SA_RESTORER: 0x%lx\n", __func__, regs->regs[30]);
 	} else {
 		regs->regs[30] = (unsigned long)VDSO_SYMBOL(thread->vm->vdso_addr, sigtramp);
 	}
@@ -2007,6 +2008,7 @@ SYSCALL_DECLARE(mmap)
 
 	/* check arguments */
 	pgsize = PAGE_SIZE;
+#if 0
 	if (flags & MAP_HUGETLB) {
 		int hugeshift = flags & (0x3F << MAP_HUGE_SHIFT);
 
@@ -2039,6 +2041,11 @@ SYSCALL_DECLARE(mmap)
 			goto out;
 		}
 	}
+#else
+	if (flags & MAP_HUGETLB) {
+		flags &= ~(MAP_HUGETLB);
+	}
+#endif
 
 #define	VALID_DUMMY_ADDR	((region->user_start + PTL3_SIZE - 1) & ~(PTL3_SIZE - 1))
 	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;

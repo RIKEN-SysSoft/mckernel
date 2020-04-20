@@ -977,8 +977,10 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 			if (!IS_ERR(fullpath)) {
 				if (!strncmp("/tmp/ompi.", fullpath, 10) ||
-						!strncmp("/dev/shm/", fullpath, 9)) {
-					dprintk("%s: treating %s as a device file..\n",
+						!strncmp("/dev/shm/", fullpath, 9) ||
+						(!strncmp("/var/opt/FJSVtcs/ple/daemonif/",
+							fullpath, 30) && !strstr(fullpath, "dstore_sm.lock"))) {
+					printk("%s: treating %s as a device file..\n",
 						__func__, fullpath);
 					kfree(pathbuf);
 
@@ -1436,7 +1438,9 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 			if (!IS_ERR(fullpath)) {
 				if (!strncmp("/tmp/ompi.", fullpath, 10) ||
-						!strncmp("/dev/shm/", fullpath, 9)) {
+						!strncmp("/dev/shm/", fullpath, 9) ||
+						!strncmp("/var/opt/FJSVtcs/ple/daemonif/",
+							fullpath, 30)) {
 					dprintk("%s: pre-populating %s..\n",
 						__func__, fullpath);
 					prot_and_flags |= MAP_POPULATE;
