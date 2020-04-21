@@ -1414,9 +1414,10 @@ static void xpmem_detach_att(
 
 	XPMEM_DEBUG("call: apid=0x%lx, att=0x%p", ap->apid, att);
 
-	XPMEM_DEBUG("detaching att->vm=0x%p", (void *)att->vm);
+	XPMEM_DEBUG("detaching current->vm=0x%p, att->vm=0x%p", 
+		(void *)cpu_local_var(current)->vm, (void *)att->vm);
 
-	vm = att->vm;
+	vm = cpu_local_var(current)->vm ? cpu_local_var(current)->vm : att->vm;
 
 	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
 
@@ -1430,7 +1431,7 @@ static void xpmem_detach_att(
 	}
 	att->flags |= XPMEM_FLAG_DESTROYING;
 
-	range = lookup_process_memory_range(vm,
+	range = lookup_process_memory_range(cpu_local_var(current)->vm,
 		att->at_vaddr, att->at_vaddr + 1);
 
 	if (!range || range->start > att->at_vaddr) {
@@ -1467,7 +1468,8 @@ static void xpmem_detach_att(
 
 	XPMEM_DEBUG("xpmem_vm_munmap(): start=0x%lx, len=0x%lx", 
 		range->start, att->at_size);
-	ret = xpmem_vm_munmap(vm, (void *)range->start, att->at_size);
+	ret = xpmem_vm_munmap(cpu_local_var(current)->vm, (void *)range->start, 
+		att->at_size);
 	if (ret) {
 		ekprintf("%s: ERROR: xpmem_vm_munmap() failed %d\n", 
 			__FUNCTION__, ret);
@@ -1664,7 +1666,8 @@ int xpmem_remove_process_memory_range(
 
 	xpmem_att_ref(att);
 
-	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+	ihk_mc_spinlock_lock_noirq(
+		&cpu_local_var(current)->vm->memory_range_lock);
 
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
@@ -1701,7 +1704,7 @@ int xpmem_remove_process_memory_range(
 	else {
 		remaining_vaddr = vmr->end;
 		remaining_vmr = lookup_process_memory_range(
-			vm, remaining_vaddr - 1,
+			cpu_local_var(current)->vm, remaining_vaddr - 1, 
 			remaining_vaddr);
 		if (!remaining_vmr) {
 			ekprintf("%s: ERROR: vm_range is NULL\n", __FUNCTION__);
@@ -1722,7 +1725,7 @@ int xpmem_remove_process_memory_range(
 	}
 
 	remaining_vmr = lookup_process_memory_range(
-		vm, remaining_vaddr,
+		cpu_local_var(current)->vm, remaining_vaddr, 
 		remaining_vaddr + 1);
 	if (!remaining_vmr) {
 		ekprintf("%s: ERROR: vm_range is NULL\n", __FUNCTION__);
@@ -1746,7 +1749,8 @@ int xpmem_remove_process_memory_range(
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 
-	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+	ihk_mc_spinlock_unlock_noirq(
+		&cpu_local_var(current)->vm->memory_range_lock);
 
 	xpmem_att_deref(att);
 
