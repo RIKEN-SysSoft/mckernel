@@ -2483,6 +2483,8 @@ int main(int argc, char **argv)
 
 		CPU_ZERO(&mcexec_cpu_set);
 
+		cpu_set_arg.req_cpu_list = NULL;
+		cpu_set_arg.req_cpu_list_len = 0;
 		cpu_set_arg.cpu_set = (void *)&desc->cpu_set;
 		cpu_set_arg.cpu_set_size = sizeof(desc->cpu_set);
 		cpu_set_arg.nr_processes = nr_processes;
@@ -2494,6 +2496,16 @@ int main(int argc, char **argv)
 		cpu_set_arg.mcexec_cpu_set_size = sizeof(mcexec_cpu_set);
 		cpu_set_arg.ikc_mapped = &ikc_mapped;
 
+		/* Fugaku specific: Fujitsu CPU binding */
+		if (getenv("FLIB_AFFINITY_ON_PROCESS")) {
+			cpu_set_arg.req_cpu_list =
+				getenv("FLIB_AFFINITY_ON_PROCESS");
+			cpu_set_arg.req_cpu_list_len =
+				strlen(cpu_set_arg.req_cpu_list) + 1;
+			__dprintf("%s: requesting CPUs: %s\n",
+				__func__, cpu_set_arg.req_cpu_list);
+		}
+
 		if (ioctl(fd, MCEXEC_UP_GET_CPUSET, (void *)&cpu_set_arg) != 0) {
 			perror("getting CPU set for partitioned execution");
 			close(fd);
@@ -2502,6 +2514,12 @@ int main(int argc, char **argv)
 
 		desc->cpu = target_core;
 		desc->process_rank = process_rank;
+		/* Fugaku specific: Fujitsu node-local rank */
+		if (getenv("PLE_RANK_ON_NODE")) {
+			desc->process_rank = atoi(getenv("PLE_RANK_ON_NODE"));
+			__dprintf("%s: rank: %d, target CPU: %d\n",
+				__func__, desc->process_rank, desc->cpu);
+		}
 
 		/* Bind to CPU cores where the LWK process' IKC target maps to */
 		if (ikc_mapped && !no_bind_ikc_map) {

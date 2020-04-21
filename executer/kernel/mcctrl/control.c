@@ -620,6 +620,78 @@ static long mcexec_get_cpuset(ihk_os_t os, unsigned long arg)
 		goto put_out;
 	}
 
+	/* User requested CPU mask? */
+	if (req.req_cpu_list && req.req_cpu_list_len) {
+		char *cpu_list = NULL;
+
+		cpu_list = kmalloc(req.req_cpu_list_len, GFP_KERNEL);
+		if (!cpu_list) {
+			printk("%s: error: allocating CPU list\n", __FUNCTION__);
+			ret = -ENOMEM;
+			goto put_out;
+		}
+
+		if (copy_from_user(cpu_list,
+					req.req_cpu_list, req.req_cpu_list_len)) {
+			printk("%s: error copying CPU list request\n", __FUNCTION__);
+			kfree(cpu_list);
+			ret = -EINVAL;
+			goto put_out;
+		}
+
+		cpus_used = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+		cpus_to_use = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
+		if (!cpus_to_use || !cpus_used) {
+			printk("%s: error: allocating CPU mask\n", __FUNCTION__);
+			ret = -ENOMEM;
+			kfree(cpu_list);
+			goto put_out;
+		}
+		memset(cpus_used, 0, sizeof(cpumask_t));
+		memset(cpus_to_use, 0, sizeof(cpumask_t));
+
+		/* Parse CPU list */
+		if (cpulist_parse(cpu_list, cpus_to_use) < 0) {
+			printk("%s: invalid CPUs requested: %s\n",
+				__FUNCTION__, cpu_list);
+			ret = -EINVAL;
+			kfree(cpu_list);
+			goto put_out;
+		}
+
+		memcpy(cpus_used, cpus_to_use, sizeof(cpumask_t));
+
+		/* Copy mask to user-space */
+		if (copy_to_user(req.cpu_set, cpus_used,
+					(req.cpu_set_size < sizeof(cpumask_t) ?
+					 req.cpu_set_size : sizeof(cpumask_t)))) {
+			printk("%s: error copying mask to user\n", __FUNCTION__);
+			ret = -EINVAL;
+			kfree(cpu_list);
+			goto put_out;
+		}
+
+		/* Copy IKC target core */
+		cpu = cpumask_next(-1, cpus_used);
+		if (copy_to_user(req.target_core, &cpu, sizeof(cpu))) {
+			printk("%s: error copying target core to user\n",
+					__FUNCTION__);
+			ret = -EINVAL;
+			kfree(cpu_list);
+			goto put_out;
+		}
+
+		/* Save in per-process structure */
+		memcpy(&ppd->cpu_set, cpus_used, sizeof(cpumask_t));
+		ppd->ikc_target_cpu = cpu;
+		printk("%s: %s -> target McKernel CPU: %d\n",
+			__func__, cpu_list, cpu);
+
+		ret = 0;
+		kfree(cpu_list);
+		goto put_out;
+	}
+
 	mutex_lock(&udp->part_exec_lock);
 	/* Find part_exec having same node_proxy */
 	list_for_each_entry_reverse(pe_itr, &udp->part_exec_list, chain) {
