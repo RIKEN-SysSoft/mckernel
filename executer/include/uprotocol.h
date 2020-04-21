@@ -91,6 +91,8 @@ struct program_image_section {
 
 struct get_cpu_set_arg {
 	int nr_processes;
+	char *req_cpu_list;   // Requested by user-space
+	int req_cpu_list_len; // Lenght of request string
 	int *process_rank;
 	pid_t ppid;
 	void *cpu_set;
