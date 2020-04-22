@@ -12,7 +12,6 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/hashtable.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/version.h>
@@ -23,14 +22,6 @@
 #define dprintk(...) do { if (0) printk(__VA_ARGS__); } while (0)
 #define wprintk(...) do { if (1) printk(KERN_WARNING __VA_ARGS__); } while (0)
 #define eprintk(...) do { if (1) printk(KERN_ERR __VA_ARGS__); } while (0)
-
-struct physical_core_id {
-	int linux_core_id;
-	int mckernel_core_id;
-	struct hlist_node next;
-};
-
-DEFINE_HASHTABLE(physical_core_id_map, 10);
 
 static ssize_t
 show_int(struct sysfsm_ops *ops, void *instance, void *buf, size_t size)
@@ -197,9 +188,6 @@ static void free_cpu_topology(struct mcctrl_usrdata *udp)
 void free_topology_info(ihk_os_t os)
 {
 	struct mcctrl_usrdata *udp = ihk_host_os_get_usrdata(os);
-	int bkt;
-	struct hlist_node *tmp;
-	struct physical_core_id *cur;
 
 	if (!udp) {
 		pr_warn("%s: warning: mcctrl_usrdata not found\n", __func__);
@@ -208,11 +196,6 @@ void free_topology_info(ihk_os_t os)
 
 	free_node_topology(udp);
 	free_cpu_topology(udp);
-
-	hash_for_each_safe(physical_core_id_map, bkt, tmp, cur, next) {
-		hash_del(&cur->next);
-		kfree(cur);
-	}
 
 	return;
 } /* free_topology_info() */
@@ -365,11 +348,6 @@ static struct mcctrl_cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *u
 	struct mcctrl_cpu_topology *topology = NULL;
 	struct cache_topology *cache;
 	struct ihk_cache_topology *saved_cache;
-	int linux_core_id;
-	int mckernel_core_id;
-	struct physical_core_id *entry;
-	struct physical_core_id *cur;
-	static int nr_mckernel_core;
 
 	dprintk("get_one_cpu_topology(%p,%d)\n", udp, index);
 	topology = kmalloc(sizeof(*topology), GFP_KERNEL);
@@ -412,22 +390,6 @@ static struct mcctrl_cpu_topology *get_one_cpu_topology(struct mcctrl_usrdata *u
 				" %d\n", error);
 		goto out;
 	}
-
-	linux_core_id = topology->saved->core_id;
-	mckernel_core_id = -1;
-	hash_for_each_possible(physical_core_id_map, cur, next, linux_core_id) {
-		mckernel_core_id = cur->mckernel_core_id;
-		break;
-	}
-	if (mckernel_core_id < 0) {
-		mckernel_core_id = nr_mckernel_core++;
-		entry = kmalloc(sizeof(struct physical_core_id), GFP_KERNEL);
-		entry->linux_core_id = linux_core_id;
-		entry->mckernel_core_id = mckernel_core_id;
-		hash_add(physical_core_id_map,
-			 &entry->next, entry->linux_core_id);
-	}
-	topology->mckernel_core_id = mckernel_core_id;
 
 	list_for_each_entry(saved_cache,
 			&topology->saved->cache_topology_list, chain) {
@@ -550,7 +512,7 @@ static void setup_cpu_sysfs_files(struct mcctrl_usrdata *udp,
 			"%s/cpu%d/topology/physical_package_id",
 			prefix, cpu_number);
 	sysfsm_createf(udp->os, SYSFS_SNOOPING_OPS_d32,
-			&cpu->mckernel_core_id, 0444,
+			&cpu->saved->core_id, 0444,
 			"%s/cpu%d/topology/core_id",
 			prefix, cpu_number);
 
