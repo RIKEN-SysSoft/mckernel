@@ -298,7 +298,6 @@ struct mcctrl_cpu_topology {
 	//struct mcctrl_usrdata *udp;
 	struct ihk_cpu_topology *saved;
 	int mckernel_cpu_id;
-	int mckernel_core_id;
 	cpumask_t core_siblings;
 	cpumask_t thread_siblings;
 
