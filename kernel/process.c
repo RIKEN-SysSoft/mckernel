@@ -951,6 +951,8 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 	start = range->start;
 	end = range->end;
 	if (!(range->flag & (VR_REMOTE | VR_IO_NOCACHE | VR_RESERVED))) {
+		int memobj_locked = 0;
+
 		neighbor = previous_process_memory_range(vm, range);
 		pgsize = -1;
 		for (;;) {
@@ -989,13 +991,21 @@ int free_process_memory_range(struct process_vm *vm, struct vm_range *range)
 		dkprintf("%s: vm=%p,range=%p,%lx-%lx\n", __FUNCTION__, vm, range, range->start, range->end);
 		
 		ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
-		if (range->memobj) {
+		/*
+		 * For private mappings, device files and prefetched libraries
+		 * don't bother with locking.
+		 */
+		if (range->memobj && !(range->flag & VR_PRIVATE) &&
+				!(range->memobj->flags & MF_DEV_FILE) &&
+				!(range->memobj->flags & MF_PREFETCH) &&
+				!(range->memobj->flags & MF_PREMAP)) {
 			memobj_lock(range->memobj);
+			memobj_locked = 1;
 		}
 		error = ihk_mc_pt_free_range(vm->address_space->page_table, vm,
 				(void *)start, (void *)end,
 				(range->flag & VR_PRIVATE)? NULL: range->memobj);
-		if (range->memobj) {
+		if (memobj_locked) {
 			memobj_unlock(range->memobj);
 		}
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);

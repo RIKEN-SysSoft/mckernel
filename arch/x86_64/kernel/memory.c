@@ -1694,7 +1694,11 @@ static int clear_range_l3(void *args0, pte_t *ptep, uint64_t base,
 		}
 
 		if (page && page_is_in_memobj(page) && (old & PFL3_DIRTY)) {
-			memobj_flush_page(args->memobj, phys, PTL3_SIZE);
+			if (args->memobj &&
+					!(args->memobj->flags & MF_DEV_FILE) &&
+					!(args->memobj->flags & MF_PREFETCH) &&
+					!(args->memobj->flags & MF_PREMAP))
+				memobj_flush_page(args->memobj, phys, PTL3_SIZE);
 		}
 
 		dkprintf("%s: phys=%ld, pte_get_phys(&old),PTL3_SIZE\n", __FUNCTION__, pte_get_phys(&old));
