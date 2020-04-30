@@ -15,6 +15,162 @@
 
 #include <arch-lock.h>
 
+
+/* Simple read/write spinlock implementation */
+#define IHK_RWSPINLOCK_WRITELOCKED	(0xffU << 24)
+typedef struct {
+	ihk_atomic_t v;
+} __attribute__((aligned(4))) ihk_rwspinlock_t;
+
+static void ihk_rwspinlock_init(ihk_rwspinlock_t *lock)
+{
+	ihk_atomic_set(&lock->v, 0);
+}
+
+static inline void __ihk_rwspinlock_read_lock(ihk_rwspinlock_t *lock)
+{
+	int desired_old_val;
+	int new_val;
+
+	/*
+	 * Atomically increase number of readers,
+	 * but make sure no writer is holding the lock.
+	 */
+	for (;;) {
+		desired_old_val = ihk_atomic_read(&lock->v);
+		desired_old_val &= ~(IHK_RWSPINLOCK_WRITELOCKED);
+		new_val = desired_old_val + 1;
+
+		/* Only if we have not reached the max number of readers */
+		if (likely((uint32_t)new_val < IHK_RWSPINLOCK_WRITELOCKED)) {
+			if (likely(cmpxchg(&lock->v.counter, desired_old_val, new_val) ==
+					desired_old_val))
+				return;
+		}
+	}
+}
+
+static inline int __ihk_rwspinlock_read_trylock(ihk_rwspinlock_t *lock)
+{
+	int desired_old_val;
+	int new_val;
+
+	/*
+	 * Atomically try to increase number of readers,
+	 * but make sure no writer is holding the lock.
+	 */
+	desired_old_val = ihk_atomic_read(&lock->v);
+	desired_old_val &= ~(IHK_RWSPINLOCK_WRITELOCKED);
+	new_val = desired_old_val + 1;
+
+	/* Only if we have not reached the max number of readers */
+	if (likely((uint32_t)new_val < IHK_RWSPINLOCK_WRITELOCKED)) {
+		if (likely(cmpxchg(&lock->v.counter, desired_old_val, new_val) ==
+					desired_old_val))
+			return 1;
+	}
+
+	return 0;
+}
+
+
+static inline void __ihk_rwspinlock_read_unlock(ihk_rwspinlock_t *lock)
+{
+	ihk_atomic_dec((ihk_atomic_t *)&lock->v);
+}
+
+static inline void __ihk_rwspinlock_write_lock(ihk_rwspinlock_t *lock)
+{
+	/*
+	 * Atomically switch to write-locked state,
+	 * but make sure no one else is holding the lock.
+	 */
+	for (;;) {
+		if (likely(cmpxchg(&lock->v.counter,
+					0, IHK_RWSPINLOCK_WRITELOCKED) == 0))
+			return;
+		cpu_pause();
+	}
+}
+
+static inline void __ihk_rwspinlock_write_unlock(ihk_rwspinlock_t *lock)
+{
+	smp_store_release(&(lock->v.counter), 0);
+}
+
+/* User facing functions */
+static inline void ihk_rwspinlock_read_lock_noirq(ihk_rwspinlock_t *lock)
+{
+	preempt_disable();
+	__ihk_rwspinlock_read_lock(lock);
+}
+
+static inline int ihk_rwspinlock_read_trylock_noirq(ihk_rwspinlock_t *lock)
+{
+	int rc;
+
+	preempt_disable();
+	rc = __ihk_rwspinlock_read_trylock(lock);
+	if (!rc) {
+		preempt_enable();
+	}
+
+	return rc;
+}
+
+static inline void ihk_rwspinlock_write_lock_noirq(ihk_rwspinlock_t *lock)
+{
+	preempt_disable();
+	__ihk_rwspinlock_write_lock(lock);
+}
+
+static inline void ihk_rwspinlock_read_unlock_noirq(ihk_rwspinlock_t *lock)
+{
+	__ihk_rwspinlock_read_unlock(lock);
+	preempt_enable();
+}
+
+static inline void ihk_rwspinlock_write_unlock_noirq(ihk_rwspinlock_t *lock)
+{
+	__ihk_rwspinlock_write_unlock(lock);
+	preempt_enable();
+}
+
+
+static inline
+unsigned long ihk_rwspinlock_read_lock(ihk_rwspinlock_t *lock)
+{
+	unsigned long irqstate = cpu_disable_interrupt_save();
+
+	ihk_rwspinlock_read_lock_noirq(lock);
+	return irqstate;
+}
+
+static inline
+unsigned long ihk_rwspinlock_write_lock(ihk_rwspinlock_t *lock)
+{
+	unsigned long irqstate = cpu_disable_interrupt_save();
+
+	ihk_rwspinlock_write_lock_noirq(lock);
+	return irqstate;
+}
+
+static inline void ihk_rwspinlock_read_unlock(ihk_rwspinlock_t *lock,
+	unsigned long irqstate)
+{
+	ihk_rwspinlock_read_unlock_noirq(lock);
+	cpu_restore_interrupt(irqstate);
+}
+
+static inline void ihk_rwspinlock_write_unlock(ihk_rwspinlock_t *lock,
+	unsigned long irqstate)
+{
+	ihk_rwspinlock_write_unlock_noirq(lock);
+	cpu_restore_interrupt(irqstate);
+}
+
+
+
 #ifndef ARCH_MCS_LOCK
 /* An architecture independent implementation of the
  * Mellor-Crummey Scott (MCS) lock */
