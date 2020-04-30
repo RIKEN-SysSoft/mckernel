@@ -899,20 +899,25 @@ out:
 /* IHK kernel inspection I/F */
 #define IHK_OS_READ_KADDR             0x112a39
 
+#define IHK_OS_READ_KADDR_VIRT	0
+#define IHK_OS_READ_KADDR_PHYS	1
 struct ihk_os_read_kaddr_desc {
 	unsigned long kaddr;
 	unsigned long len;
 	void *ubuf;
+	int flags;
 };
 
+
 void ihk_read_kernel(unsigned long addr,
-	unsigned long len, void *buf)
+	unsigned long len, void *buf, int flags)
 {
 	struct ihk_os_read_kaddr_desc desc;
 
 	desc.kaddr = addr;
 	desc.len = len;
 	desc.ubuf = buf;
+	desc.flags = flags;
 
 	if (ioctl(mcfd, IHK_OS_READ_KADDR, &desc) != 0) {
 		fprintf(stderr, "%s: error: accessing kernel addr 0x%lx\n",
@@ -922,13 +927,19 @@ void ihk_read_kernel(unsigned long addr,
 }
 
 #define ihk_read_val(addr, pval) \
-	ihk_read_kernel(addr, sizeof(*pval), (void *)pval)
+	ihk_read_kernel(addr, sizeof(*pval), (void *)pval, \
+		IHK_OS_READ_KADDR_VIRT)
+
+#define ihk_read_val_phys(addr, pval) \
+	ihk_read_kernel(addr, sizeof(*pval), (void *)pval, \
+		IHK_OS_READ_KADDR_PHYS)
 
 #define get_pointer_symbol_val(__variable__, pval) \
 ({ \
 	unsigned long addr; \
 	addr = DWARF_GET_VARIABLE_ADDRESS(__variable__); \
-	ihk_read_kernel(addr, sizeof(*pval), (void *)pval); \
+	ihk_read_kernel(addr, sizeof(*pval), (void *)pval, \
+		IHK_OS_READ_KADDR_VIRT); \
 })
 
 
@@ -1025,7 +1036,8 @@ void print_thread(int cpu,
 		memset(cmd_line, 0, cmd_line_len + 1);
 
 		ihk_read_val(proc + process_saved_cmdline_offset, &cmd_line_addr);
-		ihk_read_kernel(cmd_line_addr, cmd_line_len, cmd_line);
+		ihk_read_kernel(cmd_line_addr, cmd_line_len, cmd_line,
+				IHK_OS_READ_KADDR_VIRT);
 		comm = basename(cmd_line);
 	}
 

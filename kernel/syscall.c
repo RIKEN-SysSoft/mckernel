@@ -2062,7 +2062,8 @@ out:
 	if (memobj) {
 		memobj_unref(memobj);
 	}
-	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+if (cpu_local_var(current)->profile)
+	kprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
 			__FUNCTION__,
 			addr, len, addr0, len0, prot, flags,
@@ -8016,7 +8017,6 @@ SYSCALL_DECLARE(nanosleep)
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
-	return 0;
 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
 	/* Do it locally if supported */
@@ -10200,6 +10200,7 @@ set_cputime(enum set_cputime_mode mode)
 	cpu_restore_interrupt(irq_flags);
 }
 
+
 long syscall(int num, ihk_mc_user_context_t *ctx)
 {
 	long l;
@@ -10288,6 +10289,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		        ihk_mc_syscall_sp(ctx));
 		l = syscall_generic_forwarding(num, ctx);
 	}
+
 
 	/* Store return value so that PTRACE_GETREGSET will see it */
 	save_syscall_return_value(num, l);
