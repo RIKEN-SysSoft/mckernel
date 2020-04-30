@@ -459,7 +459,7 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 	if (strcmp(p, "maps") == 0) {
 		struct vm_range *range;
 
-		if (!ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
+		if (!ihk_rwspinlock_read_trylock_noirq(&vm->memory_range_lock)) {
 			if (!result) {
 				if ((err = procfs_backlog(vm, rpacket))) {
 					goto err;
@@ -505,14 +505,14 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 
 			if (ans < 0 || ans > count ||
 			    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
-				ihk_mc_spinlock_unlock_noirq(
+				ihk_rwspinlock_read_unlock_noirq(
 							&vm->memory_range_lock);
 				goto err;
 			}
 			range = next_process_memory_range(vm, range);
 		}
 
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 
 		ans = 0;
 		goto end;
@@ -535,7 +535,7 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 		start = (offset / sizeof(uint64_t)) << PAGE_SHIFT;
 		end = start + ((count / sizeof(uint64_t)) << PAGE_SHIFT);
 
-		if (!ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
+		if (!ihk_rwspinlock_read_trylock_noirq(&vm->memory_range_lock)) {
 			if (!result) {
 				if ((err = procfs_backlog(vm, rpacket))) {
 					goto err;
@@ -555,7 +555,7 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 			++_buf;
 		}
 
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 
 		dprintf("/proc/pagemap: 0x%lx - 0x%lx, count: %d\n", 
 			start, end, count);
@@ -587,7 +587,7 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 			goto err;
 		}
 
-		if (!ihk_mc_spinlock_trylock_noirq(&vm->memory_range_lock)) {
+		if (!ihk_rwspinlock_read_trylock_noirq(&vm->memory_range_lock)) {
 			if (!result) {
 				if ((err = procfs_backlog(vm, rpacket))) {
 					goto err;
@@ -604,7 +604,7 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 				lockedsize += range->end - range->start;
 			range = next_process_memory_range(vm, range);
 		}
-		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 
 		cpu_bitmask = &bitmasks[bitmasks_offset];
 		bitmasks_offset += bitmap_scnprintf(cpu_bitmask,
