@@ -85,7 +85,7 @@ static int hugefileobj_get_page(struct memobj *memobj, off_t off,
 		}
 
 		memset(obj->pages[pgind], 0, obj->pgsize);
-		dkprintf("%s: obj: 0x%lx, allocated page for off: %lu"
+		kprintf("%s: obj: 0x%lx, allocated page for off: %lu"
 				" (ind: %d), page size: %lu\n",
 				__func__, obj, off, pgind, obj->pgsize);
 	}
@@ -275,13 +275,39 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 
 		obj->nr_pages = nr_pages;
 		obj->pages = pages;
-		dkprintf("%s: obj: 0x%lx, VA: 0x%lx, page array allocated"
+		kprintf("%s: obj: 0x%lx, VA: 0x%lx, page array allocated"
 				" for %d pages, pagesize: %lu\n",
 				__func__,
 				obj,
 				virt_addr,
 				nr_pages,
 				obj->pgsize);
+
+		{
+			int pgind;
+			int npages;
+
+			for (pgind = 0; pgind < obj->nr_pages; ++pgind) {
+				if (obj->pages[pgind]) {
+					continue;
+				}
+
+				npages = obj->pgsize >> PAGE_SHIFT;
+				obj->pages[pgind] = ihk_mc_alloc_aligned_pages_user(npages,
+						obj->pgshift - PTL1_SHIFT,
+						IHK_MC_AP_NOWAIT | IHK_MC_AP_USER, 0);
+				if (!obj->pages[pgind]) {
+					kprintf("%s: error: could not allocate page for off: %lu"
+							", page size: %lu\n", __func__, off, obj->pgsize);
+					continue;
+				}
+
+				memset(obj->pages[pgind], 0, obj->pgsize);
+				dkprintf("%s: obj: 0x%lx, pre-allocated page for off: %lu"
+						" (ind: %d), page size: %lu\n",
+						__func__, obj, off, pgind, obj->pgsize);
+			}
+		}
 	}
 
 	obj->memobj.size = len;
