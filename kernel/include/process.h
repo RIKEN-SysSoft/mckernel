@@ -749,7 +749,7 @@ struct process_vm {
 	void *vvar_addr;
  	
 	ihk_spinlock_t page_table_lock;
-	ihk_spinlock_t memory_range_lock;
+	ihk_rwspinlock_t memory_range_lock;
     // to protect the followings:
     // 1. addition of process "memory range" (extend_process_region, add_process_memory_range)
     // 2. addition of process page table (allocate_pages, update_process_page_table)
