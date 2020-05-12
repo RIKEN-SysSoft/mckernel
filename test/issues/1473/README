@@ -1,0 +1,35 @@
+【Issue#1473 動作確認】
+縮退確認のため、1259のテストも合わせて行うことを勧める。
+
+□ テスト内容
+xpmem_make01:
+	サイズ-1でxpmem_makeした際にpage-inしないことを確認する
+xpmem_attach01:
+	s < lの関係にあるページサイズサイズs、lについて、ページサイズ
+	s、サイズlの物理連続領域をxpmem_makeして、当該領域を
+	xpmem_attachした際にページサイズがsになることを確認する
+xpmem_attach02:
+	s < lの関係にあるページサイズサイズs, lについて、ページサイズl、
+	サイズl * 3のマップのうち最初のページの最後のサイズs * 3の部分、
+	次のページの全体、最後のページの最初のサイズs * 3の部分を束ねて
+	xpmem_makeして、xpmem_attachした際にページサイズがs,s,s,l,s,s,s
+	になるか、またぞれぞれのマップが期待する物理ページを指しているか
+	確認する
+
+□ 実行手順
+1. McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+   $HOME/.mck_test_configとしてコピーし、パスを編集する。
+   mcreboot.shのオプションは、-e 'xpmem_remote_on_demand anon_on_demand'
+   をつけた場合とつけない場合の両方を試すこと。
+
+2. 以下の手順でビルドと実行を行う
+$ cd <mckernel>
+$ patch -p0 < test/issues/1473/large_page.patch
+$ (build mckernel)
+$ cd <mckernel>/test/issues
+$ mkdir build && cd build
+$ cmake ../1473 -DWITH_MCK=/work/mcktest/work/mck -DWITH_MCK_SRC=/work/mcktest/work/src/mckernel -DWITH_MCK_BUILD=/work/mcktest/xpmem/mckernel/build -DWITH_XPMEM=/work/mcktest/xpmem/xpmem/install -DWITH_XPMEM_BUILD=/work/mcktest/xpmem/xpmem/xpmem -DCMAKE_INSTALL_PREFIX=/work/mcktest/xpmem/install -DCMAKE_INSTALL_PREFIX_SCRIPTS=/work/mcktest/data/scripts
+$ make install
+$ <install>/scripts/xpmem-xpmem_make01
+$ <install>/scripts/xpmem-xpmem_attach01
+$ <install>/scripts/xpmem-xpmem_attach02
