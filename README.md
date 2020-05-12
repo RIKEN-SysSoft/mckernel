@@ -170,6 +170,71 @@ Finally, to shutdown McKernel and release CPU/memory resources back to Linux use
 sudo ./sbin/mcstop+release.sh
 ~~~~
 
+##### 7. Advanced: Enable Utility Thread offloading Interface (UTI)
+
+UTI enables a runtime such as MPI runtime to spawn utility threads such as MPI asynchronous progress threads to Linux cores.
+
+1. Install capstone
+
+Install EPEL capstone-devel:
+
+~~~~
+sudo yum install epel-release
+sudo yum install capstone-devel
+~~~~
+
+2. Install syscall_intercept
+
+~~~~
+git clone https://github.com/RIKEN-SysSoft/syscall_intercept.git
+cmake ../arch/aarch64 -DCMAKE_INSTALL_PREFIX=<syscall-intercept-install> -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DTREAT_WARNINGS_AS_ERRORS=OFF
+~~~~
+
+3. Install UTI for McKernel
+
+Install:
+
+~~~~
+git clone https://github.com/RIKEN-SysSoft/uti.git
+mkdir build && cd build
+../uti/configure --prefix=<mckernel-install> --with-rm=mckernel
+make && make install
+~~~~
+
+4. Install McKernel
+
+~~~~
+CMAKE_PREFIX_PATH=<syscall-intercept-install> cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel -DENABLE_UTI=ON $HOME/src/ihk+mckernel/mckernel
+~~~~
+
+5. Run executable
+
+~~~~
+mcexec --enable-uti <command>
+~~~~
+
+6. Install UTI for Linux for performance comparison
+
+Install by make:
+
+~~~~
+git clone https://github.com/RIKEN-SysSoft/uti.git
+mkdir build && cd build
+../uti/configure --prefix=<uti-install> --with-rm=linux
+make && make install
+~~~~
+
+Install by rpm:
+
+~~~~
+git clone https://github.com/RIKEN-SysSoft/uti.git
+mkdir build && cd build
+../uti/configure --prefix=<uti-install> --with-rm=linux
+rm -f ~/rpmbuild/SOURCES/<version>.tar.gz
+rpmbuild -ba ./scripts/uti.spec
+rpm -Uvh uti-<version>-<release>-<arch>.rpm
+~~~~
+
 ## The Team
 
 The McKernel project was started at The University of Tokyo and currently it is mainly developed at RIKEN.
