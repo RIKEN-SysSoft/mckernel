@@ -423,11 +423,6 @@ static int xpmem_make(
 	struct xpmem_thread_group *seg_tg;
 	struct xpmem_segment *seg;
 	struct mcs_rwlock_node_irqsave lock;
-	struct process_vm *vm = cpu_local_var(current)->vm;
-	int ret;
-	pte_t *seg_pte = NULL;
-	size_t pgsize = 0, seg_size = 0;
-	unsigned long pf_addr;
 
 	XPMEM_DEBUG("call: vaddr=0x%lx, size=0x%lx, permit_type=%d, " 
 		"permit_value=0%04lo", 
@@ -457,27 +452,6 @@ static int xpmem_make(
 		xpmem_tg_deref(seg_tg);
 		XPMEM_DEBUG("return: ret=%d", -EINVAL);
 		return -EINVAL;
-	}
-
-	/* Page-in segment area */
-	pf_addr = vaddr;
-	while (pf_addr < vaddr + size) {
-		ret = page_fault_process_vm(vm, (void *)pf_addr,
-			PF_POPULATE | PF_WRITE | PF_USER);
-		if (ret) {
-			xpmem_tg_deref(seg_tg);
-			return -ENOENT;
-		}
-		seg_pte = xpmem_vaddr_to_pte(vm, pf_addr, &pgsize);
-		if (!seg_pte || pte_is_null(seg_pte)) {
-			xpmem_tg_deref(seg_tg);
-			return -ENOENT;
-		}
-		pf_addr += pgsize;
-		seg_size += pgsize;
-	}
-	if (seg_size > size) {
-		size = seg_size;
 	}
 
 	segid = xpmem_make_segid(seg_tg);
@@ -1936,36 +1910,49 @@ int xpmem_update_process_page_table(
 			goto out_2;
 		}
 
+		/* Page-in remote area */
+		ret = page_fault_process_vm(seg_tg->vm, (void *)seg_vaddr,
+			PF_POPULATE | PF_WRITE | PF_USER);
+		if (ret) {
+			goto out_2;
+		}
+
 		seg_pte = xpmem_vaddr_to_pte(seg_tg->vm, seg_vaddr,
 				&seg_pgsize);
-
-		if (seg_pte && !pte_is_null(seg_pte)) {
-			pte = xpmem_vaddr_to_pte(cpu_local_var(current)->vm,
-					vaddr, &pgsize);
-			if (pte && !pte_is_null(pte)) {
-				if (*seg_pte != *pte) {
-					ret = -EFAULT;
-					ekprintf("%s: ERROR: pte mismatch: "
-						"0x%lx != 0x%lx\n",
-						__func__, *seg_pte, *pte);
-				}
-
-				ihk_atomic_dec(&seg->tg->n_pinned);
-				goto out_2;
-			}
-
-			ret = xpmem_remap_pte(vm, vmr, vaddr,
-					0, seg, seg_vaddr);
-			if (ret) {
-				ekprintf("%s: ERROR: xpmem_remap_pte() failed %d\n",
-					__func__, ret);
-			}
+		if (!seg_pte || pte_is_null(seg_pte)) {
+			ret = -ENOENT;
+			goto out_2;
 		}
+
+		pte = xpmem_vaddr_to_pte(cpu_local_var(current)->vm,
+					 vaddr, &pgsize);
+		if (pte && !pte_is_null(pte)) {
+			if (*seg_pte != *pte) {
+				ret = -EFAULT;
+				ekprintf("%s: ERROR: pte mismatch: "
+					 "0x%lx != 0x%lx\n",
+					 __func__, *seg_pte, *pte);
+			}
+
+			ihk_atomic_dec(&seg->tg->n_pinned);
+			goto out_2;
+		}
+
+		ret = xpmem_remap_pte(vm, vmr, vaddr,
+				      0, seg, seg_vaddr);
+		if (ret) {
+			ekprintf("%s: ERROR: xpmem_remap_pte() failed %d\n",
+				 __func__, ret);
+		}
+
 		flush_tlb_single(vaddr);
 		att->flags |= XPMEM_FLAG_VALIDPTEs;
 
-		seg_vaddr += seg_pgsize;
-		vaddr += seg_pgsize;
+		/* Go to next page boundary for page-size structure
+		 * mismatch case
+		 */
+		seg_vaddr = (seg_vaddr & ~(seg_pgsize - 1)) + seg_pgsize;
+		vaddr = (vaddr & ~(seg_pgsize - 1)) + seg_pgsize;
 	}
 
 out_2:
@@ -2003,6 +1990,9 @@ static int xpmem_remap_pte(
 	size_t att_pgsize;
 	int att_p2align;
 	enum ihk_mc_pt_attribute att_attr;
+	size_t vmr_size;
+	unsigned long att_offset;
+	size_t att_size;
 
 	XPMEM_DEBUG("call: vmr=0x%p, vaddr=0x%lx, reason=0x%lx, segid=0x%lx, " 
 		"seg_vaddr=0x%lx", 
@@ -2049,7 +2039,7 @@ static int xpmem_remap_pte(
 	att_attr = arch_vrflag_to_ptattr(vmr->flag, reason, att_pte);
 	XPMEM_DEBUG("att_attr=0x%lx", att_attr);
 
-	if (att_pte && !pgsize_is_contiguous(seg_pgsize)) {
+	if (att_pte && seg_pgsize == PAGE_SIZE) {
 		ret = ihk_mc_pt_set_pte(vm->address_space->page_table, att_pte,
 			seg_pgsize, seg_phys, att_attr);
 		if (ret) {
@@ -2060,10 +2050,19 @@ static int xpmem_remap_pte(
 		}
 	}
 	else {
+		/* Prevent overrun for page-size structure mismatch case */
+		vmr_size = vmr->end - vmr->start;
+		att_offset = (unsigned long)att_pgaddr - vmr->start;
+		att_size = att_offset + seg_pgsize > vmr_size ?
+			vmr_size - att_offset : seg_pgsize;
+
+		/* Automatically select pgsize by setting the 3rd last
+		 * arg to zero for page-size structure mismatch case
+		 */
 		ret = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
-				att_pgaddr, att_pgaddr + seg_pgsize,
+				att_pgaddr, att_pgaddr + att_size,
 				seg_phys, att_attr,
-				pgsize_to_pgshift(seg_pgsize), vmr, 1);
+				0, vmr, 1);
 		if (ret) {
 			ret = -EFAULT;
 			ekprintf("%s: ERROR: ihk_mc_pt_set_range() failed %d\n",
