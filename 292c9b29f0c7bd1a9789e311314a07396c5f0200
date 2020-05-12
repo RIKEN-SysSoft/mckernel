@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "58fbb5cc_7bb3ad19",
+        "filename": "test/issues/1389/C1389.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-05-12T00:56:24Z",
+      "side": 1,
+      "message": "grep -cの方が良いのでは？",
+      "range": {
+        "startLine": 33,
+        "startChar": 0,
+        "endLine": 33,
+        "endChar": 36
+      },
+      "revId": "292c9b29f0c7bd1a9789e311314a07396c5f0200",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
