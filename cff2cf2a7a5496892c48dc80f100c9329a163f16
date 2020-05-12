@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5483a55f_acb4b09e",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1850,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-12T01:01:02Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define LD_PRELOAD_PREPARE(name) do {\t\\\n+\tint n \u003d 0;\t\\\n+\t\\\n+\tif (1 + strnlen(libdir, PATH_MAX) + 1 +\t\\\n+\t\tstrnlen(name, PATH_MAX) + 1 \u003e PATH_MAX) {\t\\\n+\t\tfprintf(stderr,\t\\\n+\t\t\t\"%s: warning: LD_PRELOAD path is too long\\n\",\t\\\n+\t\t\t__func__);\t\\\n+\t\treturn;\t\\\n+\t}\t\\\n+\tif (nelem \u003e 0)\t\\\n+\t\tn +\u003d snprintf(elembuf, PATH_MAX, \":\");\t\\\n+\tn +\u003d snprintf(elembuf + n, PATH_MAX - n - 1, libdir); \\\n+\tn +\u003d snprintf(elembuf + n, PATH_MAX - n - 1, \"/\"); \\\n+\tn +\u003d snprintf(elembuf + n, PATH_MAX - n - 1, name); \\\n+} while (0)",
+      "revId": "cff2cf2a7a5496892c48dc80f100c9329a163f16",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
