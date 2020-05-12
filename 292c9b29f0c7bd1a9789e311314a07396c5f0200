@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "22b652b3_8e0308b5",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1133,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-12T01:00:54Z",
+      "side": 1,
+      "message": "WARNING: Symbolic permissions \u0027S_IRUGO\u0027 are not preferred. Consider using octal permissions \u00270444\u0027.\n+\tPROC_REG(\"meminfo\",    S_IRUGO, \u0026mckernel_buff_io),",
+      "revId": "292c9b29f0c7bd1a9789e311314a07396c5f0200",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "58fbb5cc_7bb3ad19",
         "filename": "test/issues/1389/C1389.sh",
         "patchSetId": 2
@@ -22,6 +39,40 @@
       "revId": "292c9b29f0c7bd1a9789e311314a07396c5f0200",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "172d2f0f_177e84a2",
+        "filename": "test/issues/1389/C1389T02.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-12T01:00:54Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+CommitLimitTxt\u003d`cat ./cur_meminfo.txt | grep CommitLimit | awk \u0027{print $(NF-1)}\u0027`",
+      "revId": "292c9b29f0c7bd1a9789e311314a07396c5f0200",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a42cc1d_633ed8ed",
+        "filename": "test/issues/1389/C1389T02.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-12T01:00:54Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+Committed_ASTxt\u003d`cat ./cur_meminfo.txt | grep Committed_AS | awk \u0027{print $(NF-1)}\u0027`",
+      "revId": "292c9b29f0c7bd1a9789e311314a07396c5f0200",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
