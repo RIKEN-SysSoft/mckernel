@@ -1,0 +1,361 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7c80508d_f946b0f5",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1822,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b943ca61_70e93ab3",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1835,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd604976_e3098bd6",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 2014,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t!xpmem_remote_on_demand);",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a05451d1_53b7142f",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_ADDR\u003d`grep xpmem_attachment_addr ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f8166b9_3221e186",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "23e8d833_8d1e5746",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_ADDR\u003d`grep xpmem_attachment_addr ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a5a01bbf_b0bee2fc",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "05d2db88_5842c581",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"size of 1st page of segment at ${SEG_ADDR}: ${SEG_PGSIZE}, expected: ${EXPECT_PGSIZE}\"",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b8f87ee7_d8e1d4ba",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"size of 1st page of attachment at ${XPMEM_ADDR}: ${XPMEM_PGSIZE}, expected: ${EXPECT_PGSIZE}\"",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3dbb5733_946f0262",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+XPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e633bed_4a97f167",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 9
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+XPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34ecfa6a_e9ece7dd",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a7f60440_4443d808",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f1a0e33_8efff434",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce96166c_72d1fb24",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e0b1d46_76e700a2",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b72fb66_417fcb3a",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5cf18dd6_84cc0fdf",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2d9c5fb9_f3deeb80",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 9
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f827925d_033da536",
+        "filename": "test/issues/1473/okng.h",
+        "patchSetId": 9
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\t\\\n+\tif (cond) {\t\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\t\\\n+\t\t\tprintf(\"[  OK  ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\t\\\n+\t\tprintf(\"[  NG  ] \" fmt, ##args);\t\t\\\n+\t\tif (jump) {\t\t\t\t\t\\\n+\t\t\tret \u003d 1;\t\t\t\t\\\n+\t\t\tgoto out;\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\\\n+\t}\t\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a417cc00_b21bad99",
+        "filename": "test/issues/1473/okng.h",
+        "patchSetId": 9
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-05-19T04:59:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define INTERR(cond, fmt, args...) do {\t \\\n+\tif (cond) {\t\t\t \\\n+\t\tchar msg[4096];\t\t\t \\\n+\t\tsprintf(msg, fmt, ##args);\t\t \\\n+\t\tprintf(\"[INTERR] %s:%d %s\", __FILE__, __LINE__, msg);\t\\\n+\t\tret \u003d 1;\t\t\t\t\t\\\n+\t\tgoto out;\t\t\t\t\t\\\n+\t} \\\n+} while (0)",
+      "revId": "f1d2dd56e95238eab211348656495c04da4eb8a7",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
