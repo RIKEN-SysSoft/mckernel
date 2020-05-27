@@ -1919,21 +1919,35 @@ static int xpmem_remap_pte(
 		goto out;
 	}
 
-	seg_pte = ihk_mc_pt_lookup_pte(seg_tg->vm->address_space->page_table, 
-		(void *)seg_vaddr, seg_vmr->pgshift, &seg_pgaddr, &seg_pgsize, 
-		&seg_p2align);
-	if (!seg_pte) {
-		ret = -EFAULT;
-		ekprintf("%s: ERROR: ihk_mc_pt_lookup_pte() failed\n", 
-			__FUNCTION__);
-		goto out;
+	if (seg_tg->vm->proc->straight_va &&
+	    seg_vaddr >= (unsigned long)seg_tg->vm->proc->straight_va &&
+	    seg_vaddr < ((unsigned long)seg_tg->vm->proc->straight_va +
+				seg_tg->vm->proc->straight_len)) {
+		seg_phys = (((unsigned long)seg_vaddr & PAGE_MASK) -
+				(unsigned long)seg_tg->vm->proc->straight_va) +
+			seg_tg->vm->proc->straight_pa;
+		dkprintf("%s: 0x%lx in PID %d is straight -> phys: 0x%lx\n",
+				__func__, (unsigned long)seg_vaddr & PAGE_MASK,
+				seg_tg->tgid, seg_phys);
 	}
-	XPMEM_DEBUG("seg_pte=0x%016lx, seg_pgaddr=0x%p, seg_pgsize=%lu, " 
-		"seg_p2align=%d", 
-		*seg_pte, seg_pgaddr, seg_pgsize, seg_p2align);
+	else {
 
-	seg_phys = pte_get_phys(seg_pte);
-	XPMEM_DEBUG("seg_phys=0x%lx", seg_phys);
+		seg_pte = ihk_mc_pt_lookup_pte(seg_tg->vm->address_space->page_table, 
+				(void *)seg_vaddr, seg_vmr->pgshift, &seg_pgaddr, &seg_pgsize, 
+				&seg_p2align);
+		if (!seg_pte) {
+			ret = -EFAULT;
+			ekprintf("%s: ERROR: ihk_mc_pt_lookup_pte() failed\n", 
+					__FUNCTION__);
+			goto out;
+		}
+		XPMEM_DEBUG("seg_pte=0x%016lx, seg_pgaddr=0x%p, seg_pgsize=%lu, " 
+				"seg_p2align=%d", 
+				*seg_pte, seg_pgaddr, seg_pgsize, seg_p2align);
+
+		seg_phys = pte_get_phys(seg_pte);
+		XPMEM_DEBUG("seg_phys=0x%lx", seg_phys);
+	}
 
 	att_pte = ihk_mc_pt_lookup_pte(vm->address_space->page_table, 
 		(void *)vaddr, vmr->pgshift, &att_pgaddr, &att_pgsize, 
