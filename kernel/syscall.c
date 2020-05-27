@@ -1563,10 +1563,20 @@ int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 {
 	int error;
 	int ro_freed;
+	struct thread *thread = cpu_local_var(current);
 
 	begin_free_pages_pending();
 	error = remove_process_memory_range(cpu_local_var(current)->vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
+
+	/* No host involvement for straight mapping ranges */
+	if (thread->proc->straight_va &&
+			addr >= thread->proc->straight_va &&
+			(addr + len) <=
+			(thread->proc->straight_va + thread->proc->straight_len)) {
+		goto out;
+	}
+
 	if (error || !ro_freed) {
 		clear_host_pte((uintptr_t)addr, len, holding_memory_range_lock);
 	}
@@ -1577,6 +1587,8 @@ int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 			/* through */
 		}
 	}
+
+out:
 	finish_free_pages_pending();
 
 	dkprintf("%s: 0x%lx:%lu, error: %ld\n",
@@ -1648,6 +1660,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	void *p = NULL;
 	int vrflags;
 	uintptr_t phys;
+	intptr_t straight_phys;
 	struct memobj *memobj = NULL;
 	int maxprot;
 	int denied;
@@ -1689,6 +1702,124 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 
 	flush_nfo_tlb();
 
+	/* Initialize straight large memory mapping */
+	if (proc->straight_map && !proc->straight_va) {
+		unsigned long straight_pa_start = 0xFFFFFFFFFFFFFFFF;
+		unsigned long straight_pa_end = 0;
+		int i;
+		int p2align = PAGE_P2ALIGN;
+		size_t psize = PAGE_SIZE;
+		unsigned long vrflags;
+		enum ihk_mc_pt_attribute ptattr;
+		struct vm_range *range;
+
+		vrflags = PROT_TO_VR_FLAG(PROT_READ | PROT_WRITE);
+		vrflags |= VRFLAG_PROT_TO_MAXPROT(vrflags);
+		vrflags |= VR_DEMAND_PAGING;
+
+		for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+			unsigned long start, end;
+
+			ihk_mc_get_memory_chunk(i, &start, &end, NULL);
+
+			if (straight_pa_start > start) {
+				straight_pa_start = start;
+			}
+
+			if (straight_pa_end < end) {
+				straight_pa_end = end;
+			}
+		}
+
+		kprintf("%s: straight_pa_start: 0x%lx, straight_pa_end: 0x%lx\n",
+				__FUNCTION__, straight_pa_start, straight_pa_end);
+
+		error = arch_get_smaller_page_size(NULL,
+				straight_pa_end - straight_pa_start,
+				&psize, &p2align);
+
+		if (error) {
+			kprintf("%s: arch_get_smaller_page_size failed: %d\n",
+					__FUNCTION__, error);
+			goto straight_out;
+		}
+		//psize = PTL2_SIZE;
+		//p2align = PTL2_SHIFT - PTL1_SHIFT;
+
+		// Force 512G page
+		//psize = (1UL << 39);
+		//p2align = 39 - PAGE_SHIFT;
+
+		// Force 512MB page
+		psize = (1UL << 29);
+		p2align = 29 - PAGE_SHIFT;
+
+		kprintf("%s: using page shift: %d, psize: %lu\n",
+				__FUNCTION__, p2align + PAGE_SHIFT, psize);
+
+		straight_pa_start &= ~(psize - 1);
+		straight_pa_end = (straight_pa_end + psize - 1) & ~(psize - 1);
+
+		kprintf("%s: aligned straight_pa_start: 0x%lx, straight_pa_end: 0x%lx\n",
+				__FUNCTION__, straight_pa_start, straight_pa_end);
+
+		proc->straight_len = straight_pa_end - straight_pa_start;
+		error = search_free_space(proc->straight_len,
+				PAGE_SHIFT + p2align, (uintptr_t *)&proc->straight_va);
+
+		if (error) {
+			kprintf("%s: search_free_space() failed: %d\n",
+					__FUNCTION__, error);
+			proc->straight_va = 0;
+			goto straight_out;
+		}
+
+		dkprintf("%s: straight_va: 0x%lx to be used\n",
+				__FUNCTION__, proc->straight_va);
+
+		if (add_process_memory_range(proc->vm, (unsigned long)proc->straight_va,
+					(unsigned long)proc->straight_va + proc->straight_len,
+					NOPHYS, vrflags, NULL, 0,
+					PAGE_SHIFT + p2align, &range) != 0) {
+			kprintf("%s: error: adding straight memory range \n",
+					__FUNCTION__);
+			proc->straight_va = 0;
+			goto straight_out;
+		}
+
+		kprintf("%s: straight_va: 0x%lx, range->pgshift: %d, range OK\n",
+				__FUNCTION__, proc->straight_va, range->pgshift);
+
+		ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+		error = ihk_mc_pt_set_range(proc->vm->address_space->page_table,
+				proc->vm,
+				(void *)range->start,
+				(void *)range->end,
+				straight_pa_start, ptattr,
+				range->pgshift,
+				range, 0);
+
+		if (error) {
+			kprintf("%s: ihk_mc_pt_set_range() failed: %d\n",
+					__FUNCTION__, error);
+			proc->straight_va = 0;
+			goto straight_out;
+		}
+		//ihk_mc_pt_print_pte(proc->vm->address_space->page_table, range->start);
+
+		region->map_end = (unsigned long)proc->straight_va + proc->straight_len;
+		proc->straight_pa = straight_pa_start;
+		kprintf("%s: straight mapping: 0x%lx:%lu @ 0x%lx, "
+				"psize: %lu, straight_map_threshold: %lu\n",
+				__FUNCTION__,
+				proc->straight_va,
+				proc->straight_len,
+				proc->straight_pa,
+				psize,
+				proc->straight_map_threshold);
+	}
+straight_out:
+
 	if (flags & MAP_HUGETLB) {
 		pgshift = (flags >> MAP_HUGE_SHIFT) & 0x3F;
 		if (!pgshift) {
@@ -1715,6 +1846,15 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	}
 
 	ihk_rwspinlock_write_lock_noirq(&thread->vm->memory_range_lock);
+
+	if ((flags & MAP_FIXED) && proc->straight_va &&
+			((void *)addr >= proc->straight_va) &&
+			((void *)addr + len) <= (proc->straight_va + proc->straight_len)) {
+		kprintf("%s: can't map MAP_FIXED into straight mapping\n",
+				__FUNCTION__);
+		error = -EINVAL;
+		goto out;
+	}
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
@@ -1772,6 +1912,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	}
 
 	phys = 0;
+	straight_phys = 0;
 	off = 0;
 	maxprot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	if (!(flags & MAP_ANONYMOUS)) {
@@ -1959,6 +2100,31 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	}
 	vrflags |= VRFLAG_PROT_TO_MAXPROT(PROT_TO_VR_FLAG(maxprot));
 
+	/*
+	 * Large anonymous non-fix allocations are in straight mapping,
+	 * pretend demand paging to avoid filling in PTEs
+	 */
+	if ((flags & MAP_ANONYMOUS) && proc->straight_map &&
+			!(flags & MAP_FIXED) && phys) {
+		if (len >= proc->straight_map_threshold) {
+			dkprintf("%s: range 0x%lx:%lu will be straight, addding VR_DEMAND\n",
+					__FUNCTION__, addr, len);
+			vrflags |= VR_DEMAND_PAGING;
+			straight_phys = phys;
+			phys = 0;
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_mmap_anon_straight, len);
+#endif // PROFILE_ENABLE
+		}
+		else {
+#ifdef PROFILE_ENABLE
+			if (cpu_local_var(current)->profile)
+				kprintf("%s: contiguous but not straight? len: %lu\n", __func__, len);
+			profile_event_add(PROFILE_mmap_anon_not_straight, len);
+#endif // PROFILE_ENABLE
+		}
+	}
+
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
 			vrflags, memobj, off, pgshift, &range);
 	if (error) {
@@ -1967,6 +2133,19 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 				__FUNCTION__, addr, addr+len,
 				flags, vrflags, pgshift, error);
 		goto out;
+	}
+
+	/* Update straight mapping start address */
+	if (straight_phys) {
+		extern int zero_at_free;
+		range->straight_start =
+			(unsigned long)proc->straight_va +
+			(straight_phys - proc->straight_pa);
+		dkprintf("%s: range 0x%lx:%lu is straight starting at 0x%lx\n",
+				__FUNCTION__, addr, len, range->straight_start);
+		if (!zero_at_free) {
+			memset((void *)phys_to_virt(straight_phys), 0, len);
+		}
 	}
 
 	/* Determine pre-populated size */
@@ -2023,12 +2202,13 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	ro_vma_mapped = 0;
 
 out:
-	if (ro_vma_mapped) {
+	if (ro_vma_mapped && !range->straight_start) {
 		(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 	}
 	ihk_rwspinlock_write_unlock_noirq(&thread->vm->memory_range_lock);
 
-	if (!error && populated_mapping && !((vrflags & VR_PROT_MASK) == VR_PROT_NONE)) {
+	if (!error && populated_mapping &&
+			!((vrflags & VR_PROT_MASK) == VR_PROT_NONE) && !range->straight_start) {
 		error = populate_process_memory(thread->vm,
 				(void *)addr, populate_len);
 
@@ -2071,7 +2251,9 @@ out:
 			fd, off0, error, addr);
 	}
 
-	return (!error)? addr: error;
+	return !error ?
+		(range->straight_start ? range->straight_start : addr) :
+		error;
 }
 
 SYSCALL_DECLARE(munmap)
@@ -2149,6 +2331,16 @@ SYSCALL_DECLARE(mprotect)
 	if (len == 0) {
 		/* nothing to do */
 		return 0;
+	}
+
+	if (thread->proc->straight_va &&
+			((void *)start >= thread->proc->straight_va) &&
+			(void *)end <= (thread->proc->straight_va +
+				thread->proc->straight_len)) {
+		kprintf("%s: ignored for straight mapping 0x%lx\n",
+				__FUNCTION__, start);
+		error = 0;
+		goto out_straight;
 	}
 
 	flush_nfo_tlb();
@@ -2244,6 +2436,8 @@ out:
 		}
 	}
 	ihk_rwspinlock_write_unlock_noirq(&thread->vm->memory_range_lock);
+
+out_straight:
 	dkprintf("[%d]sys_mprotect(%lx,%lx,%x): %d\n",
 			ihk_mc_get_processor_id(), start, len0, prot, error);
 	return error;
@@ -8569,6 +8763,15 @@ SYSCALL_DECLARE(mremap)
 
 	dkprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx)\n",
 			oldaddr, oldsize0, newsize0, flags, newaddr);
+
+	if (vm->proc->straight_va &&
+			(void *)oldaddr >= vm->proc->straight_va &&
+			(void *)oldaddr < vm->proc->straight_va + vm->proc->straight_len) {
+		kprintf("%s: reject for straight range 0x%lx\n",
+				__FUNCTION__, oldaddr);
+		return -EINVAL;
+	}
+
 	ihk_rwspinlock_write_lock_noirq(&vm->memory_range_lock);
 
 	/* check arguments */
@@ -8971,6 +9174,11 @@ SYSCALL_DECLARE(mbind)
 		"nodemask: 0x%lx, flags: %lx\n",
 		__FUNCTION__,
 		addr, len, mode, nodemask, flags);
+
+	/* No bind support for straight mapped processes */
+	if (cpu_local_var(current)->proc->straight_va) {
+		return 0;
+	}
 
 	/* Validate arguments */
 	if (addr & ~PAGE_MASK) {

@@ -651,6 +651,9 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		goto put_and_out;
 	}
 
+	// Force regular page size
+	pgsize = PAGE_SIZE;
+
 	rva = (unsigned long)addr & ~(pgsize - 1);
 	rpa = rpa & ~(pgsize - 1);
 
@@ -662,7 +665,8 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 		/* LWK may hold large page based mappings that align rva outside
 		 * Linux' VMA, make sure we don't try to map to those pages */
-		if (rva + (pix * PAGE_SIZE) < vma->vm_start) {
+		if (rva + (pix * PAGE_SIZE) < vma->vm_start ||
+			rva + (pix * PAGE_SIZE) > vma->vm_end) {
 			continue;
 		}
 
@@ -673,11 +677,11 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			if (error) {
 				pr_err("%s: error inserting mapping for 0x%#lx "
 					"(req: TID: %d, syscall: %lu) error: %d,"
-					" vm_start: 0x%lx, vm_end: 0x%lx\n",
+					" vm_start: 0x%lx, vm_end: 0x%lx, pgsize: %lu, ind: %lu\n",
 					__func__,
 					(unsigned long)addr, packet.fault_tid,
 					rsysnum, error,
-					vma->vm_start, vma->vm_end);
+					vma->vm_start, vma->vm_end, pgsize, pix);
 			}
 		}
 		else

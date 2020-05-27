@@ -546,6 +546,9 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->uti_thread_rank = pn->uti_thread_rank;
 	proc->uti_use_last_cpu = pn->uti_use_last_cpu;
 
+	proc->straight_map = pn->straight_map;
+	proc->straight_map_threshold = pn->straight_map_threshold;
+
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
 	thread->profile = pn->profile;

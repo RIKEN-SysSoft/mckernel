@@ -187,6 +187,8 @@ static int mpol_no_stack = 0;
 static int mpol_no_bss = 0;
 static int mpol_shm_premap = 0;
 static int no_bind_ikc_map = 0;
+static int straight_map = 0;
+static unsigned long straight_map_threshold = (1024*1024);
 static unsigned long mpol_threshold = 0;
 static unsigned long heap_extension = -1;
 static int profile = 0;
@@ -1674,6 +1676,18 @@ static struct option mcexec_options[] = {
 		.val =		'M',
 	},
 	{
+		.name =		"enable-straight-map",
+		.has_arg =	no_argument,
+		.flag =		&straight_map,
+		.val =		1,
+	},
+	{
+		.name =		"straight-map-threshold",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'S',
+	},
+	{
 		.name =		"disable-sched-yield",
 		.has_arg =	no_argument,
 		.flag =		&disable_sched_yield,
@@ -2094,10 +2108,10 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:S:",
 				  mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:S:",
 				  mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
@@ -2137,6 +2151,10 @@ int main(int argc, char **argv)
 
 			case 'h':
 				heap_extension = atobytes(optarg);
+				break;
+
+			case 'S':
+				straight_map_threshold = atobytes(optarg);
 				break;
 
 #ifdef ADD_ENVS_OPTION
@@ -2610,6 +2628,9 @@ int main(int argc, char **argv)
 	desc->uti_thread_rank = uti_thread_rank;
 	desc->uti_use_last_cpu = uti_use_last_cpu;
 	desc->thp_disable = get_thp_disable();
+
+	desc->straight_map = straight_map;
+	desc->straight_map_threshold = straight_map_threshold;
 
 	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
