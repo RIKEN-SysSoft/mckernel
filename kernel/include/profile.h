@@ -40,6 +40,8 @@ enum profile_event_type {
 	PROFILE_remote_page_fault,
 	PROFILE_mpol_alloc_missed,
 	PROFILE_mmap_anon_contig_phys,
+	PROFILE_mmap_anon_straight,
+	PROFILE_mmap_anon_not_straight,
 	PROFILE_mmap_anon_no_contig_phys,
 	PROFILE_mmap_regular_file,
 	PROFILE_mmap_device_file,
