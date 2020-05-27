@@ -218,3 +218,41 @@ ENTRY(__inline_memset)
 	ret
 ENDPIPROC(__inline_memset)
 ENDPROC(____inline_memset)
+
+
+/*
+ * Non-temporal vector memory clear
+ *
+ * Parameters:
+ *     x0 - buf (assumed to be aligned to page size)
+ *     x1 - n (assumed to be at least page size)
+ */
+ENTRY(__memclear)
+       stp     q0, q1, [x2] /* Preserve two 128 bit vector regs */
+       eor v0.16B, v0.16B, v0.16B
+       eor v1.16B, v1.16B, v1.16B
+1:
+       stnp q0, q1, [x0, #32 * 0]
+       stnp q0, q1, [x0, #32 * 1]
+       stnp q0, q1, [x0, #32 * 2]
+       stnp q0, q1, [x0, #32 * 3]
+       stnp q0, q1, [x0, #32 * 4]
+       stnp q0, q1, [x0, #32 * 5]
+       stnp q0, q1, [x0, #32 * 6]
+       stnp q0, q1, [x0, #32 * 7]
+       stnp q0, q1, [x0, #32 * 8]
+       stnp q0, q1, [x0, #32 * 9]
+       stnp q0, q1, [x0, #32 * 10]
+       stnp q0, q1, [x0, #32 * 11]
+       stnp q0, q1, [x0, #32 * 12]
+       stnp q0, q1, [x0, #32 * 13]
+       stnp q0, q1, [x0, #32 * 14]
+       stnp q0, q1, [x0, #32 * 15]
+       add x0, x0, #512
+       subs x1, x1, #512
+       cmp x1, #0
+       b.ne    1b
+
+       ldp     q0, q1, [x2] /* Restore vector regs */
+       ret
+ENDPROC(__memclear)
