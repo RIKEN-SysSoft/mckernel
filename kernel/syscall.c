@@ -272,6 +272,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			cpu_restore_interrupt(runq_irqstate);
 
 			if (!do_schedule) {
+				ihk_numa_zero_free_pages(ihk_mc_get_numa_node_by_distance(0));
 				continue;
 			}
 
