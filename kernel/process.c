@@ -3200,6 +3200,7 @@ static void idle(void)
 		    v->status == CPU_STATUS_RESERVED) {
 			/* No work to do? Consolidate the kmalloc free list */
 			kmalloc_consolidate_free_list();
+			ihk_numa_zero_free_pages(ihk_mc_get_numa_node_by_distance(0));
 			monitor->status = IHK_OS_MONITOR_IDLE;
 			cpu_local_var(current)->status = PS_INTERRUPTIBLE;
 			cpu_safe_halt();
@@ -3555,6 +3556,7 @@ void spin_sleep_or_schedule(void)
 			break;
 		}
 
+		ihk_numa_zero_free_pages(ihk_mc_get_numa_node_by_distance(0));
 		cpu_pause();
 	}
 

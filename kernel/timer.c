@@ -102,6 +102,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 
 		/* Spin wait */
 		while ((rdtsc() - t_s) < LOOP_TIMEOUT) {
+			ihk_numa_zero_free_pages(ihk_mc_get_numa_node_by_distance(0));
 			cpu_pause();
 		}
 
