@@ -1466,17 +1466,14 @@ int add_process_memory_range(struct process_vm *vm,
 	/* Clear content! */
 	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
-#if 1
-		memset((void *)phys_to_virt(phys), 0, end - start);
+
+		if (!zero_at_free) {
+#ifdef ARCH_MEMCLEAR
+			memclear((void *)phys_to_virt(phys), end - start);
 #else
-		if (end - start < (1024*1024)) {
-			memset((void*)phys_to_virt(phys), 0, end - start);
-		}
-		else {
-			memset_smp(&cpu_local_var(current)->cpu_set,
-					(void *)phys_to_virt(phys), 0, end - start);
-		}
+			memset((void *)phys_to_virt(phys), 0, end - start);
 #endif
+		}
 	}
 
 	/* Return range object if requested */
