@@ -792,6 +792,27 @@ order_based:
 	return NULL;
 }
 
+/*
+ * Get NUMA node structure offsetted by index in the order of distance
+ */
+struct ihk_mc_numa_node *ihk_mc_get_numa_node_by_distance(int i)
+{
+	int numa_id;
+
+	if (!cpu_local_var_initialized)
+		return NULL;
+
+	if (i < 0 || i > ihk_mc_get_nr_numa_nodes()) {
+		return NULL;
+	}
+
+	numa_id = ihk_mc_get_numa_id();
+	if (!memory_nodes[numa_id].nodes_by_distance)
+		return NULL;
+
+	return &memory_nodes[memory_nodes[numa_id].nodes_by_distance[i].id];
+}
+
 static void __mckernel_free_pages_in_allocator(void *va, int npages,
                                                int is_user)
 {
@@ -1485,11 +1506,13 @@ static void numa_init(void)
 		INIT_LIST_HEAD(&memory_nodes[i].allocators);
 		memory_nodes[i].nodes_by_distance = 0;
 #ifdef IHK_RBTREE_ALLOCATOR
+		memory_nodes[i].zeroed_chunks.rb_node = 0;
 		memory_nodes[i].free_chunks.rb_node = 0;
 		mcs_lock_init(&memory_nodes[i].lock);
 		memory_nodes[i].min_addr = 0xFFFFFFFFFFFFFFFF;
 		memory_nodes[i].max_addr = 0;
 		memory_nodes[i].nr_pages = 0;
+		memory_nodes[i].nr_zeroed_pages = 0;
 		memory_nodes[i].nr_free_pages = 0;
 #endif
 	}
