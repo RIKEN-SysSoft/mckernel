@@ -63,6 +63,8 @@ char *profile_event_names[] =
 	"remote_page_fault",
 	"mpol_alloc_missed",
 	"mmap_anon_contig_phys",
+	"|-------mmap_straight",
+	"|---mmap_not_straight",
 	"mmap_anon_no_contig_phys",
 	"mmap_regular_file",
 	"mmap_device_file",

@@ -1651,6 +1651,14 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	if (memobj && ((memobj->flags & MF_PREMAP))) {
 		args.free_physical = 0;
 	}
+
+	if (vm->proc->straight_va &&
+			(void *)start == vm->proc->straight_va &&
+			(void *)end == (vm->proc->straight_va +
+				vm->proc->straight_len)) {
+		args.free_physical = 0;
+	}
+
 	args.memobj = memobj;
 	args.vm = vm;
 
