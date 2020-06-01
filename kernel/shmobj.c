@@ -32,14 +32,16 @@ static memobj_free_func_t shmobj_free;
 static memobj_get_page_func_t shmobj_get_page;
 static memobj_invalidate_page_func_t shmobj_invalidate_page;
 static memobj_lookup_page_func_t shmobj_lookup_page;
+static memobj_split_page_func_t shmobj_split_page;
 
 static struct memobj_ops shmobj_ops = {
 	.free =	&shmobj_free,
 	.get_page =	&shmobj_get_page,
 	.lookup_page =	&shmobj_lookup_page,
+	.split_page = &shmobj_split_page,
 };
 
-static struct shmobj *to_shmobj(struct memobj *memobj)
+struct shmobj *to_shmobj(struct memobj *memobj)
 {
 	return (struct shmobj *)memobj;
 }
@@ -501,3 +503,80 @@ out:
 			memobj, off, p2align, physp, error, phys);
 	return error;
 } /* shmobj_lookup_page() */
+
+static int shmobj_split_page(struct memobj *memobj, off_t off,
+		int orig_p2align, int split_p2align)
+{
+	struct shmobj *obj = to_shmobj(memobj);
+	int error;
+	struct page *orig_page, *page;
+	size_t orig_pgsize = 1UL << (orig_p2align + PAGE_SHIFT);
+	size_t split_pgsize = 1UL << (split_p2align + PAGE_SHIFT);
+	size_t page_off = 0;
+	uintptr_t base_phys, phys;
+
+	dkprintf("%s(%p,%#lx,%d,%d)\n",
+			memobj, off, orig_p2align, split_p2align);
+	memobj_ref(&obj->memobj);
+	if (off & ~PAGE_MASK) {
+		error = -EINVAL;
+		ekprintf("%s(%p,%#lx,%d,%d):invalid argument. %d\n", __func__,
+				memobj, off, orig_p2align, split_p2align);
+		goto out;
+	}
+	if (split_p2align != (obj->pgshift - PAGE_SHIFT)) {
+		error = -ENOMEM;
+		ekprintf("%s(%p,%#lx,%d,%d):pgsize mismatch. %d\n", __func__,
+				memobj, off, orig_p2align, split_p2align);
+		goto out;
+	}
+	if (obj->real_segsz <= off) {
+		error = -ERANGE;
+		ekprintf("%s(%p,%#lx,%d,%d):beyond the end. %d\n", __func__,
+				memobj, off, orig_p2align, split_p2align);
+		goto out;
+	}
+	if ((obj->real_segsz - off) < (PAGE_SIZE << split_p2align)) {
+		error = -ENOSPC;
+		ekprintf("%s(%p,%#lx,%d,%d):too large. %d\n", __func__,
+				memobj, off, orig_p2align, split_p2align);
+		goto out;
+	}
+
+	page_list_lock(obj);
+	orig_page = page_list_lookup(obj, off);
+	page_list_unlock(obj);
+	if (!orig_page) {
+		error = -ENOENT;
+		dkprintf("%s(%p,%#lx,%d,%d):page not found. %d\n", __func__,
+				memobj, off, orig_p2align, split_p2align);
+		goto out;
+	}
+	base_phys = page_to_phys(orig_page);
+	page_off = split_pgsize;
+
+	while (page_off < orig_pgsize) {
+		phys = base_phys + page_off;
+		page = phys_to_page_insert_hash(phys);
+
+		page->mode = orig_page->mode;
+		page->offset = off + page_off;
+
+		ihk_atomic_set(&page->count,
+				ihk_atomic_read(&orig_page->count));
+
+		ihk_atomic64_set(&page->mapped,
+				ihk_atomic64_read(&orig_page->mapped));
+		page_list_insert(obj, page);
+
+		page_off += split_pgsize;
+	}
+
+	error = 0;
+
+out:
+	memobj_unref(&obj->memobj);
+	dkprintf("%s(%p,%#lx,%d,%d):%d\n", __func__,
+			memobj, off, orig_p2align, split_p2align, error);
+	return error;
+} /* shmobj_split_page() */

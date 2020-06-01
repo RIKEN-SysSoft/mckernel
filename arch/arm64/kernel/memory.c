@@ -1704,7 +1704,7 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 			phys = phys_base + (i * under_pgsize);
 			page = phys_to_page(phys);
 			if (page) {
-				page_map(page);
+				//page_map(page);
 			}
 		}
 		tt[i] = pte;
@@ -2985,9 +2985,10 @@ out:
 	return error;
 }
 
-int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
+int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm,
+		struct vm_range *range, void *addr)
 {
-	int error;
+	int error, shmflag = 0;
 	pte_t *ptep;
 	void *pgaddr;
 	size_t pgsize;
@@ -2995,6 +2996,10 @@ int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
 	struct page *page;
 
 	int level;
+
+	if (range->memobj && range->memobj->flags & MF_SHM) {
+		shmflag = 1;
+	}
 
 retry:
 	ptep = ihk_mc_pt_lookup_pte(pt, addr, 0, &pgaddr, &pgsize, NULL);
@@ -3018,7 +3023,7 @@ retry:
 			phys = ptl_phys(ptep, level);
 			page = phys_to_page(phys);
 		}
-		if (page && (page_is_in_memobj(page)
+		if (page && !shmflag && (page_is_in_memobj(page)
 					|| page_is_multi_mapped(page))) {
 			error = -EINVAL;
 			kprintf("ihk_mc_pt_split:NYI:page break down\n");

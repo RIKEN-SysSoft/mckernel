@@ -5735,6 +5735,12 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 			} else {
 				pgshift = p2align + PAGE_SHIFT;
 			}
+
+			/* THP on shared memory only support aligned size */
+			if (size & ((1UL << (PAGE_SHIFT + p2align)) - 1)) {
+				pgshift = PAGE_SHIFT;
+				p2align = PAGE_P2ALIGN;
+			}
 		} else {
 			pgshift = PAGE_SHIFT;
 		}

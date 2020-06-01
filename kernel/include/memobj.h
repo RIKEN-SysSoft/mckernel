@@ -61,6 +61,8 @@ typedef uintptr_t memobj_copy_page_func_t(struct memobj *obj, uintptr_t orgphys,
 typedef int memobj_flush_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
 typedef int memobj_invalidate_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
 typedef int memobj_lookup_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag);
+typedef int memobj_split_page_func_t(struct memobj *obj, off_t off,
+		int orig_p2align, int split_p2align);
 
 struct memobj_ops {
 	memobj_free_func_t *free;
@@ -69,6 +71,7 @@ struct memobj_ops {
 	memobj_flush_page_func_t *flush_page;
 	memobj_invalidate_page_func_t *invalidate_page;
 	memobj_lookup_page_func_t *lookup_page;
+	memobj_split_page_func_t *split_page;
 };
 
 static inline int memobj_ref(struct memobj *obj)
@@ -127,6 +130,16 @@ static inline int memobj_lookup_page(struct memobj *obj, off_t off,
 {
 	if (obj->ops->lookup_page) {
 		return (*obj->ops->lookup_page)(obj, off, p2align, physp, pflag);
+	}
+	return -ENXIO;
+}
+
+static inline int memobj_split_page(struct memobj *obj, off_t off,
+		int orig_p2align, int split_p2align)
+{
+	if (obj->ops->split_page) {
+		return (*obj->ops->split_page)(obj, off,
+				orig_p2align, split_p2align);
 	}
 	return -ENXIO;
 }

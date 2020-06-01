@@ -33,6 +33,7 @@
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
+#include <shm.h>
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
@@ -914,20 +915,99 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 {
 	int error;
 	struct vm_range *newrange = NULL;
-	unsigned long page_mask;
 
 	dkprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p)\n",
 			vm, range->start, range->end, addr, splitp);
 
 	if (range->pgshift != 0) {
-		page_mask = (1 << range->pgshift) - 1;
-		if (addr & page_mask) {
+		if (addr & ((1UL << range->pgshift) - 1)) {
 			/* split addr is not aligned */
 			range->pgshift = 0;
 		}
 	}
+	if (range->memobj && range->memobj->flags & MF_SHM) {
+		/* Target range is shared memory */
+		unsigned long page_mask, page_size;
+		uintptr_t _phys;
+		struct shmobj *shmobj = NULL, *new_shmobj = NULL;
+		struct memobj *new_memobj = NULL;
+		struct page *page = NULL;
 
-	error = ihk_mc_pt_split(vm->address_space->page_table, vm, (void *)addr);
+		shmobj = to_shmobj(range->memobj);
+
+		if (shmobj->index != -1) {
+			error = -EINVAL;
+			dkprintf("%s: can't split shmobj with shmid. %d\n",
+					__func__, error);
+			goto out;
+		}
+
+		page_size = (1UL << shmobj->pgshift);
+		page_mask = ~(page_size - 1);
+
+		/* Lookup the page split target */
+		memobj_lookup_page(range->memobj,
+				((range->objoff + (addr - range->start)) &
+				page_mask),
+				shmobj->pgshift - PAGE_SHIFT, &_phys, NULL);
+		page = phys_to_page(_phys);
+
+		if (addr & (page_size - 1)) {
+			/* Split addr is not aligned */
+
+			/* Separate target range from the original range */
+			if (range->start < (addr & page_mask)) {
+				error = split_process_memory_range(vm,
+						range, (addr & page_mask),
+						&range);
+				if (error) {
+					ekprintf("%s: split shmobj failed. %d\n",
+						__func__, error);
+					goto out;
+				}
+			}
+
+			if ((addr & page_mask) + page_size < range->end) {
+				error = split_process_memory_range(vm, range,
+						(addr & page_mask) + page_size,
+						NULL);
+				if (error) {
+					ekprintf("%s: split shmobj failed. %d\n",
+						__func__, error);
+					goto out;
+				}
+			}
+			/* Create new memobj for small-page range */
+			error = shmobj_create(&shmobj->ds, &new_memobj);
+			if (error) {
+				ekprintf("%s:shmobj_create failed. %d\n",
+					__func__, error);
+				goto out;
+			}
+
+			/* Set new memobj to small-page range */
+			memobj_unref(range->memobj);
+			range->memobj = new_memobj;
+			range->pgshift = PAGE_SHIFT;
+			new_shmobj = to_shmobj(new_memobj);
+			new_shmobj->real_segsz = shmobj->real_segsz;
+			new_shmobj->pgshift = PAGE_SHIFT;
+
+			if (page) {
+				/* Delete page from original shmobj */
+				list_del(&page->list);
+				//page->offset = 0;
+				/* Add page to new shmobj */
+				list_add(&page->list, &new_shmobj->page_list);
+				/* Split existing page */
+				memobj_split_page(new_memobj, page->offset,
+					shmobj->pgshift - PAGE_SHIFT, 0);
+			}
+		}
+	}
+
+	error = ihk_mc_pt_split(vm->address_space->page_table, vm,
+		range, (void *)addr);
 	if (error) {
 		ekprintf("split_process_memory_range:"
 				"ihk_mc_pt_split failed. %d\n", error);
