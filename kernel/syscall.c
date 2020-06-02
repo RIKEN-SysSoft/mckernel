@@ -483,34 +483,59 @@ static int wait_stopped(struct thread *thread, struct process *child, struct thr
 			 thread->proc->pid, child->pid, options);
 	int ret;
 
-	/* Copy exit_status created in do_signal */
-	int *exit_status;
-
 	if (c_thread) {
-		exit_status = &c_thread->exit_status;
+		/* Skip this process because exit_status has been reaped. */
+		if (!c_thread->exit_status) {
+			ret = 0;
+			goto out;
+		}
+
+		/* TODO: define 0x7f in kernel/include/process.h */
+		if (status) {
+			*status =  (c_thread->exit_status << 8) | 0x7f;
+		}
+
+		/* Reap exit_status. signal_flags is reaped on receiving */
+		/* signal in do_kill(). */
+		if (!(options & WNOWAIT)) {
+			c_thread->exit_status = 0;
+		}
 	}
 	else if (child->status & (PS_STOPPED | PS_DELAY_STOPPED)) {
-		exit_status = &child->group_exit_status;
+		/* Skip this process because exit_status has been reaped. */
+		if (!child->group_exit_status) {
+			ret = 0;
+			goto out;
+		}
+
+		/* TODO: define 0x7f in kernel/include/process.h */
+		if (status) {
+			*status = (child->group_exit_status << 8) | 0x7f;
+		}
+
+		/* Reap exit_status. signal_flags is reaped on receiving */
+		/* signal in do_kill(). */
+		if (!(options & WNOWAIT)) {
+			child->group_exit_status = 0;
+		}
 	}
 	else {
-		exit_status = &child->main_thread->exit_status;
-	}
+		/* Skip this process because exit_status has been reaped. */
+		if (!child->main_thread->exit_status) {
+			ret = 0;
+			goto out;
+		}
 
-	/* Skip this process because exit_status has been reaped. */
-	if (!*exit_status) {
-		ret = 0;
-		goto out;
-	}
+		/* TODO: define 0x7f in kernel/include/process.h */
+		if (status) {
+			*status = (child->main_thread->exit_status << 8) | 0x7f;
+		}
 
-	/* TODO: define 0x7f in kernel/include/process.h */
-	if (status) {
-		*status =  (*exit_status << 8) | 0x7f;
-	}
-
-	/* Reap exit_status. signal_flags is reaped on receiving signal
-	   in do_kill(). */
-	if(!(options & WNOWAIT)) {
-		*exit_status = 0;
+		/* Reap exit_status. signal_flags is reaped on receiving */
+		/* signal in do_kill(). */
+		if (!(options & WNOWAIT)) {
+			child->main_thread->exit_status = 0;
+		}
 	}
 
 	dkprintf("wait_stopped,child->pid=%d,status=%08x\n",

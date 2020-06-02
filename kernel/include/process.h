@@ -506,10 +506,12 @@ struct process {
 			// PS_STOPPED -----+
 			// (PS_TRACED)
 
-	/* Store exit_status for a group of threads when stopped by SIGSTOP.
-	   exit_status can't be used because values of exit_status of threads
-	   might divert while the threads are exiting by group_exit(). */
-	int group_exit_status;
+	/* Store exit_status for a group of threads when stopped by SIGSTOP.  */
+	/* exit_status can't be used because values of exit_status of threads */
+	/* might divert while the threads are exiting by group_exit().	      */
+	/* The upper 4 bytes of group_exit_status is the confirmation flag of */
+	/* exit status. The lower 4 bytes is the exit status.		      */
+	unsigned long group_exit_status;
 
 	/* Manage ptraced processes in the separate list to make it easy to
 	   restore the orginal parent child relationship when 
