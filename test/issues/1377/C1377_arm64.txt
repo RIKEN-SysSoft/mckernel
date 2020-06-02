@@ -1,0 +1,179 @@
+Script started on Tue 16 Jun 2020 02:42:48 PM JST
+[shirasawa@apollo04 1377]$ make test
+sh ./C1377.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 2-31 -m 2G@0,2G@1 -O ... done
+*** C1377T01 start
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+*** C1377T01 PASS ok: 1000
+wait02      1  TPASS  :  wait(&status) returned 78343
+*** C1377T02: wait02 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+wait401.c:55: PASS: waitpid() returned correct pid 78457
+wait401.c:64: PASS: WIFEXITED() is set in status
+wait401.c:69: PASS: WEXITSTATUS() == 0
+
+Summary:
+passed   3
+failed   0
+skipped  0
+warnings 0
+*** C1377T03: wait401 PASS (3)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid01.c:51: PASS: waitpid() returned correct pid 78571
+waitpid01.c:60: PASS: WIFSIGNALED() set in status
+waitpid01.c:68: PASS: WTERMSIG() == SIGALRM
+
+Summary:
+passed   3
+failed   0
+skipped  0
+warnings 0
+*** C1377T04: waitpid01 PASS (3)
+waitpid02    1  TPASS  :  received expected pid
+waitpid02    2  TPASS  :  received expected signal
+waitpid02    3  TPASS  :  received expected exit value
+*** C1377T05: waitpid02 PASS (3)
+waitpid04    1  TPASS  :  condition 1 test passed
+waitpid04    2  TPASS  :  condition 2 test passed
+waitpid04    3  TPASS  :  condition 3 test passed
+*** C1377T06: waitpid04 PASS (3)
+waitpid05    1  TPASS  :  received expected pid.
+waitpid05    2  TPASS  :  received expected exit number.
+waitpid05    3  TPASS  :  received expected pid.
+waitpid05    4  TPASS  :  received expected exit number.
+waitpid05    5  TPASS  :  received expected pid.
+waitpid05    6  TPASS  :  received expected exit number.
+waitpid05    7  TPASS  :  received expected pid.
+waitpid05    8  TPASS  :  received expected exit number.
+waitpid05    9  TPASS  :  received expected pid.
+waitpid05   10  TPASS  :  received expected exit number.
+waitpid05   11  TPASS  :  received expected pid.
+waitpid05   12  TPASS  :  received expected exit number.
+waitpid05   13  TPASS  :  received expected pid.
+waitpid05   14  TPASS  :  received expected exit number.
+waitpid05   15  TPASS  :  received expected pid.
+waitpid05   16  TPASS  :  received expected exit number.
+waitpid05   17  TPASS  :  received expected pid.
+waitpid05   18  TPASS  :  received expected exit number.
+waitpid05   19  TPASS  :  received expected pid.
+waitpid05   20  TPASS  :  received expected exit number.
+waitpid05   21  TPASS  :  received expected pid.
+waitpid05   22  TPASS  :  received expected exit number.
+waitpid05   23  TPASS  :  received expected pid.
+waitpid05   24  TPASS  :  received expected exit number.
+*** C1377T07: waitpid05 PASS (24)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid06.c:54: PASS: Test PASSED
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1377T08: waitpid06 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid07.c:59: PASS: Test PASSED
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1377T09: waitpid07 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid_common.h:142: INFO: Sending SIGCONT to 80073
+waitpid_common.h:142: INFO: Sending SIGCONT to 80105
+waitpid_common.h:142: INFO: Sending SIGCONT to 80137
+waitpid_common.h:142: INFO: Sending SIGCONT to 80169
+waitpid_common.h:142: INFO: Sending SIGCONT to 80201
+waitpid_common.h:142: INFO: Sending SIGCONT to 80233
+waitpid_common.h:142: INFO: Sending SIGCONT to 80266
+waitpid_common.h:142: INFO: Sending SIGCONT to 80298
+waitpid08.c:62: PASS: Test PASSED
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1377T10: waitpid08 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid09.c:83: PASS: waitpid(pid, WNOHANG) = 0 for a running child
+waitpid09.c:123: PASS: waitpid(pid, WNOHANG) = pid for an exited child
+waitpid09.c:143: PASS: waitpid(-1, 0) = -1 with ECHILD if no children
+waitpid09.c:162: PASS: waitpid(-1, WNOHANG) = -1 with ECHILD if no children
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+*** C1377T11: waitpid09 PASS (4)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid10.c:62: PASS: Test PASSED
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1377T12: waitpid10 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid11.c:60: PASS: Test PASSED
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1377T13: waitpid11 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid12.c:70: PASS: Test PASSED
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1377T14: waitpid12 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+waitpid_common.h:142: INFO: Sending SIGCONT to 85038
+waitpid_common.h:142: INFO: Sending SIGCONT to 85070
+waitpid_common.h:142: INFO: Sending SIGCONT to 85102
+waitpid_common.h:142: INFO: Sending SIGCONT to 85134
+waitpid_common.h:142: INFO: Sending SIGCONT to 84910
+waitpid_common.h:142: INFO: Sending SIGCONT to 84942
+waitpid_common.h:142: INFO: Sending SIGCONT to 84974
+waitpid_common.h:142: INFO: Sending SIGCONT to 85006
+waitpid13.c:70: PASS: Test PASSED
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1377T15: waitpid13 PASS (1)
+[shirasawa@apollo04 1377]$ exit
+exit
+
+Script done on Tue 16 Jun 2020 03:02:48 PM JST

@@ -1,0 +1,38 @@
+【Issue#1377 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+   現象はタイミングに依存し、ARM64環境でdirtyc0wを繰り返し実行した際に、
+   数回〜数十回に１回程度発生する。
+   問題の発生はタイミングに依存するため、dirtyc0wを十分な回数繰り返し
+   実行し、問題が再発しないことを確認する。
+
+C1377T01 dirtyc0wを1000回連続実行し、全てPASSすることを確認
+
+2. LTP を用いて既存処理に影響しないことを確認
+   プロセスの終了ステータスを変更したため、修正が既存処理に影響しないことを
+   wait系システムコールのLTPを用いて確認する。
+C1377T02 wait02: waitの基本機能の確認
+C1377T03 wait401: wait4の基本機能の確認
+C1377T04 waitpid01: waitpidの基本機能の確認
+C1377T05 waitpid02: waitpidの基本機能の確認
+C1377T06 waitpid04: waitpidの基本機能の確認
+C1377T07 waitpid05: waitpidの基本機能の確認
+C1377T08 waitpid06: waitpidの基本機能の確認
+C1377T09 waitpid07: waitpidの基本機能の確認
+C1377T10 waitpid08: waitpidの基本機能の確認
+C1377T11 waitpid09: waitpidの基本機能の確認
+C1377T12 waitpid10: waitpidの基本機能の確認
+C1377T13 waitpid11: waitpidの基本機能の確認
+C1377T14 waitpid12: waitpidの基本機能の確認
+C1377T15 waitpid13: waitpidの基本機能の確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+□ 実行結果
+C1377_x86_64.txt(x86_64実行結果)、C1377_arm64.txt(arm64実行結果)参照。
+全ての項目が PASS していることを確認。
