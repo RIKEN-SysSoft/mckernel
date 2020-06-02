@@ -1,0 +1,293 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "25a54f36_32583c51",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2245,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_lock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dbda53c1_fe7e263a",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2275,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bdda93bd_2f76d302",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2318,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026rvm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f55721e_682cd2c4",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2384,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_lock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb754180_5b50dde0",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2414,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026lthread-\u003evm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "381e8e33_5c6fab44",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2457,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026rvm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c9f3d7dc_9724a57f",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 439,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!ihk_rwspinlock_read_trylock_noirq(\u0026vm-\u003ememory_range_lock)) {",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99302339_513fc6ac",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 515,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!ihk_rwspinlock_read_trylock_noirq(\u0026vm-\u003ememory_range_lock)) {",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13afe305_3eed87e0",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 567,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!ihk_rwspinlock_read_trylock_noirq(\u0026vm-\u003ememory_range_lock)) {",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd0e12af_c5d05503",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2284,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_rwspinlock_write_lock_noirq(\u0026cpu_local_var(current)-\u003evm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bca980b9_5ca86dd6",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tihk_rwspinlock_write_unlock_noirq(\u0026cpu_local_var(current)-\u003evm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f824704_b8205076",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5148,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00a78feb_aea43b96",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5833,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4fd3a22d_e5bcdda9",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5843,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "848b396d_7b741342",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5859,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe20c905_20178684",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9398,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2748d7ab_2ed31584",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2077,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:49:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "c6fda971725b576fd36946e97e8f35fa9a07b6cd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
