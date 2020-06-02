@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f8b2bad6_6777e617",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:53:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027splitted\u0027 may be misspelled - perhaps \u0027split\u0027?\nBut, shmobj with shmid can\u0027t be splitted, so returns EINVAL.",
+      "revId": "19f171ab67848d7dd7d4d5831d7bc5161b7b017e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "23a33b04_aa732666",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 964,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:53:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tekprintf(\"%s: split shmobj failed. %d\\n\",",
+      "revId": "19f171ab67848d7dd7d4d5831d7bc5161b7b017e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d289f16_64ec4906",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 975,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:53:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tekprintf(\"%s: split shmobj failed. %d\\n\",",
+      "revId": "19f171ab67848d7dd7d4d5831d7bc5161b7b017e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e245df5_b707a7b3",
+        "filename": "test/issues/1458/C1458.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-02T00:53:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in shmat01 shmat02 shmat03 shmctl01 shmctl02 shmctl03 shmctl04 shmdt01 shmdt02 shmget01 shmget02 shmget03 shmget04 shmget05",
+      "revId": "19f171ab67848d7dd7d4d5831d7bc5161b7b017e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
