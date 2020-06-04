@@ -1325,7 +1325,8 @@ void init_sigaction(void)
 
 	master_tid = gettid();
 	for (i = 1; i <= 64; i++) {
-		if (i != SIGKILL && i != SIGSTOP && i != SIGCHLD) {
+		if (i != SIGKILL && i != SIGSTOP && i != SIGCHLD &&
+				i != SIGTSTP && i != SIGTTIN && i != SIGTTOU) {
 			struct sigaction act;
 
 			sigaction(i, NULL, &act);

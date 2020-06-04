@@ -1,0 +1,176 @@
+*** C1425T01 start *******************************
+** Exec sleep 3
+** TargetPID: 5737
+[OK] 5737 is running : S+
+** SEND SIGTSTP to 5737
+[OK] 5737 is stopped : TL+
+** Sleep 3 sec
+[OK] 5737 is still stopped : TL+
+** SEND SIGCONT to 5737
+** Wait pid: 5737
+[OK] pid: 5737 is Done.
+*** C1425T01 PASSED ******************************
+
+*** C1425T02 start *******************************
+** Exec sleep 3
+** TargetPID: 5798
+[OK] 5798 is running : SLl+
+** SEND SIGTTIN to 5798
+[OK] 5798 is stopped : TLl+
+** Sleep 3 sec
+[OK] 5798 is still stopped : TLl+
+** SEND SIGCONT to 5798
+** Wait pid: 5798
+[OK] pid: 5798 is Done.
+*** C1425T02 PASSED ******************************
+
+*** C1425T03 start *******************************
+** Exec sleep 3
+** TargetPID: 5859
+[OK] 5859 is running : SLl+
+** SEND SIGTTOU to 5859
+[OK] 5859 is stopped : TLl+
+** Sleep 3 sec
+[OK] 5859 is still stopped : TLl+
+** SEND SIGCONT to 5859
+** Wait pid: 5859
+[OK] pid: 5859 is Done.
+*** C1425T03 PASSED ******************************
+
+*** C1425T04 start *******************************
+kill01      1  TPASS  :  received expected signal 9
+*** C1425T04 PASSED (1)
+
+*** C1425T05 start *******************************
+kill02      1  TPASS  :  The signal was sent to all processes in the process group.
+kill02      2  TPASS  :  The signal was not sent to selective processes that were not in the process group.
+*** C1425T05 PASSED (2)
+
+*** C1425T06 start *******************************
+kill06      1  TPASS  :  received expected signal 9
+*** C1425T06 PASSED (1)
+
+*** C1425T07 start *******************************
+kill07      0  TINFO  :  received expected signal 9
+kill07      1  TPASS  :  Did not catch signal as expected
+*** C1425T07 PASSED (1)
+
+*** C1425T08 start *******************************
+kill08      1  TPASS  :  received expected signal 9
+*** C1425T08 PASSED (1)
+
+*** C1425T09 start *******************************
+kill09      1  TPASS  :  kill(6713, SIGKILL) returned 0
+*** C1425T09 PASSED (1)
+
+*** C1425T10 start *******************************
+signal01    1  TPASS  :  signal(SIGKILL, 0x1(SIG_IGN)) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  signal(SIGKILL, (nil)(SIG_DFL)) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  signal(SIGKILL, 0x403620(catchsig())) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  Child killed with SIGKILL
+signal01    2  TPASS  :  Child killed with SIGKILL
+signal01    3  TPASS  :  Child killed with SIGKILL
+*** C1425T10 PASSED (9)
+
+*** C1425T11 start *******************************
+signal03    1  TPASS  :  signal03 call succeeded
+signal03    2  TPASS  :  signal03 call succeeded
+signal03    3  TPASS  :  signal03 call succeeded
+signal03    4  TPASS  :  signal03 call succeeded
+signal03    5  TPASS  :  signal03 call succeeded
+signal03    6  TPASS  :  signal03 call succeeded
+signal03    7  TPASS  :  signal03 call succeeded
+signal03    8  TPASS  :  signal03 call succeeded
+signal03    9  TPASS  :  signal03 call succeeded
+signal03   10  TPASS  :  signal03 call succeeded
+signal03   11  TPASS  :  signal03 call succeeded
+signal03   12  TPASS  :  signal03 call succeeded
+signal03   13  TPASS  :  signal03 call succeeded
+signal03   14  TPASS  :  signal03 call succeeded
+signal03   15  TPASS  :  signal03 call succeeded
+signal03   16  TPASS  :  signal03 call succeeded
+signal03   17  TPASS  :  signal03 call succeeded
+signal03   18  TPASS  :  signal03 call succeeded
+signal03   19  TPASS  :  signal03 call succeeded
+signal03   20  TPASS  :  signal03 call succeeded
+signal03   21  TPASS  :  signal03 call succeeded
+signal03   22  TPASS  :  signal03 call succeeded
+signal03   23  TPASS  :  signal03 call succeeded
+signal03   24  TPASS  :  signal03 call succeeded
+signal03   25  TPASS  :  signal03 call succeeded
+signal03   26  TPASS  :  signal03 call succeeded
+signal03   27  TPASS  :  signal03 call succeeded
+signal03   28  TPASS  :  signal03 call succeeded
+signal03   29  TPASS  :  signal03 call succeeded
+signal03   30  TPASS  :  signal03 call succeeded
+signal03   31  TPASS  :  signal03 call succeeded
+*** C1425T11 PASSED (31)
+
+*** C1425T12 start *******************************
+signal04    1  TPASS  :  signal04 call succeeded received (nil).
+signal04    2  TPASS  :  signal04 call succeeded received (nil).
+signal04    3  TPASS  :  signal04 call succeeded received (nil).
+signal04    4  TPASS  :  signal04 call succeeded received (nil).
+signal04    5  TPASS  :  signal04 call succeeded received (nil).
+signal04    6  TPASS  :  signal04 call succeeded received (nil).
+signal04    7  TPASS  :  signal04 call succeeded received (nil).
+signal04    8  TPASS  :  signal04 call succeeded received (nil).
+signal04    9  TPASS  :  signal04 call succeeded received (nil).
+signal04   10  TPASS  :  signal04 call succeeded received (nil).
+signal04   11  TPASS  :  signal04 call succeeded received (nil).
+signal04   12  TPASS  :  signal04 call succeeded received (nil).
+signal04   13  TPASS  :  signal04 call succeeded received (nil).
+signal04   14  TPASS  :  signal04 call succeeded received (nil).
+signal04   15  TPASS  :  signal04 call succeeded received (nil).
+signal04   16  TPASS  :  signal04 call succeeded received (nil).
+signal04   17  TPASS  :  signal04 call succeeded received (nil).
+signal04   18  TPASS  :  signal04 call succeeded received (nil).
+signal04   19  TPASS  :  signal04 call succeeded received (nil).
+signal04   20  TPASS  :  signal04 call succeeded received (nil).
+signal04   21  TPASS  :  signal04 call succeeded received (nil).
+signal04   22  TPASS  :  signal04 call succeeded received (nil).
+signal04   23  TPASS  :  signal04 call succeeded received (nil).
+signal04   24  TPASS  :  signal04 call succeeded received (nil).
+signal04   25  TPASS  :  signal04 call succeeded received (nil).
+signal04   26  TPASS  :  signal04 call succeeded received (nil).
+signal04   27  TPASS  :  signal04 call succeeded received (nil).
+signal04   28  TPASS  :  signal04 call succeeded received (nil).
+*** C1425T12 PASSED (28)
+
+*** C1425T13 start *******************************
+signal05    1  TPASS  :  signal05 call succeeded
+signal05    2  TPASS  :  signal05 call succeeded
+signal05    3  TPASS  :  signal05 call succeeded
+signal05    4  TPASS  :  signal05 call succeeded
+signal05    5  TPASS  :  signal05 call succeeded
+signal05    6  TPASS  :  signal05 call succeeded
+signal05    7  TPASS  :  signal05 call succeeded
+signal05    8  TPASS  :  signal05 call succeeded
+signal05    9  TPASS  :  signal05 call succeeded
+signal05   10  TPASS  :  signal05 call succeeded
+signal05   11  TPASS  :  signal05 call succeeded
+signal05   12  TPASS  :  signal05 call succeeded
+signal05   13  TPASS  :  signal05 call succeeded
+signal05   14  TPASS  :  signal05 call succeeded
+signal05   15  TPASS  :  signal05 call succeeded
+signal05   16  TPASS  :  signal05 call succeeded
+signal05   17  TPASS  :  signal05 call succeeded
+signal05   18  TPASS  :  signal05 call succeeded
+signal05   19  TPASS  :  signal05 call succeeded
+signal05   20  TPASS  :  signal05 call succeeded
+signal05   21  TPASS  :  signal05 call succeeded
+signal05   22  TPASS  :  signal05 call succeeded
+signal05   23  TPASS  :  signal05 call succeeded
+signal05   24  TPASS  :  signal05 call succeeded
+signal05   25  TPASS  :  signal05 call succeeded
+signal05   26  TPASS  :  signal05 call succeeded
+signal05   27  TPASS  :  signal05 call succeeded
+signal05   28  TPASS  :  signal05 call succeeded
+signal05   29  TPASS  :  signal05 call succeeded
+signal05   30  TPASS  :  signal05 call succeeded
+signal05   31  TPASS  :  signal05 call succeeded
+*** C1425T13 PASSED (31)
+

@@ -1,0 +1,37 @@
+【Issue#1425 動作確認】
+□ テスト内容
+1. 本修正ではmcexecにてSIGTSTP, SIGTTIN, SIGTTOU を補足しないようにする
+  修正を実施した。
+  上記のシグナルのデフォルト動作はプロセスの停止である。
+  それぞれのシグナルについて、以下を確認する。
+	- 実行中のMcKernelプロセスに通知した際、通知先のプロセスが停止する
+	- 停止されたプロセスに対してSIGCONTを通知することで、プロセスが再開できる
+
+C1425T01: SIGTSTP の動作を確認
+C1425T02: SIGTTIN の動作を確認
+C1425T03: SIGTTOU の動作を確認
+
+2. 以下のLTPを用いて既存のsignal機能に影響が無いことを確認
+	- kill01
+	- kill02
+	- kill06
+	- kill07
+	- kill08
+	- kill09
+	- signal01
+	- signal03
+	- signal04
+	- signal05
+
+□ 実行手順
+・下記の手順でテストを実行する
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log, aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
