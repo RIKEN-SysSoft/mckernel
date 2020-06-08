@@ -1,7 +1,7 @@
 # mckernel spec file usage:
 # cmake /path/to/mckernel && make dist
-# put mckernel.spec to SPECS and mckernel-@MCKERNEL_VERSION@.tar.gz to SOURCES
-# rpmbuild -ba mckernel.spec
+# cp -i ./mckernel-@MCKERNEL_VERSION@.tar.gz <rpmbuild>/SOURCES
+# rpmbuild -ba scripts/mckernel.spec
 #
 # for cross compilation also pass at least the following to rpmbuild:
 # --target aarch64 -D 'kernel_version <target kernel>'
@@ -18,7 +18,7 @@
 
 Name: mckernel
 Version: @MCKERNEL_VERSION@
-Release: 0_%{ktag}%{?dist}
+Release: @MCKERNEL_RELEASE@_%{ktag}%{?dist}
 Summary: IHK/McKernel
 License: GPLv2
 Source0: mckernel-%{version}.tar.gz
