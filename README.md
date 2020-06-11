@@ -101,8 +101,18 @@ Clone the source code:
 ~~~~
 mkdir -p ~/src/ihk+mckernel/
 cd ~/src/ihk+mckernel/
-git clone --recursive https://github.com/RIKEN-SysSoft/mckernel.git
+git clone --recursive -b development https://github.com/RIKEN-SysSoft/mckernel.git
 ~~~~
+
+(Optional) Checkout to the specific branch or version:
+
+~~~~
+cd mckernel
+git checkout <pathspec>
+git submodule update
+~~~~
+
+Foe example, if you want to try development branch, use "development" as the pathspec. If you want to try prerelease version 1.7.0-0.2, use "1.7.0-0.2".
 
 ###### 4.1 Install with cmake
 
