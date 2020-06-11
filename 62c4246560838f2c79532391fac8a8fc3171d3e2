@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a5038996_059e9284",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1808,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T05:00:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (memobj \u0026\u0026 memobj-\u003epath \u0026\u0026 !strncmp(memobj-\u003epath, \"/dev/shm/ucx_posix\", 18)) {",
+      "revId": "62c4246560838f2c79532391fac8a8fc3171d3e2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7472df90_0921f372",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1809,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T05:00:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: mmap flags: %lx, path: %s, memobj-\u003eflags: %lx, \"",
+      "revId": "62c4246560838f2c79532391fac8a8fc3171d3e2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe442203_cf6a29f7",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1811,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T05:00:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t__func__, flags, memobj-\u003epath, memobj-\u003eflags, pgshift, p2align);",
+      "revId": "62c4246560838f2c79532391fac8a8fc3171d3e2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
