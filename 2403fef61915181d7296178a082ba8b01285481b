@@ -1,0 +1,259 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "332181e5_b00de339",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1455,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tif (!smp_load_acquire(\u0026packet-\u003ereq.valid)) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "048e4874_eb1950cb",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 236,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t__FUNCTION__, packet-\u003epid);",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff8468be_efd50ada",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tif (smp_load_acquire(\u0026res-\u003ereq_thread_status) \u003d\u003d IHK_SCD_REQ_THREAD_TO_BE_WOKEN) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e9871882_1283a05e",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif (smp_load_acquire(\u0026res-\u003ereq_thread_status) \u003d\u003d IHK_SCD_REQ_THREAD_TO_BE_WOKEN) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7df4e839_280633a8",
+        "filename": "kernel/fileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 590,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (cmpxchg(\u0026memobj-\u003epages[page_ind], NULL, virt) !\u003d NULL) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ebff3db_63a69fd3",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tsmp_store_release(\u0026packet.req.valid, 1);",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72c55b00_d86f2338",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 237,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\twhile (smp_load_acquire(\u0026res.status) !\u003d STATUS_COMPLETED) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d4662eb_2989ddd5",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\t\twhile (smp_load_acquire(\u0026res.status) \u003d\u003d STATUS_IN_PROGRESS) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e0e131b_30ae9e19",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 276,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\t\t\tif (smp_load_acquire(\u0026res.req_thread_status) \u003d\u003d",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5739f77c_add380af",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 279,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t IHK_SCD_REQ_THREAD_SPINNING,",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e1173236_327c5e7f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 280,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t IHK_SCD_REQ_THREAD_DESCHEDULED) \u003d\u003d",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "29432e20_fb01a0b1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 305,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\t\tif (smp_load_acquire(\u0026res.status) \u003d\u003d STATUS_SYSCALL) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f6e4e1d_7f582271",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1131,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\told_exit_status, exit_status) !\u003d old_exit_status)",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ebdf4aa7_868be222",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1985,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tMEMOBJ_READY) \u003d\u003d MEMOBJ_TO_BE_PREFETCHED) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f4592d7_909540fc",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10279,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-11T04:57:25Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tif (smp_load_acquire(\u0026v-\u003eflags) \u0026 CPU_FLAG_NEED_RESCHED) {",
+      "revId": "2403fef61915181d7296178a082ba8b01285481b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
