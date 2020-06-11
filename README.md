@@ -104,6 +104,8 @@ cd ~/src/ihk+mckernel/
 git clone --recursive https://github.com/RIKEN-SysSoft/mckernel.git
 ~~~~
 
+###### 4.1 Install with cmake
+
 Configure and compile:
 
 ~~~~
@@ -113,6 +115,21 @@ make -j install
 ~~~~
 
 The IHK kernel modules and McKernel kernel image should be installed under the **ihk+mckernel** folder in your home directory.
+
+###### 4.2 Install with rpm
+
+Configure, compile and build rpm:
+
+~~~~
+mkdir -p build && cd build
+cmake $HOME/src/ihk+mckernel/mckernel
+make dist
+cp mckernel-<version>.tar.gz <rpmbuild>/SOURCES
+rpm -ba scripts/mckernel.spec
+sudo rpm -ivh <rpmbuild>/RPMS/<arch>/mckernel-<version>-<release>_<linux_kernel_ver>_<dist>.<arch>.rpm
+~~~~
+
+The IHK kernel modules and McKernel kernel image are installed under the system directory.
 
 ##### 5. Boot McKernel
 
