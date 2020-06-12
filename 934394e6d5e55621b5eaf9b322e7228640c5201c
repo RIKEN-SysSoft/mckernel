@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ebf52ceb_654306b0",
+        "filename": "kernel/include/rusage_private.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:10:49Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#if 0 /* 64KB page goes here when using mckernel_rusage-compatible ihk_os_rusage */",
+      "revId": "934394e6d5e55621b5eaf9b322e7228640c5201c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
