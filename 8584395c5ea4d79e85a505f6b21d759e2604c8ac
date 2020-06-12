@@ -1,0 +1,514 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3619b292_04577c3c",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static int offline \u003d 0;",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08afd956_eea7ce50",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 244,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027setup_local_snooping_files\u0027, this function\u0027s name, in a string\n+\t\t\tpanic(\"setup_local_snooping_files: devices/system/cpu/possible\");",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "df9b70d6_a8ad9fc6",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 250,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027setup_local_snooping_files\u0027, this function\u0027s name, in a string\n+\t\t\tpanic(\"setup_local_snooping_files: devices/system/cpu/present\");",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3052b0e_27cc035c",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 591,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tcpu_number \u003d mckernel_cpu_2_linux_cpu(udp, cpu-\u003emckernel_cpu_id);",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ae94774b_8ef49dae",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 791,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tint mckernel_numa_id;\n+\t\tmemset(cpu_empty, 0, sizeof(cpu_empty));",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d0242dc_04e4b376",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 799,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tmckernel_numa_id \u003d linux_numa_2_mckernel_numa(udp, node);",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "395012fa_db5204e6",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 803,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tlist_for_each_entry(p, \u0026udp-\u003enode_topology_list, chain) {",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c43889a1_29ba0fd8",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 804,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tif (p-\u003emckernel_numa_id \u003d\u003d mckernel_numa_id)",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eb17844f_1000ed87",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 811,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsysfsm_createf(udp-\u003eos, SYSFS_SNOOPING_OPS_pb, \u0026param, 0444,",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75164af2_420ff765",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 812,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\"/sys/devices/system/node/node%d/cpumap\", node);",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "816a0526_70bd9432",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 813,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsysfsm_createf(udp-\u003eos, SYSFS_SNOOPING_OPS_pbl, \u0026param, 0444,",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "88b28d68_8adb0c24",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 814,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\"/sys/devices/system/node/node%d/cpulist\", node);",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ae16dd3e_f88bad92",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 825,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tint linux_cpu \u003d mckernel_cpu_2_linux_cpu(udp, cpu);",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd7cb0a6_dcfeb0f9",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 831,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdprintk(\"%s: creating symlinks for NUMA %d CPU %d\\n\",",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "872e775c_d3090a0f",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 842,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\"/sys/devices/system/cpu/cpu%d\", linux_cpu);",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "79c43a13_3ed6852e",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 869,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\tsize_t offset \u003d 0;\n+\t\t\tparam.nbits \u003d nr_cpu_ids;",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bbeb2d43_a0b989db",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 872,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfor (node \u003d 0; node \u003c udp-\u003emem_info-\u003en_numa_nodes; ++node) {",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb8c74a6_0a107009",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 874,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\toffset +\u003d snprintf(\u0026p-\u003emckernel_numa_distance_s[offset],",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3334b592_14637ef8",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 875,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tNODE_DISTANCE_S_SIZE - offset, \"%s\", \" \");",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1bc18f83_df36f214",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 877,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\toffset +\u003d snprintf(\u0026p-\u003emckernel_numa_distance_s[offset],",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6c17d92_6ca24fa3",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 878,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tNODE_DISTANCE_S_SIZE - offset, \"%d\",",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "26b4e25b_01f3fa67",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 880,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tmckernel_numa_2_linux_numa(udp, p-\u003emckernel_numa_id),",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "83cb6d2d_e3724f09",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 881,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tmckernel_numa_2_linux_numa(udp, node)",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "401d0da6_4ae1667b",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 890,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsysfsm_createf(udp-\u003eos, SYSFS_SNOOPING_OPS_pb, \u0026param, 0444,",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b25c5dea_0e5d2322",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 893,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsysfsm_createf(udp-\u003eos, SYSFS_SNOOPING_OPS_pbl, \u0026param, 0444,",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "31acd33f_8f351b07",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 914,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tcpu_to_node(mckernel_cpu_2_linux_cpu(udp, cpu)))",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0d82d2e_b1fa449a",
+        "filename": "executer/kernel/mcctrl/sysfs_files.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 927,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\"/sys/devices/system/cpu/cpu%d\", cpu);",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2d390585_aa34568e",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 593,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\u0026cpu_set, MCKERNEL_2_LINUX) \u003c 0)) {",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb7ff52e_2af70956",
+        "filename": "kernel/procfs.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 850,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tihk_mc_mckernel_cpu_2_linux_cpu(thread-\u003ecpu_id) :",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb27005d_1f4bc890",
+        "filename": "lib/include/ihk/cpu.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:15Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t * keep the order intact! */",
+      "revId": "8584395c5ea4d79e85a505f6b21d759e2604c8ac",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
