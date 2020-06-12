@@ -1,0 +1,208 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7cfcca69_f3cca4fd",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary space before function pointer arguments\n+\t\tvoid *(*start_routine) (void *),",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75144809_10afeabc",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static __pthread_create_fn orig_pthread_create \u003d 0;",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f0c5ee97_385e72a0",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary space before function pointer arguments\n+\t\tvoid *(*start_routine) (void *),",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f94271d_24ae6473",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* CLONE_VM and newsp \u003d\u003d parent_tidptr impiles pthread start routine addr */",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "67da4ce6_f9151e65",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tsprintf(maps_path,\"/proc/self/maps\");\n \t                 ^",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c38f3b3e_482cbd1b",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\t\tfprintf(stderr,\"error: cannot open the memory maps, %s\\n\",\n \t\t              ^",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6746ad0f_9431b808",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: unchecked sscanf return value\n+\t\tsscanf(line, \"%012lx-%012lx %4s %lx %lx:%lx %d\\t\\t\\t%[^\\n]\",\n+\t\t\t\u0026start, \u0026end, perms, \u0026offset, \u0026dev[0], \u0026dev[1], \u0026inode, path);",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a141f028_a96a0dc4",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\u0026start, \u0026end, perms, \u0026offset, \u0026dev[0], \u0026dev[1], \u0026inode, path);",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "36cc62de_6c8c19d7",
+        "filename": "executer/user/libsched_yield.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary space before function pointer arguments\n+\t\tvoid *(*start_routine) (void *),",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb55f17b_444c405a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2799,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* CLONE_VM and newsp \u003d\u003d parent_tidptr impiles pthread start routine addr */",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ac505ad9_959484f7",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2889,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t(old-\u003emod_clone \u003d\u003d SPAWN_TO_REMOTE \u0026\u0026 oldproc-\u003euti_use_last_cpu));",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b87fea32_579eb322",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2891,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:18:40Z",
+      "side": 1,
+      "message": "WARNING: Prefer using \u0027\"%s...\", __func__\u0027 to using \u0027do_fork\u0027, this function\u0027s name, in a string\n+\t\t\tkprintf(\"do_fork,core not available\\n\");",
+      "revId": "fd0769ba76927d0aa5a13754d20dcb9a5118716d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
