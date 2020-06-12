@@ -8068,6 +8068,7 @@ SYSCALL_DECLARE(nanosleep)
 	struct syscall_request request IHK_DMA_ALIGN;
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
+	return 0;
 	monitor->status = IHK_OS_MONITOR_KERNEL_HEAVY;
 
 	/* Do it locally if supported */
