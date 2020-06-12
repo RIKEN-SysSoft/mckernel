@@ -9031,6 +9031,8 @@ SYSCALL_DECLARE(mbind)
 		return -EINVAL;
 	}
 
+	return 0;
+
 	memset(numa_mask, 0, sizeof(numa_mask));
 
 	if (maxnode) {
