@@ -1,0 +1,616 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "eb923ea7_f217b082",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"Mandatory arguments to long options are mandatory for short options too.\\n\");",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "912d4a46_57f0aa33",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"    --ps                        List processes running on LWK.\\n\");",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "164aff85_7c46c583",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"    -v, --vtop [ADDR]           Display page table corresponding to ADDR\\n\");",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e80d8968_9984b7a8",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: unnecessary whitespace before a quoted newline\n+\tprintf(\"Example: \\n\");",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8702504f_62a4df00",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"    %s --kernel\u003dsmp-x86/kernel/mckernel.img --ps\\n\", basename(argv[0]));",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c684c20_a523e1d6",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\u0026cu_version, \u0026cu_abbrev_offset, \u0026cu_pointer_size,",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5bc4c536_295b7894",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\u0026cu_offset_size, \u0026cu_extension_size, \u0026type_signature,",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bb2f835d_a93abfe2",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"error: dwarf_next_cu_header_c: %d %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "172fc008_4d8a3822",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"error: dwarf_siblingof failed: %d %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c6be3394_a09f685a",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tfprintf(stderr, \"error: dwarf_diename error: %d %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0909afc3_97e6ba2e",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tfprintf(stderr, \"dwarf_tag error: %d %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f174f481_6d87f3b3",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\"dwarf_get_TAG_name error: %d\\n\", rc);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5bd18f5_e585b697",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\ttag_name, name ? name : \"\u003cno name\u003e\");",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f80f32a_f7bc4f19",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 142,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tfprintf(stderr, \"error: dwarf_diename error: %d %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "df14fc45_eed19e37",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 143,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\trc, dwarf_errmsg(err));",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0849d158_4f84b6b7",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 149,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tfprintf(stderr, \"dwarf_tag error: %d %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e9a4d788_2ad59416",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\trc, dwarf_errmsg(err));",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ebf74b96_d37597c5",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 157,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t\"dwarf_get_TAG_name error: %d\\n\", rc);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "47461f2e_640bb942",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\ttag_name, name ? name : \"\u003cno name\u003e\");",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "78553658_64565b57",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 185,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\u0026cu_version, \u0026cu_abbrev_offset, \u0026cu_pointer_size,",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ed0c4a2_b1d16a47",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 186,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\u0026cu_offset_size, \u0026cu_extension_size, \u0026type_signature,",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "474d5758_0b562bd4",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 226,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tDwarf_Signed ssize;\n+\t\tdwarf_formsdata(attr, \u0026ssize, 0);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "60a93e03_c8b9491d",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 380,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tDwarf_Signed soffset;\n+\t\tdwarf_formsdata(attr, \u0026soffset, 0);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69f707ec_4bedb3ee",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 499,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \"%s: error: getting dwarf attr offset: %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04df55ae_1710cab2",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 505,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stdout, \"offset of field \\\"%s\\\" in struct \\\"%s\\\": %lu\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04442e24_0e19c60c",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 506,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdsfo-\u003efield_name, dsfo-\u003estruct_name, offset);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1cb95893_eec48af1",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 664,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"%s: dwarf_formexprloc: no entry?\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "366379f7_2520d523",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 674,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\trc \u003d dwarf_get_die_address_size(die, \u0026address_size, perr);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3fc3b260_b6864479",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 676,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"%s: dwarf_get_die_address_size: no entry?\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c76fc6d_1ef9736f",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 681,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"%s: dwarf_get_die_address_size: %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d388de6a_d94ec9f3",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 686,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\trc \u003d dwarf_loclist_from_expr_a(dbg, x, tempud, address_size,",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e29815a1_d49bc6d9",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 689,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"%s: dwarf_loclist_from_expr_a: %s\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f563686b_7839a904",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 694,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"%s: dwarf_loclist_from_expr_a: no entry?\\n\",",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "16fe6ecb_3b5763e0",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 720,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"%s: addr: 0x%lx\\n\", __func__, (unsigned long)addr);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7fce19a2_19bb26fe",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 908,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_read_val(proc + process_saved_cmdline_offset, \u0026cmd_line_addr);",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2f67780_f811f942",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 977,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:21:18Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_read_val(thread_sched_list, \u0026thread_sched_list)) {",
+      "revId": "91e343c9a4518ddde769370444153ee06a0a8114",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
