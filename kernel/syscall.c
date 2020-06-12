@@ -5344,6 +5344,7 @@ SYSCALL_DECLARE(madvise)
 
 	dkprintf("[%d]sys_madvise(%lx,%lx,%x)\n",
 			ihk_mc_get_processor_id(), start, len0, advice);
+	return 0;
 
 	len = (len0 + PAGE_SIZE - 1) & PAGE_MASK;
 	end = start + len;
