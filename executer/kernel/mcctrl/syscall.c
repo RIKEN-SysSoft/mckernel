@@ -1468,7 +1468,12 @@ static int pager_req_map(ihk_os_t os, int fd, size_t len, off_t off,
 #endif
 
 	if (IS_ERR_VALUE(va)) {
-		printk("pager_req_map(%p,%d,%lx,%lx,%lx):do_mmap_pgoff failed. %d\n", os, fd, len, off, result_rpa, (int)va);
+		if ((int)va != -ENOTSUPP) {
+			pr_err("%s(%p,%d,%lx,%lx,%lx): "
+			       "do_mmap_pgoff failed. %d\n",
+			       __func__, os, fd, len, off, result_rpa,
+			       (int)va);
+		}
 		error = va;
 		goto out;
 	}
