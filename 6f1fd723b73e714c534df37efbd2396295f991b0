@@ -1,0 +1,225 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b16b8cae_a727123a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2007,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\t\tenum ihk_mc_pt_attribute ptattr;\n+\t\t\t\tptattr \u003d arch_vrflag_to_ptattr(range-\u003eflag, PF_POPULATE, NULL);",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "955f4c8e_f38a4d4c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2007,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tptattr \u003d arch_vrflag_to_ptattr(range-\u003eflag, PF_POPULATE, NULL);",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99b47fbd_8353cb88",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2010,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\terror \u003d ihk_mc_pt_set_range(proc-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5fb60f3_3a34c719",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2012,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t(void *)range-\u003estart + (i * PAGE_SIZE),",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe30a7bb_07673f4e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2013,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t(void *)range-\u003estart + (i * PAGE_SIZE) +",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e5d091fc_5d04ca0f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2015,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tvirt_to_phys(memobj-\u003epages[i]),",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af455640_9ff6edb5",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2021,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tkprintf(\"%s: ERROR: mapping %d page of pre-mapped file\\n\",",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d0a45614_a8c3c5c8",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2022,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t__FUNCTION__, i);",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "41bc6308_bfbbd49d",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2022,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t\t\t\t__FUNCTION__, i);",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "918cfe88_4be2dcbe",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2025,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: memobj 0x%lx pre-mapped\\n\", __FUNCTION__, memobj);",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "689fab61_46127153",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2025,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\tdkprintf(\"%s: memobj 0x%lx pre-mapped\\n\", __FUNCTION__, memobj);",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45243af2_203b3a95",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2026,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+^I^I^I^I// ^Ifileobj \u0026\u0026 MF_PREMAP \u0026\u0026 MPOL_SHM_PREMAP case: memory_stat_rss_add() is called in fileobj_create()$",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a3f80d1a_9f4ec050",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2026,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:13:03Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t// \tfileobj \u0026\u0026 MF_PREMAP \u0026\u0026 MPOL_SHM_PREMAP case: memory_stat_rss_add() is called in fileobj_create()",
+      "revId": "6f1fd723b73e714c534df37efbd2396295f991b0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
