@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "570bdb7d_5562abf1",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 983,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:20:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t!strncmp(\"/dev/shm/\", fullpath, 9)) {",
+      "revId": "08c9710cdc387efdc9419e1fe401476c2bb4dd73",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "627299ab_16e07fac",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1444,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:20:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t!strncmp(\"/dev/shm/\", fullpath, 9)) {",
+      "revId": "08c9710cdc387efdc9419e1fe401476c2bb4dd73",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5d561b11_6ab1f098",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1632,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:20:17Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\t\t\t\tprintk(\"%s: WARNING: couldn\u0027t fault 0x%lx\"",
+      "revId": "08c9710cdc387efdc9419e1fe401476c2bb4dd73",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9afca8f_a913dc28",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1634,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:20:17Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t\t\t\t__FUNCTION__, va, off, fullpath);",
+      "revId": "08c9710cdc387efdc9419e1fe401476c2bb4dd73",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b381470_7c9c2603",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1634,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:20:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t__FUNCTION__, va, off, fullpath);",
+      "revId": "08c9710cdc387efdc9419e1fe401476c2bb4dd73",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "875779e6_d378edbe",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1854,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:20:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t(!strncmp(\"/tmp/ompi.\", memobj-\u003epath, 10) ||",
+      "revId": "08c9710cdc387efdc9419e1fe401476c2bb4dd73",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "664c92ae_dfa36207",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1855,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:20:17Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t !strncmp(\"/dev/shm/\", memobj-\u003epath, 9))) {",
+      "revId": "08c9710cdc387efdc9419e1fe401476c2bb4dd73",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
