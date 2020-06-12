@@ -1,0 +1,446 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f6edc048_92d9d512",
+        "filename": "executer/include/uprotocol.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: \u0027Lenght\u0027 may be misspelled - perhaps \u0027Length\u0027?\n+\tint req_cpu_list_len; // Lenght of request string",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd058332_3defcd59",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 586,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern int translate_cpumap(struct mcctrl_usrdata *udp,",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b46400c3_18001ec8",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 633,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\tprintk(\"%s: error: allocating CPU list\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "06c54bf1_1447dcd0",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 633,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\tprintk(\"%s: error: allocating CPU list\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dfc7cf40_718cce92",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 633,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: Possible unnecessary \u0027out of memory\u0027 message\n+\t\tif (!cpu_list) {\n+\t\t\tprintk(\"%s: error: allocating CPU list\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "02308ee8_bd897bf8",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 633,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintk(\"%s: error: allocating CPU list\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a62b75a2_12cb32b6",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 639,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\treq.req_cpu_list, req.req_cpu_list_len)) {",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4e29f7be_cc8bd343",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 640,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\tprintk(\"%s: error copying CPU list request\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a67b8c44_dd20c2a2",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 640,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\tprintk(\"%s: error copying CPU list request\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9d08b6a_fd12b646",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 640,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintk(\"%s: error copying CPU list request\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72886b76_b81a02f6",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\tprintk(\"%s: error: allocating CPU mask\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "25b61112_70420e9c",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintk(\"%s: error: allocating CPU mask\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "974c7353_b6305027",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\tprintk(\"%s: error: allocating CPU mask\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e085b6cf_ca9ff723",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 659,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\tprintk(\"%s: invalid CPUs requested: %s\\n\",",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b2774c31_2cc882b2",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 660,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t__FUNCTION__, cpu_list);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43c52f23_ab7100ee",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 669,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (translate_cpumap(udp, cpus_to_use, cpus_used, NULL) \u003c 0) {",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43bc64df_1f79f749",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 670,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\t\tprintk(\"%s: error: translating CPU mask\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f4bb1f8a_07dbf2a4",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 670,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\tprintk(\"%s: error: translating CPU mask\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb4cca68_8c666b05",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 670,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tprintk(\"%s: error: translating CPU mask\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "150d998c_196eabc2",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 683,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t req.cpu_set_size : sizeof(cpumask_t)))) {",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f10a4ce1_d7bd4375",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 684,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\tprintk(\"%s: error copying mask to user\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf6b1b95_e93dc3ce",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 684,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintk(\"%s: error copying mask to user\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "68d46c15_d4d15196",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 684,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\tprintk(\"%s: error copying mask to user\\n\", __FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aec34386_a93f597e",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 693,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\tprintk(\"%s: error copying target core to user\\n\",",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "468d0778_c7864b46",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 694,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t__FUNCTION__);",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b315c66_8ace1f2a",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 703,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T03:25:29Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\tprintk(\"%s: %s -\u003e target McKernel CPU: %d\\n\",",
+      "revId": "cfca2f76eab52ead4b14155c34fb13134b571997",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
