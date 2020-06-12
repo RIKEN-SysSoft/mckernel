@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6a988a2a_a05df3c9",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 978,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:12:43Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tchar *pathbuf, *fullpath;\n+\t\tpathbuf \u003d kmalloc(PATH_MAX, GFP_ATOMIC);",
+      "revId": "9d82a69b69b8b5be8e05e51f18439a87c4d7e2f1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7cca2997_83c3b6d9",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 983,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:12:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdprintk(\"%s: treating %s as a device file..\\n\",",
+      "revId": "9d82a69b69b8b5be8e05e51f18439a87c4d7e2f1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9460172_f4341751",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1444,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T06:12:43Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tchar *pathbuf, *fullpath;\n+\t\tpathbuf \u003d kmalloc(PATH_MAX, GFP_ATOMIC);",
+      "revId": "9d82a69b69b8b5be8e05e51f18439a87c4d7e2f1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
