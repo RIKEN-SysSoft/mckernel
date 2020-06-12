@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b98d7fa7_5b39af18",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 7089,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:12:11Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tflags \u0026 PTRACE_O_TRACEVFORKDONE ? \"|PTRACE_O_TRACEVFORKDONE\" : \"\",",
+      "revId": "92c0be81b1e28770b1166f1ad211305a6db253f9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
