@@ -1,0 +1,191 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a9a8e522_6621ae55",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"    -v, --va ADDR               Dump page tables for ADDR only.\\n\");",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eb990275_448d224f",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: unnecessary whitespace before a quoted newline\n+\tprintf(\"Examples: \\n\");",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f76d06f_9b3eccf9",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"    %s --kernel\u003dsmp-x86/kernel/mckernel.img --vtop --pid 100 --va 0x3fffff800000\\n\",",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f4f1190_efd6f63a",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to NULL\n+bfd *symbfd \u003d NULL;",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "152dc118_b9f42b8a",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to NULL\n+asymbol **symtab \u003d NULL;",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b9976d4f_4502acdf",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int init_bfd_symbols(char *fname) {",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a4780de3_f339c9ba",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 854,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"%s: inspecting %s -\u003e DW_DLV_NO_ENTRY for addr?\\n\", __func__, name);",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "26066cdb_8875a8fe",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_read_val(thread_sched_list, \u0026thread_sched_list)) {",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4bf7c040_ba63cda4",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1151,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint level \u003d PGTABLE_LEVELS;\n+\tprintf(\"VA: 0x%lx -\u003e \\n\", va);",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aad4f4c_d001a66f",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1151,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: unnecessary whitespace before a quoted newline\n+\tprintf(\"VA: 0x%lx -\u003e \\n\", va);",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "028b9210_fc844398",
+        "filename": "executer/user/mcinspect.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1269,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-12T09:50:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tfprintf(stderr, \"error: invalid VA? (expected format: 0xXXXX)\\n\\n\");",
+      "revId": "d00fd0c0289ce7d39090f4859a090da9e7eaf310",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
