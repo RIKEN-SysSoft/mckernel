@@ -590,7 +590,7 @@ static inline void armv8pmu_write_counter(int idx, uint32_t value)
 		 * count using the lower 32bits and we want an interrupt when
 		 * it overflows.
 		 */
-		uint64_t value64 = 0xffffffff00000000ULL | value;
+		uint64_t value64 = (int32_t)value;
 
 		write_sysreg(value64, pmccntr_el0);
 	}
