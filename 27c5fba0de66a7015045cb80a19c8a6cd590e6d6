@@ -1,0 +1,208 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ac09b285_cdadd915",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1884,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t__FUNCTION__,",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9fa7a5d1_3821e6ab",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3490,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t * survive an early return due to a signal */",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9113740c_abf14fc8",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3493,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintk(\"%s: ERROR: allocating cpu register desc\\n\", __FUNCTION__);",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2fecc9ea_9b3803d8",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3493,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: Possible unnecessary \u0027out of memory\u0027 message\n+\tif (!ldesc) {\n+\t\tprintk(\"%s: ERROR: allocating cpu register desc\\n\", __FUNCTION__);",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "accd4119_69a7a477",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3493,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tprintk(\"%s: ERROR: allocating cpu register desc\\n\", __FUNCTION__);",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4b977a8_db8e1df7",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3493,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\tprintk(\"%s: ERROR: allocating cpu register desc\\n\", __FUNCTION__);",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65f2301c_2545979a",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3505,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\tprintk(\"%s: ERROR sending IKC msg: %d\\n\", __FUNCTION__, ret);",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61e39ab5_53871de6",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3505,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tprintk(\"%s: ERROR sending IKC msg: %d\\n\", __FUNCTION__, ret);",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "675ab77b_11ebf596",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3517,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"%s: MCCTRL_OS_CPU_%s_REGISTER: CPU: %d, addr_ext: 0x%lx, val: 0x%lx\\n\",",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6a0ba40_59da1d25",
+        "filename": "executer/kernel/mcctrl/mcctrl.h",
+        "patchSetId": 7
+      },
+      "lineNbr": 157,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tunsigned long pdesc; /* Physical addr of the descriptor */",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7052033a_1c37b0c4",
+        "filename": "kernel/host.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 853,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_mc_unmap_memory(NULL, pp, sizeof(struct ihk_os_cpu_register));",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e6570aa_07674936",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 7
+      },
+      "lineNbr": 290,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T05:53:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tunsigned long pdesc; /* Physical addr of the descriptor */",
+      "revId": "27c5fba0de66a7015045cb80a19c8a6cd590e6d6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
