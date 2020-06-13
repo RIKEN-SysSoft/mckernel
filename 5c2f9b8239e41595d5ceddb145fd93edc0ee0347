@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "447cfb04_0faa6949",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 1061,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T08:57:28Z",
+      "side": 1,
+      "message": "WARNING: Too many leading tabs - consider code refactoring\n+\t\t\t\t\t\tif (strstr(fullpath, \".so\")) {",
+      "revId": "5c2f9b8239e41595d5ceddb145fd93edc0ee0347",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
