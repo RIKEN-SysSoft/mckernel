@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "dd0a8f78_b119c402",
+        "filename": "kernel/host.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 898,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-13T08:56:34Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tparam.queue_size \u003d 4 * num_processors * sizeof(struct ikc_scd_packet);",
+      "revId": "b5337358cf26cd37de649c99986dd9e083202fa2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
