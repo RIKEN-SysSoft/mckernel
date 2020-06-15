@@ -1071,6 +1071,7 @@ static int setup_rt_frame(int usig, unsigned long rc, int to_restart,
 
 	if (k->sa.sa_flags & SA_RESTORER){
 		regs->regs[30] = (unsigned long)k->sa.sa_restorer;
+		kprintf("%s: SA_RESTORER: 0x%lx\n", __func__, regs->regs[30]);
 	} else {
 		regs->regs[30] = (unsigned long)VDSO_SYMBOL(thread->vm->vdso_addr, sigtramp);
 	}
