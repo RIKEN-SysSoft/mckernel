@@ -21,8 +21,6 @@
 #include <registers.h>
 #include <string.h>
 
-#define LOCALS_SPAN (4 * PAGE_SIZE)
-
 struct x86_cpu_local_variables *locals;
 size_t x86_cpu_local_variables_span = LOCALS_SPAN;	/* for debugger */
 
