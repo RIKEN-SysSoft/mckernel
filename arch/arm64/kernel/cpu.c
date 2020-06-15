@@ -786,6 +786,17 @@ void cpu_safe_halt(void)
 	cpu_enable_interrupt();
 }
 
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
+void cpu_halt_panic(void)
+{
+	extern void __cpu_do_idle(void);
+	cpu_enable_interrupt();
+	__cpu_do_idle();
+}
+
 #if defined(CONFIG_HAS_NMI)
 #include <arm-gic-v3.h>
 
