@@ -2876,7 +2876,8 @@ unsigned long do_fork(int clone_flags, unsigned long newsp,
 		ihk_rwspinlock_read_unlock_noirq(&old->vm->memory_range_lock);
 
 		if (range && range->memobj && range->memobj->path) {
-			if (!strstr(range->memobj->path, "omp.so")) {
+			if (!strstr(range->memobj->path, "omp.so") &&
+					!strstr(range->memobj->path, "libfj90")) {
 				helper_thread = 1;
 			}
 			dkprintf("clone(): %s thread from %s\n",
