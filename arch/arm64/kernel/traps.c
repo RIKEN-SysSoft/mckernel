@@ -174,9 +174,13 @@ void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
 
 	arch_show_interrupt_context(regs);
 
+#if 0
 	info.si_signo = SIGILL;
 	info.si_errno = 0;
 	info.si_code  = ILL_ILLOPC;
+#endif
+	info.si_signo = SIGSTOP;
+	info.si_errno = 0;
 	info._sifields._sigfault.si_addr  = (void*)regs->pc;
 
 	arm64_notify_die("Oops - bad mode", regs, &info, 0);
