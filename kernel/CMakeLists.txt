@@ -51,6 +51,12 @@ set(MCKERNEL_SRCS
 	${IHK_FULL_SOURCE_DIR}/cokernel/smp/${ARCH}/setup.c
 )
 
+if (ENABLE_TOFU)
+	list(APPEND MCKERNEL_SRCS
+		tofu/tof_utofu_main.c
+	)
+endif()
+
 if (ENABLE_UBSAN)
 	add_compile_options(-fsanitize=undefined)
 	list(APPEND MCKERNEL_SRCS ubsan.c)
