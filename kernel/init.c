@@ -345,6 +345,9 @@ static void populate_sysfs(void)
 
 int host_ikc_inited = 0;
 extern int num_processors;
+#ifdef ENABLE_TOFU
+extern void tof_utofu_init_globals(void);
+#endif
 
 static void post_init(void)
 {
@@ -370,6 +373,9 @@ static void post_init(void)
 
 	sysfs_init();
 	populate_sysfs();
+#ifdef ENABLE_TOFU
+	tof_utofu_init_globals();
+#endif
 }
 #ifdef DCFA_RUN
 extern void user_main();
