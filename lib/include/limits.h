@@ -13,12 +13,35 @@
 #ifndef __HEADER_LIMITS
 #define __HEADER_LIMITS
 
-#define INT_MAX 0x7fffffff
-#define INT_MIN -0x80000000
-#define UINT_MAX 0xffffffff
-#define LONG_MAX 0x7fffffffffffffffL
-#define LONG_MIN -0x8000000000000000L
-#define ULONG_MAX 0xffffffffffffffffL
+#define USHRT_MAX	((uint16_t)(~0U))
+#define SHRT_MAX	((int16_t)(USHRT_MAX>>1))
+#define SHRT_MIN	((int16_t)(-SHRT_MAX - 1))
+#define INT_MAX		((int)(~0U>>1))
+#define INT_MIN		(-INT_MAX - 1)
+#define UINT_MAX	(~0U)
+#define LONG_MAX	((long)(~0UL>>1))
+#define LONG_MIN	(-LONG_MAX - 1)
+#define ULONG_MAX	(~0UL)
+#define LLONG_MAX	((long long)(~0ULL>>1))
+#define LLONG_MIN	(-LLONG_MAX - 1)
+#define ULLONG_MAX	(~0ULL)
+#define SIZE_MAX	(~(size_t)0)
+typedef uint64_t phys_addr_t;
+#define PHYS_ADDR_MAX	(~(phys_addr_t)0)
+
+#define U8_MAX		((uint8_t)~0U)
+#define S8_MAX		((int8_t)(U8_MAX>>1))
+#define S8_MIN		((int8_t)(-S8_MAX - 1))
+#define U16_MAX		((uint16_t)~0U)
+#define S16_MAX		((int16_t)(U16_MAX>>1))
+#define S16_MIN		((int16_t)(-S16_MAX - 1))
+#define U32_MAX		((uint32_t)~0U)
+#define S32_MAX		((int32_t)(U32_MAX>>1))
+#define S32_MIN		((int32_t)(-S32_MAX - 1))
+#define U64_MAX		((uint64_t)~0ULL)
+#define S64_MAX		((int64_t)(U64_MAX>>1))
+#define S64_MIN		((int64_t)(-S64_MAX - 1))
+
 #define IOV_MAX 1024
 
 #ifndef PATH_MAX
