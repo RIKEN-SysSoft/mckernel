@@ -170,6 +170,7 @@ int ihk_mc_pt_change_page(page_table_t pt, void *virt,
                           enum ihk_mc_pt_attribute);
 int ihk_mc_pt_clear_page(page_table_t pt, void *virt);
 int ihk_mc_pt_clear_large_page(page_table_t pt, void *virt);
+int ihk_mc_clear_kernel_range(void *start, void *end);
 int ihk_mc_pt_clear_range(page_table_t pt, struct process_vm *vm, 
 		void *start, void *end);
 int ihk_mc_pt_free_range(page_table_t pt, struct process_vm *vm, 
@@ -178,6 +179,8 @@ int ihk_mc_pt_change_attr_range(page_table_t pt, void *start, void *end,
 		enum ihk_mc_pt_attribute clrattr,
 		enum ihk_mc_pt_attribute setattr);
 pte_t *ihk_mc_pt_lookup_pte(page_table_t pt, void *virt, int pgshift, void **pgbasep, size_t *pgsizep, int *p2alignp);
+pte_t *ihk_mc_pt_lookup_fault_pte(struct process_vm *vm, void *virt,
+		int pgshift, void **basep, size_t *sizep, int *p2alignp);
 int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start, 
 		void *end, uintptr_t phys, enum ihk_mc_pt_attribute attr,
 		int pgshift, struct vm_range *range, int overwrite);
@@ -221,6 +224,9 @@ int ihk_mc_get_memory_chunk(int id,
 	unsigned long *start,
 	unsigned long *end,
 	int *numa_id);
+int ihk_mc_get_memory_chunk_dma_addr(int id,
+		int tni, int cqid,
+		uintptr_t *dma_addr);
 
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);
