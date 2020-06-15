@@ -563,6 +563,7 @@ struct process {
 	int thp_disable;
 
 	int straight_map;
+	int enable_tofu;
 	size_t straight_map_threshold;
 
 	// perf_event
@@ -587,6 +588,9 @@ struct process {
 
 	int coredump_barrier_count, coredump_barrier_count2;
 	mcs_rwlock_lock_t coredump_lock; // lock for coredump
+#define MAX_FD_PDE 1024
+	void *fd_pde_data[MAX_FD_PDE];
+	char *fd_path[MAX_FD_PDE];
 };
 
 /*

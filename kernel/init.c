@@ -345,6 +345,7 @@ static void populate_sysfs(void)
 
 int host_ikc_inited = 0;
 extern int num_processors;
+extern void tof_utofu_init_globals(void);
 
 static void post_init(void)
 {
@@ -370,6 +371,7 @@ static void post_init(void)
 
 	sysfs_init();
 	populate_sysfs();
+	tof_utofu_init_globals();
 }
 #ifdef DCFA_RUN
 extern void user_main();

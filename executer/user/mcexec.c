@@ -200,6 +200,7 @@ static char *mpol_bind_nodes = NULL;
 static int uti_thread_rank = 0;
 static int uti_use_last_cpu = 0;
 static int enable_uti = 0;
+static int enable_tofu = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1724,6 +1725,12 @@ static struct option mcexec_options[] = {
 		.val =		1,
 	},
 	{
+		.name =		"enable-tofu",
+		.has_arg =	no_argument,
+		.flag =		&enable_tofu,
+		.val =		1,
+	},
+	{
 		.name =		"debug-mcexec",
 		.has_arg =	no_argument,
 		.flag =		&debug,
@@ -2689,6 +2696,7 @@ int main(int argc, char **argv)
 
 	desc->straight_map = straight_map;
 	desc->straight_map_threshold = straight_map_threshold;
+	desc->enable_tofu = enable_tofu;
 
 	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
