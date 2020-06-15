@@ -2376,11 +2376,14 @@ out:
 	if (memobj) {
 		memobj_unref(memobj);
 	}
-	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+
+	if (cpu_local_var(current)->profile) {
+		kprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
 			__FUNCTION__,
 			addr, len, addr0, len0, prot, flags,
 			fd, off0, error, addr);
+	}
 
 	return !error ?
 		(range->straight_start ? range->straight_start : addr) :
