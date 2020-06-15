@@ -1705,14 +1705,6 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 				goto out;
 			}
 		}
-
-		if (flags & MAP_SHARED) {
-			/* THP on shared memory only support aligned size */
-			if (len & ((1UL << (PAGE_SHIFT + p2align)) - 1)) {
-				pgshift = PAGE_SHIFT;
-				p2align = PAGE_P2ALIGN;
-			}
-		}
 	}
 	else {
 		pgshift = PAGE_SHIFT;	/* basic page size */

@@ -2708,3 +2708,18 @@ int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pga
 
 	return 0;
 }
+
+int is_splitable(struct vm_range *range, struct page *page)
+{
+	int ret = 1;
+
+	if (page && (page_is_in_memobj(page)
+			|| page_is_multi_mapped(page))) {
+		if (range->memobj && range->memobj->flags & MF_SHM) {
+			goto out;
+		}
+		ret = 0;
+	}
+out:
+	return ret;
+}

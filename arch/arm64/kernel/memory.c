@@ -2985,7 +2985,8 @@ out:
 	return error;
 }
 
-int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
+int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm,
+		struct vm_range *range, void *addr)
 {
 	int error;
 	pte_t *ptep;
@@ -3018,8 +3019,7 @@ retry:
 			phys = ptl_phys(ptep, level);
 			page = phys_to_page(phys);
 		}
-		if (page && (page_is_in_memobj(page)
-					|| page_is_multi_mapped(page))) {
+		if (!is_splitable(range, page)) {
 			error = -EINVAL;
 			kprintf("ihk_mc_pt_split:NYI:page break down\n");
 			goto out;
