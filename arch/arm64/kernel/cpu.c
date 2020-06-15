@@ -862,6 +862,19 @@ unsigned long cpu_enable_interrupt_save(void)
 	return flags;
 }
 
+int cpu_interrupt_disabled(void)
+{
+	unsigned long flags;
+	unsigned long masked = ICC_PMR_EL1_MASKED;
+
+	asm volatile(
+		"mrs_s  %0, " __stringify(ICC_PMR_EL1)
+		: "=&r" (flags)
+		:
+		: "memory");
+	return (flags == masked);
+}
+
 #else /* defined(CONFIG_HAS_NMI) */
 
 /* @ref.impl arch/arm64/include/asm/irqflags.h::arch_local_irq_enable */
