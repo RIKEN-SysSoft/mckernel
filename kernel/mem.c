@@ -1442,6 +1442,11 @@ out_linux:
 			reason, error);
 		unhandled_page_fault(thread, fault_addr, reason, regs);
 		preempt_enable();
+
+		kprintf("%s: sending SIGSTOP to TID: %d\n", __func__, thread->tid);
+		do_kill(thread, thread->proc->pid, thread->tid, SIGSTOP, NULL, 0);
+		goto out;
+
 		memset(&info, '\0', sizeof info);
 		if (error == -ERANGE) {
 			info.si_signo = SIGBUS;
