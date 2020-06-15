@@ -91,7 +91,7 @@ ihk_spinlock_t runq_reservation_lock;
 
 int idle_halt = 0;
 int allow_oversubscribe = 0;
-int time_sharing = 0;
+int time_sharing = 1;
 
 void
 init_process(struct process *proc, struct process *parent)
