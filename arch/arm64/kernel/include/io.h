@@ -80,6 +80,10 @@ static inline uint64_t __raw_readq(const volatile void *addr)
 	return val;
 }
 
+/* IO barriers */
+#define __iormb()		rmb()
+#define __iowmb()		wmb()
+
 /*
  * Relaxed I/O memory access primitives. These follow the Device memory
  * ordering rules but do not guarantee any ordering relative to Normal memory
@@ -94,6 +98,21 @@ static inline uint64_t __raw_readq(const volatile void *addr)
 #define writew_relaxed(v,c)	((void)__raw_writew((uint16_t)(v),(c)))
 #define writel_relaxed(v,c)	((void)__raw_writel((uint32_t)(v),(c)))
 #define writeq_relaxed(v,c)	((void)__raw_writeq((uint64_t)(v),(c)))
+
+/*
+ * I/O memory access primitives. Reads are ordered relative to any
+ * following Normal memory access. Writes are ordered relative to any prior
+ * Normal memory access.
+ */
+#define readb(c)		({ uint8_t  __v = readb_relaxed(c); __iormb(); __v; })
+#define readw(c)		({ uint16_t __v = readw_relaxed(c); __iormb(); __v; })
+#define readl(c)		({ uint32_t __v = readl_relaxed(c); __iormb(); __v; })
+#define readq(c)		({ uint64_t __v = readq_relaxed(c); __iormb(); __v; })
+
+#define writeb(v,c)		({ __iowmb(); writeb_relaxed((v),(c)); })
+#define writew(v,c)		({ __iowmb(); writew_relaxed((v),(c)); })
+#define writel(v,c)		({ __iowmb(); writel_relaxed((v),(c)); })
+#define writeq(v,c)		({ __iowmb(); writeq_relaxed((v),(c)); })
 
 #endif /* __KERNEL__ */
 #endif /* __ASM_IO_H */
