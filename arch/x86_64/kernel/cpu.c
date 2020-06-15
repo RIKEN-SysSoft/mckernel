@@ -1141,6 +1141,15 @@ void cpu_halt(void)
   @ assigns \nothing;
   @ ensures \interrupt_disabled == 0;
   @*/
+void cpu_halt_panic(void)
+{
+    cpu_halt();
+}
+
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
 void cpu_safe_halt(void)
 {
     asm volatile("sti; hlt");
