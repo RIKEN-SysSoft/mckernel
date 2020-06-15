@@ -952,6 +952,9 @@ static void query_free_mem_interrupt_handler(void *priv)
 	}
 
 	kprintf("McKernel free pages in total: %d\n", pages);
+#ifdef ENABLE_FUGAKU_HACKS
+	panic("PANIC");
+#endif
 
 	if (find_command_line("memdebug")) {
 		extern void kmalloc_memcheck(void);
@@ -1344,7 +1347,13 @@ static void unhandled_page_fault(struct thread *thread, void *fault_addr,
 
 	if (!(reason & PF_USER)) {
 		cpu_local_var(kernel_mode_pf_regs) = regs;
+#ifndef ENABLE_FUGAKU_HACKS
 		panic("panic: kernel mode PF");
+#else
+		kprintf("panic: kernel mode PF");
+		for (;;) cpu_pause();
+		//panic("panic: kernel mode PF");
+#endif
 	}
 
 	//dkprintf("now dump a core file\n");
@@ -1380,6 +1389,20 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 			__FUNCTION__, fault_addr, reason, regs);
 
 	preempt_disable();
+#ifdef ENABLE_FUGAKU_HACKS
+	++cpu_local_var(in_page_fault);
+	if (cpu_local_var(in_page_fault) > 1) {
+		kprintf("%s: PF in PF??\n", __func__);
+		cpu_disable_interrupt();
+		if (!(reason & PF_USER)) {
+			cpu_local_var(kernel_mode_pf_regs) = regs;
+			panic("panic: kernel mode PF in PF");
+		}
+		while (1) {
+			panic("PANIC");
+		}
+	}
+#endif
 
 	cpu_enable_interrupt();
 
@@ -1449,9 +1472,9 @@ out_linux:
 		preempt_enable();
 
 #ifdef ENABLE_FUGAKU_DEBUG
-		kprintf("%s: sending SIGSTOP to TID: %d\n", __func__, thread->tid);
-		do_kill(thread, thread->proc->pid, thread->tid, SIGSTOP, NULL, 0);
-		goto out;
+		//kprintf("%s: sending SIGSTOP to TID: %d\n", __func__, thread->tid);
+		//do_kill(thread, thread->proc->pid, thread->tid, SIGSTOP, NULL, 0);
+		//goto out;
 #endif
 
 		memset(&info, '\0', sizeof info);
@@ -1482,6 +1505,9 @@ out_linux:
 out_ok:
 #endif
 	error = 0;
+#ifdef ENABLE_FUGAKU_HACKS
+	--cpu_local_var(in_page_fault);
+#endif
 	preempt_enable();
 out:
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p -> error: %d\n",
