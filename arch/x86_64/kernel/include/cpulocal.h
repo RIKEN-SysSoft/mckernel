@@ -53,5 +53,9 @@ struct x86_cpu_local_variables *get_x86_this_cpu_local(void);
 void *get_x86_cpu_local_kstack(int id);
 void *get_x86_this_cpu_kstack(void);
 
+#ifdef ENABLE_FUGAKU_HACKS
+#define LOCALS_SPAN (4 * PAGE_SIZE)
+#define KERNEL_STACK_SIZE LOCALS_SPAN
+#endif
 
 #endif

@@ -21,7 +21,9 @@
 #include <registers.h>
 #include <string.h>
 
+#ifndef ENABLE_FUGAKU_HACKS
 #define LOCALS_SPAN (4 * PAGE_SIZE)
+#endif
 
 struct x86_cpu_local_variables *locals;
 size_t x86_cpu_local_variables_span = LOCALS_SPAN;	/* for debugger */
