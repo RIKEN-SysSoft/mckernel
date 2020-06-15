@@ -3574,7 +3574,7 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	*ret_cpu = ch->send.queue->read_cpu;
 	ret = 0;
 
-	pr_info("%s: OS: %lx, CPU: %d\n",
+	dprintk("%s: OS: %lx, CPU: %d\n",
 		__func__, (unsigned long)os, *ret_cpu);
 
 out_put_ppd:
@@ -3638,7 +3638,7 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 	/* Notify caller (for future async implementation) */
 	atomic_set(&desc->sync, 1);
 
-	dprintk("%s: MCCTRL_OS_CPU_%s_REGISTER: CPU: %d, addr_ext: 0x%lx, val: 0x%lx\n",
+	printk("%s: MCCTRL_OS_CPU_%s_REGISTER: CPU: %d, addr_ext: 0x%lx, val: 0x%lx\n",
 		__FUNCTION__,
 		(op == MCCTRL_OS_CPU_READ_REGISTER ? "READ" : "WRITE"), cpu,
 		desc->addr_ext, desc->val);
