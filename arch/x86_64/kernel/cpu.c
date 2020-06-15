@@ -1575,6 +1575,16 @@ void arch_print_stack(void)
 	__print_stack(rbp, 0);
 }
 
+#ifdef ENABLE_FUGAKU_HACKS
+unsigned long arch_get_instruction_address(const void *reg)
+{
+	const struct x86_user_context *uctx = reg;
+	const struct x86_basic_regs *regs = &uctx->gpr;
+
+	return regs->rip;
+}
+#endif
+
 /*@
   @ requires \valid(reg);
   @ assigns \nothing;
