@@ -451,4 +451,10 @@ extern unsigned long ap_trampoline;
 
 /* Local is cachable */
 #define IHK_IKC_QUEUE_PT_ATTR (PTATTR_NO_EXECUTE | PTATTR_WRITABLE)
+
+#ifndef __ASSEMBLY__
+# define ALIGN_UP(x, align)     ALIGN_DOWN((x) + (align) - 1, align)
+# define ALIGN_DOWN(x, align)   ((x) & ~((align) - 1))
+#endif /* !__ASSEMBLY__ */
+
 #endif
