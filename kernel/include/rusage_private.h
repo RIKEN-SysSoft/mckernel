@@ -56,24 +56,6 @@ rusage_total_memory_add(unsigned long size)
 #endif
 }
 
-static inline unsigned long
-rusage_get_total_memory()
-{
-	return rusage.total_memory;
-}
-
-static inline unsigned long
-rusage_get_free_memory()
-{
-	return rusage.total_memory - rusage.total_memory_usage;
-}
-
-static inline unsigned long
-rusage_get_usage_memory()
-{
-	return rusage.total_memory_usage;
-}
-
 static inline void
 rusage_rss_add(unsigned long size)
 {
@@ -415,24 +397,6 @@ rusage_total_memory_add(unsigned long size)
 static inline void
 rusage_rss_add(unsigned long size)
 {
-}
-
-static inline unsigned long
-rusage_get_total_memory()
-{
-	return 0;
-}
-
-static inline unsigned long
-rusage_get_free_memory()
-{
-	return 0;
-}
-
-static inline unsigned long
-rusage_get_usage_memory()
-{
-	return 0;
 }
 
 static inline void
