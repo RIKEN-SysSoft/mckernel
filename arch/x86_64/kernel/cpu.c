@@ -868,6 +868,49 @@ void show_context_stack(uintptr_t *rbp) {
 	return;
 }
 
+#ifdef ENABLE_FUGAKU_HACKS
+void __show_context_stack(struct thread *thread,
+        unsigned long pc, uintptr_t sp, int kprintf_locked)
+{
+    uintptr_t stack_top;
+    unsigned long irqflags = 0;
+
+    stack_top = ALIGN_UP(sp, (uintptr_t)KERNEL_STACK_SIZE);
+
+    if (!kprintf_locked)
+        irqflags = kprintf_lock();
+
+    __kprintf("TID: %d, call stack (most recent first):\n",
+        thread->tid);
+    __kprintf("PC: %016lx, SP: %016lx\n", pc, sp);
+    for (;;) {
+        extern char _head[], _end[];
+        uintptr_t *fp, *lr;
+        fp = (uintptr_t *)sp;
+        lr = (uintptr_t *)(sp + 8);
+
+        if ((*fp <= sp)) {
+            break;
+        }
+
+        if ((*fp > stack_top)) {
+            break;
+        }
+
+        if ((*lr < (unsigned long)_head) ||
+            (*lr > (unsigned long)_end)) {
+            break;
+        }
+
+        __kprintf("PC: %016lx, SP: %016lx, FP: %016lx\n", *lr - 4, sp, *fp);
+        sp = *fp;
+    }
+
+    if (!kprintf_locked)
+        kprintf_unlock(irqflags);
+}
+#endif
+
 void interrupt_exit(struct x86_user_context *regs)
 {
 	if (interrupt_from_user(regs)) {

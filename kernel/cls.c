@@ -58,16 +58,40 @@ struct cpu_local_var *get_cpu_local_var(int id)
 	return clv + id;
 }
 
+#ifdef ENABLE_FUGAKU_HACKS
+void __show_context_stack(struct thread *thread,
+        unsigned long pc, uintptr_t sp, int kprintf_locked);
+#endif
 void preempt_enable(void)
 {
+#ifndef ENABLE_FUGAKU_HACKS
 	if (cpu_local_var_initialized)
 		--cpu_local_var(no_preempt);
+#else
+	if (cpu_local_var_initialized) {
+		--cpu_local_var(no_preempt);
+
+		if (cpu_local_var(no_preempt) < 0) {
+			//cpu_disable_interrupt();
+
+	__kprintf("%s: %d\n", __func__, cpu_local_var(no_preempt));
+    __kprintf("TID: %d, call stack from builtin frame (most recent first):\n",
+        cpu_local_var(current)->tid);
+	__show_context_stack(cpu_local_var(current), (uintptr_t)&preempt_enable,
+			(unsigned long)__builtin_frame_address(0), 1);
+
+			//arch_cpu_stop();
+			//cpu_halt();
+		}
+	}
+#endif
 }
 
 void preempt_disable(void)
 {
-	if (cpu_local_var_initialized)
+	if (cpu_local_var_initialized) {
 		++cpu_local_var(no_preempt);
+	}
 }
 
 int add_backlog(int (*func)(void *arg), void *arg)
