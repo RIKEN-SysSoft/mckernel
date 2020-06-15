@@ -120,3 +120,8 @@ void do_backlog(void)
 		}
 	}
 }
+
+ihk_spinlock_t *get_this_cpu_runq_lock(void)
+{
+	return &get_this_cpu_local_var()->runq_lock;
+}

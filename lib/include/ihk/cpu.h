@@ -23,6 +23,7 @@ extern int num_processors;
 
 void cpu_enable_interrupt(void);
 void cpu_disable_interrupt(void);
+int cpu_interrupt_disabled(void);
 void cpu_halt(void);
 void cpu_halt_panic(void);
 void cpu_safe_halt(void);
