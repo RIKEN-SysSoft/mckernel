@@ -292,5 +292,38 @@ void ihk_mc_spinlock_lock(ihk_spinlock_t *, unsigned long *);
 void ihk_mc_spinlock_unlock(ihk_spinlock_t *, unsigned long *);
 #endif
 
+/*
+ * Linux queued_spin_lock compatible spin_lock, without the queue.
+ */
+#define _Q_LOCKED_OFFSET    0
+#define _Q_LOCKED_VAL       (1U << _Q_LOCKED_OFFSET)
+
+#define linux_spin_lock(lock)                    \
+	do {                                         \
+		while (!__sync_bool_compare_and_swap(    \
+					(unsigned int *)lock, 0,     \
+					_Q_LOCKED_VAL)) {            \
+			cpu_pause();                         \
+		}                                        \
+	} while (0)
+
+#define linux_spin_unlock(lock)                               \
+	do {                                                      \
+		smp_store_release(lock, 0);                           \
+	} while (0)
+
+#define linux_spin_lock_irqsave(lock, flags)     \
+	do {                                         \
+		flags = cpu_disable_interrupt_save();    \
+		linux_spin_lock(lock);                   \
+	} while (0)
+
+#define linux_spin_unlock_irqrestore(lock, flags) \
+	do {                                          \
+		linux_spin_unlock(lock);                  \
+		cpu_restore_interrupt(flags);             \
+	} while (0)
+
+
 #endif
 
