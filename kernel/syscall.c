@@ -6685,27 +6685,6 @@ SYSCALL_DECLARE(getrusage)
 	return 0;
 }
 
-SYSCALL_DECLARE(sysinfo)
-{
-	struct sysinfo *sysinfo = (struct sysinfo *)ihk_mc_syscall_arg0(ctx);
-	struct sysinfo __sysinfo;
-	int ret = 0;
-
-	memset(&__sysinfo, '\0', sizeof(struct sysinfo));
-
-	__sysinfo.totalram = rusage_get_total_memory();
-	__sysinfo.freeram = rusage_get_free_memory();
-	__sysinfo.mem_unit = 1; // always one unit for McKernel
-
-	if (copy_to_user(sysinfo, &__sysinfo, sizeof(struct sysinfo))) {
-		ret = -EFAULT;
-		goto out;
-	}
-
-out:
-	return ret;
-}
-
 extern int ptrace_traceme(void);
 extern void set_single_step(struct thread *thread);
 

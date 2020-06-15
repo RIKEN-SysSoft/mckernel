@@ -26,7 +26,6 @@
 #include <mman.h>
 #include <bitmap.h>
 #include <init.h>
-#include <rusage_private.h>
 
 //#define DEBUG_PRINT_PROCFS
 
@@ -360,28 +359,6 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 		goto end;
 	}
 #endif /* POSTK_DEBUG_ARCH_DEP_42 */
-	else if (!strcmp(p, "meminfo")) {
-		ans = snprintf(buf, count,
-				"MemTotal:      %10d kB\n"
-				"MemFree:       %10d kB\n"
-				"SwapTotal:     %10d kB\n"
-				"SwapFree:      %10d kB\n"
-				"CommitLimit:   %10d kB\n"
-				"Committed_AS:  %10d kB\n",
-				rusage_get_total_memory() >> 10,
-				rusage_get_free_memory() >> 10,
-				0, 0,
-				rusage_get_free_memory() >> 10,
-				rusage_get_usage_memory() >> 10);
-
-		if (ans < 0 || ans > count ||
-		    buf_add(&buf_top, &buf_cur, buf, ans) < 0) {
-			goto err;
-		}
-
-		ans = 0;
-		goto end;
-	}
 	else {
 		kprintf("unsupported procfs entry: %s\n", p);
 		goto end;
