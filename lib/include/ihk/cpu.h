@@ -23,6 +23,9 @@ extern int num_processors;
 
 void cpu_enable_interrupt(void);
 void cpu_disable_interrupt(void);
+#ifdef ENABLE_FUGAKU_HACKS
+int cpu_interrupt_disabled(void);
+#endif
 void cpu_halt(void);
 #ifdef ENABLE_FUGAKU_HACKS
 void cpu_halt_panic(void);
