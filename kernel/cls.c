@@ -82,6 +82,9 @@ void preempt_enable(void)
 
 			//arch_cpu_stop();
 			//cpu_halt();
+#ifdef ENABLE_FUGAKU_HACKS
+		panic("panic: negative preemption??");
+#endif
 		}
 	}
 #endif

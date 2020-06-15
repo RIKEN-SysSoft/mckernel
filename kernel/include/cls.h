@@ -106,6 +106,9 @@ struct cpu_local_var {
 	ihk_spinlock_t migq_lock;
 	struct list_head migq;
 	int in_interrupt;
+#ifdef ENABLE_FUGAKU_HACKS
+	int in_page_fault;
+#endif
 	int no_preempt;
 	int timer_enabled;
 	unsigned long nr_ctx_switches;

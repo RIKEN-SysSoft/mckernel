@@ -788,7 +788,11 @@ out_remote_pf:
 		syscall_channel_send(resp_channel, &pckt);
 
 		rc = do_kill(NULL, info.pid, info.tid, info.sig, &info.info, 0);
+#ifndef ENABLE_FUGAKU_HACKS
 		dkprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
+#else
+		kprintf("SCD_MSG_SEND_SIGNAL: do_kill(pid=%d, tid=%d, sig=%d)=%d\n", info.pid, info.tid, info.sig, rc);
+#endif
 		ret = 0;
 		break;
 
