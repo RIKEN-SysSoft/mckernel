@@ -2013,6 +2013,14 @@ static int page_fault_process_memory_range(struct process_vm *vm, struct vm_rang
 	int private_range, patching_to_rdonly;
 	int devfile_or_hugetlbfs_or_premap, regfile_or_shm;
 
+	if (cpu_local_var(current)->profile) {
+		dkprintf("%s: 0x%lx @ %s\n",
+				__func__, fault_addr,
+				range->memobj && range->memobj->path ?
+				range->memobj->path :
+				range->private_data ? "XPMEM" : "<unknown>");
+	}
+
 	dkprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx)\n", vm, range->start, range->end, range->flag, fault_addr, reason);
 	ihk_mc_spinlock_lock_noirq(&vm->page_table_lock);
 	/*****/
@@ -2852,6 +2860,9 @@ release_process(struct process *proc)
 	/* no process left */
 	mcs_rwlock_reader_lock(&rset->pid1->children_lock, &lock);
 	if (list_empty(&rset->pid1->children_list)) {
+		extern void tof_utofu_finalize(void);
+
+		tof_utofu_finalize();
 		hugefileobj_cleanup();
 	}
 	mcs_rwlock_reader_unlock(&rset->pid1->children_lock, &lock);

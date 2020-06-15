@@ -473,7 +473,7 @@ int do_profile(int flag)
 		if (flag & PROF_ON) {
 			if (!thread->profile) {
 				thread->profile = 1;
-				thread->profile_start_ts = 0;
+				thread->profile_start_ts = now_ts;
 			}
 		}
 		else if (flag & PROF_OFF) {
