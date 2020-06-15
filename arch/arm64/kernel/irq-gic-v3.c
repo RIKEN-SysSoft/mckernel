@@ -7,6 +7,9 @@
 #include <process.h>
 #include <syscall.h>
 #include <ihk/debug.h>
+#ifdef ENABLE_FUGAKU_HACKS
+#include <ihk/monitor.h>
+#endif
 #include <arch-timer.h>
 #include <cls.h>
 
@@ -313,14 +316,27 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 	struct cpu_local_var *v = get_this_cpu_local_var();
 	//unsigned long irqflags;
 	int do_check = 0;
+#ifdef ENABLE_FUGAKU_HACKS
+	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 
+	++v->in_interrupt;
+#endif
 	irqnr = gic_read_iar();
 	cpu_enable_nmi();
 	set_cputime(from_user ? CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 	while (irqnr != ICC_IAR1_EL1_SPURIOUS) {
 		if ((irqnr < 1020) || (irqnr >= 8192)) {
 			gic_write_eoir(irqnr);
+#ifndef ENABLE_FUGAKU_HACKS
 			handle_IPI(irqnr, regs);
+#else
+			/* Once paniced, only allow CPU stop and NMI IRQs */
+			if (monitor->status != IHK_OS_MONITOR_PANIC ||
+					irqnr == INTRID_CPU_STOP ||
+					irqnr == INTRID_MULTI_NMI) {
+				handle_IPI(irqnr, regs);
+			}
+#endif
 		}
 		irqnr = gic_read_iar();
 	}
@@ -335,7 +351,12 @@ void handle_interrupt_gicv3(struct pt_regs *regs)
 	}
 	//ihk_mc_spinlock_unlock(&v->runq_lock, irqflags);
 
+#ifndef ENABLE_FUGAKU_HACKS
 	if (do_check) {
+#else
+	--v->in_interrupt;
+	if (monitor->status != IHK_OS_MONITOR_PANIC && do_check) {
+#endif
 		check_signal(0, regs, 0);
 		schedule();
 	}

@@ -22,12 +22,18 @@ void panic(const char *msg)
 
 	arch_print_stack();
 
+#ifndef ENABLE_FUGAKU_HACKS
 	/* do not assume anything after this is executed */
 	arch_cpu_stop();
 
 	while (1) {
 		cpu_halt();
 	}
+#else
+	while (1) {
+		cpu_halt_panic();
+	}
+#endif
 }
 
 extern void arch_show_interrupt_context(const void*);

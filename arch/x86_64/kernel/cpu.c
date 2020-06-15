@@ -1137,6 +1137,17 @@ void cpu_halt(void)
 	asm volatile("hlt");
 }
 
+#ifdef ENABLE_FUGAKU_HACKS
+/*@
+  @ assigns \nothing;
+  @ ensures \interrupt_disabled == 0;
+  @*/
+void cpu_halt_panic(void)
+{
+    cpu_halt();
+}
+#endif
+
 /*@
   @ assigns \nothing;
   @ ensures \interrupt_disabled == 0;
