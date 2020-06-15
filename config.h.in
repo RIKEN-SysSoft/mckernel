@@ -16,6 +16,9 @@
 /* whether perf is enabled */
 #cmakedefine ENABLE_PERF 1
 
+/* whether built-in tofu driver is enabled */
+#cmakedefine ENABLE_TOFU 1
+
 /* whether qlmpi is enabled */
 #cmakedefine ENABLE_QLMPI 1
 

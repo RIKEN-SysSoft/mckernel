@@ -150,12 +150,6 @@ void flush_tlb_single(unsigned long addr)
 	arch_flush_tlb_single(asid, addr);
 }
 
-struct page_table {
-	translation_table_t* tt;
-	translation_table_t* tt_pa;
-	int asid;
-};
-
 extern struct page_table swapper_page_table;
 static struct page_table *init_pt = &swapper_page_table;
 static ihk_spinlock_t init_pt_lock;
@@ -223,6 +217,11 @@ static inline int ptl4_index(unsigned long addr)
 	int idx = (addr >> PTL4_SHIFT) & PTL4_INDEX_MASK;
 	return idx;
 }
+static inline int ptl3_index_linux(unsigned long addr)
+{
+	int idx = (addr >> PTL3_SHIFT) & PTL3_INDEX_MASK_LINUX;
+	return idx;
+}
 static inline int ptl3_index(unsigned long addr)
 {
 	int idx = (addr >> PTL3_SHIFT) & PTL3_INDEX_MASK;
@@ -281,6 +280,38 @@ static inline pte_t* ptl4_offset(const translation_table_t* ptl4, unsigned long 
 	}
 	return ptep;
 }
+
+static inline pte_t* ptl3_offset_linux(const pte_t* l4p, unsigned long addr)
+{
+	pte_t* ptep = NULL;
+	pte_t pte = 0;
+	unsigned long phys = 0;
+	translation_table_t* ptl3 = NULL;
+	int idx = 0;
+
+	switch (CONFIG_ARM64_PGTABLE_LEVELS)
+	{
+	case 4:
+		pte = ptl4_val(l4p);
+		phys = pte & PT_PHYSMASK;
+		ptl3 = phys_to_virt(phys);
+		idx = ptl3_index_linux(addr);
+		ptep = (pte_t*)ptl3 + idx;
+		break;
+	case 3:
+		ptl3 = (translation_table_t*)l4p;
+		idx = ptl3_index_linux(addr);
+		ptep = (pte_t*)ptl3 + idx;
+		break;
+	case 2:
+	case 1:
+		/* PTL3が無いときにはエントリではなくページテーブルのアドレスを引渡していく。*/
+		ptep = (pte_t*)l4p;
+		break;
+	}
+	return ptep;
+}
+
 static inline pte_t* ptl3_offset(const pte_t* l4p, unsigned long addr)
 {
 	pte_t* ptep = NULL;
@@ -959,7 +990,12 @@ static void init_normal_area(struct page_table *pt)
 	int i;
 	
 	tt = get_translation_table(pt);
-	
+
+	setup(tt,
+			arm64_st_phys_base,
+			arm64_st_phys_base  + (1UL << 40));
+	return;
+
 	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); i++) {
 		unsigned long map_start, map_end;
 		int numa_id;
@@ -1287,6 +1323,57 @@ out:
 	return ret;
 }
 
+int ihk_mc_linux_pt_virt_to_phys_size(struct page_table *pt,
+                           const void *virt,
+						   unsigned long *phys,
+						   unsigned long *size)
+{
+	unsigned long v = (unsigned long)virt;
+	pte_t* ptep;
+	translation_table_t* tt;
+
+	unsigned long paddr;
+	unsigned long lsize;
+
+	tt = get_translation_table(pt);
+
+	ptep = ptl4_offset(tt, v);
+	if (!ptl4_present(ptep)) {
+		return -EFAULT;
+	}
+
+	ptep = ptl3_offset_linux(ptep, v);
+	if (!ptl3_present(ptep)) {
+		return -EFAULT;
+	}
+	if (ptl3_type_block(ptep)) {
+		paddr = ptl3_phys(ptep);
+		lsize = PTL3_SIZE;
+		goto out;
+	}
+
+	ptep = ptl2_offset(ptep, v);
+	if (!ptl2_present(ptep)) {
+		return -EFAULT;
+	}
+	if (ptl2_type_block(ptep)) {
+		paddr = ptl2_phys(ptep);
+		lsize = PTL2_SIZE;
+		goto out;
+	}
+
+	ptep = ptl1_offset(ptep, v);
+	if (!ptl1_present(ptep)) {
+		return -EFAULT;
+	}
+	paddr = ptl1_phys(ptep);
+	lsize = PTL1_SIZE;
+out:
+	*phys = paddr | (v & (lsize - 1));
+	if(size) *size = lsize;
+	return 0;
+}
+
 
 int ihk_mc_pt_virt_to_phys_size(struct page_table *pt,
                            const void *virt,
@@ -1348,7 +1435,6 @@ int ihk_mc_pt_virt_to_phys(struct page_table *pt,
 	return ihk_mc_pt_virt_to_phys_size(pt, virt, phys, NULL);
 }
 
-
 int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 {
 	const unsigned long v = (unsigned long)virt;
@@ -1359,6 +1445,15 @@ int ihk_mc_pt_print_pte(struct page_table *pt, void *virt)
 		pt = get_init_page_table();
 	}
 	tt = get_translation_table(pt);
+
+	__kprintf("%s: 0x%lx, CONFIG_ARM64_PGTABLE_LEVELS: %d, ptl4_index: %ld, ptl3_index: %ld, ptl2_index: %ld, ptl1_index: %ld\n", 
+		__func__,
+		v,
+		CONFIG_ARM64_PGTABLE_LEVELS,
+		ptl4_index(v),
+		ptl3_index(v),
+		ptl2_index(v),
+		ptl1_index(v));
 
 	ptep = ptl4_offset(tt, v);
 	__kprintf("l4 table: 0x%lX l4idx: %d\n", virt_to_phys(tt), ptl4_index(v));
@@ -2147,6 +2242,198 @@ static void unmap_free_stat(struct page *page, unsigned long phys,
 	}
 }
 
+/*
+ * Kernel space page table clearing functions.
+ */
+struct clear_kernel_range_args {
+	int free_physical;
+};
+
+static int clear_kernel_range_middle(void *args0, pte_t *ptep, uint64_t base,
+			      uint64_t start, uint64_t end, int level);
+
+static int clear_kernel_range_l1(void *args0, pte_t *ptep, uint64_t base,
+		uint64_t start, uint64_t end)
+{
+	const struct table {
+		unsigned long pgsize;
+		unsigned long cont_pgsize;
+	} tbl = {
+		.pgsize = PTL1_SIZE,
+		.cont_pgsize = PTL1_CONT_SIZE
+	};
+
+	struct clear_kernel_range_args *args = args0;
+	uint64_t phys = 0;
+	pte_t old;
+	size_t clear_size;
+
+	if (ptl1_null(ptep)) {
+		return -ENOENT;
+	}
+
+	old = xchg(ptep, PTE_NULL);
+	if (!pte_is_present(&old))
+		return 0;
+
+	arch_flush_tlb_single(0, base);
+	clear_size = pte_is_contiguous(&old) ?
+		tbl.cont_pgsize : tbl.pgsize;
+
+	dkprintf("%s: 0x%lx:%lu unmapped\n",
+		__func__, base, clear_size);
+
+	if (args->free_physical) {
+		phys = ptl1_phys(&old);
+		ihk_mc_free_pages(phys_to_virt(phys), clear_size >> PAGE_SHIFT);
+	}
+
+	return 0;
+}
+
+static int clear_kernel_range_l2(void *args0, pte_t *ptep, uint64_t base,
+		uint64_t start, uint64_t end)
+{
+	return clear_kernel_range_middle(args0, ptep, base, start, end, 2);
+}
+
+static int clear_kernel_range_l3(void *args0, pte_t *ptep, uint64_t base,
+		uint64_t start, uint64_t end)
+{
+	return clear_kernel_range_middle(args0, ptep, base, start, end, 3);
+}
+
+static int clear_kernel_range_l4(void *args0, pte_t *ptep, uint64_t base,
+		uint64_t start, uint64_t end)
+{
+	return clear_kernel_range_middle(args0, ptep, base, start, end, 4);
+}
+
+static int clear_kernel_range_middle(void *args0, pte_t *ptep, uint64_t base,
+			      uint64_t start, uint64_t end, int level)
+{
+	const struct table {
+		walk_pte_t* walk;
+		walk_pte_fn_t* callback;
+		unsigned long pgsize;
+		unsigned long cont_pgsize;
+	} table[] = {
+		{walk_pte_l1, clear_kernel_range_l1, PTL2_SIZE, PTL2_CONT_SIZE}, /*PTL2*/
+		{walk_pte_l2, clear_kernel_range_l2, PTL3_SIZE, PTL3_CONT_SIZE}, /*PTL3*/
+		{walk_pte_l3, clear_kernel_range_l3, PTL4_SIZE, PTL4_CONT_SIZE}, /*PTL4*/
+	};
+	const struct table tbl = table[level-2];
+
+	struct clear_kernel_range_args *args = args0;
+	uint64_t phys = 0;
+	translation_table_t *tt;
+	int error;
+	pte_t old;
+	size_t clear_size;
+
+	if (ptl_null(ptep, level)) {
+		return -ENOENT;
+	}
+
+	dkprintf("%s(level: %d): 0x%lx in 0x%lx-0x%lx\n",
+			__func__, level, base, start, end);
+
+	if (ptl_type_page(ptep, level)
+			&& ((base < start) || (end < (base + tbl.pgsize)))) {
+		error = -EINVAL;
+		ekprintf("clear_range_middle(%p,%p,%lx,%lx,%lx,%d):"
+			 "split page. %d\n",
+			 args0, ptep, base, start, end, level, error);
+		return error;
+	}
+
+	if (ptl_type_page(ptep, level)) {
+		old = xchg(ptep, PTE_NULL);
+
+		if (!ptl_present(&old, level)) {
+			return 0;
+		}
+
+		arch_flush_tlb_single(0, base);
+
+		clear_size = pte_is_contiguous(&old) ?
+			tbl.cont_pgsize : tbl.pgsize;
+
+		dkprintf("%s(level: %d): 0x%lx:%lu unmapped\n",
+				__func__, level, base, clear_size);
+
+		if (args->free_physical) {
+			phys = ptl_phys(&old, level);
+			ihk_mc_free_pages(phys_to_virt(phys), clear_size >> PAGE_SHIFT);
+		}
+
+		return 0;
+	}
+
+	tt = (translation_table_t*)phys_to_virt(ptl_phys(ptep, level));
+	error = tbl.walk(tt, base, start, end, tbl.callback, args0);
+	if (error && (error != -ENOENT)) {
+		return error;
+	}
+
+	if (args->free_physical) {
+		if ((start <= base) && ((base + tbl.pgsize) <= end)) {
+			ptl_clear(ptep, level);
+			arch_flush_tlb_single(0, base);
+			ihk_mc_free_pages(tt, 1);
+		}
+	}
+
+	return 0;
+}
+
+static int clear_kernel_range(uintptr_t start, uintptr_t end, int free_physical)
+{
+	const struct table {
+		walk_pte_t* walk;
+		walk_pte_fn_t* callback;
+	} tables[] = {
+		{walk_pte_l2, clear_kernel_range_l2}, /*second*/
+		{walk_pte_l3, clear_kernel_range_l3}, /*first*/
+		{walk_pte_l4, clear_kernel_range_l4}, /*zero*/
+	};
+	const struct table initial_lookup = tables[CONFIG_ARM64_PGTABLE_LEVELS - 2];
+
+	int error;
+	struct clear_kernel_range_args args;
+	translation_table_t* tt;
+	unsigned long irqflags;
+
+	dkprintf("%s: start: 0x%lx, end: 0x%lx, free phys: %d\n",
+		 __func__, start, end, free_physical);
+
+	if (start <= USER_END)
+		return -EINVAL;
+
+	args.free_physical = free_physical;
+
+	irqflags = ihk_mc_spinlock_lock(&init_pt_lock);
+	tt = get_translation_table(get_init_page_table());
+	error = initial_lookup.walk(tt, 0,
+			(start & ~(0xffff000000000000)),
+			(end & ~(0xffff000000000000)),
+			initial_lookup.callback, &args);
+	dkprintf("%s: start: 0x%lx, end: 0x%lx, free phys: %d, ret: %d\n",
+		 __func__, start, end, free_physical, error);
+
+	ihk_mc_spinlock_unlock(&init_pt_lock, irqflags);
+	return error;
+}
+
+int ihk_mc_clear_kernel_range(void *start, void *end)
+{
+#define	KEEP_PHYSICAL	0
+	return clear_kernel_range((uintptr_t)start, (uintptr_t)end, KEEP_PHYSICAL);
+}
+
+/*
+ * User space page table clearing functions.
+ */
 struct clear_range_args {
 	int free_physical;
 	struct memobj *memobj;

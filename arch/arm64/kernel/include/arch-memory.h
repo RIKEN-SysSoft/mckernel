@@ -94,7 +94,7 @@ extern char _end[];
 # define LD_TASK_UNMAPPED_BASE	UL(0x0000080000000000)
 # define TASK_UNMAPPED_BASE	UL(0x0000100000000000)
 # define USER_END		UL(0x0000400000000000)
-# define MAP_VMAP_START		UL(0xffff780000000000)
+# define MAP_VMAP_START		UL(0xffff7bdfffff0000)
 # define MAP_VMAP_SIZE		UL(0x0000000100000000)
 # define MAP_FIXED_START	UL(0xffff7ffffbdd0000)
 # define MAP_ST_START		UL(0xffff800000000000)
@@ -142,6 +142,7 @@ extern char _end[];
 # define __PTL1_SHIFT  16
 # define PTL4_INDEX_MASK 0
 # define PTL3_INDEX_MASK ((UL(1) << 6) - 1)
+# define PTL3_INDEX_MASK_LINUX ((UL(1) << 10) - 1)
 # define PTL2_INDEX_MASK ((UL(1) << 13) - 1)
 # define PTL1_INDEX_MASK PTL2_INDEX_MASK
 # define __PTL4_CONT_SHIFT (__PTL4_SHIFT + 0)
@@ -829,7 +830,13 @@ static inline int pte_is_head(pte_t *ptep, pte_t *old, size_t cont_size)
 	return page_is_contiguous_head(ptep, cont_size);
 }
 
-struct page_table;
+typedef pte_t translation_table_t;
+struct page_table {
+	translation_table_t* tt;
+	translation_table_t* tt_pa;
+	int asid;
+};
+
 void arch_adjust_allocate_page_size(struct page_table *pt,
 				    uintptr_t fault_addr,
 				    pte_t *ptep,
@@ -849,7 +856,6 @@ void *map_fixed_area(unsigned long phys, unsigned long size, int uncachable);
 void set_address_space_id(struct page_table *pt, int asid);
 int get_address_space_id(const struct page_table *pt);
 
-typedef pte_t translation_table_t;
 void set_translation_table(struct page_table *pt, translation_table_t* tt);
 translation_table_t* get_translation_table(const struct page_table *pt);
 translation_table_t* get_translation_table_as_paddr(const struct page_table *pt);
