@@ -85,7 +85,7 @@ static int hugefileobj_get_page(struct memobj *memobj, off_t off,
 		}
 
 		memset(obj->pages[pgind], 0, obj->pgsize);
-		dkprintf("%s: obj: 0x%lx, allocated page for off: %lu"
+		kprintf("%s: obj: 0x%lx, allocated page for off: %lu"
 				" (ind: %d), page size: %lu\n",
 				__func__, obj, off, pgind, obj->pgsize);
 	}
@@ -275,7 +275,7 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 
 		obj->nr_pages = nr_pages;
 		obj->pages = pages;
-		dkprintf("%s: obj: 0x%lx, VA: 0x%lx, page array allocated"
+		kprintf("%s: obj: 0x%lx, VA: 0x%lx, page array allocated"
 				" for %d pages, pagesize: %lu\n",
 				__func__,
 				obj,
