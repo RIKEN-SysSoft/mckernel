@@ -741,6 +741,16 @@ distance_based:
 						memory_nodes[node].nodes_by_distance[i].id);
 				break;
 			}
+			else {
+			if (i == 0)
+				kprintf("%s: distance: CPU @ node %d failed to allocate "
+						"%d pages from node %d\n",
+						__FUNCTION__,
+						ihk_mc_get_numa_id(),
+						npages,
+						memory_nodes[node].nodes_by_distance[i].id);
+
+			}
 		}
 
 		if (pa) break;
@@ -1348,6 +1358,9 @@ static void unhandled_page_fault(struct thread *thread, void *fault_addr,
 static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 {
 	struct thread *thread = cpu_local_var(current);
+#ifdef ENABLE_TOFU
+	unsigned long addr = (unsigned long)fault_addr;
+#endif
 	int error;
 #ifdef PROFILE_ENABLE
 	uint64_t t_s = 0;
@@ -1363,6 +1376,49 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 	preempt_disable();
 
 	cpu_enable_interrupt();
+
+#ifdef ENABLE_TOFU
+	if (!(reason & PF_USER) &&
+			(addr > 0xffff000000000000 &&
+			 addr < 0xffff800000000000)) {
+		int error;
+		int ihk_mc_linux_pt_virt_to_phys_size(struct page_table *pt,
+				const void *virt,
+				unsigned long *phys,
+				unsigned long *size);
+
+		unsigned long phys, size;
+		enum ihk_mc_pt_attribute attr = PTATTR_WRITABLE | PTATTR_ACTIVE;
+
+		if (ihk_mc_linux_pt_virt_to_phys_size(ihk_mc_get_linux_kernel_pgt(),
+					fault_addr, &phys, &size) < 0) {
+			kprintf("%s: failed to resolve 0x%lx from Linux PT..\n",
+				__func__, addr);
+			goto out_linux;	
+		}
+
+retry_linux:
+		if ((error = ihk_mc_pt_set_page(NULL, fault_addr, phys, attr)) < 0) {
+			if (error == -EBUSY) {
+				kprintf("%s: WARNING: updating 0x%lx -> 0x%lx"
+						" to reflect Linux kernel mapping..\n",
+						__func__, addr, phys);
+				ihk_mc_clear_kernel_range(fault_addr, fault_addr + PAGE_SIZE);
+				goto retry_linux;
+			}
+			else {
+				kprintf("%s: failed to set up 0x%lx -> 0x%lx Linux kernel mapping..\n",
+						__func__, addr, phys);
+				goto out_linux;
+			}
+		}
+
+		dkprintf("%s: Linux kernel mapping 0x%lx -> 0x%lx set\n",
+				__func__, addr, phys);
+		goto out_ok;
+	}
+out_linux:
+#endif
 
 	if ((uintptr_t)fault_addr < PAGE_SIZE || !thread) {
 		error = -EINVAL;
@@ -1414,6 +1470,9 @@ static void page_fault_handler(void *fault_addr, uint64_t reason, void *regs)
 		goto out;
 	}
 
+#ifdef ENABLE_TOFU
+out_ok:
+#endif
 	error = 0;
 	preempt_enable();
 out:
@@ -2754,4 +2813,26 @@ int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pga
 	}
 
 	return 0;
+}
+
+pte_t *ihk_mc_pt_lookup_fault_pte(struct process_vm *vm, void *virt,
+		int pgshift, void **basep, size_t *sizep, int *p2alignp)
+{
+	int faulted = 0;
+	pte_t *ptep;
+
+retry:
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+			virt, pgshift, basep, sizep, p2alignp);
+	if (!faulted && (!ptep || !pte_is_present(ptep))) {
+		page_fault_process_vm(vm, virt, PF_POPULATE | PF_USER);
+		faulted = 1;
+		goto retry;
+	}
+
+	if (faulted && ptep && pte_is_present(ptep)) {
+		kprintf("%s: successfully faulted 0x%lx\n", __FUNCTION__, virt);
+	}
+
+	return ptep;
 }
