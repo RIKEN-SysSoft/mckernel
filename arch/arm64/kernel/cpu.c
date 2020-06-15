@@ -1442,6 +1442,12 @@ void arch_print_stack(void)
 {
 }
 
+unsigned long arch_get_instruction_address(const void *reg)
+{
+	const struct pt_regs *regs = (struct pt_regs *)reg;
+	return regs->pc;
+}
+
 void arch_show_interrupt_context(const void *reg)
 {
 	const struct pt_regs *regs = (struct pt_regs *)reg;
