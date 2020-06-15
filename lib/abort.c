@@ -22,11 +22,8 @@ void panic(const char *msg)
 
 	arch_print_stack();
 
-	/* do not assume anything after this is executed */
-	arch_cpu_stop();
-
 	while (1) {
-		cpu_halt();
+		cpu_halt_panic();
 	}
 }
 
