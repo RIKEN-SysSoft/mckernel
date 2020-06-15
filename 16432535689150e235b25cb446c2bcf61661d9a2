@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "59f41758_692de3ce",
+        "filename": "scripts/eclair-dump-backtrace.exp.in",
+        "patchSetId": 11
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-06-15T01:28:50Z",
+      "side": 1,
+      "message": "How about insert\nsend \"set pagination 0\\n\"\nto avoid paging?",
+      "range": {
+        "startLine": 36,
+        "startChar": 15,
+        "endLine": 36,
+        "endChar": 27
+      },
+      "revId": "16432535689150e235b25cb446c2bcf61661d9a2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
