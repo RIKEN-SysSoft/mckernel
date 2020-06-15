@@ -45,6 +45,7 @@
 #include <linux/mount.h>
 #include <linux/kdev_t.h>
 #include <linux/hugetlb.h>
+#include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -52,6 +53,7 @@
 #include "mcctrl.h"
 #include <linux/version.h>
 #include <archdeps.h>
+#include <asm/pgtable.h>
 
 #define ALIGN_WAIT_BUF(z)   (((z + 63) >> 6) << 6)
 
@@ -1869,6 +1871,50 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	res->ret = ret;
 	res->stid = stid;
 
+	/* Record PDE_DATA after ioctl() calls for Tofu driver */
+	if (packet->req.number == __NR_ioctl && ret == 0) {
+		char *pathbuf, *fullpath;
+		struct fd f = fdget(packet->req.args[0]);
+
+		if (!f.file) {
+			goto out_notify;
+		}
+
+		pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
+		if (!pathbuf) {
+			goto out_fdput;
+		}
+
+		fullpath = d_path(&f.file->f_path, pathbuf, PATH_MAX);
+		if (IS_ERR(fullpath)) {
+			goto out_free;
+		}
+
+		if (!strncmp("/proc/tofu/dev/", fullpath, 15)) {
+			res->pde_data = PDE_DATA(file_inode(f.file));
+			printk("%s: fd: %ld, path: %s, PDE_DATA: 0x%lx\n",
+				__func__,
+				packet->req.args[0],
+				fullpath,
+				(unsigned long)res->pde_data);
+			printk("%s: pgd_index: %ld, pmd_index: %ld, pte_index: %ld\n",
+				__func__,
+				pgd_index((unsigned long)res->pde_data),
+				pmd_index((unsigned long)res->pde_data),
+				pte_index((unsigned long)res->pde_data));
+#ifdef CONFIG_ARM64
+			printk("CONFIG_ARM64_VA_BITS: %d, PGDIR_SHIFT: %d\n",
+				CONFIG_ARM64_VA_BITS, PGDIR_SHIFT);
+#endif
+		}
+
+out_free:
+		kfree(pathbuf);
+out_fdput:
+		fdput(f);
+	}
+
+out_notify:
 	if (__notify_syscall_requester(os, packet, res) < 0) {
 		printk("%s: WARNING: failed to notify PID %d\n",
 			__FUNCTION__, packet->pid);

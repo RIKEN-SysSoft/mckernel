@@ -152,6 +152,7 @@ struct program_load_desc {
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int straight_map;
 	size_t straight_map_threshold;
+	int enable_tofu;
 	int nr_processes;
 	int process_rank;
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
@@ -198,6 +199,7 @@ struct syscall_response {
 	unsigned long req_thread_status;
 	long ret;
 	unsigned long fault_address;
+	void *pde_data;
 };
 
 struct syscall_ret_desc {
