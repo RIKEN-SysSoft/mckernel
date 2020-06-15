@@ -221,6 +221,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 		req->ttid = 0;
 	}
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+	res.pde_data = NULL;
 	send_syscall(req, cpu, &res);
 
 	if (req->rtid == -1) {
@@ -386,6 +387,31 @@ schedule:
 		__FUNCTION__, req->number, res.ret);
 
 	rc = res.ret;
+
+	if (req->number == __NR_ioctl && rc == 0) {
+		if (cpu_local_var(current)->proc->enable_tofu &&
+				res.pde_data &&
+				!thread->proc->fd_pde_data[req->args[0]] &&
+				!strncmp(thread->proc->fd_path[req->args[0]],
+					"/proc/tofu/dev/", 15)) {
+
+			if (req->args[0] < MAX_FD_PDE) {
+				unsigned long irqstate;
+
+				irqstate = ihk_mc_spinlock_lock(&thread->proc->mckfd_lock);
+				thread->proc->fd_pde_data[req->args[0]] = res.pde_data;
+				ihk_mc_spinlock_unlock(&thread->proc->mckfd_lock, irqstate);
+
+				kprintf("%s: PID: %d, ioctl fd: %d, filename: "
+						"%s, pde_data: 0x%lx\n",
+						__FUNCTION__,
+						thread->proc->pid,
+						req->args[0],
+						thread->proc->fd_path[req->args[0]],
+						res.pde_data);
+			}
+		}
+	}
 
 	if(req->number != __NR_exit_group){
 		--thread->in_syscall_offload;
@@ -1247,6 +1273,21 @@ void terminate(int rc, int sig)
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 
+	/* Tofu: clean up stags, must be done before mcexec is gone */
+	if (proc->enable_tofu) {
+		int fd;
+
+		for (fd = 0; fd < MAX_FD_PDE; ++fd) {
+			/* Tofu? */
+			if (proc->enable_tofu && proc->fd_pde_data[fd]) {
+				extern void tof_utofu_release_cq(void *pde_data);
+
+				tof_utofu_release_cq(proc->fd_pde_data[fd]);
+				proc->fd_pde_data[fd] = NULL;
+			}
+		}
+	}
+
 	terminate_mcexec(rc, sig);
 
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock);
@@ -1401,7 +1442,6 @@ void terminate(int rc, int sig)
 #endif
 
 	// clean up memory
-
 	finalize_process(proc);
 
 	preempt_disable();
@@ -1889,6 +1929,10 @@ straight_out:
 	}
 
 	if (flags & (MAP_POPULATE | MAP_LOCKED)) {
+		dkprintf("%s: 0x%lx:%lu %s%s|\n",
+			__func__, addr, len,
+				flags & MAP_POPULATE ? "|MAP_POPULATE" : "",
+				flags & MAP_LOCKED ? "|MAP_LOCKED" : "");
 		populated_mapping = 1;
 	}
 
@@ -2243,8 +2287,7 @@ out:
 	if (memobj) {
 		memobj_unref(memobj);
 	}
-if (cpu_local_var(current)->profile)
-	kprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
 			__FUNCTION__,
 			addr, len, addr0, len0, prot, flags,
@@ -3791,6 +3834,21 @@ SYSCALL_DECLARE(ioctl)
 			break;
 	ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 
+	/* Tofu? */
+	if (proc->enable_tofu &&
+			fd < MAX_FD_PDE && thread->proc->fd_pde_data[fd]) {
+		extern long tof_utofu_unlocked_ioctl_cq(int fd,
+				unsigned int cmd, unsigned long arg);
+
+		rc = tof_utofu_unlocked_ioctl_cq(fd,
+			ihk_mc_syscall_arg1(ctx),
+			ihk_mc_syscall_arg2(ctx));
+
+		/* Do we need to offload? */
+		if (rc != -ENOTSUPP)
+			return rc;
+	}
+
 	if(fdp && fdp->ioctl_cb){
 		//kprintf("ioctl: found system fd %d\n", fd);
 		rc = fdp->ioctl_cb(fdp, ctx);
@@ -3798,6 +3856,7 @@ SYSCALL_DECLARE(ioctl)
 	else{
 		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
 	}
+
 	return rc;
 }
 
@@ -3833,7 +3892,12 @@ SYSCALL_DECLARE(open)
 	}
 
  out:
-	kfree(pathname);
+	if (rc > 0 && rc < MAX_FD_PDE) {
+		cpu_local_var(current)->proc->fd_path[rc] = pathname;
+	}
+	else {
+		kfree(pathname);
+	}
 	return rc;
 }
 
@@ -3869,7 +3933,12 @@ SYSCALL_DECLARE(openat)
 	}
 
 out:
-	kfree(pathname);
+	if (rc > 0 && rc < MAX_FD_PDE) {
+		cpu_local_var(current)->proc->fd_path[rc] = pathname;
+	}
+	else {
+		kfree(pathname);
+	}
 	return rc;
 }
 
@@ -3917,6 +3986,24 @@ SYSCALL_DECLARE(close)
 	long irqstate;
 
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
+
+	/* Clear path and PDE data */
+	if (fd >= 0 && fd < MAX_FD_PDE) {
+		/* Tofu? */
+		if (thread->proc->fd_pde_data[fd]) {
+			extern void tof_utofu_release_cq(void *pde_data);
+
+			tof_utofu_release_cq(thread->proc->fd_pde_data[fd]);
+			thread->proc->fd_pde_data[fd] = NULL;
+		}
+
+		if (thread->proc->fd_path[fd]) {
+			dkprintf("%s: %d -> %s\n", __func__, fd, thread->proc->fd_path[fd]);
+			kfree(thread->proc->fd_path[fd]);
+			thread->proc->fd_path[fd] = NULL;
+		}
+	}
+
 	for(fdp = proc->mckfd, fdq = NULL; fdp; fdq = fdp, fdp = fdp->next)
 		if(fdp->fd == fd)
 			break;
@@ -10521,6 +10608,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		 */
 		if (num < PROFILE_SYSCALL_MAX) {
 			profile_event_add(num, (ts - thread->profile_start_ts));
+			thread->profile_start_ts = rdtsc();
 		}
 		else {
 			if (num != __NR_profile) {

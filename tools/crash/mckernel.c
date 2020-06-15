@@ -1179,6 +1179,7 @@ pgshift_to_string(int pgshift)
 	case 21: return "2M";
 	case 29: return "512M";
 	case 30: return "1G";
+	case 34: return "16G";
 	case 39: return "512G";
 	case 42: return "4T";
 	case 55: return "32P";
@@ -1645,9 +1646,8 @@ static void
 cmd_mcinfo(void)
 {
 #ifdef x86
-
-#endif
 	fprintf(fp, "LINUX_PAGE_OFFSET: 0x%lx\n", LINUX_PAGE_OFFSET);
+#endif
 #ifdef ARM64
 	fprintf(fp, "V2PHYS_OFFSET: 0x%lx\n", V2PHYS_OFFSET);
 
