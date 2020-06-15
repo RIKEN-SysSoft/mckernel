@@ -1723,6 +1723,7 @@ SYSCALL_DECLARE(mmap)
 
 	/* check arguments */
 	pgsize = PAGE_SIZE;
+#ifndef ENABLE_FUGAKU_HACKS
 	if (flags & MAP_HUGETLB) {
 		int hugeshift = flags & (0x3F << MAP_HUGE_SHIFT);
 
@@ -1763,6 +1764,11 @@ SYSCALL_DECLARE(mmap)
 			goto out;
 		}
 	}
+#else
+	if (flags & MAP_HUGETLB) {
+		flags &= ~(MAP_HUGETLB);
+	}
+#endif
 
 #define	VALID_DUMMY_ADDR	((region->user_start + PTL3_SIZE - 1) & ~(PTL3_SIZE - 1))
 	addr = (flags & MAP_FIXED)? addr0: VALID_DUMMY_ADDR;
