@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d6f6b084_8c27a9a1",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2025,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:04:47Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "71363843845440cbd933f1675b6d9e10c36cd75b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
