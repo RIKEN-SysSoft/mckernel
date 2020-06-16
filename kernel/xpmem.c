@@ -1664,6 +1664,8 @@ int xpmem_remove_process_memory_range(
 
 	xpmem_att_ref(att);
 
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
@@ -1741,6 +1743,8 @@ int xpmem_remove_process_memory_range(
 
 out:
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+
+	ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 
 	xpmem_att_deref(att);
 
