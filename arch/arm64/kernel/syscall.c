@@ -1726,6 +1726,14 @@ SYSCALL_DECLARE(mmap)
 	if (flags & MAP_HUGETLB) {
 		int hugeshift = flags & (0x3F << MAP_HUGE_SHIFT);
 
+		/* OpenMPI expects -EINVAL when trying to map
+		 * /dev/shm/ file with MAP_SHARED | MAP_HUGETLB
+		 */
+		if (!(flags & MAP_ANONYMOUS)) {
+			error = -EINVAL;
+			goto out;
+		}
+
 		if (hugeshift == 0) {
 			/* default hugepage size */
 			flags |= ihk_mc_get_linux_default_huge_page_shift() <<
