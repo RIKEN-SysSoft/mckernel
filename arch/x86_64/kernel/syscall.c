@@ -1713,6 +1713,14 @@ SYSCALL_DECLARE(mmap)
 	/* check arguments */
 	pgsize = PAGE_SIZE;
 	if (flags & MAP_HUGETLB) {
+		/* OpenMPI expects -EINVAL when trying to map
+		 * /dev/shm/ file with MAP_SHARED | MAP_HUGETLB
+		 */
+		if (!(flags & MAP_ANONYMOUS)) {
+			error = -EINVAL;
+			goto out;
+		}
+
 		switch (flags & (0x3F << MAP_HUGE_SHIFT)) {
 		case 0:
 			/* default hugepage size */
