@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "aafc8d63_fd08ee89",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:32:54Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\t\t\tsmp_load_acquire(\u0026v-\u003eflags) \u0026 CPU_FLAG_NEED_RESCHED) {",
+      "revId": "15b44de676f6573cecbf49c94b08ded40478f6c4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
