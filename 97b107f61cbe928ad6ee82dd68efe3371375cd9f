@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "549eea82_f73cbb27",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 983,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:10:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t!strncmp(\"/dev/shm/\", fullpath, 9) ||",
+      "revId": "97b107f61cbe928ad6ee82dd68efe3371375cd9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "42e4e030_11405fa1",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 984,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:10:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t(!strncmp(\"/var/opt/FJSVtcs/ple/daemonif/\",",
+      "revId": "97b107f61cbe928ad6ee82dd68efe3371375cd9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2985d933_3382f5e4",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 985,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:10:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tfullpath, 30) \u0026\u0026 !strstr(fullpath, \"dstore_sm.lock\"))) {",
+      "revId": "97b107f61cbe928ad6ee82dd68efe3371375cd9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ad42bfe9_a4430a09",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 986,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:10:05Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\t\t\tprintk(\"%s: treating %s as a device file..\\n\",",
+      "revId": "97b107f61cbe928ad6ee82dd68efe3371375cd9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e28bf727_4baf7ca4",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1446,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:10:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t!strncmp(\"/dev/shm/\", fullpath, 9) ||",
+      "revId": "97b107f61cbe928ad6ee82dd68efe3371375cd9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d2aa37b_b5fd6cdd",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1447,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:10:05Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t!strncmp(\"/var/opt/FJSVtcs/ple/daemonif/\",",
+      "revId": "97b107f61cbe928ad6ee82dd68efe3371375cd9f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
