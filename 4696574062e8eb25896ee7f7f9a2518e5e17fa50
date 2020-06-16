@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a9344b8a_41e7521e",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1417,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:43:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^IXPMEM_DEBUG(\"detaching current-\u003evm\u003d0x%p, att-\u003evm\u003d0x%p\", $",
+      "revId": "4696574062e8eb25896ee7f7f9a2518e5e17fa50",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2bf12ab2_c791ea13",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1471,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:43:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Iret \u003d xpmem_vm_munmap(cpu_local_var(current)-\u003evm, (void *)range-\u003estart, $",
+      "revId": "4696574062e8eb25896ee7f7f9a2518e5e17fa50",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09ee7be9_398998cc",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1707,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:43:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^Icpu_local_var(current)-\u003evm, remaining_vaddr - 1, $",
+      "revId": "4696574062e8eb25896ee7f7f9a2518e5e17fa50",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ff806e1_44e8db82",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1728,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:43:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Icpu_local_var(current)-\u003evm, remaining_vaddr, $",
+      "revId": "4696574062e8eb25896ee7f7f9a2518e5e17fa50",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
