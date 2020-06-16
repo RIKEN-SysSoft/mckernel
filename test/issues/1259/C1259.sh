@@ -39,8 +39,8 @@ do
 	SEG_PGSIZE=`cat ${log_file} | awk '/OK/,/DONE/' | \
 grep -o "large_page_allocation.*${SEG_ADDR}.*" | awk '{ print $5; }'`
 
-	XPMEM_ADDR=`grep xpmem_attachment_addr ${log_file} | awk '{ print $NF; }'`
-	XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $NF; }'`
+	XPMEM_ADDR=`grep xpmem_attachment_addr ${log_file} | awk '{ print $3; }'`
+	XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $5; }'`
 
 	if [ "${SEG_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
 		echo "** [ OK ] seg_addr ($SEG_ADDR) is allocated until xpmem_attach"
@@ -81,24 +81,21 @@ do
 	SEG_PGSIZE=`cat ${log_file} | awk '/OK/,/DONE/' | \
 grep -o "large_page_allocation.*${SEG_ADDR}.*" | awk '{ print $5; }'`
 
-	XPMEM_ADDR=`grep xpmem_attachment_addr ${log_file} | awk '{ print $NF; }'`
-	XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $NF; }'`
+	XPMEM_ADDR=`grep xpmem_attachment_addr ${log_file} | awk '{ print $3; }'`
+	XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $5; }'`
 
 	if [ "${SEG_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
-		printf "** [ OK ] "
+		echo "** [ OK ] seg_addr ($SEG_ADDR) is allocated until xpmem_attach"
 	else
-		printf "** [ NG ] "
+		echo "** [ NG ] seg_addr ($SEG_ADDR) is NOT allocated until xpmem_attach"
 		let ng++
 	fi
-	echo "size of 1st page of segment at ${SEG_ADDR}: ${SEG_PGSIZE}, expected: ${EXPECT_PGSIZE}"
-
 	if [ "${XPMEM_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
-		printf "** [ OK ] "
+		echo "** [ OK ] xpmem_addr ($XPMEM_ADDR) is allocated using large pages"
 	else
-		printf "** [ NG ] "
+		echo "** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using large pages"
 		let ng++
 	fi
-	echo "size of 1st page of attachment at ${XPMEM_ADDR}: ${XPMEM_PGSIZE}, expected: ${EXPECT_PGSIZE}"
 done
 if [ ${ng} -eq 0 ]; then
 	echo "*** C${issue}T${tid}: PASSED"
@@ -119,8 +116,8 @@ ${IHKOSCTL} 0 kmsg >> ${log_file}
 
 EXPECT_PGSIZE=`grep EXPECT_PAGE_SIZE ${log_file} | awk '{ print $2; }'`
 
-XPMEM_ADDR=`grep xpmem_attachment_addr ${log_file} | awk '{ print $NF; }'`
-XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $NF; }'`
+XPMEM_ADDR=`grep xpmem_attachment_addr ${log_file} | awk '{ print $3; }'`
+XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $5; }'`
 
 if [ "${XPMEM_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
 	echo "** [ OK ] xpmem_addr ($XPMEM_ADDR) is allocated using small pages"
@@ -143,13 +140,13 @@ pgshift=${PGSHIFT_LIST[0]}
 ${IHKOSCTL} 0 clear_kmsg
 log_file="./C${issue}T${tid}_${pgshift}.log"
 echo pageshift: ${pgshift}
-${MCEXEC} ./multi_vmr_xpmem ${pgshift} 1 | tee ${log_file}
+${MCEXEC} ./multi_vmr_xpmem ${pgshift} 1 > ${log_file}
 ${IHKOSCTL} 0 kmsg >> ${log_file}
 
 EXPECT_PGSIZE=`grep EXPECT_PAGE_SIZE ${log_file} | awk '{ print $2; }'`
 
-XPMEM_ADDR=`grep xpmem_large ${log_file} | awk '{ print $NF; }'`
-XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $NF; }'`
+XPMEM_ADDR=`grep xpmem_large ${log_file} | awk '{ print $3; }'`
+XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $5; }'`
 
 if [ "${XPMEM_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
 	echo "** [ OK ] xpmem_addr ($XPMEM_ADDR) is allocated using large pages"
@@ -170,7 +167,7 @@ echo "*** C${issue}T${tid} start *******************************"
 echo "** xpmem testsuite"
 cwd=`pwd`
 cd ${XPMEM_BUILD_DIR}/test
-. ${cwd}/mc_run.sh
+${cwd}/mc_run.sh
 cd ${cwd}
 
 # xpmem basic test
