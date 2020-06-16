@@ -1,0 +1,344 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2bf68642_3e4cb894",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 186,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct vm_range *at_vmr;\t/* vm_range where seg is attachment */\n+\tvolatile int flags;\t/* att attributes and state */",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "878b93d2_3c4397d5",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 186,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\tvolatile int flags;\t/* att attributes and state */",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48a62d34_6a0d4744",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1129,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* The new range uses on-demand paging and is associated with shmobj because of",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d6cc2884_70f8e852",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1129,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I/* The new range uses on-demand paging and is associated with shmobj because of $",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b9a6f96_805e7d3a",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1144,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(vmr-\u003ememobj) {",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "de3b97dc_06dd362a",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1147,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\tekprintf(\"%s: vmr-\u003ememobj equals to NULL\\n\", __FUNCTION__);",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b95e74dd_62ffc606",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1949,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iret \u003d ihk_mc_pt_set_pte(vm-\u003eaddress_space-\u003epage_table, att_pte, $",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "120bc5d6_05ad9b20",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1953,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I^Iekprintf(\"%s: ERROR: ihk_mc_pt_set_pte() failed %d\\n\", $",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "883cebfc_713bfc56",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1954,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t__FUNCTION__, ret);",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "036eb149_045e9a94",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1957,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t// memory_stat_rss_add() is called by the process hosting the memory area",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f2ef7a45_0acbca33",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1960,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iret \u003d ihk_mc_pt_set_range(vm-\u003eaddress_space-\u003epage_table, vm, $",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "de84f4b3_d6aa99d0",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1962,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t  vmr-\u003epgshift, vmr, 0);",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c5e4469_856059f7",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1966,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t __FUNCTION__, ret);",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a230d5ca_fff559b5",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1969,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t// memory_stat_rss_add() is called by the process hosting the memory area",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "38c79313_f9e9dd0a",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2030,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        return pte;$",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49915b79_07cad662",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2030,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        return pte;$",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a92c3515_625b5820",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2059,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Iret \u003d page_fault_process_vm(src_vm, (void *)vaddr, $",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce1096c9_7aee599b",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2070,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        return ret;$",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6e304294_95294888",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2070,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        return ret;$",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "03528125_a8d0f495",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2080,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T02:44:01Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Iint n_pgs \u003d (((offset_in_page(vaddr) + (size)) + (PAGE_SIZE - 1)) \u003e\u003e $",
+      "revId": "af4a8b638d41b41df130928f71a4c7527b8108ad",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
