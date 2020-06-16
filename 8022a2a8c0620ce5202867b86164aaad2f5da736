@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7f167755_e9a862c2",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2848,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-16T05:11:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t!strstr(range-\u003ememobj-\u003epath, \"libfj90\")) {",
+      "revId": "8022a2a8c0620ce5202867b86164aaad2f5da736",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
