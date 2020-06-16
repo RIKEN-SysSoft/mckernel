@@ -1,8 +1,8 @@
 diff --git arch/arm64/kernel/memory.c arch/arm64/kernel/memory.c
-index a84bc21..f329fcf 100644
+index a84bc21..7368ada 100644
 --- arch/arm64/kernel/memory.c
 +++ arch/arm64/kernel/memory.c
-@@ -2701,6 +2701,16 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
+@@ -2701,6 +2701,13 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
  	ptl1_set(ptep, pte);
  
  	error = 0;
@@ -11,15 +11,12 @@ index a84bc21..f329fcf 100644
 +	    __page_offset(base, PTL1_CONT_SIZE) == 0) {
 +		kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx , phys: %lx\n",
 +			__func__, base, PTL1_CONT_SIZE, phys);
-+		if (args->range->private_data)
-+			kprintf("%s: xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
-+				__func__, base, PTL1_CONT_SIZE);
 +	}
 +
  	// call memory_stat_rss_add() here because pgshift is resolved here
  	if (!(args->attr[0] & PTE_CONT)) {
  		if (rusage_memory_stat_add(args->range, phys,
-@@ -2810,6 +2820,23 @@ retry:
+@@ -2810,6 +2817,17 @@ retry:
  					level);
  
  				error = 0;
@@ -28,57 +25,45 @@ index a84bc21..f329fcf 100644
 +					if (__page_offset(base, tbl.cont_pgsize) == 0) {
 +						kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx , phys: %lx\n",
 +							__func__, base, tbl.cont_pgsize, phys);
-+						if (args->range->private_data)
-+							kprintf("%s: xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
-+								__func__, base, tbl.cont_pgsize);
 +					}
 +				} else {
 +					kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx , phys: %lx\n",
 +						__func__, base, tbl.pgsize, phys);
-+					if (args->range->private_data)
-+						kprintf("%s: xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
-+							__func__, base, tbl.pgsize);
 +				}
 +
  				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
  					 "large page. %d %lx\n",
  					 base, start, end, level, error, *ptep);
 diff --git arch/x86_64/kernel/memory.c arch/x86_64/kernel/memory.c
-index 6b34036..4ca3a1a 100644
+index df545e1..633e390 100644
 --- arch/x86_64/kernel/memory.c
 +++ arch/x86_64/kernel/memory.c
-@@ -1932,6 +1932,13 @@ retry:
+@@ -1931,6 +1931,10 @@ retry:
  			dkprintf("set_range_l2(%lx,%lx,%lx):"
  					"2MiB page. %d %lx\n",
  					base, start, end, error, *ptep);
 +
 +			kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx\n",
 +				__func__, base, PTL2_SIZE);
-+			if (args->range->private_data)
-+				kprintf("%s: xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
-+					__func__, base, PTL2_SIZE);
 +
  			// Call memory_stat_rss_add() here because pgshift is resolved here
  			if (rusage_memory_stat_add(args->range, phys, PTL2_SIZE, PTL2_SIZE)) {
  				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
-@@ -2021,6 +2028,12 @@ retry:
+@@ -2020,6 +2024,9 @@ retry:
  					"1GiB page. %d %lx\n",
  					base, start, end, error, *ptep);
  
 +			kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx\n",
 +				__func__, base, PTL3_SIZE);
-+			if (args->range->private_data)
-+				kprintf("%s: xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
-+					__func__, base, PTL3_SIZE);
 +
  			// Call memory_stat_rss_add() here because pgshift is resolved here
  			if (rusage_memory_stat_add(args->range, phys, PTL3_SIZE, PTL3_SIZE)) {
  				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
 diff --git kernel/process.c kernel/process.c
-index 1624726..d867b4d 100644
+index 809f5e0..cba9e5a 100644
 --- kernel/process.c
 +++ kernel/process.c
-@@ -2138,6 +2138,12 @@ retry:
+@@ -2059,6 +2059,12 @@ retry:
  		}
  
  		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
@@ -92,10 +77,10 @@ index 1624726..d867b4d 100644
  		                          pgsize, phys, attr);
  		if (error) {
 diff --git kernel/xpmem.c kernel/xpmem.c
-index 9fedf26..a0a7990 100644
+index e1d0231..c9da711 100644
 --- kernel/xpmem.c
 +++ kernel/xpmem.c
-@@ -490,6 +490,7 @@ static int xpmem_make(
+@@ -514,6 +514,7 @@ static int xpmem_make(
  	*segid_p = segid;
  
  	XPMEM_DEBUG("return: ret=%d, segid=0x%lx", 0, *segid_p);
@@ -103,15 +88,12 @@ index 9fedf26..a0a7990 100644
  
  	return 0;
  }
-@@ -1886,6 +1887,11 @@ static int _xpmem_fault_process_memory_range(
- 		goto out;
- 	}
+@@ -1994,6 +1995,8 @@ int xpmem_update_process_page_table(
+ 		flush_tlb_single(vaddr);
+ 		att->flags |= XPMEM_FLAG_VALIDPTEs;
  
-+	if (att_pgsize == PAGE_SIZE) {
-+		kprintf("xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
-+			vaddr, att_pgsize);
-+	}
-+
- 	XPMEM_DEBUG("att_pgaddr: %lx, att_pgsize: %lx, "
- 		    "seg_vaddr: %lx, seg_pgsize: %lx, seg_phys: %lx\n",
- 		    att_pgaddr, att_pgsize, seg_vaddr,
++		kprintf("%s: xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
++					__func__, vaddr, seg_pgsize);
+ 		seg_vaddr += seg_pgsize;
+ 		vaddr += seg_pgsize;
+ 	}

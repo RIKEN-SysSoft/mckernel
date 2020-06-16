@@ -110,7 +110,6 @@ int main(int argc, char **argv)
 
 		addr.apid = apid;
 		addr.offset = 0;
-		printf("child: attaching...\n");
 		attach = xpmem_attach(addr, map_size + (extr_size * 2), NULL);
 
 		CHKANDJUMP(attach == (void *)-1, EXIT_FAILURE,
@@ -152,7 +151,6 @@ int main(int argc, char **argv)
 		CHKANDJUMP(shm == (void *)-1, EXIT_FAILURE,
 			   "shmat failed: %s\n", strerror(errno));
 
-		printf("parent: making...\n");
 		segid = xpmem_make(mem_1, map_size + (extr_size * 2),
 				XPMEM_PERMIT_MODE, (void *)0666);
 		CHKANDJUMP(segid == -1, EXIT_FAILURE,
@@ -160,7 +158,6 @@ int main(int argc, char **argv)
 
 		*(xpmem_segid_t *)shm = segid;
 
-		printf("parent: waiting...\n");
 		ret = waitpid(pid, &status, 0);
 printf("child exited\n");
 		CHKANDJUMP(ret == -1, EXIT_FAILURE, "waitpid failed\n");

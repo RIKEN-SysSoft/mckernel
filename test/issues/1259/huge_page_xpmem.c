@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 
 		addr.apid = apid;
 		addr.offset = 0;
-		attach = xpmem_attach(addr, map_size, NULL);
+		attach = xpmem_attach(addr, pgsize * pgnum, NULL);
 
 		CHKANDJUMP(attach == (void *)-1, EXIT_FAILURE,
 			   "xpmem_attach failed: %s\n", strerror(errno));
