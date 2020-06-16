@@ -1135,18 +1135,16 @@ static int xpmem_attach(
 		existing_vmr = lookup_process_memory_range(vm, vaddr, 
 			vaddr + size);
 
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
+
 		for (; existing_vmr && existing_vmr->start < vaddr + size;
 			existing_vmr = next_process_memory_range(vm, 
 			existing_vmr)) {
 			if (xpmem_is_private_data(existing_vmr)) {
 				ret = -EINVAL;
-				ihk_rwspinlock_read_unlock_noirq(
-					&vm->memory_range_lock);
 				goto out_2;
 			}
 		}
-
-		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 	}
 
 	flags |= MAP_ANONYMOUS;
@@ -1418,17 +1416,19 @@ static void xpmem_detach_att(
 
 	XPMEM_DEBUG("detaching att->vm=0x%p", (void *)att->vm);
 
+	vm = att->vm;
+
+	ihk_mc_spinlock_lock_noirq(&vm->memory_range_lock);
+
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		ihk_mc_spinlock_unlock_noirq(&vm->memory_range_lock);
 		XPMEM_DEBUG("return: XPMEM_FLAG_DESTROYING");
 		return;
 	}
 	att->flags |= XPMEM_FLAG_DESTROYING;
-
-	vm = att->vm;
-	ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
 
 	range = lookup_process_memory_range(vm,
 		att->at_vaddr, att->at_vaddr + 1);
@@ -1669,8 +1669,10 @@ int xpmem_remove_process_memory_range(
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
+		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		xpmem_att_deref(att);
 		XPMEM_DEBUG("already cleaned up");
-		goto out;
+		return 0;
 	}
 
 	if (vmr->start == att->at_vaddr &&
@@ -2019,6 +2021,10 @@ static int xpmem_remap_pte(
 	seg_vmr = lookup_process_memory_range(seg_tg->vm, seg_vaddr, 
 		seg_vaddr + 1);
 
+	if (is_remote_vm(seg_tg->vm)) {
+		ihk_mc_spinlock_unlock_noirq(&seg_tg->vm->memory_range_lock);
+	}
+
 	if (!seg_vmr) {
 		ret = -EFAULT;
 		ekprintf("%s: ERROR: lookup_process_memory_range() failed\n", 
@@ -2029,7 +2035,6 @@ static int xpmem_remap_pte(
 	seg_pte = ihk_mc_pt_lookup_pte(seg_tg->vm->address_space->page_table, 
 		(void *)seg_vaddr, seg_vmr->pgshift, &seg_pgaddr, &seg_pgsize, 
 		&seg_p2align);
-
 	if (!seg_pte) {
 		ret = -EFAULT;
 		ekprintf("%s: ERROR: ihk_mc_pt_lookup_pte() failed\n", 
@@ -2077,10 +2082,6 @@ static int xpmem_remap_pte(
 	}
 
 out:
-	if (is_remote_vm(seg_tg->vm)) {
-		ihk_rwspinlock_read_unlock_noirq(&seg_tg->vm->memory_range_lock);
-	}
-
 	XPMEM_DEBUG("return: ret=%d", ret);
 
 	return ret;
