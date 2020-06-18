@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "152a2e22_75dc5b21",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 99,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-06-18T04:27:54Z",
+      "side": 1,
+      "message": "why not adding runq_reserved?",
+      "range": {
+        "startLine": 99,
+        "startChar": 0,
+        "endLine": 99,
+        "endChar": 57
+      },
+      "revId": "a7034b0ad9a96bf88e3c5cc8406a19e6ed351a08",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "8211aacb_751a7278",
         "filename": "executer/user/libsched_yield.c",
         "patchSetId": 12
