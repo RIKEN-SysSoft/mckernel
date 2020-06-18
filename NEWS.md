@@ -532,3 +532,6 @@ Restrictions on McKernel
 
 24. ihk_os_getperfevent() could time-out when invoked from Fujitsu TCS
     (job-scheduler).
+
+25. The behaviors of madvise and mbind are changed to do nothing and
+    report success as a workaround for Fugaku.
