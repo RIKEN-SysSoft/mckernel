@@ -2229,6 +2229,64 @@ int main(int argc, char **argv)
 
 	pthread_spin_init(&overlay_fd_lock, 0);
 
+	/* XXX: Fugaku: Fujitsu process placement fix */
+	if (getenv("FLIB_AFFINITY_ON_PROCESS")) {
+		char *cpu_s;
+		int flib_size;
+		char *flib_aff_orig, *flib_aff;
+		int cpu, off = 0;
+
+		flib_aff_orig = strdup(getenv("FLIB_AFFINITY_ON_PROCESS"));
+		if (!flib_aff_orig) {
+			fprintf(stderr, "error: dupping FLIB_AFFINITY_ON_PROCESS\n");
+			exit(EXIT_FAILURE);
+		}
+
+		flib_size = strlen(flib_aff_orig) * 2;
+
+		flib_aff = malloc(flib_size);
+		if (!flib_aff) {
+			fprintf(stderr, "error: allocating memory for "
+					"FLIB_AFFINITY_ON_PROCESS\n");
+			exit(EXIT_FAILURE);
+		}
+		memset(flib_aff, 0, flib_size);
+
+		cpu_s = strtok(flib_aff_orig, ",");
+		while (cpu_s) {
+			int ret;
+
+			/* "Shift" left by 12 CPUs */
+			cpu = atoi(cpu_s) - 12;
+
+			/* Prepend "," */
+			if (off > 0) {
+				ret = snprintf(flib_aff + off, flib_size - off, "%s", ",");
+				if (ret < 0) {
+					fprintf(stderr, "error: constructing "
+							"FLIB_AFFINITY_ON_PROCESS\n");
+					exit(EXIT_FAILURE);
+				}
+
+				off += ret;
+			}
+
+			ret = snprintf(flib_aff + off, flib_size - off, "%d", cpu);
+			if (ret < 0) {
+				fprintf(stderr, "error: constructing "
+						"FLIB_AFFINITY_ON_PROCESS\n");
+				exit(EXIT_FAILURE);
+			}
+
+			off += ret;
+			cpu_s = strtok(NULL, ",");
+		}
+
+		__dprintf("FLIB_AFFINITY_ON_PROCESS: %s -> %s\n",
+				getenv("FLIB_AFFINITY_ON_PROCESS"), flib_aff);
+		setenv("FLIB_AFFINITY_ON_PROCESS", flib_aff, 1);
+	}
+
 	ld_preload_init();
 
 #ifdef ADD_ENVS_OPTION
