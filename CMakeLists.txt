@@ -119,34 +119,24 @@ option(ENABLE_PER_CPU_ALLOC_CACHE "Enable per-CPU allocator cache (ThunderX2 wor
 find_package(PkgConfig REQUIRED)
 set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH ON)
 
-find_library(LIBRT rt)
-if (NOT LIBRT)
-	message(FATAL_ERROR "error: couldn't find librt")
-endif()
-find_library(LIBNUMA numa)
-if (NOT LIBNUMA)
-	message(FATAL_ERROR "error: couldn't find libnuma")
-endif()
-find_library(LIBBFD bfd)
-if (NOT LIBBFD)
-	message(FATAL_ERROR "error: couldn't find libbfd")
-endif()
-find_library(LIBIBERTY iberty)
-if (NOT LIBIBERTY)
-	message(FATAL_ERROR "error: couldn't find libiberty")
-endif()
+find_library(LIBRT rt REQUIRED)
+find_library(LIBNUMA numa REQUIRED)
+find_library(LIBBFD bfd REQUIRED)
+find_library(LIBIBERTY iberty REQUIRED)
 
-# libdwarf-devel provides /usr/lib64/libdwarf.so
 find_library(LIBDWARF dwarf)
 
-# elfutils-devel provides /usr/include/dwarf.h
-find_library(LIBEBL ebl)
-
-if ((NOT LIBDWARF) OR (NOT LIBEBL))
+if (NOT LIBDWARF)
+	if (CMAKE_CROSSCOMPILING)
+		message(FATAL_ERROR "Could not find libdwarf.so, install libdwarf-devel to ${CMAKE_FIND_ROOT_PATH}")
+	endif()
 	message("WARNING: libdwarf will be compiled locally")
-	set(LIBDWARF LIBDWARF-NOTFOUND)
-	set(LIBEBL LIBEBL-NOTFOUND)
 	enable_language(CXX)
+else()
+	# Note that libdwarf-devel provides /usr/include/libdwarf/dwarf.h
+	# but elfutils-devel provides /usr/include/dwarf.h
+	# while mcinspect.c performs "#include <dwarf.h>"
+	find_path(DWARF_H dwarf.h PATH_SUFFIXES libdwarf)
 endif()
 
 if (ENABLE_QLMPI)
