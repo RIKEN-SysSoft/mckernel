@@ -4,7 +4,7 @@ if (NOT CMAKE_BUILD_TYPE)
 	set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type: Debug Release..." FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
 
-enable_language(C ASM CXX)
+enable_language(C ASM)
 
 project(mckernel C ASM)
 set(MCKERNEL_VERSION "1.7.0")
@@ -136,15 +136,17 @@ if (NOT LIBIBERTY)
 	message(FATAL_ERROR "error: couldn't find libiberty")
 endif()
 
-# ignore libdwarf installed by libdwarf-devel-*.rpm because dwarf.h is located in /usr/include/libdwarf
-execute_process(COMMAND bash -c "[[ -f /usr/include/libdwarf/dwarf.h ]] && echo YES" OUTPUT_VARIABLE BAD_DWARF_H OUTPUT_STRIP_TRAILING_WHITESPACE)
-if (BAD_DWARF_H STREQUAL "YES")
-	message("WARNING: ignoring libdwarf installed by libdwarf-devel-*.rpm")
-else()
-	find_library(LIBDWARF dwarf)
-endif()
-if (NOT LIBDWARF)
+# libdwarf-devel provides /usr/lib64/libdwarf.so
+find_library(LIBDWARF dwarf)
+
+# elfutils-devel provides /usr/include/dwarf.h
+find_library(LIBEBL ebl)
+
+if ((NOT LIBDWARF) OR (NOT LIBEBL))
 	message("WARNING: libdwarf will be compiled locally")
+	set(LIBDWARF LIBDWARF-NOTFOUND)
+	set(LIBEBL LIBEBL-NOTFOUND)
+	enable_language(CXX)
 endif()
 
 if (ENABLE_QLMPI)
