@@ -136,17 +136,16 @@ if (NOT LIBIBERTY)
 	message(FATAL_ERROR "error: couldn't find libiberty")
 endif()
 
-# libdwarf-devel provides /usr/lib64/libdwarf.so
 find_library(LIBDWARF dwarf)
 
-# elfutils-devel provides /usr/include/dwarf.h
-find_library(LIBEBL ebl)
-
-if ((NOT LIBDWARF) OR (NOT LIBEBL))
+if (NOT LIBDWARF)
 	message("WARNING: libdwarf will be compiled locally")
-	set(LIBDWARF LIBDWARF-NOTFOUND)
-	set(LIBEBL LIBEBL-NOTFOUND)
 	enable_language(CXX)
+else()
+	# Note that libdwarf-devel provides /usr/include/libdwarf/dwarf.h
+	# but elfutils-devel provides /usr/include/dwarf.h
+	# while mcinspect.c performs "#include <dwarf.h>"
+	find_path(DWARF_H dwarf.h PATH_SUFFIXES libdwarf)
 endif()
 
 if (ENABLE_QLMPI)
