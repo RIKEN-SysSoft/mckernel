@@ -14,7 +14,7 @@
 %{!?kernel_version: %global kernel_version @UNAME_R@}
 %{!?kernel_dir: %global kernel_dir /usr/src/kernels/%{kernel_version}}
 %define krequires %(echo %{kernel_version} | sed "s/.%{_target_cpu}$//")
-%define ktag %(echo %{krequires} | tr '-' '_' | sed -e 's/\.el[0-9]*$//' | sed -e 's/\.\([a-zA-Z]\)/_\1/')
+%define ktag %(echo %{krequires} | tr '-' '_' | sed -e 's/\.el[0-9_]*$//' | sed -e 's/\.\([a-zA-Z]\)/_\1/')
 
 Name: mckernel
 Version: @MCKERNEL_VERSION@
@@ -96,6 +96,10 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %{_sbindir}/ihkmond
 %{_bindir}/mcexec
 %{_bindir}/eclair
+%{_bindir}/eclair-dump-backtrace.exp
+%{_bindir}/mcinspect
+%{_bindir}/mcps
+/usr/lib/debug/usr/bin/mcinspect-%{version}-%{release}.%{_arch}.debug
 %{_bindir}/vmcore2mckdump
 %{_bindir}/mcstat
 %{_libdir}/libihk.so
