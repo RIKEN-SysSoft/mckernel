@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1d5542db_04c813f8",
+        "filename": "test/issues/1425/C1425.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-21T23:16:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in kill01 kill02 kill06 kill07 kill08 kill09 signal01 signal03 signal04 signal05",
+      "revId": "d7be4be5b9a6ee02744030133975ff98a3d5c2aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
