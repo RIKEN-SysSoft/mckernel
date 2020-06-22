@@ -143,3 +143,8 @@ SYSCALL_DELEGATED(1049, stat)
 SYSCALL_DELEGATED(1060, getpgrp)
 SYSCALL_HANDLED(1062, time)
 SYSCALL_DELEGATED(1069, epoll_wait)
+
+/* Four-line
+ * spaceholder for
+ * autotest patch.
+ */

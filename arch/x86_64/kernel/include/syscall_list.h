@@ -179,4 +179,8 @@ SYSCALL_HANDLED(802, linux_mlock)
 SYSCALL_HANDLED(803, suspend_threads)
 SYSCALL_HANDLED(804, resume_threads)
 SYSCALL_HANDLED(811, linux_spawn)
-/**** End of File ****/
+
+/* Four-line
+ * spaceholder for
+ * autotest patch.
+ */
