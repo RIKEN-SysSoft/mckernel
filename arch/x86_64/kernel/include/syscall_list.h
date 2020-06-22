@@ -180,4 +180,8 @@ SYSCALL_HANDLED(802, linux_mlock)
 SYSCALL_HANDLED(803, suspend_threads)
 SYSCALL_HANDLED(804, resume_threads)
 SYSCALL_HANDLED(811, linux_spawn)
-/**** End of File ****/
+
+/* Do not edit the lines including this comment and
+ * EOF just after it because those are used as a
+ * robust marker for the autotest patch.
+ */

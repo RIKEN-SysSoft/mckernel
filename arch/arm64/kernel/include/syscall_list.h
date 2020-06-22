@@ -143,3 +143,9 @@ SYSCALL_HANDLED(1045, signalfd)
 SYSCALL_DELEGATED(1049, stat)
 SYSCALL_DELEGATED(1060, getpgrp)
 SYSCALL_HANDLED(1062, time)
+SYSCALL_DELEGATED(1069, epoll_wait)
+
+/* Do not edit the lines including this comment and
+ * EOF just after it because those are used as a
+ * robust marker for the autotest patch.
+ */
