@@ -99,7 +99,6 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %{_bindir}/eclair-dump-backtrace.exp
 %{_bindir}/mcinspect
 %{_bindir}/mcps
-/usr/lib/debug/usr/bin/mcinspect-%{version}-%{release}.%{_arch}.debug
 %{_bindir}/vmcore2mckdump
 %{_bindir}/mcstat
 %{_libdir}/libihk.so
