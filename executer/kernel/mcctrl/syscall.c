@@ -537,7 +537,11 @@ retry_alloc:
 #define	USE_VM_INSERT_PFN	1
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 2)
+static vm_fault_t rus_vm_fault(struct vm_fault *vmf)
+#else
 static int rus_vm_fault(struct vm_fault *vmf)
+#endif
 {
 	struct vm_area_struct *vma = vmf->vma;
 #else
