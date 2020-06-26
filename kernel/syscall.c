@@ -175,6 +175,7 @@ static void send_syscall(struct syscall_request *req, int cpu,
 #endif
 }
 
+extern void lapic_timer_enable(unsigned int clocks);
 long do_syscall(struct syscall_request *req, int cpu)
 {
 	struct syscall_response res;
@@ -242,17 +243,29 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long flags;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
-			if (req->number == __NR_epoll_wait ||
-				req->number == __NR_epoll_pwait ||
-				req->number == __NR_ppoll)
-				goto schedule;
-
-			cpu_pause();
-
 			/* Spin if not preemptable */
 			if (cpu_local_var(no_preempt) || !thread->tid) {
+				cpu_pause();
 				continue;
 			}
+
+			/* optimization: deschedule when waiting for
+			 * an event (e.g., MPI)
+			 */
+			if (req->number == __NR_epoll_wait ||
+			    req->number == __NR_epoll_pwait ||
+			    req->number == __NR_ppoll) {
+				/* sometimes there's no one to wake up
+				 * (e.g. gdb break point)
+				 */
+				if (!cpu_local_var(timer_enabled)) {
+					lapic_timer_enable(1000000);
+					cpu_local_var(timer_enabled) = 1;
+				}
+				goto schedule;
+			}
+
+			cpu_pause();
 
 			/* Spin by default, but if re-schedule is requested let
 			 * the other thread run */
@@ -10320,7 +10333,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
-	/* Do not deschedule when returning from an event (e.g., MPI) */
+	/* Optimization: Do not deschedule when returning from an
+	 * event (e.g., MPI)
+	 */
 	if (!(num == __NR_epoll_wait ||
 				num == __NR_epoll_pwait ||
 				num == __NR_ppoll) &&
