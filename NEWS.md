@@ -535,3 +535,6 @@ Restrictions on McKernel
 
 25. The behaviors of madvise and mbind are changed to do nothing and
     report success as a workaround for Fugaku.
+
+26. /proc/cpuinfo is changed so that McKernel process sees the contents
+    provided by Linux, as a workaround for Fugaku.
