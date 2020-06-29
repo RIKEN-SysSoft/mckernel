@@ -203,7 +203,8 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, int flags,
 	ihk_mc_syscall_arg2(&ctx) = virt_to_phys(&result);
 	memset(&result, 0, sizeof(result));
 
-	error = syscall_generic_forwarding(__NR_mmap, &ctx);
+	error = syscall_generic_forwarding(__NR_mmap, &ctx,
+					   cpu_local_var(current));
 
 	if (error) {
 		/* -ESRCH doesn't mean an error but requesting a fall
@@ -439,7 +440,8 @@ static void fileobj_free(struct memobj *memobj)
 	ihk_mc_syscall_arg1(&ctx) = obj->handle;
 	ihk_mc_syscall_arg2(&ctx) = obj->sref;
 
-	error = syscall_generic_forwarding(__NR_mmap, &ctx);
+	error = syscall_generic_forwarding(__NR_mmap, &ctx,
+					   cpu_local_var(current));
 	if (error) {
 		dkprintf("%s(%p %lx): free failed. %d\n", __func__,
 			obj, obj->handle, error);
@@ -514,7 +516,8 @@ static void fileobj_do_pageio(void *args0)
 
 			dkprintf("%s: __NR_mmap for handle 0x%lx\n",
 					__FUNCTION__, obj->handle);
-			ss = syscall_generic_forwarding(__NR_mmap, &ctx);
+			ss = syscall_generic_forwarding(__NR_mmap, &ctx,
+							cpu_local_var(current));
 
 			mcs_lock_lock(&obj->page_hash_locks[hash], &mcs_node);
 			if (page->mode != PM_PAGEIO) {
@@ -729,7 +732,8 @@ static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,
 	ihk_mc_syscall_arg4(&ctx) = phys;
 
 	dkprintf("%s: syscall_generic_forwarding\n", __FUNCTION__);
-	ss = syscall_generic_forwarding(__NR_mmap, &ctx);
+	ss = syscall_generic_forwarding(__NR_mmap, &ctx,
+					cpu_local_var(current));
 	if (ss != pgsize) {
 		dkprintf("fileobj_flush_page(%p,%lx,%lx): %ld (%lx)\n",
 				memobj, phys, pgsize, ss, ss);

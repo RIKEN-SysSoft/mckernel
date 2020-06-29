@@ -1089,7 +1089,7 @@ int coredump(struct thread *thread, void *regs, int sig)
 	request.args[3] = (unsigned long)thread->proc->saved_cmdline_len;
 
 	/* no data for now */
-	ret = do_syscall(&request, thread->cpu_id);
+	ret = do_syscall(&request, thread->cpu_id, cpu_local_var(current));
 	if (ret == 0) {
 		kprintf("%s: INFO: coredump done\n", __func__);
 	} else {

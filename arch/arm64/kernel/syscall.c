@@ -243,7 +243,8 @@ SYSCALL_DECLARE(prctl)
 		error = proc->thp_disable;
 		break;
 	default:
-		error = syscall_generic_forwarding(__NR_prctl, ctx);
+		error = syscall_generic_forwarding(__NR_prctl, ctx,
+						   cpu_local_var(current));
 		break;
 	}
 	return error;

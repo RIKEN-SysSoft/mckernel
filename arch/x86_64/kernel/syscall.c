@@ -210,7 +210,8 @@ SYSCALL_DECLARE(prctl)
 		ret = proc->thp_disable;
 		break;
 	default:
-		ret = syscall_generic_forwarding(__NR_prctl, ctx);
+		ret = syscall_generic_forwarding(__NR_prctl, ctx,
+						 cpu_local_var(current));
 		break;
 	}
 
@@ -2883,7 +2884,8 @@ time_t time(void) {
 	else {
 		sreq.number = __NR_time;
 		sreq.args[0] = (uintptr_t)NULL;
-		ret = (time_t)do_syscall(&sreq, ihk_mc_get_processor_id());
+		ret = (time_t)do_syscall(&sreq, ihk_mc_get_processor_id(),
+					 cpu_local_var(current));
 	}
 
 	return ret;

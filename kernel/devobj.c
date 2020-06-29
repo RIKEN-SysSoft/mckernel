@@ -102,7 +102,8 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 
 	memset(&result, 0, sizeof(result));
 
-	error = syscall_generic_forwarding(__NR_mmap, &ctx);
+	error = syscall_generic_forwarding(__NR_mmap, &ctx,
+					   cpu_local_var(current));
 	if (error) {
 		kprintf("%s: error: fd: %d, len: %lu, off: %lu map failed.\n", 
 			__FUNCTION__, fd, len, off);
@@ -168,7 +169,8 @@ static void devobj_free(struct memobj *memobj)
 	ihk_mc_syscall_arg1(&ctx) = handle;
 	ihk_mc_syscall_arg2(&ctx) = 1;
 
-	error = syscall_generic_forwarding(__NR_mmap, &ctx);
+	error = syscall_generic_forwarding(__NR_mmap, &ctx,
+					   cpu_local_var(current));
 	if (error) {
 		dkprintf("%s(%p %lx): release failed. %d\n",
 			__func__, obj, handle, error);
@@ -221,7 +223,8 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 		ihk_mc_syscall_arg2(&ctx) = off & ~(PAGE_SIZE - 1);
 		ihk_mc_syscall_arg3(&ctx) = virt_to_phys(&pfn);
 
-		error = syscall_generic_forwarding(__NR_mmap, &ctx);
+		error = syscall_generic_forwarding(__NR_mmap, &ctx,
+						   cpu_local_var(current));
 		if (error) {
 			kprintf("devobj_get_page(%p %lx,%lx,%d):PAGER_REQ_PFN failed. %d\n", memobj, obj->handle, off, p2align, error);
 			goto out;
