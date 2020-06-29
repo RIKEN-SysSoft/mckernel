@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ea0bf056_32605953",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 268,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: poll detected, tid %d, syscall num: %d, runq_len: %d, flags: %x\\n\",",
+      "revId": "8603b2feadd5bf1cee6788ec059e4844ddcabd7f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd06f550_833a1466",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 269,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:58Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t __func__, thread-\u003etid, req-\u003enumber, v-\u003erunq_len, v-\u003eflags \u0026 CPU_FLAG_NEED_RESCHED);",
+      "revId": "8603b2feadd5bf1cee6788ec059e4844ddcabd7f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
