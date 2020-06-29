@@ -56,7 +56,7 @@ static int do_xpmem_open(int syscall_num, const char *pathname,
 		}
 	}
 
-	fd = syscall_generic_forwarding(syscall_num, ctx);
+	fd = syscall_generic_forwarding(syscall_num, ctx, cpu_local_var(current));
 	if(fd < 0){
 		XPMEM_DEBUG("syscall_num=%d error: fd=%d", syscall_num, fd);
 		return fd;

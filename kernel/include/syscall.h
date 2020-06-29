@@ -371,11 +371,12 @@ struct syscall_post {
 	SYSCALL_ARG_##a2(2); SYSCALL_ARG_##a3(3); \
 	SYSCALL_ARG_##a4(4); SYSCALL_ARG_##a5(5);
 
-#define SYSCALL_FOOTER return do_syscall(&request, ihk_mc_get_processor_id())
+#define SYSCALL_FOOTER return do_syscall(&request, ihk_mc_get_processor_id(), thread)
 
-extern long do_syscall(struct syscall_request *req, int cpu);
+extern long do_syscall(struct syscall_request *req, int cpu, struct thread *thread);
+
 int obtain_clone_cpuid(cpu_set_t *cpu_set, int use_last);
-extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx);
+extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx, struct thread *thread);
 
 #define DECLARATOR(number,name)		__NR_##name = number,
 #define	SYSCALL_HANDLED(number,name)	DECLARATOR(number,name)

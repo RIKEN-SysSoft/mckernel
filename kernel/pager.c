@@ -174,7 +174,7 @@ linux_open(char *fname, int flag, int mode)
 	ihk_mc_syscall_arg1(&ctx0) = (uintptr_t)fname;	/* pathname = fname */
 	ihk_mc_syscall_arg2(&ctx0) = flag;		/* flags = flag */
 	ihk_mc_syscall_arg3(&ctx0) = mode;		/* mode = mode */
-	fd = syscall_generic_forwarding(__NR_openat, &ctx0);
+	fd = syscall_generic_forwarding(__NR_openat, &ctx0, cpu_local_var(current));
 	return fd;
 }
 
@@ -186,7 +186,7 @@ linux_unlink(char *fname)
 	ihk_mc_syscall_arg0(&ctx0) = -100;		/* dirfd = AT_FDCWD */
 	ihk_mc_syscall_arg1(&ctx0) = (uintptr_t)fname;	/* pathname = fname */
 	ihk_mc_syscall_arg2(&ctx0) = 0;			/* flags = 0 */
-	return syscall_generic_forwarding(__NR_unlinkat, &ctx0);
+	return syscall_generic_forwarding(__NR_unlinkat, &ctx0, cpu_local_var(current));
 }
 
 static ssize_t
@@ -203,7 +203,7 @@ linux_read(int fd, void *buf, size_t count)
 
 		ihk_mc_syscall_arg1(&ctx0) = (uintptr_t) buf;
 		ihk_mc_syscall_arg2(&ctx0) = count;
-		sz0 = syscall_generic_forwarding(__NR_read, &ctx0);
+		sz0 = syscall_generic_forwarding(__NR_read, &ctx0, cpu_local_var(current));
 		if (sz0 == -EINTR)
 			continue;
 		if (sz0 <= 0) {
@@ -234,7 +234,7 @@ linux_write(int fd, void *buf, size_t count)
 
 		ihk_mc_syscall_arg1(&ctx0) = (uintptr_t) buf;
 		ihk_mc_syscall_arg2(&ctx0) = count;
-		sz0 = syscall_generic_forwarding(__NR_write, &ctx0);
+		sz0 = syscall_generic_forwarding(__NR_write, &ctx0, cpu_local_var(current));
 		if (sz0 == -EINTR)
 			continue;
 		if (sz0 <= 0) {
@@ -260,7 +260,7 @@ linux_lseek(int fd, off_t off, int whence)
 	ihk_mc_syscall_arg0(&ctx0) = fd;
 	ihk_mc_syscall_arg1(&ctx0) = off;
 	ihk_mc_syscall_arg2(&ctx0) = whence;
-	cc = syscall_generic_forwarding(__NR_lseek, &ctx0);
+	cc = syscall_generic_forwarding(__NR_lseek, &ctx0, cpu_local_var(current));
 	return cc;
 }
 
@@ -271,7 +271,7 @@ linux_close(int fd)
 	int		cc;
 
 	ihk_mc_syscall_arg0(&ctx0) = fd;
-	cc = syscall_generic_forwarding(__NR_close, &ctx0);
+	cc = syscall_generic_forwarding(__NR_close, &ctx0, cpu_local_var(current));
 	return cc;
 }
 
@@ -288,7 +288,7 @@ linux_munmap(void *addr, size_t len, int flag)
 	ihk_mc_syscall_arg0(&ctx0) = (uintptr_t) addr;
 	ihk_mc_syscall_arg1(&ctx0) = len;
 	ihk_mc_syscall_arg2(&ctx0) = flag;
-	cc = syscall_generic_forwarding(__NR_munmap, &ctx0);
+	cc = syscall_generic_forwarding(__NR_munmap, &ctx0, cpu_local_var(current));
 	return cc;
 }
 
@@ -392,7 +392,7 @@ mlocklist_req(unsigned long start, unsigned long end, struct addrpair *addr, int
 	ihk_mc_syscall_arg2(&ctx0) = end;
 	ihk_mc_syscall_arg3(&ctx0) = (unsigned long) addr;
 	ihk_mc_syscall_arg4(&ctx0) = nent;
-	cc = syscall_generic_forwarding(__NR_mmap, &ctx0);
+	cc = syscall_generic_forwarding(__NR_mmap, &ctx0, cpu_local_var(current));
 	return cc;
 }
 

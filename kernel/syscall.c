@@ -147,7 +147,7 @@ int (*linux_printk)(const char *fmt, ...);
 int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 
 static void send_syscall(struct syscall_request *req, int cpu,
-			 struct syscall_response *res)
+			 struct syscall_response *res, struct thread *thread)
 {
 	struct ikc_scd_packet packet IHK_DMA_ALIGN;
 	struct ihk_ikc_channel_desc *syscall_channel = get_cpu_local_var(cpu)->ikc2linux;
@@ -164,7 +164,7 @@ static void send_syscall(struct syscall_request *req, int cpu,
 #ifdef SYSCALL_BY_IKC
 	packet.msg = SCD_MSG_SYSCALL_ONESIDE;
 	packet.ref = cpu;
-	packet.pid = cpu_local_var(current)->proc->pid;
+	packet.pid = thread->proc->pid;
 	packet.resp_pa = virt_to_phys(res);
 	dkprintf("send syscall, nr: %d, pid: %d\n", req->number, packet.pid);
 
@@ -175,11 +175,11 @@ static void send_syscall(struct syscall_request *req, int cpu,
 #endif
 }
 
-long do_syscall(struct syscall_request *req, int cpu)
+extern void lapic_timer_enable(unsigned int clocks);
+long do_syscall(struct syscall_request *req, int cpu, struct thread *thread)
 {
 	struct syscall_response res;
 	long rc;
-	struct thread *thread = cpu_local_var(current);
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 	int mstatus = 0;
 
@@ -221,7 +221,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 		req->ttid = 0;
 	}
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
-	send_syscall(req, cpu, &res);
+	send_syscall(req, cpu, &res, thread);
 
 	if (req->rtid == -1) {
 		preempt_disable();
@@ -374,7 +374,7 @@ schedule:
 			req2.ttid = res.stid;
 
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
-			send_syscall(&req2, cpu, &res);
+			send_syscall(&req2, cpu, &res, thread);
 		}
 	}
 	if (req->rtid == -1) {
@@ -414,7 +414,7 @@ schedule:
 	return rc;
 }
 
-long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
+long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx, struct thread *thread)
 {
 	SYSCALL_HEADER;
 	dkprintf("syscall_generic_forwarding(%d)\n", n);
@@ -439,7 +439,7 @@ static int wait_zombie(struct thread *thread, struct process *child, int *status
 	request.args[1] = 0;
 	request.args[2] = options;
 	/* Ask host to clean up exited child */
-	ret = do_syscall(&request, ihk_mc_get_processor_id());
+	ret = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 
 	if (ret != child->pid)
 		kprintf("WARNING: host waitpid failed?\n");
@@ -1141,7 +1141,7 @@ void terminate_mcexec(int rc, int sig)
 		request.number = __NR_exit_group;
 		request.args[0] = proc->group_exit_status;
 		proc->nohost = 1;
-		do_syscall(&request, ihk_mc_get_processor_id());
+		do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 	}
 }
 
@@ -1466,7 +1466,7 @@ interrupt_syscall(struct thread *thread, int sig)
 	ihk_mc_syscall_arg1(&ctx) = thread->tid;
 	ihk_mc_syscall_arg2(&ctx) = sig;
 
-	lerror = syscall_generic_forwarding(__NR_kill, &ctx);
+	lerror = syscall_generic_forwarding(__NR_kill, &ctx, thread);
 	if (lerror) {
 		kprintf("interrupt_syscall failed. %ld\n", lerror);
 	}
@@ -1499,7 +1499,7 @@ void clear_host_pte(uintptr_t addr, size_t len, int holding_memory_range_lock)
 	if (holding_memory_range_lock) {
 		thread->vm->is_memory_range_lock_taken = ihk_mc_get_processor_id();
 	}
-	lerror = syscall_generic_forwarding(__NR_munmap, &ctx);
+	lerror = syscall_generic_forwarding(__NR_munmap, &ctx, cpu_local_var(current));
 	if (holding_memory_range_lock) {
 		thread->vm->is_memory_range_lock_taken = -1;
 	}
@@ -1544,7 +1544,7 @@ static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory
 	if (holding_memory_range_lock) {
 		thread->vm->is_memory_range_lock_taken = ihk_mc_get_processor_id();
 	}
-	lerror = syscall_generic_forwarding(__NR_mprotect, &ctx);
+	lerror = syscall_generic_forwarding(__NR_mprotect, &ctx, cpu_local_var(current));
 	if (lerror) {
 		kprintf("set_host_vma(%lx,%lx,%x) failed. %ld\n",
 				addr, len, prot, lerror);
@@ -2327,7 +2327,7 @@ static int settid(struct thread *thread, int nr_tids, int *tids)
 	 */
 	request.args[4] = nr_tids;
 	request.args[5] = virt_to_phys(tids);
-	if ((ret = do_syscall(&request, ihk_mc_get_processor_id())) < 0) {
+	if ((ret = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current))) < 0) {
 		kprintf("%s: WARNING: do_syscall returns %d\n",
 			__FUNCTION__, ret);
 	}
@@ -2582,7 +2582,7 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 	request.args[2] = (unsigned long)filename;
 	request.args[3] = virt_to_phys(desc);
 	request.args[4] = flags;
-	ret = do_syscall(&request, ihk_mc_get_processor_id());
+	ret = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 
 	if (ret != 0) {
 		dkprintf("execve(): ERROR: host failed to load elf header, errno: %d\n", 
@@ -2670,7 +2670,7 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 	request.args[2] = sizeof(struct program_load_desc) + 
 		sizeof(struct program_image_section) * desc->num_sections;
 
-	if ((ret = do_syscall(&request, ihk_mc_get_processor_id())) != 0) {
+	if ((ret = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current))) != 0) {
 		preempt_enable();
 		goto end;
 	}
@@ -2918,7 +2918,7 @@ retry_tid:
 			if(oldproc->ppid_parent->pid != 1)
 				request1.args[0] = clone_flags;
 		}
-		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id());
+		newproc->pid = do_syscall(&request1, ihk_mc_get_processor_id(), cpu_local_var(current));
 		if (newproc->pid < 0) {
 			kprintf("ERROR: forking host process\n");
 			err = newproc->pid;
@@ -3044,7 +3044,7 @@ retry_tid:
 		request1.number = __NR_clone;
 		request1.args[0] = 1;
 		request1.args[1] = new->tid;
-		err = do_syscall(&request1, ihk_mc_get_processor_id());
+		err = do_syscall(&request1, ihk_mc_get_processor_id(), cpu_local_var(current));
 		if (err) {
 			goto free_mod_clone_arg;
 		}
@@ -3083,7 +3083,7 @@ release_ids:
 		request1.number = __NR_kill;
 		request1.args[0] = newproc->pid;
 		request1.args[1] = SIGKILL;
-		do_syscall(&request1, ihk_mc_get_processor_id());
+		do_syscall(&request1, ihk_mc_get_processor_id(), cpu_local_var(current));
 	}
 
 destroy_thread:
@@ -3222,7 +3222,7 @@ getcred(int *_buf)
 	request.number = __NR_setfsuid;
 	request.args[0] = phys;
 	request.args[1] = 1;
-	do_syscall(&request, ihk_mc_get_processor_id());
+	do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 
 	return buf;
 }
@@ -3263,7 +3263,7 @@ SYSCALL_DECLARE(setresuid)
 {
 	int rc;
 
-	rc = syscall_generic_forwarding(__NR_setresuid, ctx);
+	rc = syscall_generic_forwarding(__NR_setresuid, ctx, cpu_local_var(current));
 	if(rc == 0){
 		do_setresuid();
 	}
@@ -3274,7 +3274,7 @@ SYSCALL_DECLARE(setreuid)
 {
 	int rc;
 
-	rc = syscall_generic_forwarding(__NR_setreuid, ctx);
+	rc = syscall_generic_forwarding(__NR_setreuid, ctx, cpu_local_var(current));
 	if(rc == 0){
 		do_setresuid();
 	}
@@ -3285,7 +3285,7 @@ SYSCALL_DECLARE(setuid)
 {
 	long rc;
 
-	rc = syscall_generic_forwarding(__NR_setuid, ctx);
+	rc = syscall_generic_forwarding(__NR_setuid, ctx, cpu_local_var(current));
 	if(rc == 0){
 		do_setresuid();
 	}
@@ -3301,7 +3301,7 @@ SYSCALL_DECLARE(setfsuid)
 	request.number = __NR_setfsuid;
 	request.args[0] = fsuid;
 	request.args[1] = 0;
-	newfsuid = do_syscall(&request, ihk_mc_get_processor_id());
+	newfsuid = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 	do_setresuid();
 	return newfsuid;
 }
@@ -3310,7 +3310,7 @@ SYSCALL_DECLARE(setresgid)
 {
 	int rc;
 
-	rc = syscall_generic_forwarding(__NR_setresgid, ctx);
+	rc = syscall_generic_forwarding(__NR_setresgid, ctx, cpu_local_var(current));
 	if(rc == 0){
 		do_setresgid();
 	}
@@ -3321,7 +3321,7 @@ SYSCALL_DECLARE(setregid)
 {
 	int rc;
 
-	rc = syscall_generic_forwarding(__NR_setregid, ctx);
+	rc = syscall_generic_forwarding(__NR_setregid, ctx, cpu_local_var(current));
 	if(rc == 0){
 		do_setresgid();
 	}
@@ -3332,7 +3332,7 @@ SYSCALL_DECLARE(setgid)
 {
 	long rc;
 
-	rc = syscall_generic_forwarding(__NR_setgid, ctx);
+	rc = syscall_generic_forwarding(__NR_setgid, ctx, cpu_local_var(current));
 	if(rc == 0){
 		do_setresgid();
 	}
@@ -3347,7 +3347,7 @@ SYSCALL_DECLARE(setfsgid)
 
 	request.number = __NR_setfsgid;
 	request.args[0] = fsgid;
-	newfsgid = do_syscall(&request, ihk_mc_get_processor_id());
+	newfsgid = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 	do_setresgid();
 	return newfsgid;
 }
@@ -3447,7 +3447,7 @@ SYSCALL_DECLARE(setpgid)
 			return -ESRCH;
 	}
 
-	rc = syscall_generic_forwarding(__NR_setpgid, ctx);
+	rc = syscall_generic_forwarding(__NR_setpgid, ctx, cpu_local_var(current));
 	if(rc == 0){
 		proc = find_process(pid, &lock);
 		if(proc){
@@ -3493,7 +3493,7 @@ do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
 		ihk_mc_syscall_arg0(&ctx0) = sig;
 		ihk_mc_syscall_arg1(&ctx0) = (unsigned long)act->sa.sa_handler;
 		ihk_mc_syscall_arg2(&ctx0) = act->sa.sa_flags;
-		syscall_generic_forwarding(__NR_rt_sigaction, &ctx0);
+		syscall_generic_forwarding(__NR_rt_sigaction, &ctx0, cpu_local_var(current));
 	}
 	return 0;
 }
@@ -3518,7 +3518,7 @@ SYSCALL_DECLARE(read)
 		rc = fdp->read_cb(fdp, ctx);
 	}
 	else{
-		rc = syscall_generic_forwarding(__NR_read, ctx);
+		rc = syscall_generic_forwarding(__NR_read, ctx, cpu_local_var(current));
 	}
 	return rc;
 }
@@ -3543,7 +3543,7 @@ SYSCALL_DECLARE(ioctl)
 		rc = fdp->ioctl_cb(fdp, ctx);
 	}
 	else{
-		rc = syscall_generic_forwarding(__NR_ioctl, ctx);
+		rc = syscall_generic_forwarding(__NR_ioctl, ctx, cpu_local_var(current));
 	}
 	return rc;
 }
@@ -3576,7 +3576,7 @@ SYSCALL_DECLARE(open)
 	if (!strncmp(pathname, XPMEM_DEV_PATH, len)) {
 		rc = xpmem_open(pathname, flags, ctx);
 	} else {
-		rc = syscall_generic_forwarding(__NR_open, ctx);
+		rc = syscall_generic_forwarding(__NR_open, ctx, cpu_local_var(current));
 	}
 
  out:
@@ -3612,7 +3612,7 @@ SYSCALL_DECLARE(openat)
 	if (!strncmp(pathname, XPMEM_DEV_PATH, len)) {
 		rc = xpmem_openat(pathname, flags, ctx);
 	} else {
-		rc = syscall_generic_forwarding(__NR_openat, ctx);
+		rc = syscall_generic_forwarding(__NR_openat, ctx, cpu_local_var(current));
 	}
 
 out:
@@ -3678,11 +3678,11 @@ SYSCALL_DECLARE(close)
 		if(fdp->close_cb)
 			fdp->close_cb(fdp, ctx);
 		kfree(fdp);
-		rc = syscall_generic_forwarding(__NR_close, ctx);
+		rc = syscall_generic_forwarding(__NR_close, ctx, cpu_local_var(current));
 	}
 	else{
 		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
-		rc = syscall_generic_forwarding(__NR_close, ctx);
+		rc = syscall_generic_forwarding(__NR_close, ctx, cpu_local_var(current));
 	}
 	return rc;
 }
@@ -3707,7 +3707,7 @@ SYSCALL_DECLARE(fcntl)
 		rc = fdp->fcntl_cb(fdp, ctx);
 	}
 	else{
-		rc = syscall_generic_forwarding(__NR_fcntl, ctx);
+		rc = syscall_generic_forwarding(__NR_fcntl, ctx, cpu_local_var(current));
 	}
 	return rc;
 }
@@ -3727,7 +3727,7 @@ SYSCALL_DECLARE(epoll_pwait)
 		}
 		thread->sigmask.__val[0] = wset;
 	}
-	rc = syscall_generic_forwarding(__NR_epoll_pwait, ctx);
+	rc = syscall_generic_forwarding(__NR_epoll_pwait, ctx, cpu_local_var(current));
 	thread->sigmask.__val[0] = oldset;
 
 	return rc;
@@ -3748,7 +3748,7 @@ SYSCALL_DECLARE(ppoll)
 		}
 		thread->sigmask.__val[0] = wset;
 	}
-	rc = syscall_generic_forwarding(__NR_ppoll, ctx);
+	rc = syscall_generic_forwarding(__NR_ppoll, ctx, cpu_local_var(current));
 	thread->sigmask.__val[0] = oldset;
 
 	return rc;
@@ -3775,7 +3775,7 @@ SYSCALL_DECLARE(pselect6)
 		}
 		thread->sigmask.__val[0] = wset;
 	}
-	rc = syscall_generic_forwarding(__NR_pselect6, ctx);
+	rc = syscall_generic_forwarding(__NR_pselect6, ctx, cpu_local_var(current));
 	thread->sigmask.__val[0] = oldset;
 
 	return rc;
@@ -3825,7 +3825,7 @@ SYSCALL_DECLARE(rt_sigprocmask)
 	wsig = thread->sigmask.__val[0];
 
 	ihk_mc_syscall_arg0(&ctx0) = wsig;
-	syscall_generic_forwarding(__NR_rt_sigprocmask, &ctx0);
+	syscall_generic_forwarding(__NR_rt_sigprocmask, &ctx0, cpu_local_var(current));
 	return 0;
 fault:
 	return -EFAULT;
@@ -3897,7 +3897,7 @@ SYSCALL_DECLARE(signalfd4)
 		request.number = __NR_signalfd4;
 		request.args[0] = 0;
 		request.args[1] = flags;
-		fd = do_syscall(&request, ihk_mc_get_processor_id());
+		fd = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 		if(fd < 0){
 			return fd;
 		}
@@ -4382,7 +4382,7 @@ perf_fcntl(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 		break;
 	}
 
-	rc = syscall_generic_forwarding(__NR_fcntl, ctx);
+	rc = syscall_generic_forwarding(__NR_fcntl, ctx, cpu_local_var(current));
 
 	return rc;
 }
@@ -4765,7 +4765,7 @@ SYSCALL_DECLARE(perf_event_open)
 
 	request.number = __NR_perf_event_open;
 	request.args[0] = 0;
-	fd = do_syscall(&request, ihk_mc_get_processor_id());
+	fd = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 	if(fd < 0){
 		return fd;
 	} 
@@ -5493,7 +5493,7 @@ SYSCALL_DECLARE(madvise)
 	}
 	if(advice == MADV_DONTFORK ||
 	   advice == MADV_DOFORK){
-		error = syscall_generic_forwarding(__NR_madvise, ctx);
+		error = syscall_generic_forwarding(__NR_madvise, ctx, cpu_local_var(current));
 	}
 	if (advice == MADV_WIPEONFORK) {
 		error = change_attr_process_memory_range(
@@ -6284,7 +6284,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 						      CLOCK_REALTIME: CLOCK_MONOTONIC;
 
 				int r = do_syscall(&request,
-						   ihk_mc_get_processor_id());
+						   ihk_mc_get_processor_id(), cpu_local_var(current));
 
 				if (r < 0) {
 					return -EFAULT;
@@ -6508,7 +6508,7 @@ SYSCALL_DECLARE(setrlimit)
 	    case RLIMIT_NOFILE:
 	    case RLIMIT_LOCKS:
 	    case RLIMIT_MSGQUEUE:
-		rc = syscall_generic_forwarding(__NR_setrlimit, ctx);
+		rc = syscall_generic_forwarding(__NR_setrlimit, ctx, cpu_local_var(current));
 		if(rc < 0)
 			return rc;
 		break;
@@ -6520,7 +6520,7 @@ SYSCALL_DECLARE(setrlimit)
 			break;
 		}
 	if(i >= sizeof(rlimits) / sizeof(int)){
-		return syscall_generic_forwarding(__NR_setrlimit, ctx);
+		return syscall_generic_forwarding(__NR_setrlimit, ctx, cpu_local_var(current));
 	}
 
 	memcpy(thread->proc->rlimit + mcresource, &new_rlim,
@@ -6543,7 +6543,7 @@ SYSCALL_DECLARE(getrlimit)
 			break;
 		}
 	if(i >= sizeof(rlimits) / sizeof(int)){
-		return syscall_generic_forwarding(__NR_getrlimit, ctx);
+		return syscall_generic_forwarding(__NR_getrlimit, ctx, cpu_local_var(current));
 	}
 
 // TODO: check limit
@@ -7342,7 +7342,7 @@ SYSCALL_DECLARE(sched_setparam)
 		request1.args[0] = SCHED_CHECK_SAME_OWNER;
 		request1.args[1] = pid;
 
-		retval = do_syscall(&request1, ihk_mc_get_processor_id());
+		retval = do_syscall(&request1, ihk_mc_get_processor_id(), cpu_local_var(current));
 		if (retval != 0) {
 			return retval;
 		}
@@ -7421,7 +7421,7 @@ SYSCALL_DECLARE(sched_setscheduler)
 		request1.number = __NR_sched_setparam;
 		request1.args[0] = SCHED_CHECK_ROOT;
 
-		retval = do_syscall(&request1, ihk_mc_get_processor_id());
+		retval = do_syscall(&request1, ihk_mc_get_processor_id(), cpu_local_var(current));
 		if (retval != 0) {
 			return retval;
 		}
@@ -7447,7 +7447,7 @@ SYSCALL_DECLARE(sched_setscheduler)
 		request1.args[0] = SCHED_CHECK_SAME_OWNER;
 		request1.args[1] = pid;
 
-		retval = do_syscall(&request1, ihk_mc_get_processor_id());
+		retval = do_syscall(&request1, ihk_mc_get_processor_id(), cpu_local_var(current));
 		if (retval != 0) {
 			return retval;
 		}
@@ -7719,7 +7719,7 @@ SYSCALL_DECLARE(setitimer)
 		request.args[1] = ihk_mc_syscall_arg1(ctx);
 		request.args[2] = ihk_mc_syscall_arg2(ctx);
 
-		return do_syscall(&request, ihk_mc_get_processor_id());
+		return do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 	}
 	else if(which == ITIMER_VIRTUAL){
 		if(old){
@@ -7791,7 +7791,7 @@ SYSCALL_DECLARE(getitimer)
 		request.args[0] = ihk_mc_syscall_arg0(ctx);
 		request.args[1] = ihk_mc_syscall_arg1(ctx);
 
-		return do_syscall(&request, ihk_mc_get_processor_id());
+		return do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 	}
 	else if(which == ITIMER_VIRTUAL){
 		if(old){
@@ -7884,7 +7884,7 @@ SYSCALL_DECLARE(clock_gettime)
 	request.args[0] = ihk_mc_syscall_arg0(ctx);
 	request.args[1] = ihk_mc_syscall_arg1(ctx);
 
-	return do_syscall(&request, ihk_mc_get_processor_id());
+	return do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 }
 
 SYSCALL_DECLARE(gettimeofday)
@@ -7919,7 +7919,7 @@ SYSCALL_DECLARE(gettimeofday)
 	request.args[0] = (unsigned long)tv;
 	request.args[1] = (unsigned long)tz;
 
-	return do_syscall(&request, ihk_mc_get_processor_id());
+	return do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 }
 
 SYSCALL_DECLARE(settimeofday)
@@ -7955,7 +7955,7 @@ SYSCALL_DECLARE(settimeofday)
 		}
 	}
 
-	error = syscall_generic_forwarding(n, ctx);
+	error = syscall_generic_forwarding(n, ctx, cpu_local_var(current));
 
 	if (!error && utv && gettime_local_support) {
 		dkprintf("sys_settimeofday(%p,%p):origin <-- %ld.%ld\n",
@@ -8037,7 +8037,7 @@ SYSCALL_DECLARE(nanosleep)
 	request.args[0] = (unsigned long)tv;
 	request.args[1] = (unsigned long)rem;
 
-	return do_syscall(&request, ihk_mc_get_processor_id());
+	return do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 }
 
 //#define DISABLE_SCHED_YIELD
@@ -9827,7 +9827,7 @@ int util_thread(struct uti_attr *arg)
 	request.args[3] = (unsigned long)uti_clv;
 	request.args[4] = uti_desc;
 	thread->uti_state = UTI_STATE_RUNNING_IN_LINUX;
-	rc = do_syscall(&request, ihk_mc_get_processor_id());
+	rc = do_syscall(&request, ihk_mc_get_processor_id(), cpu_local_var(current));
 	dkprintf("%s: returned from do_syscall,tid=%d,rc=%lx\n", __FUNCTION__, thread->tid, rc);
 
 	thread->uti_state = UTI_STATE_EPILOGUE;
@@ -9952,7 +9952,7 @@ SYSCALL_DECLARE(swapout)
 
 	if (fname == NULL || flag == 0x01) { /* for development purupse */
 		kprintf("swapout: skipping real swap\n");
-		cc = syscall_generic_forwarding(__NR_swapout, &ctx0);
+		cc = syscall_generic_forwarding(__NR_swapout, &ctx0, cpu_local_var(current));
 		kprintf("swapout: return from Linux\n");
 		return cc;
 	}
@@ -9963,7 +9963,7 @@ SYSCALL_DECLARE(swapout)
 		kprintf("swapout: skipping calling swapout in Linux\n");
 	} else {
 		kprintf("swapout: before calling swapout in Linux\n");
-		cc = syscall_generic_forwarding(__NR_swapout, &ctx0);
+		cc = syscall_generic_forwarding(__NR_swapout, &ctx0, cpu_local_var(current));
 		kprintf("swapout: after calling swapout in Linux cc(%d)\n", cc);
 	}
 	/* Though swapout in Linux side returns error, needs to call
@@ -9983,7 +9983,7 @@ SYSCALL_DECLARE(linux_mlock)
 	kprintf("linux_mlock: %p %ld\n", (void*) addr, len);
 	ihk_mc_syscall_arg0(&ctx0) = addr;
 	ihk_mc_syscall_arg1(&ctx0) = len;
-	cc = syscall_generic_forwarding(802, &ctx0);
+	cc = syscall_generic_forwarding(802, &ctx0, cpu_local_var(current));
 	return cc;
 }
 
@@ -9991,7 +9991,7 @@ SYSCALL_DECLARE(linux_spawn)
 {
 	int rc;
 
-	rc = syscall_generic_forwarding(__NR_linux_spawn, ctx);
+	rc = syscall_generic_forwarding(__NR_linux_spawn, ctx, cpu_local_var(current));
 	return rc;
 }
 
@@ -10247,7 +10247,7 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 		        ihk_mc_syscall_arg2(ctx), ihk_mc_syscall_arg3(ctx),
 		        ihk_mc_syscall_arg4(ctx), ihk_mc_syscall_pc(ctx),
 		        ihk_mc_syscall_sp(ctx));
-		l = syscall_generic_forwarding(num, ctx);
+		l = syscall_generic_forwarding(num, ctx, cpu_local_var(current));
 	}
 
 	/* Store return value so that PTRACE_GETREGSET will see it */
@@ -10281,7 +10281,9 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
-	/* Do not deschedule when returning from an event (e.g., MPI) */
+	/* Optimization: Do not deschedule when returning from an
+	 * event (e.g., MPI)
+	 */
 	if (!(num == __NR_epoll_wait ||
 				num == __NR_epoll_pwait ||
 				num == __NR_ppoll) &&
