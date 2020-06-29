@@ -5807,6 +5807,7 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 		}
 		shmid = make_shmid(obj);
 		shmobj_list_unlock();
+		memobj_unref(&obj->memobj);
 		dkprintf("do_shmget(%#lx,%#lx,%#x): %d\n", key, size, shmflg, shmid);
 		return shmid;
 	}
