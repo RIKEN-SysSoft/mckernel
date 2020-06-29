@@ -120,7 +120,6 @@ extern int num_processors;
 extern unsigned long ihk_mc_get_ns_per_tsc(void);
 extern int ptrace_detach(int pid, int data);
 extern void debug_log(unsigned long);
-extern int arch_clear_host_user_space();
 extern long arch_ptrace(long request, int pid, long addr, long data);
 extern struct cpu_local_var *clv;
 
@@ -3062,10 +3061,8 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 	}
 	
 	/* Clear host user space PTEs */
-	if (arch_clear_host_user_space()) {
-		kprintf("execve(): ERROR: clearing PTEs in host process\n");
-		panic("");
-	}		
+	clear_host_pte(vm->region.user_start,
+			(vm->region.user_end - vm->region.user_start), 0);
 
 	/* Request host to transfer ELF image */
 	request.number = __NR_execve;
@@ -5595,6 +5592,37 @@ SYSCALL_DECLARE(rt_sigsuspend)
 		return -EFAULT;
 
 	return do_sigsuspend(thread, &wset);
+}
+
+SYSCALL_DECLARE(rt_sigaction)
+{
+	int sig = ihk_mc_syscall_arg0(ctx);
+	const struct sigaction *act =
+		(const struct sigaction *)ihk_mc_syscall_arg1(ctx);
+	struct sigaction *oact = (struct sigaction *)ihk_mc_syscall_arg2(ctx);
+	size_t sigsetsize = ihk_mc_syscall_arg3(ctx);
+	struct k_sigaction new_sa, old_sa;
+	int rc;
+
+	if (sigsetsize != sizeof(sigset_t))
+		return -EINVAL;
+
+	if (act) {
+		if (copy_from_user(&new_sa.sa, act, sizeof(new_sa.sa))) {
+			goto fault;
+		}
+	}
+
+	rc = do_sigaction(sig, act ? &new_sa : NULL, oact ? &old_sa : NULL);
+	if (rc == 0 && oact) {
+		if (copy_to_user(oact, &old_sa.sa, sizeof(old_sa.sa))) {
+			goto fault;
+		}
+	}
+
+	return rc;
+fault:
+	return -EFAULT;
 }
 
 SYSCALL_DECLARE(sigaltstack)
@@ -10891,3 +10919,275 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 
 	return l;
 }
+
+static int
+check_sig_pending_thread(struct thread *thread)
+{
+	int found = 0;
+	struct list_head *head;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	struct sig_pending *next;
+	struct sig_pending *pending;
+	__sigset_t w;
+	__sigset_t x;
+	int sig = 0;
+	struct k_sigaction *k;
+	struct cpu_local_var *v;
+
+	v = get_this_cpu_local_var();
+	w = thread->sigmask.__val[0];
+
+	lock = &thread->sigcommon->lock;
+	head = &thread->sigcommon->sigpending;
+	for (;;) {
+		mcs_rwlock_reader_lock(lock, &mcs_rw_node);
+
+		list_for_each_entry_safe(pending, next, head, list) {
+			for (x = pending->sigmask.__val[0], sig = 0; x;
+				 sig++, x >>= 1) {
+			}
+			k = thread->sigcommon->action + sig - 1;
+			if ((sig != SIGCHLD &&
+				 sig != SIGURG &&
+				 sig != SIGCONT) ||
+				(k->sa.sa_handler != SIG_IGN &&
+				 k->sa.sa_handler != NULL)) {
+				if (!(pending->sigmask.__val[0] & w)) {
+					if (pending->interrupted == 0) {
+						pending->interrupted = 1;
+						found = 1;
+						if (sig != SIGCHLD &&
+							sig != SIGURG &&
+							sig != SIGCONT &&
+							!k->sa.sa_handler) {
+							found = 2;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+
+		if (found == 2) {
+			break;
+		}
+
+		if (lock == &thread->sigpendinglock) {
+			break;
+		}
+
+		lock = &thread->sigpendinglock;
+		head = &thread->sigpending;
+	}
+
+	if (found == 2) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		terminate_mcexec(0, sig);
+		return 1;
+	}
+	else if (found == 1) {
+		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+		interrupt_syscall(thread, 0);
+		return 1;
+	}
+	return 0;
+}
+
+struct sig_pending *
+getsigpending(struct thread *thread, int delflag)
+{
+	struct list_head *head;
+	mcs_rwlock_lock_t *lock;
+	struct mcs_rwlock_node_irqsave mcs_rw_node;
+	struct sig_pending *next;
+	struct sig_pending *pending;
+	__sigset_t w;
+	__sigset_t x;
+	int sig;
+	struct k_sigaction *k;
+
+	w = thread->sigmask.__val[0];
+
+	lock = &thread->sigcommon->lock;
+	head = &thread->sigcommon->sigpending;
+	for (;;) {
+		if (delflag) {
+			mcs_rwlock_writer_lock(lock, &mcs_rw_node);
+		}
+		else {
+			mcs_rwlock_reader_lock(lock, &mcs_rw_node);
+		}
+
+		list_for_each_entry_safe(pending, next, head, list) {
+			for (x = pending->sigmask.__val[0], sig = 0; x;
+					sig++, x >>= 1) {
+			}
+			k = thread->sigcommon->action + sig - 1;
+			if (delflag ||
+			   (sig != SIGCHLD &&
+				sig != SIGURG &&
+				sig != SIGCONT) ||
+			   (k->sa.sa_handler != (void *)1 &&
+				k->sa.sa_handler != NULL)){
+				if (!(pending->sigmask.__val[0] & w)) {
+					if (delflag)
+						list_del(&pending->list);
+
+					if (delflag) {
+						mcs_rwlock_writer_unlock(
+							lock,
+							&mcs_rw_node);
+					}
+					else {
+						mcs_rwlock_reader_unlock(
+							lock,
+							&mcs_rw_node);
+					}
+					return pending;
+				}
+			}
+		}
+
+		if (delflag) {
+			mcs_rwlock_writer_unlock(lock, &mcs_rw_node);
+		}
+		else {
+			mcs_rwlock_reader_unlock(lock, &mcs_rw_node);
+		}
+
+		if (lock == &thread->sigpendinglock) {
+			return NULL;
+		}
+
+		lock = &thread->sigpendinglock;
+		head = &thread->sigpending;
+	}
+
+	return NULL;
+}
+
+struct sig_pending *
+hassigpending(struct thread *thread)
+{
+	if (list_empty(&thread->sigpending) &&
+		list_empty(&thread->sigcommon->sigpending)) {
+		return NULL;
+	}
+
+	return getsigpending(thread, 0);
+}
+
+void
+check_sig_pending(void)
+{
+	struct thread *thread;
+	struct cpu_local_var *v;
+
+	if (clv == NULL)
+		return;
+
+	v = get_this_cpu_local_var();
+repeat:
+	v->runq_irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
+	list_for_each_entry(thread, &(v->runq), sched_list) {
+
+		if (thread == NULL || thread == &cpu_local_var(idle)) {
+			continue;
+		}
+
+		if (thread->in_syscall_offload == 0) {
+			continue;
+		}
+
+		if (thread->proc->group_exit_status & 0x0000000100000000L) {
+			continue;
+		}
+
+		if (check_sig_pending_thread(thread))
+			goto repeat;
+	}
+	ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
+}
+
+static void
+__check_signal(unsigned long rc, void *regs0, int num, int irq_disabled)
+{
+	ihk_mc_user_context_t *regs = regs0;
+	struct thread *thread;
+	struct sig_pending *pending;
+	int irqstate;
+
+	if (clv == NULL) {
+		return;
+	}
+	thread = cpu_local_var(current);
+
+	if (thread == NULL || thread->proc->pid == 0) {
+		struct thread *t;
+
+		irqstate = cpu_disable_interrupt_save();
+		ihk_mc_spinlock_lock_noirq(&(cpu_local_var(runq_lock)));
+		list_for_each_entry(t, &(cpu_local_var(runq)), sched_list) {
+			if (t->proc->pid <= 0) {
+				continue;
+			}
+			if (t->status == PS_INTERRUPTIBLE &&
+			   hassigpending(t)) {
+				t->status = PS_RUNNING;
+				break;
+			}
+		}
+		ihk_mc_spinlock_unlock_noirq(&(cpu_local_var(runq_lock)));
+		cpu_restore_interrupt(irqstate);
+		goto out;
+	}
+
+	if (regs != NULL && !interrupt_from_user(regs)) {
+		goto out;
+	}
+
+	if (list_empty(&thread->sigpending) &&
+		list_empty(&thread->sigcommon->sigpending)) {
+		goto out;
+	}
+
+	for (;;) {
+		/* When this function called from check_signal_irq_disabled,
+		 * return with interrupt invalid.
+		 * This is to eliminate signal loss.
+		 */
+		if (irq_disabled == 1) {
+			irqstate = cpu_disable_interrupt_save();
+		}
+		pending = getsigpending(thread, 1);
+		if (!pending) {
+			dkprintf("check_signal,queue is empty\n");
+			goto out;
+		}
+		if (irq_disabled == 1) {
+			cpu_restore_interrupt(irqstate);
+		}
+		if (do_signal(rc, regs, thread, pending, num)) {
+			num = -1;
+		}
+	}
+
+out:
+	return;
+}
+
+void
+check_signal(unsigned long rc, void *regs0, int num)
+{
+	__check_signal(rc, regs0, num, 0);
+}
+
+void
+check_signal_irq_disabled(unsigned long rc, void *regs0, int num)
+{
+	__check_signal(rc, regs0, num, 1);
+}
+
