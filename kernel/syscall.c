@@ -240,17 +240,12 @@ long do_syscall(struct syscall_request *req, int cpu, struct thread *thread)
 			int do_schedule = 0;
 			long runq_irqstate;
 			unsigned long flags;
+			int did_reset_resched = 0;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
-
-			if (req->number == __NR_epoll_wait ||
-				req->number == __NR_epoll_pwait ||
-				req->number == __NR_ppoll)
-				goto schedule;
-
-			cpu_pause();
 
 			/* Spin if not preemptable */
 			if (cpu_local_var(no_preempt) || !thread->tid) {
+				cpu_pause();
 				continue;
 			}
 
@@ -261,10 +256,21 @@ long do_syscall(struct syscall_request *req, int cpu, struct thread *thread)
 				&(get_this_cpu_local_var()->runq_lock));
 			v = get_this_cpu_local_var();
 
+			/* optimization: deschedule when waiting for
+			 * an event (e.g., MPI)
+			 */
 			if (v->flags & CPU_FLAG_NEED_RESCHED ||
 			    v->runq_len > 1 ||
-			    req->number == __NR_sched_setaffinity) {
-				v->flags &= ~CPU_FLAG_NEED_RESCHED;
+			    req->number == __NR_sched_setaffinity ||
+			    req->number == __NR_epoll_wait ||
+			    req->number == __NR_epoll_pwait ||
+			    req->number == __NR_ppoll) {
+				dkprintf("%s: poll detected, tid %d, syscall num: %d, runq_len: %d, flags: %x\n",
+					 __func__, thread->tid, req->number, v->runq_len, v->flags & CPU_FLAG_NEED_RESCHED);
+				if (v->flags & CPU_FLAG_NEED_RESCHED) {
+					v->flags &= ~CPU_FLAG_NEED_RESCHED;
+					did_reset_resched = 1;
+				}
 				do_schedule = 1;
 			}
 
@@ -272,10 +278,10 @@ long do_syscall(struct syscall_request *req, int cpu, struct thread *thread)
 			cpu_restore_interrupt(runq_irqstate);
 
 			if (!do_schedule) {
+				cpu_pause();
 				continue;
 			}
 
-schedule:
 			flags = cpu_disable_interrupt_save();
 
 			/* Try to sleep until notified */
@@ -296,7 +302,7 @@ schedule:
 				continue;
 			}
 			else {
-				if (do_schedule) {
+				if (did_reset_resched) {
 					runq_irqstate =
 						ihk_mc_spinlock_lock(
 							&v->runq_lock);
