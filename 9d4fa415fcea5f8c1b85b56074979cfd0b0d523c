@@ -1,0 +1,1313 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6bd69dd1_04901a2b",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d syscall_generic_forwarding(__NR_prctl, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b06584f0_82738864",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 213,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tret \u003d syscall_generic_forwarding(__NR_prctl, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "558528a2_0101dd60",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2886,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tret \u003d (time_t)do_syscall(\u0026sreq, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9fc13a23_b78077da",
+        "filename": "kernel/devobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\terror \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d0e24bc2_ceeae40a",
+        "filename": "kernel/devobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 171,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\terror \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "58aa3ae3_c6c6dfc5",
+        "filename": "kernel/devobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 224,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a1d5a600_c36814eb",
+        "filename": "kernel/fileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\terror \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69f40858_8995eb8b",
+        "filename": "kernel/fileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 442,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\terror \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "804499ed_92049591",
+        "filename": "kernel/fileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 517,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tss \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81b7999b_b35dcb3a",
+        "filename": "kernel/fileobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 732,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tss \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "034f6e10_59431fa6",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 374,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define SYSCALL_FOOTER return do_syscall(\u0026request, ihk_mc_get_processor_id(), thread)",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5827b9e_079136b3",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 374,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define SYSCALL_FOOTER return do_syscall(\u0026request, ihk_mc_get_processor_id(), thread)",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d2570400_32bdf347",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 374,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define SYSCALL_FOOTER return do_syscall(\u0026request, ihk_mc_get_processor_id(), thread)",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "872aab7b_0df142b5",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 376,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern long do_syscall(struct syscall_request *req, int cpu, struct thread *thread);",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c8ab271_c765ff5f",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 379,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx, struct thread *thread);",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd0ec9d3_d3321283",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 177,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfd \u003d syscall_generic_forwarding(__NR_openat, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24c8eef6_693236c1",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 189,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\treturn syscall_generic_forwarding(__NR_unlinkat, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e795914_70bd22d9",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tsz0 \u003d syscall_generic_forwarding(__NR_read, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "197eeeef_358400c2",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 237,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tsz0 \u003d syscall_generic_forwarding(__NR_write, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "800f1581_d90d627d",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 263,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcc \u003d syscall_generic_forwarding(__NR_lseek, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d7853d2d_8f2e136e",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 274,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcc \u003d syscall_generic_forwarding(__NR_close, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74933a04_de5f3760",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 291,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcc \u003d syscall_generic_forwarding(__NR_munmap, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6dbf1e2_1ddfb9b1",
+        "filename": "kernel/pager.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 395,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tcc \u003d syscall_generic_forwarding(__NR_mmap, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13189b0f_dc8be026",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 417,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx, struct thread *thread)",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3edcfd6e_040e74e8",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 442,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb6003c2_9e801bfb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1144,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdo_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d324a2ee_45fb3303",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1502,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tlerror \u003d syscall_generic_forwarding(__NR_munmap, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "56fc5cd2_ad818106",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1547,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tlerror \u003d syscall_generic_forwarding(__NR_mprotect, \u0026ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a3a17005_263b1ee1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2330,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((ret \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current))) \u003c 0) {",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fafbdcd1_557951d5",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2585,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5ebe807b_0e8116e6",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2673,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((ret \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current))) !\u003d 0) {",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7c8405c1_164f80ef",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2921,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tnewproc-\u003epid \u003d do_syscall(\u0026request1, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e3637307_77a0f277",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3047,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terr \u003d do_syscall(\u0026request1, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3525a3b5_678e1dba",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3086,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdo_syscall(\u0026request1, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8224eac5_58c9391d",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3266,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_setresuid, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fda31395_86c2784a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3277,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_setreuid, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "978e8ffd_f9ca3d44",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_setuid, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4a4e604f_bc7d8051",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3304,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tnewfsuid \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dfda39e3_7e10772f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3313,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_setresgid, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "441933e1_d2742f19",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3324,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_setregid, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f7bbeb1d_8e18af88",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3335,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_setgid, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30e79257_0a7efebb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3350,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tnewfsgid \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc1fd726_8f6e1b66",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3450,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_setpgid, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f39c7875_e03ccd71",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3496,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tsyscall_generic_forwarding(__NR_rt_sigaction, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb62abdb_47657ff5",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3521,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_read, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "35d2073f_9da0ee00",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3546,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_ioctl, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a1bbc7c0_0cb16f50",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3579,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_open, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0896152_e4a97714",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3615,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_openat, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5066d879_b33737dc",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3681,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_close, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c4a19cd_ea47a175",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3685,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_close, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6f9b6ca_3aa32897",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3710,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_fcntl, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "79f10db2_2bb4ff3a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3730,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_epoll_pwait, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "af529e7d_cadd8c9f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3751,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_ppoll, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9dc45c91_c3d5e131",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3778,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_pselect6, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2b217b71_61408976",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3828,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsyscall_generic_forwarding(__NR_rt_sigprocmask, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "298ab138_fba03d2e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3900,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfd \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb2d2fd5_45a3ad2e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 4385,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_fcntl, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ac2c3cc8_46d9d2b0",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 4768,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfd \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ebf81a96_7042bee1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5496,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d syscall_generic_forwarding(__NR_madvise, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "36a26608_e38730f7",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 6287,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t   ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98d5f990_fdc22748",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 6511,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\trc \u003d syscall_generic_forwarding(__NR_setrlimit, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9cc19851_f76fc422",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 6523,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\treturn syscall_generic_forwarding(__NR_setrlimit, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6077729a_4296b651",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 6546,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\treturn syscall_generic_forwarding(__NR_getrlimit, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c38dd18d_ecb0e85c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 7345,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tretval \u003d do_syscall(\u0026request1, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4199f35d_8c4bc636",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 7424,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tretval \u003d do_syscall(\u0026request1, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bfe09282_b4464100",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 7450,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tretval \u003d do_syscall(\u0026request1, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c67f831f_8ccd3203",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 7722,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\treturn do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4955452_954e028b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 7794,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\treturn do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "39302b15_cb493312",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 7887,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\treturn do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "51701e50_2d942721",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 7922,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\treturn do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e767020_30d6729f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 8040,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\treturn do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fcfbafeb_49a5ea8b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9830,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d do_syscall(\u0026request, ihk_mc_get_processor_id(), cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97a13ef2_9ce3c0d6",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9955,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tcc \u003d syscall_generic_forwarding(__NR_swapout, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "484d1582_ab3e8c6a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9966,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tcc \u003d syscall_generic_forwarding(__NR_swapout, \u0026ctx0, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dbd340ee_f56085cb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9994,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\trc \u003d syscall_generic_forwarding(__NR_linux_spawn, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3dcbc455_9c4a503b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 10250,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tl \u003d syscall_generic_forwarding(num, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5f3ca81_fc82135c",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-29T08:05:23Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfd \u003d syscall_generic_forwarding(syscall_num, ctx, cpu_local_var(current));",
+      "revId": "9d4fa415fcea5f8c1b85b56074979cfd0b0d523c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
