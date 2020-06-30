@@ -10,7 +10,7 @@ project(mckernel C ASM)
 set(MCKERNEL_VERSION "1.7.0")
 
 # See "Fedora Packaging Guidlines -- Versioning"
-set(MCKERNEL_RELEASE "0.4")
+set(MCKERNEL_RELEASE "0.5")
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 # for rpmbuild
