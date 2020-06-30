@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b064b8e4_2203e5d8",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2223,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-30T07:32:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \"error: dupping FLIB_AFFINITY_ON_PROCESS\\n\");",
+      "revId": "ac86affeccfdbdbfa2616f900becef4dcd05940a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61f591b2_a41d7450",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2246,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-30T07:32:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tret \u003d snprintf(flib_aff + off, flib_size - off, \"%s\", \",\");",
+      "revId": "ac86affeccfdbdbfa2616f900becef4dcd05940a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "78da68f3_c326f1a1",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2256,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-30T07:32:53Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tret \u003d snprintf(flib_aff + off, flib_size - off, \"%d\", cpu);",
+      "revId": "ac86affeccfdbdbfa2616f900becef4dcd05940a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
