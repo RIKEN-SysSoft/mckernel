@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "08bd1b0e_6330e0c6",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 374,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-30T00:08:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define SYSCALL_FOOTER return do_syscall(\u0026request, ihk_mc_get_processor_id(), thread)",
+      "revId": "ab16849901ff015553fd179f511f772fb3cdebec",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45ab4608_f183d3f1",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 374,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-30T00:08:55Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define SYSCALL_FOOTER return do_syscall(\u0026request, ihk_mc_get_processor_id(), thread)",
+      "revId": "ab16849901ff015553fd179f511f772fb3cdebec",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec9ec46b_c7cebbdc",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 374,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-30T00:08:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define SYSCALL_FOOTER return do_syscall(\u0026request, ihk_mc_get_processor_id(), thread)",
+      "revId": "ab16849901ff015553fd179f511f772fb3cdebec",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9d54125d_08bb4902",
+        "filename": "kernel/include/syscall.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 380,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-06-30T00:08:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx, struct thread *thread);",
+      "revId": "ab16849901ff015553fd179f511f772fb3cdebec",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
