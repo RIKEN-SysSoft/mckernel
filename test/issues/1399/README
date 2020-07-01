@@ -1,0 +1,24 @@
+【Issue#1399 動作確認】
+□ テスト内容
+1. 下記のテストプログラムを実行し、症状が発生しないことを確認する
+C1399T01:
+  1. struct robust_list_head のサイズよりも1大きい値をサイズとして指定して
+    set_robsut_list を呼び出し、EINVALで失敗することを確認
+  2. struct robust_list_head のサイズよりも1小さい値をサイズとして指定して
+    set_robsut_list を呼び出し、EINVALで失敗することを確認
+
+2. 以下のLTPを用いて既存のrobust_list機能に影響が無いことを確認
+  - set_robst_list01
+  - get_robst_list01
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
