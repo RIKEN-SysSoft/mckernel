@@ -1,0 +1,18 @@
+*** C1399T01 start *******************************
+[OK] invalid len (1 greater than correct): EINVAL
+[OK] invalid len (1 less than correct): EINVAL
+*** C1399T01 PASSED ******************************
+
+*** C1399T02 start *******************************
+set_robust_list01    1  TPASS  :  set_robust_list: retval = -1 (expected -1), errno = 22 (expected 22)
+set_robust_list01    2  TPASS  :  set_robust_list: retval = 0 (expected 0), errno = 0 (expected 0)
+*** C1399T02 PASSED (2)
+
+*** C1399T03 start *******************************
+get_robust_list01    1  TPASS  :  get_robust_list failed as expected with EFAULT
+get_robust_list01    2  TPASS  :  get_robust_list failed as expected with EFAULT
+get_robust_list01    3  TPASS  :  get_robust_list failed as expected with ESRCH
+get_robust_list01    4  TPASS  :  get_robust_list succeeded
+get_robust_list01    5  TPASS  :  get_robust_list failed as expected with EPERM
+*** C1399T03 PASSED (5)
+

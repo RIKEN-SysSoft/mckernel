@@ -3939,9 +3939,15 @@ SYSCALL_DECLARE(setpgid)
 
 /* Ignore the registration by start_thread() (in pthread_create.c)
    because McKernel doesn't unlock mutex-es held by the thread which has been killed. */
+#define ROBUST_LIST_HEAD_SIZE 24
 SYSCALL_DECLARE(set_robust_list)
 {
-	// Palliative fix. wait for impl.
+	size_t len = (size_t)ihk_mc_syscall_arg1(ctx);
+
+	if (len != ROBUST_LIST_HEAD_SIZE) {
+		return -EINVAL;
+	}
+
 	return 0;
 }
 
