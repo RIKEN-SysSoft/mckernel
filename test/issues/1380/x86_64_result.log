@@ -1,0 +1,37 @@
+*** C1380T01 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+tgkill03.c:92: PASS: Invalid tgid failed as expected: EINVAL
+tgkill03.c:92: PASS: Invalid tid failed as expected: EINVAL
+tgkill03.c:92: PASS: Invalid signal failed as expected: EINVAL
+tgkill03.c:92: PASS: Defunct tid failed as expected: ESRCH
+tgkill03.c:92: PASS: Defunct tgid failed as expected: ESRCH
+tgkill03.c:99: PASS: Valid tgkill call succeeded
+
+Summary:
+passed   6
+failed   0
+skipped  0
+warnings 0
+*** C1380T01 PASSED (6)
+
+*** C1380T02 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+tgkill01.c:99: PASS: SIGUSR1 delivered to correct threads
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1380T02 PASSED (1)
+
+*** C1380T03 start *******************************
+tkill01     1  TPASS  :  tkill call succeeded
+tkill01     2  TPASS  :  tkill call succeeded
+*** C1380T03 PASSED (2)
+
+*** C1380T04 start *******************************
+tkill02     1  TPASS  :  tkill(-1, SIGUSR1) failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
+tkill02     2  TPASS  :  tkill(32768, SIGUSR1) failed as expected: TEST_ERRNO=ESRCH(3): No such process
+*** C1380T04 PASSED (2)
+
