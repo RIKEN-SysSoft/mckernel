@@ -3240,7 +3240,6 @@ SYSCALL_DECLARE(kill)
 	return error;
 }
 
-// see linux-2.6.34.13/kernel/signal.c
 SYSCALL_DECLARE(tgkill)
 {
 	int tgid = ihk_mc_syscall_arg0(ctx);
@@ -3249,15 +3248,14 @@ SYSCALL_DECLARE(tgkill)
 	struct thread *thread = cpu_local_var(current);
 	struct siginfo info;
 
+	if (tgid <= 0 || tid <= 0) {
+		return -EINVAL;
+	}
+
 	memset(&info, '\0', sizeof info);
 	info.si_signo = sig;
 	info.si_code = SI_TKILL;
 	info._sifields._kill.si_pid = thread->proc->pid;
-
-	if(tid <= 0)
-		return -EINVAL;
-	if(tgid <= 0 && tgid != -1)
-		return -EINVAL;
 
 	return do_kill(thread, tgid, tid, sig, &info, 0);
 }
