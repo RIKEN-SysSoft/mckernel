@@ -50,6 +50,7 @@ enum profile_event_type {
 
 #define __NR_profile                   PROFILE_EVENT_MAX
 
+#ifdef __KERNEL__
 struct thread;
 struct process;
 
@@ -63,6 +64,75 @@ int profile_accumulate_and_print_job_events(struct process *proc);
 int profile_alloc_events(struct thread *thread);
 void profile_dealloc_thread_events(struct thread *thread);
 void profile_dealloc_proc_events(struct process *proc);
+
+#else // User space interface
+#include <unistd.h>
+#include <sys/syscall.h>
+
+/* Per-thread */
+static inline void mckernel_profile_thread_on(void)
+{
+	syscall(__NR_profile, PROF_ON);
+}
+
+static inline void mckernel_profile_thread_off(void)
+{
+	syscall(__NR_profile, PROF_OFF);
+}
+
+static inline void mckernel_profile_thread_print(void)
+{
+	syscall(__NR_profile, PROF_PRINT);
+}
+
+static inline void mckernel_profile_thread_print_off(void)
+{
+	syscall(__NR_profile, PROF_OFF | PROF_PRINT);
+}
+
+/* Per-process */
+static inline void mckernel_profile_process_on(void)
+{
+	syscall(__NR_profile, PROF_PROC | PROF_ON);
+}
+
+static inline void mckernel_profile_process_off(void)
+{
+	syscall(__NR_profile, PROF_PROC | PROF_OFF);
+}
+
+static inline void mckernel_profile_process_print(void)
+{
+	syscall(__NR_profile, PROF_PROC | PROF_PRINT);
+}
+
+static inline void mckernel_profile_process_print_off(void)
+{
+	syscall(__NR_profile, PROF_PROC | PROF_OFF | PROF_PRINT);
+}
+
+/* Per-job */
+static inline void mckernel_profile_job_on(void)
+{
+	syscall(__NR_profile, PROF_JOB | PROF_ON);
+}
+
+static inline void mckernel_profile_job_off(void)
+{
+	syscall(__NR_profile, PROF_JOB | PROF_OFF);
+}
+
+static inline void mckernel_profile_job_print(void)
+{
+	syscall(__NR_profile, PROF_JOB | PROF_PRINT);
+}
+
+static inline void mckernel_profile_job_print_off(void)
+{
+	syscall(__NR_profile, PROF_JOB | PROF_OFF | PROF_PRINT);
+}
+
+#endif // __KERNEL__
 #endif // PROFILE_ENABLE
 
 
