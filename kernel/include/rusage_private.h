@@ -11,6 +11,7 @@
 #include <ihk/ihk_monitor.h>
 #include <ihk/debug.h>
 #include <memory.h>
+#include <mman.h>
 
 #ifdef ENABLE_RUSAGE
 
@@ -310,6 +311,9 @@ static inline int
 rusage_check_overmap(size_t len, int pgshift)
 {
 	int npages = 0, remain_pages = 0;
+
+	if (sysctl_overcommit_memory == OVERCOMMIT_ALWAYS)
+		return 0;
 
 	npages = (len + (1UL << pgshift) - 1) >> pgshift;
 	remain_pages = (rusage.total_memory - rusage.total_memory_usage)
