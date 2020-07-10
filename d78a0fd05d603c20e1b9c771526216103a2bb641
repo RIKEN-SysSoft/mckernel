@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c2e8bc7a_b63d2fb1",
+        "filename": "test/issues/1389/C1389T02.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-10T05:55:57Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+CommitLimitTxt\u003d`cat ./cur_meminfo.txt | grep CommitLimit | awk \u0027{print $(NF-1)}\u0027`",
+      "revId": "d78a0fd05d603c20e1b9c771526216103a2bb641",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "999ba51f_0ffb77cd",
+        "filename": "test/issues/1389/C1389T02.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-10T05:55:57Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+Committed_ASTxt\u003d`cat ./cur_meminfo.txt | grep Committed_AS | awk \u0027{print $(NF-1)}\u0027`",
+      "revId": "d78a0fd05d603c20e1b9c771526216103a2bb641",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
