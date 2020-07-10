@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7318ad7a_d629d5be",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-10T05:03:30Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nAs for overcommit check, only the framework is added. Right now, unlimited overcommit is allowed.",
+      "revId": "16e6f6ce20bef2a63b1bbb3b039aa36d29fb796f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b9ff50c5_58a20b26",
+        "filename": "executer/kernel/mcctrl/procfs.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1133,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-10T05:03:30Z",
+      "side": 1,
+      "message": "WARNING: Symbolic permissions \u0027S_IRUGO\u0027 are not preferred. Consider using octal permissions \u00270444\u0027.\n+\tPROC_REG(\"meminfo\",    S_IRUGO, \u0026mckernel_buff_io),",
+      "revId": "16e6f6ce20bef2a63b1bbb3b039aa36d29fb796f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81dd2391_c7d2e0e7",
+        "filename": "test/issues/1389/C1389T02.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-10T05:03:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+CommitLimitTxt\u003d`cat ./cur_meminfo.txt | grep CommitLimit | awk \u0027{print $(NF-1)}\u0027`",
+      "revId": "16e6f6ce20bef2a63b1bbb3b039aa36d29fb796f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d98a96f_72a937a7",
+        "filename": "test/issues/1389/C1389T02.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-10T05:03:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+Committed_ASTxt\u003d`cat ./cur_meminfo.txt | grep Committed_AS | awk \u0027{print $(NF-1)}\u0027`",
+      "revId": "16e6f6ce20bef2a63b1bbb3b039aa36d29fb796f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
