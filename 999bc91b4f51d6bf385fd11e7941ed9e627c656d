@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8b14efb8_23105f19",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 10404,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-10T03:54:39Z",
+      "side": 1,
+      "message": "WARNING: Too many leading tabs - consider code refactoring\n+\t\t\t\t\t\tif (sig !\u003d SIGCHLD \u0026\u0026",
+      "revId": "999bc91b4f51d6bf385fd11e7941ed9e627c656d",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
