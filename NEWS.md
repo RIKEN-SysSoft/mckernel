@@ -538,3 +538,7 @@ Restrictions on McKernel
 
 26. mmap() allows unlimited overcommit. Note that it corresponds to
     setting sysctl ``vm.overcommit_memory`` to 1.
+
+27. procfs entry creation done by Linux work queue could starve when
+    Linux CPUs are flooded with system call offloads. LTP-2019
+    sendmsg02 causes this issue.
