@@ -233,3 +233,6 @@ Limitations
     VMAs to circumvent the issue "set_host_vma(): do NOT read protect
     Linux VMA".
 
+32. procfs entry creation done by Linux work queue could starve when
+    Linux CPUs are flooded with system call offloads. LTP-2019
+    sendmsg02 causes this issue.
