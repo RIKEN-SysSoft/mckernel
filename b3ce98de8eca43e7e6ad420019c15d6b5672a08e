@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "cf2730e7_ff19a14b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-15T04:00:28Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nhttps://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id\u003d1c8f422059ae5da07db7406ab916203f9417e396",
+      "revId": "b3ce98de8eca43e7e6ad420019c15d6b5672a08e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eccfd975_7366b54d",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 542,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-15T04:00:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#if defined(RHEL_RELEASE_CODE) \u0026\u0026 RHEL_RELEASE_CODE \u003e\u003d RHEL_RELEASE_VERSION(8, 2)",
+      "revId": "b3ce98de8eca43e7e6ad420019c15d6b5672a08e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
