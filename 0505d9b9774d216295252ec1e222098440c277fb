@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0c387ddf_dab4d9aa",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2224,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-16T08:45:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t    thread-\u003evm-\u003eregion.stack_end - 1,",
+      "revId": "0505d9b9774d216295252ec1e222098440c277fb",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "61fd89b5_c0a2b4af",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2225,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-16T08:45:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t    thread-\u003evm-\u003eregion.stack_end);",
+      "revId": "0505d9b9774d216295252ec1e222098440c277fb",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c087b25_8b38d8b0",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2260,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-16T08:45:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "0505d9b9774d216295252ec1e222098440c277fb",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0afc9051_6f65bbda",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2272,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-16T08:45:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "0505d9b9774d216295252ec1e222098440c277fb",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
