@@ -23,6 +23,8 @@ Summary: IHK/McKernel
 License: GPLv2
 Source0: mckernel-%{version}.tar.gz
 
+Requires: systemd-libs numactl-libs elfutils-libelf libdwarf
+
 # kernel_module_package macro does not handle cross build...
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
 %define cross_compile 1
