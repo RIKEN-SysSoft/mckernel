@@ -136,10 +136,17 @@ static void hugefileobj_free(struct memobj *memobj)
 	__hugefileobj_free(memobj);
 }
 
+static int hugefileobj_get_pgshift(struct memobj *memobj)
+{
+	struct hugefileobj *obj = to_hugefileobj(memobj);
+
+	return obj->pgshift;
+}
+
 struct memobj_ops hugefileobj_ops = {
 	.free = hugefileobj_free,
 	.get_page = hugefileobj_get_page,
-
+	.get_pgshift = hugefileobj_get_pgshift,
 };
 
 void hugefileobj_cleanup(void)

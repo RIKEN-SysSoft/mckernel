@@ -64,6 +64,7 @@ typedef int memobj_invalidate_page_func_t(struct memobj *obj, uintptr_t phys, si
 typedef int memobj_lookup_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag);
 typedef int memobj_update_page_func_t(struct memobj *obj, page_table_t pt,
 		struct page *orig_page, void *vaddr);
+typedef int memobj_get_pgshift_func_t(struct memobj *obj);
 
 struct memobj_ops {
 	memobj_free_func_t *free;
@@ -73,6 +74,7 @@ struct memobj_ops {
 	memobj_invalidate_page_func_t *invalidate_page;
 	memobj_lookup_page_func_t *lookup_page;
 	memobj_update_page_func_t *update_page;
+	memobj_get_pgshift_func_t *get_pgshift;
 };
 
 static inline int memobj_ref(struct memobj *obj)
@@ -142,6 +144,14 @@ static inline int memobj_update_page(struct memobj *obj, page_table_t pt,
 		return (*obj->ops->update_page)(obj, pt, orig_page, vaddr);
 	}
 	return -ENXIO;
+}
+
+static inline int memobj_get_pgshift(struct memobj *obj)
+{
+	if (obj->ops->get_pgshift) {
+		return (*obj->ops->get_pgshift)(obj);
+	}
+	return -EINVAL;
 }
 
 static inline int memobj_has_pager(struct memobj *obj)

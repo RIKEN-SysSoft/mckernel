@@ -2211,13 +2211,75 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 {
 	int error;
 	const uintptr_t fault_addr = (uintptr_t)fault_addr0;
-	struct vm_range *range;
+	struct vm_range *range = NULL;
 	struct thread *thread = cpu_local_var(current);
 	int locked = 0;
 
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
 	
+	if (fault_addr > thread->vm->region.stack_start &&
+	    fault_addr <= thread->vm->region.stack_end) {
+		range = lookup_process_memory_range(vm,
+						    thread->vm->region.stack_end - 1,
+						    thread->vm->region.stack_end);
+		if (range == NULL) {
+			error = -EFAULT;
+			ekprintf("%s: vm: %p, addr: %p, reason: %lx):"
+				 "stack not found: %d\n",
+				 __func__, vm, fault_addr0, reason, error);
+			goto out;
+		}
+
+		if (fault_addr >= range->start) {
+			goto skip;
+		}
+
+		/* grow stack */
+
+		if (thread->vm->is_memory_range_lock_taken == -1 ||
+		    thread->vm->is_memory_range_lock_taken !=
+		    ihk_mc_get_processor_id()) {
+			ihk_rwspinlock_write_lock_noirq(&vm->memory_range_lock);
+			locked = 1;
+		}
+
+		/* stack could be replaced with hugetlbfs region */
+		if (range->memobj &&
+		    (range->memobj->flags & MF_HUGETLBFS)) {
+			int pgshift = memobj_get_pgshift(range->memobj);
+
+			if (pgshift < 0) {
+				ekprintf("%s: addr: %p, reason: %lx:"
+					 "page shift not found: %d\n",
+					 __func__, fault_addr0, reason,
+					 pgshift);
+				error = -EFAULT;
+
+				if (locked) {
+					ihk_rwspinlock_write_unlock_noirq(&vm->memory_range_lock);
+					locked = 0;
+				}
+				goto out;
+			}
+
+			range->start = fault_addr & ((1UL << pgshift) - 1);
+		} else {
+			range->start = fault_addr & PAGE_MASK;
+		}
+
+		if (locked) {
+			ihk_rwspinlock_write_unlock_noirq(&vm->memory_range_lock);
+			locked = 0;
+		}
+
+		kprintf("%s: addr: %lx, reason: %lx, start: %lx):"
+			"stack found\n",
+			__func__, (unsigned long)fault_addr, reason,
+			range->start);
+	}
+skip:
+
 	if (thread->vm->is_memory_range_lock_taken == -1 ||
 			thread->vm->is_memory_range_lock_taken != ihk_mc_get_processor_id()) {
 		ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
@@ -2232,13 +2294,16 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 		goto out;
 	}
 
-	range = lookup_process_memory_range(vm, fault_addr, fault_addr+1);
-	if (range == NULL) {
-		error = -EFAULT;
-		dkprintf("do_page_fault_process_vm(): vm: %p, addr: %p, reason: %lx):"
-				"out of range: %d\n",
-				vm, fault_addr0, reason, error);
-		goto out;
+	if (!range) {
+		range = lookup_process_memory_range(vm, fault_addr,
+						    fault_addr+1);
+		if (range == NULL) {
+			error = -EFAULT;
+			dkprintf("%s: vm: %p, addr: %p, reason: %lx):"
+				 "out of range: %d\n",
+				 __func__, vm, fault_addr0, reason, error);
+			goto out;
+		}
 	}
 
 	if (((range->flag & VR_PROT_MASK) == VR_PROT_NONE)
@@ -2407,11 +2472,11 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 			pn->stack_premap,
 			proc->rlimit[MCK_RLIMIT_STACK].rlim_cur,
 			minsz, size);
-	start = (end - size) & USER_STACK_PAGE_MASK;
+	start = (end - minsz) & USER_STACK_PAGE_MASK;
 
 	/* Apply user allocation policy to stacks */
 	/* TODO: make threshold kernel or mcexec argument */
-	ap_flag = (size >= proc->mpol_threshold &&
+	ap_flag = (minsz >= proc->mpol_threshold &&
 		!(proc->mpol_flags & MPOL_NO_STACK)) ? IHK_MC_AP_USER : 0;
 	dkprintf("%s: max size: %lu, mapped size: %lu %s\n",
 			__FUNCTION__, size, minsz,
@@ -2543,7 +2608,7 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	ihk_mc_modify_user_context(thread->uctx, IHK_UCR_STACK_POINTER,
 	                           end + sizeof(unsigned long) * s_ind);
 	thread->vm->region.stack_end = end;
-	thread->vm->region.stack_start = start;
+	thread->vm->region.stack_start = (end - size) & USER_STACK_PAGE_MASK;
 
 	return 0;
 }
