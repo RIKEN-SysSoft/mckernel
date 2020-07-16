@@ -139,7 +139,6 @@ static void hugefileobj_free(struct memobj *memobj)
 struct memobj_ops hugefileobj_ops = {
 	.free = hugefileobj_free,
 	.get_page = hugefileobj_get_page,
-
 };
 
 void hugefileobj_cleanup(void)
