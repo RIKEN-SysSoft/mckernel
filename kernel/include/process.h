@@ -557,6 +557,7 @@ struct process {
 	unsigned long mpol_flags;
 	size_t mpol_threshold;
 	unsigned long heap_extension;
+	unsigned long stack_extshift;
 	unsigned long mpol_bind_mask;
 	int uti_thread_rank; /* Spawn on Linux CPU when clone_count reaches this */
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */

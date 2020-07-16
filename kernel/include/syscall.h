@@ -213,6 +213,7 @@ struct program_load_desc {
 	unsigned long mpol_threshold;
 	unsigned long heap_extension;
 	long stack_premap;
+	unsigned long stack_extshift;
 	unsigned long mpol_bind_mask;
 	int thp_disable;
 	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */

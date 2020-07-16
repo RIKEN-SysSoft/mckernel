@@ -522,6 +522,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->nr_processes = pn->nr_processes;
 	proc->process_rank = pn->process_rank;
 	proc->heap_extension = pn->heap_extension;
+	proc->stack_extshift = pn->stack_extshift;
 
 	/* Update NUMA binding policy if requested */
 	if (pn->mpol_bind_mask) {

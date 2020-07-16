@@ -192,6 +192,7 @@ static unsigned long heap_extension = -1;
 static int profile = 0;
 static int disable_sched_yield = 0;
 static long stack_premap = (2ULL << 20);
+static unsigned long stack_extshift = -1;
 static long stack_max = -1;
 static struct rlimit rlim_stack;
 static char *mpol_bind_nodes = NULL;
@@ -1693,6 +1694,12 @@ static struct option mcexec_options[] = {
 		.val =		's',
 	},
 	{
+		.name =		"extend-stack-by",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'S',
+	},
+	{
 		.name =		"uti-thread-rank",
 		.has_arg =	required_argument,
 		.flag =		NULL,
@@ -2095,10 +2102,10 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:S:m:u:",
 				  mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:S:m:u:",
 				  mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
@@ -2164,7 +2171,9 @@ int main(int argc, char **argv)
 					  stack_premap, stack_max);
 				break;
 			}
-
+			case 'S':
+				stack_extshift = atobytes(optarg);
+				break;
 			case 'u':
 				uti_thread_rank = atoi(optarg);
 				break;
@@ -2180,6 +2189,18 @@ int main(int argc, char **argv)
 
 	if (heap_extension == -1) {
 		heap_extension = sysconf(_SC_PAGESIZE);
+	}
+
+	if (stack_extshift == -1) {
+		long page_size = sysconf(_SC_PAGESIZE);
+		unsigned long pgshift = 0;
+
+		while (page_size) {
+			page_size >>= 1;
+			pgshift++;
+		}
+
+		stack_extshift = pgshift - 1;
 	}
 
 	if (optind >= argc) {
@@ -2650,6 +2671,7 @@ int main(int argc, char **argv)
 
 	desc->mpol_threshold = mpol_threshold;
 	desc->heap_extension = heap_extension;
+	desc->stack_extshift = stack_extshift;
 
 	desc->mpol_bind_mask = 0;
 	if (mpol_bind_nodes) {

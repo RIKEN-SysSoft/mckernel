@@ -2265,7 +2265,8 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 
 			range->start = fault_addr & ((1UL << pgshift) - 1);
 		} else {
-			range->start = fault_addr & PAGE_MASK;
+			range->start = fault_addr &
+				((1UL << vm->proc->stack_extshift) - 1);
 		}
 
 		if (locked) {
@@ -2456,8 +2457,12 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 
 	/* Create stack range */
 	end = STACK_TOP(&thread->vm->region) & USER_STACK_PAGE_MASK;
-	minsz = (pn->stack_premap + USER_STACK_PREPAGE_SIZE - 1) &
-		USER_STACK_PAGE_MASK;
+	if (pn->stack_premap < (1UL << pn->stack_extshift)) {
+		minsz = (1UL << pn->stack_extshift);
+	} else {
+		minsz = (pn->stack_premap + USER_STACK_PREPAGE_SIZE - 1) &
+			USER_STACK_PAGE_MASK;
+	}
 	maxsz = (end - thread->vm->region.map_start) / 2;
 	size = proc->rlimit[MCK_RLIMIT_STACK].rlim_cur;
 	if (size > maxsz) {
