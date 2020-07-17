@@ -158,6 +158,7 @@ SYSCALL_HANDLED(289, signalfd4)
 #ifdef ENABLE_PERF
 SYSCALL_HANDLED(298, perf_event_open)
 #endif
+SYSCALL_HANDLED(302, prlimit64)
 #ifdef DCFA_KMOD
 SYSCALL_HANDLED(303, mod_call)
 #endif
