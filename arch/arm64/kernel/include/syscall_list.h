@@ -118,6 +118,7 @@ SYSCALL_HANDLED(241, perf_event_open)
 SYSCALL_DELEGATED(241, perf_event_open)
 #endif // PERF_ENABLE
 SYSCALL_HANDLED(260, wait4)
+SYSCALL_HANDLED(261, prlimit64)
 SYSCALL_HANDLED(270, process_vm_readv)
 SYSCALL_HANDLED(271, process_vm_writev)
 SYSCALL_HANDLED(281, execveat)
