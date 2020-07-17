@@ -6830,71 +6830,149 @@ static int rlimits[] = {
 #endif
 };
 
-SYSCALL_DECLARE(setrlimit)
+static int do_prlimit64(int pid, int resource, struct rlimit *_new_limit,
+			struct rlimit *old_limit, ihk_mc_user_context_t *ctx)
 {
-	int rc;
-	int resource = ihk_mc_syscall_arg0(ctx);
-	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
-	struct thread *thread = cpu_local_var(current);
-	int	i;
-	struct rlimit new_rlim;
-	int	mcresource;
+	struct rlimit new_limit;
+	int resource_found;
+	int i;
+	int mcresource;
+	struct process *proc;
+	struct resource_set *rset = cpu_local_var(resource_set);
+	int hash;
+	struct process_hash *phash = rset->process_hash;
+	struct mcs_rwlock_node exist_lock;
+	struct mcs_rwlock_node update_lock;
+	unsigned long irqstate;
+	int found;
+	int ret;
 
-	if (copy_from_user(&new_rlim, rlm, sizeof(*rlm))) {
-		return -EFAULT;
-	}
-	if (new_rlim.rlim_cur > new_rlim.rlim_max) {
+	if (resource < 0 || resource >= RLIMIT_NLIMITS) {
 		return -EINVAL;
 	}
 
-	switch(resource){
-	    case RLIMIT_FSIZE:
-	    case RLIMIT_NOFILE:
-	    case RLIMIT_LOCKS:
-	    case RLIMIT_MSGQUEUE:
-		rc = syscall_generic_forwarding(__NR_setrlimit, ctx);
-		if(rc < 0)
-			return rc;
-		break;
-	}
+	if (_new_limit) {
+		if (copy_from_user(&new_limit, _new_limit,
+				   sizeof(struct rlimit))) {
+			return -EFAULT;
+		}
 
-	for(i = 0; i < sizeof(rlimits) / sizeof(int); i += 2)
-		if(rlimits[i] == resource){
-			mcresource = rlimits[i + 1];
+		if (new_limit.rlim_cur > new_limit.rlim_max) {
+			return -EINVAL;
+		}
+
+		/* update Linux side value as well */
+		switch (resource) {
+		case RLIMIT_FSIZE:
+		case RLIMIT_NOFILE:
+		case RLIMIT_LOCKS:
+		case RLIMIT_MSGQUEUE:
+			ret = syscall_generic_forwarding(__NR_prlimit64, ctx);
+			if (ret < 0)
+				return ret;
 			break;
 		}
-	if(i >= sizeof(rlimits) / sizeof(int)){
-		return syscall_generic_forwarding(__NR_setrlimit, ctx);
 	}
 
-	memcpy(thread->proc->rlimit + mcresource, &new_rlim,
-		sizeof(new_rlim));
+	/* translate resource */
+	resource_found = 0;
+	for (i = 0; i < sizeof(rlimits) / sizeof(int); i += 2) {
+		if (rlimits[i] == resource) {
+			mcresource = rlimits[i + 1];
+			resource_found = 1;
+			break;
+		}
+	}
 
-	return 0;
+	if (!resource_found) {
+		return syscall_generic_forwarding(__NR_prlimit64, ctx);
+	}
+
+	/* find process */
+	found = 0;
+
+	if (pid == 0) {
+		struct thread *thread = cpu_local_var(current);
+
+		pid = thread->proc->pid;
+	}
+
+	irqstate = cpu_disable_interrupt_save();
+	hash = process_hash(pid);
+	mcs_rwlock_reader_lock_noirq(&phash->lock[hash], &exist_lock);
+
+	list_for_each_entry(proc, &phash->list[hash], hash_list) {
+		if (proc->pid == pid) {
+			found = 1;
+			break;
+		}
+	}
+
+	if (!found) {
+		mcs_rwlock_reader_unlock_noirq(&phash->lock[hash], &exist_lock);
+		cpu_restore_interrupt(irqstate);
+		return -ESRCH;
+	}
+
+	if (_new_limit) {
+		mcs_rwlock_writer_lock_noirq(&proc->update_lock, &update_lock);
+	} else {
+		mcs_rwlock_reader_lock_noirq(&proc->update_lock, &update_lock);
+	}
+
+	if (old_limit) {
+		if (copy_to_user(old_limit, proc->rlimit + mcresource,
+				 sizeof(struct rlimit))) {
+			ret = -EFAULT;
+			goto out;
+		}
+	}
+
+	if (_new_limit) {
+		memcpy(proc->rlimit + mcresource, &new_limit,
+		       sizeof(struct rlimit));
+	}
+
+	ret = 0;
+ out:
+	if (_new_limit) {
+		mcs_rwlock_writer_unlock_noirq(&proc->update_lock,
+					       &update_lock);
+	} else {
+		mcs_rwlock_reader_unlock_noirq(&proc->update_lock,
+					       &update_lock);
+	}
+
+	mcs_rwlock_reader_unlock_noirq(&phash->lock[hash], &exist_lock);
+	cpu_restore_interrupt(irqstate);
+
+	return ret;
+}
+
+SYSCALL_DECLARE(setrlimit)
+{
+	int resource = ihk_mc_syscall_arg0(ctx);
+	struct rlimit *new_limit = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
+
+	return do_prlimit64(0, resource, new_limit, NULL, ctx);
 }
 
 SYSCALL_DECLARE(getrlimit)
 {
 	int resource = ihk_mc_syscall_arg0(ctx);
-	struct rlimit *rlm = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
-	struct thread *thread = cpu_local_var(current);
-	int	i;
-	int	mcresource;
+	struct rlimit *old_limit = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
 
-	for(i = 0; i < sizeof(rlimits) / sizeof(int); i += 2)
-		if(rlimits[i] == resource){
-			mcresource = rlimits[i + 1];
-			break;
-		}
-	if(i >= sizeof(rlimits) / sizeof(int)){
-		return syscall_generic_forwarding(__NR_getrlimit, ctx);
-	}
+	return do_prlimit64(0, resource, NULL, old_limit, ctx);
+}
 
-// TODO: check limit
-	if(copy_to_user(rlm, thread->proc->rlimit + mcresource, sizeof(struct rlimit)))
-		return -EFAULT;
+SYSCALL_DECLARE(prlimit64)
+{
+	int pid = ihk_mc_syscall_arg0(ctx);
+	int resource = ihk_mc_syscall_arg1(ctx);
+	struct rlimit *new_limit = (struct rlimit *)ihk_mc_syscall_arg2(ctx);
+	struct rlimit *old_limit = (struct rlimit *)ihk_mc_syscall_arg3(ctx);
 
-	return 0;
+	return do_prlimit64(pid, resource, new_limit, old_limit, ctx);
 }
 
 SYSCALL_DECLARE(getrusage)
