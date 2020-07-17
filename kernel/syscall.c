@@ -7060,7 +7060,7 @@ static int rlimits[] = {
 };
 
 static int do_prlimit64(int pid, int resource, struct rlimit *_new_limit,
-			struct rlimit *old_limit, ihk_mc_user_context_t *ctx)
+			struct rlimit *old_limit)
 {
 	struct rlimit new_limit;
 	int resource_found;
@@ -7075,6 +7075,7 @@ static int do_prlimit64(int pid, int resource, struct rlimit *_new_limit,
 	unsigned long irqstate;
 	int found;
 	int ret;
+	ihk_mc_user_context_t ctx;
 
 	if (resource < 0 || resource >= RLIMIT_NLIMITS) {
 		return -EINVAL;
@@ -7096,7 +7097,13 @@ static int do_prlimit64(int pid, int resource, struct rlimit *_new_limit,
 		case RLIMIT_NOFILE:
 		case RLIMIT_LOCKS:
 		case RLIMIT_MSGQUEUE:
-			ret = syscall_generic_forwarding(__NR_prlimit64, ctx);
+			ihk_mc_syscall_arg0(&ctx) = pid;
+			ihk_mc_syscall_arg1(&ctx) = resource;
+			ihk_mc_syscall_arg2(&ctx) =
+				(unsigned long)_new_limit;
+			ihk_mc_syscall_arg3(&ctx) =
+				(unsigned long)old_limit;
+			ret = syscall_generic_forwarding(__NR_prlimit64, &ctx);
 			if (ret < 0)
 				return ret;
 			break;
@@ -7114,7 +7121,13 @@ static int do_prlimit64(int pid, int resource, struct rlimit *_new_limit,
 	}
 
 	if (!resource_found) {
-		return syscall_generic_forwarding(__NR_prlimit64, ctx);
+		ihk_mc_syscall_arg0(&ctx) = pid;
+		ihk_mc_syscall_arg1(&ctx) = resource;
+		ihk_mc_syscall_arg2(&ctx) =
+			(unsigned long)_new_limit;
+		ihk_mc_syscall_arg3(&ctx) =
+			(unsigned long)old_limit;
+		return syscall_generic_forwarding(__NR_prlimit64, &ctx);
 	}
 
 	/* find process */
@@ -7183,7 +7196,7 @@ SYSCALL_DECLARE(setrlimit)
 	int resource = ihk_mc_syscall_arg0(ctx);
 	struct rlimit *new_limit = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
 
-	return do_prlimit64(0, resource, new_limit, NULL, ctx);
+	return do_prlimit64(0, resource, new_limit, NULL);
 }
 
 SYSCALL_DECLARE(getrlimit)
@@ -7191,7 +7204,7 @@ SYSCALL_DECLARE(getrlimit)
 	int resource = ihk_mc_syscall_arg0(ctx);
 	struct rlimit *old_limit = (struct rlimit *)ihk_mc_syscall_arg1(ctx);
 
-	return do_prlimit64(0, resource, NULL, old_limit, ctx);
+	return do_prlimit64(0, resource, NULL, old_limit);
 }
 
 SYSCALL_DECLARE(prlimit64)
@@ -7201,7 +7214,7 @@ SYSCALL_DECLARE(prlimit64)
 	struct rlimit *new_limit = (struct rlimit *)ihk_mc_syscall_arg2(ctx);
 	struct rlimit *old_limit = (struct rlimit *)ihk_mc_syscall_arg3(ctx);
 
-	return do_prlimit64(pid, resource, new_limit, old_limit, ctx);
+	return do_prlimit64(pid, resource, new_limit, old_limit);
 }
 
 SYSCALL_DECLARE(getrusage)
