@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "778b1972_5ce383e4",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2225,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-17T05:07:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t    thread-\u003evm-\u003eregion.stack_end - 1,",
+      "revId": "df14ad6a8d2a5de1c01db0bbeb462130a7ea8b0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "84523ca5_504b2c58",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2226,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-17T05:07:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t    thread-\u003evm-\u003eregion.stack_end);",
+      "revId": "df14ad6a8d2a5de1c01db0bbeb462130a7ea8b0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81c88996_cb7599a4",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2259,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-17T05:07:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "df14ad6a8d2a5de1c01db0bbeb462130a7ea8b0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db803cdc_085ba521",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2457,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-17T05:07:37Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"%s: stack_premap: %lu, rlim_cur: %lu, minsz: %lu, size: %lu, maxsz: %lx\\n\",",
+      "revId": "df14ad6a8d2a5de1c01db0bbeb462130a7ea8b0c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
