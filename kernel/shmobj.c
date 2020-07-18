@@ -32,16 +32,14 @@ static memobj_free_func_t shmobj_free;
 static memobj_get_page_func_t shmobj_get_page;
 static memobj_invalidate_page_func_t shmobj_invalidate_page;
 static memobj_lookup_page_func_t shmobj_lookup_page;
-static memobj_update_page_func_t shmobj_update_page;
 
 static struct memobj_ops shmobj_ops = {
 	.free =	&shmobj_free,
 	.get_page =	&shmobj_get_page,
 	.lookup_page =	&shmobj_lookup_page,
-	.update_page = &shmobj_update_page,
 };
 
-struct shmobj *to_shmobj(struct memobj *memobj)
+static struct shmobj *to_shmobj(struct memobj *memobj)
 {
 	return (struct shmobj *)memobj;
 }
@@ -88,8 +86,7 @@ static struct page *page_list_lookup(struct shmobj *obj, off_t off)
 	struct page *page;
 
 	list_for_each_entry(page, &obj->page_list, list) {
-		if (page->offset <= off &&
-				off < page->offset + (1UL << page->pgshift)) {
+		if (page->offset == off) {
 			goto out;
 		}
 	}
@@ -248,6 +245,7 @@ static void shmobj_destroy(struct shmobj *obj)
 	}
 
 	/* zap page_list */
+	npages = (size_t)1 << (obj->pgshift - PAGE_SHIFT);
 	for (;;) {
 		struct page *page;
 		void *page_va;
@@ -261,7 +259,6 @@ static void shmobj_destroy(struct shmobj *obj)
 		page_list_remove(obj, page);
 		phys = page_to_phys(page);
 		page_va = phys_to_virt(phys);
-		npages = (size_t)1 << (page->pgshift - PAGE_SHIFT);
 
 		if (ihk_atomic_read(&page->count) != 1) {
 			kprintf("%s: WARNING: page count for phys 0x%lx is invalid\n",
@@ -273,8 +270,8 @@ static void shmobj_destroy(struct shmobj *obj)
 			 * (3) terminate() --> ... --> free_process_memory_range()
 			 */
 
-			size_t free_pgsize = 1UL << page->pgshift;
-			size_t free_size = 1UL << page->pgshift;
+			size_t free_pgsize = 1UL << obj->pgshift;
+			size_t free_size = 1UL << obj->pgshift;
 
 			ihk_mc_free_pages_user(page_va, npages);
 			dkprintf("%lx-,%s: calling memory_stat_rss_sub(),phys=%lx,size=%ld,pgsize=%ld\n",
@@ -372,6 +369,12 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 				memobj, off, p2align, physp, error);
 		goto out;
 	}
+	if (p2align != (obj->pgshift - PAGE_SHIFT)) {
+		error = -ENOMEM;
+		ekprintf("shmobj_get_page(%p,%#lx,%d,%p):pgsize mismatch. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
 	if (obj->real_segsz <= off) {
 		error = -ERANGE;
 		ekprintf("shmobj_get_page(%p,%#lx,%d,%p):beyond the end. %d\n",
@@ -413,7 +416,6 @@ static int shmobj_get_page(struct memobj *memobj, off_t off, int p2align,
 		memset(virt, 0, npages*PAGE_SIZE);
 		page->mode = PM_MAPPED;
 		page->offset = off;
-		page->pgshift = p2align + PAGE_SHIFT;
 
 		/* Page contents should survive over unmap */
 		ihk_atomic_set(&page->count, 1);
@@ -458,9 +460,21 @@ static int shmobj_lookup_page(struct memobj *memobj, off_t off, int p2align,
 				memobj, off, p2align, physp, error);
 		goto out;
 	}
+	if (p2align != (obj->pgshift - PAGE_SHIFT)) {
+		error = -ENOMEM;
+		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):pgsize mismatch. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
 	if (obj->real_segsz <= off) {
 		error = -ERANGE;
 		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):beyond the end. %d\n",
+				memobj, off, p2align, physp, error);
+		goto out;
+	}
+	if ((obj->real_segsz - off) < (PAGE_SIZE << p2align)) {
+		error = -ENOSPC;
+		ekprintf("shmobj_lookup_page(%p,%#lx,%d,%p):too large. %d\n",
 				memobj, off, p2align, physp, error);
 		goto out;
 	}
@@ -487,76 +501,3 @@ out:
 			memobj, off, p2align, physp, error, phys);
 	return error;
 } /* shmobj_lookup_page() */
-
-static int shmobj_update_page(struct memobj *memobj, page_table_t pt,
-		struct page *orig_page, void *vaddr)
-{
-	struct shmobj *obj = to_shmobj(memobj);
-	int error;
-	pte_t *pte;
-	size_t pte_size, orig_pgsize, page_off;
-	struct page *page;
-	int p2align;
-	uintptr_t base_phys, phys;
-
-	dkprintf("%s(%p,%p,%p,%p)\n",
-			memobj, pt, orig_page, vaddr);
-	memobj_ref(&obj->memobj);
-
-	if (!pt || !orig_page || !vaddr) {
-		error = -ENOENT;
-		dkprintf("%s(%p,%p,%p,%p): invalid argument. %d\n", __func__,
-				memobj, pt, orig_page, vaddr);
-		goto out;
-	}
-	base_phys = page_to_phys(orig_page);
-	pte = ihk_mc_pt_lookup_pte(pt, vaddr, 0, NULL, &pte_size, &p2align);
-	if (!pte) {
-		error = -ENOENT;
-		dkprintf("%s(%p,%p,%p,%p): pte not found. %d\n",
-				__func__, memobj, pt, orig_page, vaddr);
-		goto out;
-	}
-
-	orig_pgsize = (1UL << orig_page->pgshift);
-
-	/* Update original page */
-	orig_page->pgshift = p2align + PAGE_SHIFT;
-
-	/* Fit pages to pte */
-	page_off = pte_size;
-	while (page_off < orig_pgsize) {
-		pte = ihk_mc_pt_lookup_pte(pt, vaddr + page_off, 0, NULL,
-				&pte_size, &p2align);
-		if (!pte) {
-			error = -ENOENT;
-			dkprintf("%s(%p,%p,%p,%p): pte not found. %d\n",
-					__func__, memobj, pt, orig_page, vaddr);
-			goto out;
-		}
-
-		phys = base_phys + page_off;
-		page = phys_to_page_insert_hash(phys);
-
-		page->mode = orig_page->mode;
-		page->offset = orig_page->offset + page_off;
-		page->pgshift = p2align + PAGE_SHIFT;
-
-		ihk_atomic_set(&page->count,
-				ihk_atomic_read(&orig_page->count));
-
-		ihk_atomic64_set(&page->mapped,
-				ihk_atomic64_read(&orig_page->mapped));
-		page_list_insert(obj, page);
-
-		page_off += pte_size;
-	}
-
-	error = 0;
-
-out:
-	memobj_unref(&obj->memobj);
-	dkprintf("%s(%p,%p,%p,%p):%d\n", __func__,
-			memobj, pt, orig_page, vaddr);
-	return error;
-} /* shmobj_update_page() */
