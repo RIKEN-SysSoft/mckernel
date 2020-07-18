@@ -46,7 +46,6 @@
 #include <ihk/debug.h>
 #include <llist.h>
 #include <bootparam.h>
-#include <memobj.h>
 
 //#define DEBUG_PRINT_MEM
 

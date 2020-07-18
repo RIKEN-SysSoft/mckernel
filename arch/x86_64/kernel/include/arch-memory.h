@@ -19,7 +19,6 @@
 #include <ihk/types.h>
 #include <errno.h>
 
-struct memobj;
 #define KERNEL_CS_ENTRY    4
 #define KERNEL_DS_ENTRY    5
 #define USER_CS_ENTRY      6
@@ -413,8 +412,10 @@ static inline pte_t *get_contiguous_tail(pte_t *__ptep, size_t __pgsize)
 	return __ptep;
 }
 
-int split_contiguous_pages(pte_t *ptep, size_t pgsize,
-		uint32_t memobj_flags);
+static inline int split_contiguous_pages(pte_t *ptep, size_t pgsize)
+{
+	return 0;
+}
 
 static inline int page_is_contiguous_head(pte_t *ptep, size_t pgsize)
 {
