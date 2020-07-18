@@ -1714,8 +1714,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		}
 		p2align = pgshift - PAGE_SHIFT;
 	}
-	else if (((flags & (MAP_PRIVATE | MAP_SHARED))
-			&& (flags & MAP_ANONYMOUS))
+	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)
 		    && !proc->thp_disable) {
 		pgshift = 0;		/* transparent huge page */
 		p2align = PAGE_P2ALIGN;
@@ -1951,7 +1950,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		memset(&ads, 0, sizeof(ads));
 		ads.shm_segsz = len;
 		ads.shm_perm.mode = SHM_DEST;
-		ads.init_pgshift = PAGE_SHIFT + p2align;
+		ads.init_pgshift = PAGE_SHIFT;
 		error = shmobj_create(&ads, &memobj);
 		if (error) {
 			ekprintf("do_mmap:shmobj_create failed. %d\n", error);

@@ -2352,8 +2352,7 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_head(ptep, pgsize)) {
 			// start pte is not contiguous head
-			error = split_contiguous_pages(ptep, pgsize,
-					memobj ? memobj->flags : 0);
+			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
 				return error;
 			}
@@ -2365,8 +2364,7 @@ static int clear_range(struct page_table *pt, struct process_vm *vm,
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_tail(ptep, pgsize)) {
 			// end pte is not contiguous tail
-			error = split_contiguous_pages(ptep, pgsize,
-					memobj ? memobj->flags : 0);
+			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
 				return error;
 			}
@@ -2987,8 +2985,7 @@ out:
 	return error;
 }
 
-int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm,
-		struct vm_range *range, void *addr)
+int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
 {
 	int error;
 	pte_t *ptep;
@@ -3010,9 +3007,7 @@ retry:
 	if (ptep && !ptl_null(ptep, level) && (pgaddr != addr)) {
 		page = NULL;
 		if (ptl_is_contiguous(ptep, level)) {
-			error = split_contiguous_pages(ptep, pgsize,
-					range->memobj ?
-					range->memobj->flags : 0);
+			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
 				goto out;
 			}
@@ -3023,8 +3018,8 @@ retry:
 			phys = ptl_phys(ptep, level);
 			page = phys_to_page(phys);
 		}
-		if (!is_splitable(page, range->memobj ?
-				range->memobj->flags : 0)) {
+		if (page && (page_is_in_memobj(page)
+					|| page_is_multi_mapped(page))) {
 			error = -EINVAL;
 			kprintf("ihk_mc_pt_split:NYI:page break down\n");
 			goto out;
@@ -3197,9 +3192,7 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_head(ptep, pgsize)) {
 			// start pte is not contiguous head
-			error = split_contiguous_pages(ptep, pgsize,
-					range->memobj ?
-					range->memobj->flags : 0);
+			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
 				goto out;
 			}
@@ -3210,9 +3203,7 @@ int move_pte_range(page_table_t pt, struct process_vm *vm,
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_tail(ptep, pgsize)) {
 			// end pte is not contiguous tail
-			error = split_contiguous_pages(ptep, pgsize,
-					range->memobj ?
-					range->memobj->flags : 0);
+			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
 				goto out;
 			}
@@ -3816,31 +3807,4 @@ void arch_adjust_allocate_page_size(struct page_table *pt,
 			break;
 		}
 	}
-}
-
-int split_contiguous_pages(pte_t *ptep, size_t pgsize,
-		uint32_t memobj_flags)
-{
-	int ret;
-	pte_t *head = get_contiguous_head(ptep, pgsize);
-	pte_t *tail = get_contiguous_tail(ptep, pgsize);
-	pte_t *ptr;
-
-	uintptr_t phys;
-	struct page *page;
-
-	phys = pte_get_phys(head);
-	page = phys_to_page(phys);
-	if (!is_splitable(page, memobj_flags)) {
-		ret = -EINVAL;
-		goto out;
-	}
-
-	for (ptr = head; ptr <= tail; ptr++) {
-		*ptr &= ~PTE_CONT;
-	}
-
-	ret = 0;
-out:
-	return ret;
 }

@@ -33,7 +33,6 @@
 #include <timer.h>
 #include <mman.h>
 #include <xpmem.h>
-#include <shm.h>
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
@@ -915,56 +914,26 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 {
 	int error;
 	struct vm_range *newrange = NULL;
+	unsigned long page_mask;
 
 	dkprintf("split_process_memory_range(%p,%lx-%lx,%lx,%p)\n",
 			vm, range->start, range->end, addr, splitp);
 
 	if (range->pgshift != 0) {
-		if (addr & ((1UL << range->pgshift) - 1)) {
+		page_mask = (1 << range->pgshift) - 1;
+		if (addr & page_mask) {
 			/* split addr is not aligned */
 			range->pgshift = 0;
 		}
 	}
 
-	error = ihk_mc_pt_split(vm->address_space->page_table, vm,
-			range, (void *)addr);
+	error = ihk_mc_pt_split(vm->address_space->page_table, vm, (void *)addr);
 	if (error) {
 		ekprintf("split_process_memory_range:"
 				"ihk_mc_pt_split failed. %d\n", error);
 		goto out;
 	}
 	// memory_stat_rss_add() is called in child-node, i.e. ihk_mc_pt_split() to deal with L3->L2 case
-
-	if (range->memobj && range->memobj->flags & MF_SHM) {
-		/* Target range is shared memory */
-		uintptr_t _phys = 0;
-		struct page *page = NULL;
-		unsigned long page_mask;
-
-		/* Lookup the page split target */
-		error = memobj_lookup_page(range->memobj,
-				range->objoff + addr - range->start,
-				0, &_phys, NULL);
-		if (error && error != -ENOENT) {
-			ekprintf("%s: memobj_lookup_page failed. %d\n",
-					__func__, error);
-			goto out;
-		}
-		page = phys_to_page(_phys);
-
-		if (page) {
-			page_mask = ~((1UL << page->pgshift) - 1);
-			/* Update existing page */
-			error = memobj_update_page(range->memobj,
-				vm->address_space->page_table, page,
-				(void *)(addr & page_mask));
-			if (error) {
-				ekprintf("%s: memobj_update_page failed. %d\n",
-						__func__, error);
-				goto out;
-			}
-		}
-	}
 
 	newrange = kmalloc(sizeof(struct vm_range), IHK_MC_AP_NOWAIT);
 	if (!newrange) {
@@ -1896,9 +1865,7 @@ int invalidate_process_memory_range(struct process_vm *vm,
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_head(ptep, pgsize)) {
 			// start pte is not contiguous head
-			error = split_contiguous_pages(ptep, pgsize,
-					range->memobj ?
-					range->memobj->flags : 0);
+			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
 				ihk_spinlock_t *page_table_lock;
 
@@ -1916,9 +1883,7 @@ int invalidate_process_memory_range(struct process_vm *vm,
 	if (ptep && pte_is_contiguous(ptep)) {
 		if (!page_is_contiguous_tail(ptep, pgsize)) {
 			// end pte is not contiguous tail
-			error = split_contiguous_pages(ptep, pgsize,
-					range->memobj ?
-					range->memobj->flags : 0);
+			error = split_contiguous_pages(ptep, pgsize);
 			if (error) {
 				ihk_spinlock_t *page_table_lock;
 
