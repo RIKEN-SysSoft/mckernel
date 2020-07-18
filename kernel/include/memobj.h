@@ -17,7 +17,6 @@
 #include <ihk/types.h>
 #include <ihk/atomic.h>
 #include <ihk/lock.h>
-#include <ihk/mm.h>
 #include <errno.h>
 #include <list.h>
 #include <pager.h>
@@ -62,8 +61,6 @@ typedef uintptr_t memobj_copy_page_func_t(struct memobj *obj, uintptr_t orgphys,
 typedef int memobj_flush_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
 typedef int memobj_invalidate_page_func_t(struct memobj *obj, uintptr_t phys, size_t pgsize);
 typedef int memobj_lookup_page_func_t(struct memobj *obj, off_t off, int p2align, uintptr_t *physp, unsigned long *flag);
-typedef int memobj_update_page_func_t(struct memobj *obj, page_table_t pt,
-		struct page *orig_page, void *vaddr);
 
 struct memobj_ops {
 	memobj_free_func_t *free;
@@ -72,7 +69,6 @@ struct memobj_ops {
 	memobj_flush_page_func_t *flush_page;
 	memobj_invalidate_page_func_t *invalidate_page;
 	memobj_lookup_page_func_t *lookup_page;
-	memobj_update_page_func_t *update_page;
 };
 
 static inline int memobj_ref(struct memobj *obj)
@@ -131,15 +127,6 @@ static inline int memobj_lookup_page(struct memobj *obj, off_t off,
 {
 	if (obj->ops->lookup_page) {
 		return (*obj->ops->lookup_page)(obj, off, p2align, physp, pflag);
-	}
-	return -ENXIO;
-}
-
-static inline int memobj_update_page(struct memobj *obj, page_table_t pt,
-		struct page *orig_page, void *vaddr)
-{
-	if (obj->ops->update_page) {
-		return (*obj->ops->update_page)(obj, pt, orig_page, vaddr);
 	}
 	return -ENXIO;
 }
