@@ -884,7 +884,7 @@ static int split_large_page(pte_t *ptep, size_t pgsize)
 	}
 
 	for (i = 0; i < PT_ENTRIES; ++i) {
-		if (phys_base != NOPHYS && pgsize != PTL2_SIZE) {
+		if (phys_base != NOPHYS) {
 			phys = phys_base + (i * pgsize / PT_ENTRIES);
 			page = phys_to_page(phys);
 			if (page) {
@@ -2219,8 +2219,7 @@ out:
 	return error;
 }
 
-int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm,
-		struct vm_range *range, void *addr)
+int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr)
 {
 	int error;
 	pte_t *ptep;
@@ -2228,6 +2227,7 @@ int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm,
 	size_t pgsize;
 	intptr_t phys;
 	struct page *page;
+
 
 retry:
 	ptep = ihk_mc_pt_lookup_pte(pt, addr, 0, &pgaddr, &pgsize, NULL);
@@ -2237,8 +2237,8 @@ retry:
 			phys = pte_get_phys(ptep);
 			page = phys_to_page(phys);
 		}
-		if (!is_splitable(page, range->memobj ?
-				range->memobj->flags : 0)) {
+		if (page && (page_is_in_memobj(page)
+					|| page_is_multi_mapped(page))) {
 			error = -EINVAL;
 			kprintf("ihk_mc_pt_split:NYI:page break down\n");
 			goto out;
@@ -3001,10 +3001,3 @@ int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 	dkprintf("patch_process_vm(%p,%p,%p,%lx):%d\n", vm, udst, ksrc, siz, 0);
 	return 0;
 } /* patch_process_vm() */
-
-int split_contiguous_pages(pte_t *ptep, size_t pgsize,
-		uint32_t memobj_flags)
-{
-	return 0;
-}
-

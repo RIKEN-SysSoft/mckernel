@@ -20,7 +20,6 @@
 #include <ihk/lock.h>
 #include <ihk/atomic.h>
 #include <arch/mm.h>
-#include <page.h>
 
 struct memobj;
 struct process_vm;
@@ -185,9 +184,7 @@ int ihk_mc_pt_set_range(page_table_t pt, struct process_vm *vm, void *start,
 int ihk_mc_pt_set_pte(page_table_t pt, pte_t *ptep, size_t pgsize, uintptr_t phys, enum ihk_mc_pt_attribute attr);
 int ihk_mc_pt_prepare_map(page_table_t pt, void *virt, unsigned long size,
                           enum ihk_mc_pt_prepare_flag);
-int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm,
-		struct vm_range *range, void *addr);
-int is_splitable(struct page *page, uint32_t memobj_flags);
+int ihk_mc_pt_split(page_table_t pt, struct process_vm *vm, void *addr);
 
 typedef int pte_visitor_t(void *arg, page_table_t pt, pte_t *ptep,
 		void *pgaddr, int pgshift);

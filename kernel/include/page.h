@@ -23,7 +23,6 @@ struct page {
 	ihk_atomic_t		count;
 	ihk_atomic64_t	mapped;
 	off_t			offset;
-	int pgshift;	/* Using by shmobj */
 };
 
 /* mode */
