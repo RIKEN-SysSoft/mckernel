@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f8a485c3_07fbf0cf",
+        "filename": "arch/arm64/kernel/include/rlimit.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-19T12:53:16Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  __RLIMIT_RTTIME \u003d 15,$",
+      "revId": "a20e1acf01f109ab325b114a3dc246a2e3083775",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7562d6f6_2445c882",
+        "filename": "arch/arm64/kernel/include/rlimit.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-19T12:53:16Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  __RLIMIT_NLIMITS \u003d 16,$",
+      "revId": "a20e1acf01f109ab325b114a3dc246a2e3083775",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b398580f_15d57dde",
+        "filename": "arch/x86_64/kernel/include/rlimit.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-19T12:53:16Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  __RLIMIT_RTTIME \u003d 15,$",
+      "revId": "a20e1acf01f109ab325b114a3dc246a2e3083775",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cd261f32_81359681",
+        "filename": "arch/x86_64/kernel/include/rlimit.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-19T12:53:16Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  __RLIMIT_NLIMITS \u003d 16,$",
+      "revId": "a20e1acf01f109ab325b114a3dc246a2e3083775",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
