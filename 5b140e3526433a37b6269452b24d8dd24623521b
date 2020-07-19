@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7693b50e_2ae2337f",
+        "filename": "arch/arm64/kernel/include/rlimit.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-19T04:11:59Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  __RLIMIT_RTTIME \u003d 15,$",
+      "revId": "5b140e3526433a37b6269452b24d8dd24623521b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2807e53d_8aa2d9cf",
+        "filename": "arch/arm64/kernel/include/rlimit.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-07-19T04:11:59Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  __RLIMIT_NLIMITS \u003d 16,$",
+      "revId": "5b140e3526433a37b6269452b24d8dd24623521b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
