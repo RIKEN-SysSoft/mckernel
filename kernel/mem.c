@@ -519,6 +519,18 @@ static void reserve_pages(struct ihk_page_allocator_desc *pa_allocator,
 	ihk_pagealloc_reserve(pa_allocator, start, end);
 }
 
+static int interleave_nodes(int off, unsigned long *numa_mask)
+{
+	int next;
+
+	next = find_next_bit(numa_mask, PROCESS_NUMA_MASK_BITS, off + 1);
+	if (next >= PROCESS_NUMA_MASK_BITS) {
+		next = find_first_bit(numa_mask, PROCESS_NUMA_MASK_BITS);
+	}
+
+	return next;
+}
+
 extern int cpu_local_var_initialized;
 static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 		ihk_mc_ap_flag flag, int pref_node, int is_user, uintptr_t virt_addr)
@@ -534,7 +546,9 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 	int numa_mem_policy = -1;
 	struct process_vm *vm;
 	struct vm_range *range = NULL;
-	int chk_shm = 0;
+	int chk_shm = 0, il_start, looping;
+	int *il_prev = NULL;
+	unsigned long *numa_mask = NULL;
 
 	if(npages <= 0)
 		return NULL;
@@ -625,12 +639,17 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 				chk_shm = 1;
 			} else {
 				numa_mem_policy = range_policy_iter->numa_mem_policy;
+				numa_mask = range_policy_iter->numa_mask;
+				il_prev = &range_policy_iter->il_prev;
 			}
 		}
 	}
 
-	if (numa_mem_policy == -1)
+	if (numa_mem_policy == -1) {
 		numa_mem_policy = cpu_local_var(current)->vm->numa_mem_policy;
+		numa_mask = cpu_local_var(current)->vm->numa_mask;
+		il_prev = &cpu_local_var(current)->vm->il_prev;
+	}
 
 	switch (numa_mem_policy) {
 		case MPOL_BIND:
@@ -683,7 +702,55 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 			break;
 
 		case MPOL_INTERLEAVE:
-			/* TODO: */
+			/* Initialize interleave */
+			il_start = *il_prev;
+			looping = 0;
+
+retry_interleave:
+			/* Find next node */
+			numa_id = interleave_nodes(*il_prev, numa_mask);
+			*il_prev = numa_id;
+
+			if (il_start == *il_prev && !looping) {
+				/* All interleave nodes are full */
+				pa = 0;
+				break;
+			}
+			looping = 1;
+#ifdef IHK_RBTREE_ALLOCATOR
+			{
+				if (rusage_check_oom(numa_id, npages, is_user)
+						== -ENOMEM) {
+					goto retry_interleave;
+				} else {
+					pa = ihk_numa_alloc_pages(
+							&memory_nodes[numa_id],
+							npages, p2align);
+				}
+#else
+			list_for_each_entry(pa_allocator,
+					&memory_nodes[numa_id].allocators,
+					list) {
+				if (rusage_check_oom(numa_id, npages, is_user)
+						== -ENOMEM) {
+					goto retry_interleave;
+				} else {
+					pa = ihk_pagealloc_alloc(pa_allocator,
+							npages, p2align);
+				}
+#endif
+
+				if (pa) {
+					rusage_page_add(numa_id, npages,
+							is_user);
+					dkprintf("%s: policy: CPU @ node %d allocated "
+							"%d pages from node %d\n",
+							__func__,
+							ihk_mc_get_numa_id(),
+							npages, node);
+
+				}
+			}
 			break;
 
 		default:
