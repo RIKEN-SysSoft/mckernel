@@ -1,0 +1,13 @@
+diff --git kernel/syscall.c kernel/syscall.c
+index 55fdd39..c627440 100644
+--- kernel/syscall.c
++++ kernel/syscall.c
+@@ -9142,7 +9142,7 @@ SYSCALL_DECLARE(mbind)
+ 		return -EINVAL;
+ 	}
+ 
+-	return 0;
++	//return 0;
+ 
+ 	memset(numa_mask, 0, sizeof(numa_mask));
+ 

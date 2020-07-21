@@ -1,0 +1,87 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7 -m 10G@0,10G@1 -O -e anon_on_demand ... done
+*** C959T01 start *******************************
+INTERLEAVE BIT_MASK: 0x3
+set_mempolicy: INTERLEAVE  mask 0x3
+** Difference of numa_stat **
+[OK]  NUMA[0] 0xc0000000
+[OK]  NUMA[1] 0xc0000000
+*** C959T01 PASSED ******************************
+
+*** C959T02 start *******************************
+INTERLEAVE BIT_MASK: 0x3
+set_mempolicy: BIND  mask 0x1
+mbind        : INTERLEAVE  mask 0x3
+** Difference of numa_stat **
+[OK]  NUMA[0] 0xc0000000
+[OK]  NUMA[1] 0xc0000000
+*** C959T02 PASSED ******************************
+
+*** C959T03 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x0
+[OK]  NUMA[1] 0x180000000
+*** C959T03 PASSED ******************************
+
+*** C959T04 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: BIND  mask 0x1
+mbind        : INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x0
+[OK]  NUMA[1] 0x180000000
+*** C959T04 PASSED ******************************
+
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7 -m 10G@0,2G@1 -O -e anon_on_demand ... done
+*** C959T05 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x100000000
+[OK]  NUMA[1] 0x80000000
+*** C959T05 PASSED ******************************
+
+*** C959T06 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: BIND  mask 0x1
+mbind        : INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x100000000
+[OK]  NUMA[1] 0x80000000
+*** C959T06 PASSED ******************************
+
+*** C959T07 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+mbind01.c:181: INFO: case MPOL_DEFAULT
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_DEFAULT (target exists)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_BIND (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_BIND
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_INTERLEAVE (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_INTERLEAVE
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case UNKNOWN_POLICY
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_DEFAULT (invalid flags)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED (invalid nodemask)
+mbind01.c:230: PASS: Test passed
+
+Summary:
+passed   11
+failed   0
+skipped  0
+warnings 0
+*** C959T07 PASSED (11)
+
