@@ -23,7 +23,7 @@ Summary: IHK/McKernel
 License: GPLv2
 Source0: mckernel-%{version}.tar.gz
 
-Requires: systemd-libs numactl-libs elfutils-libelf libdwarf
+Requires: systemd-libs numactl-libs libdwarf capstone
 
 # kernel_module_package macro does not handle cross build...
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
@@ -36,7 +36,7 @@ Requires: kernel = %{krequires}
 Requires(post):   /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
 %else
-BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel
+BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel libdwarf-devel capstone-devel
 # Friendly reminder of the fact that kernel-rpm-macros is no longer included in kernel-devel
 %if 0%{?rhel} >= 8
 BuildRequires: redhat-rpm-config kernel-rpm-macros elfutils-libelf-devel kmod
