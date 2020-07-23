@@ -85,7 +85,13 @@ sudo reboot
 You will need the following packages installed:
 
 ~~~~
-sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git
+sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git libdwarf-devel
+~~~~
+
+Note that to install libdwarf-devel to RHEL-8.2, you need to enable CodeReady Linux Builder (CLB) repository with the following command:
+
+~~~~
+subscription-manager repos --enable codeready-builder-for-rhel-8-$(uname -m)-rpms
 ~~~~
 
 Grant read permission to the System.map file of your kernel version:
@@ -114,19 +120,7 @@ git submodule update
 
 Foe example, if you want to try the development branch, use "development" as the pathspec. If you want to try the prerelease version 1.7.0-0.2, use "1.7.0-0.2".
 
-###### 4.1 Install required packages
-
-~~~~
-sudo yum install systemd-libs numactl-libs elfutils-libelf libdwarf
-~~~~
-
-Note that you need to enable CodeReady Linux Builder (CLB) repository with RHEL-8.2 with the following command:
-
-~~~~
-subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
-~~~~
-
-###### 4.2 Install with cmake
+###### 4.1 Install with cmake
 
 Configure and compile:
 
@@ -138,7 +132,7 @@ make -j install
 
 The IHK kernel modules and McKernel kernel image should be installed under the **ihk+mckernel** folder in your home directory.
 
-###### 4.3 Install with rpm
+###### 4.2 Install with rpm
 
 Configure, compile and build rpm:
 
