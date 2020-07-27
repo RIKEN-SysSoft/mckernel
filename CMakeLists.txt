@@ -218,11 +218,6 @@ if (ENABLE_QLMPI)
 	find_package(MPI REQUIRED)
 endif()
 
-if (ENABLE_UTI)
-	pkg_check_modules(LIBSYSCALL_INTERCEPT REQUIRED libsyscall_intercept)
-	link_directories(${LIBSYSCALL_INTERCEPT_LIBRARY_DIRS})
-endif()
-
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([0-9]+)(.*))?" "\\1;\\2;\\3;\\5;\\6" LINUX_VERSION ${UNAME_R})
 list(GET LINUX_VERSION 0 LINUX_VERSION_MAJOR)
 list(GET LINUX_VERSION 1 LINUX_VERSION_MINOR)
