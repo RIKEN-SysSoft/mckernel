@@ -69,13 +69,26 @@ if (ENABLE_QLMPI)
 endif()
 
 if (ENABLE_UTI)
+  #	pkg_check_modules(LIBSYSCALL_INTERCEPT REQUIRED libsyscall_intercept)
+  #	link_directories(${CMAKE_CURRENT_BINARY_DIR}/syscall_intercept/lib64)
+	if (${ARCH} STREQUAL "arm64")
+	  set(SYSCALL_INTERCEPT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/syscall_intercept/arch/aarch64" CACHE STRINGS "relative path to syscalL_intercept source directory")
+	elseif (${ARCH} STREQUAL "x86_64")
+	  set(SYSCALL_INTERCEPT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/syscall_intercept" CACHE STRINGS "relative path to syscalL_intercept source directory")
+	endif()
+
+	# change cmake options only in this directory
+	SET(CMAKE_BUILD_TYPE Release CACHE STRING "release build" FORCE)
+	SET(TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "ignore warnings" FORCE)
+	add_subdirectory(${SYSCALL_INTERCEPT_SOURCE_DIR} syscall_intercept)
+
 	add_library(mck_syscall_intercept SHARED syscall_intercept.c arch/${ARCH}/archdep_c.c)
 	if (${ARCH} STREQUAL "arm64")
 		set_source_files_properties(syscall_intercept.c PROPERTIES COMPILE_FLAGS -mgeneral-regs-only)
 	endif()
-	target_link_libraries(mck_syscall_intercept ${LIBSYSCALL_INTERCEPT_LIBRARIES})
-	target_include_directories(mck_syscall_intercept PRIVATE ${LIBSYSCALL_INTERCEPT_INCLUDE_DIRS})
-	set_target_properties(mck_syscall_intercept PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+	target_link_libraries(mck_syscall_intercept syscall_intercept)
+	target_include_directories(mck_syscall_intercept PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/syscall_intercept/include)
+	set_target_properties(mck_syscall_intercept PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib64)
 
 	install(TARGETS mck_syscall_intercept
 		DESTINATION "${CMAKE_INSTALL_LIBDIR}")
