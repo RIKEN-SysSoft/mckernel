@@ -4,3 +4,9 @@
 [submodule "executer/user/lib/libdwarf/libdwarf"]
 	path = executer/user/lib/libdwarf/libdwarf
 	url = https://github.com/bgerofi/libdwarf.git
+[submodule "executer/user/lib/syscall_intercept"]
+	path = executer/user/lib/syscall_intercept
+	url = https://github.com/RIKEN-SysSoft/syscall_intercept.git
+[submodule "executer/user/lib/uti"]
+	path = executer/user/lib/uti
+	url = https://github.com/RIKEN-SysSoft/uti.git

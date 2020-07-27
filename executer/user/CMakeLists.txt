@@ -69,13 +69,18 @@ if (ENABLE_QLMPI)
 endif()
 
 if (ENABLE_UTI)
+	link_directories("${CMAKE_CURRENT_BINARY_DIR}/lib/syscall_intercept")
+
 	add_library(mck_syscall_intercept SHARED syscall_intercept.c arch/${ARCH}/archdep_c.c)
+
+	# target name is defined by add_library(), not project() or add_subdirectory()
+	add_dependencies(mck_syscall_intercept syscall_intercept_shared)
 	if (${ARCH} STREQUAL "arm64")
 		set_source_files_properties(syscall_intercept.c PROPERTIES COMPILE_FLAGS -mgeneral-regs-only)
 	endif()
-	target_link_libraries(mck_syscall_intercept ${LIBSYSCALL_INTERCEPT_LIBRARIES})
-	target_include_directories(mck_syscall_intercept PRIVATE ${LIBSYSCALL_INTERCEPT_INCLUDE_DIRS})
-	set_target_properties(mck_syscall_intercept PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+	target_link_libraries(mck_syscall_intercept syscall_intercept)
+	target_include_directories(mck_syscall_intercept PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/syscall_intercept/include)
+	set_target_properties(mck_syscall_intercept PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib64)
 
 	install(TARGETS mck_syscall_intercept
 		DESTINATION "${CMAKE_INSTALL_LIBDIR}")
