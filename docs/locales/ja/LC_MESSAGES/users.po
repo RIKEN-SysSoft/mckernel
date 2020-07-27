@@ -1,0 +1,454 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-07 10:00+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../users.rst:6
+msgid "Architectural Overview"
+msgstr ""
+
+#: ../../users.rst:8
+msgid ""
+"See `Quick Guide -- Architectural Overview <quick.html#architectural-"
+"overview>`__."
+msgstr ""
+
+#: ../../users.rst:11
+msgid "Running Programs"
+msgstr ""
+
+#: ../../users.rst:13
+msgid ""
+"You need to check if your application and pre-/post-processing programs "
+"are suited to run with McKernel. Follow the guide below to choose to run "
+"the whole on McKernel, or run the whole on Linux, or run pre-/post-"
+"processing on Linux and the application on McKernel:"
+msgstr ""
+
+#: ../../users.rst:16
+msgid "Application"
+msgstr ""
+
+#: ../../users.rst:18
+msgid ""
+"Run the whole on Linux if it issues system calls frequently and becoming "
+"the bottleneck with McKernel. For example, it's better to run on Linux "
+"those programs performing many file I/O operations."
+msgstr ""
+
+#: ../../users.rst:19
+msgid "Otherwise, run it on McKernel."
+msgstr ""
+
+#: ../../users.rst:21
+msgid "Pre-/Post-processing"
+msgstr ""
+
+#: ../../users.rst:23
+msgid ""
+"Run it on McKernel if it consumes a large amount of memory or the "
+"execution time isn't prolonged prohivitively with McKernel. The reason "
+"for the first condition is that the resource could be limited for Linux "
+"CPUs in the nodes for McKernel."
+msgstr ""
+
+#: ../../users.rst:24
+msgid "Otherwise, run it on Linux."
+msgstr ""
+
+#: ../../users.rst:28
+msgid "Modify job script"
+msgstr ""
+
+#: ../../users.rst:30
+msgid ""
+"When using job submission system, you need to modify the job scripts so "
+"that the job script itself is going to run on Linux. For example, with "
+"Fujitsu Technical Computing Suite (TCS), you need to specify "
+"``jobenv=linux`` by inserting the following line into the job script:"
+msgstr ""
+
+#: ../../users.rst:38
+msgid "Insert ``mcexec`` into the command line"
+msgstr ""
+
+#: ../../users.rst:40
+msgid ""
+"You need to insert ``mcexec`` into the command lines invoking the "
+"programs that you chose to run on McKernel:"
+msgstr ""
+
+#: ../../users.rst:43
+msgid "Non-MPI programs"
+msgstr ""
+
+#: ../../users.rst:45
+msgid "Insert ``mcexec`` before an executable:"
+msgstr ""
+
+#: ../../users.rst:52
+msgid "MPI programs"
+msgstr ""
+
+#: ../../users.rst:54
+msgid ""
+"Insert ``mcexec -n <processes-per-node>`` **after mpirun** and before an "
+"executable:"
+msgstr ""
+
+#: ../../users.rst:61
+msgid ""
+"``<processes-per-node>`` is the number of the processes per node and "
+"calculated by (number of MPI processes) / (number of nodes)."
+msgstr ""
+
+#: ../../users.rst:64
+msgid ""
+"For example, ``<processes-per-node>`` equals to 4 (=32/8) when specifying"
+" the number of processes and nodes as follows with Fujitsu Technical "
+"Computing Suite."
+msgstr ""
+
+#: ../../users.rst:74
+msgid "Limitations"
+msgstr ""
+
+#: ../../users.rst:76
+msgid ""
+"Pseudo devices such as /dev/mem and /dev/zero are not mmap()ed correctly "
+"even if the mmap() returns a success. An access of their mapping receives"
+" the SIGSEGV signal."
+msgstr ""
+
+#: ../../users.rst:80
+msgid ""
+"clone() supports only the following flags. All the other flags cause "
+"clone() to return error or are simply ignored."
+msgstr ""
+
+#: ../../users.rst:83
+msgid "CLONE_CHILD_CLEARTID"
+msgstr ""
+
+#: ../../users.rst:84
+msgid "CLONE_CHILD_SETTID"
+msgstr ""
+
+#: ../../users.rst:85
+msgid "CLONE_PARENT_SETTID"
+msgstr ""
+
+#: ../../users.rst:86
+msgid "CLONE_SETTLS"
+msgstr ""
+
+#: ../../users.rst:87
+msgid "CLONE_SIGHAND"
+msgstr ""
+
+#: ../../users.rst:88
+msgid "CLONE_VM"
+msgstr ""
+
+#: ../../users.rst:90
+msgid "PAPI has the following restriction."
+msgstr ""
+
+#: ../../users.rst:92
+msgid ""
+"Number of counters a user can use at the same time is up to the number of"
+" the physical counters in the processor."
+msgstr ""
+
+#: ../../users.rst:95
+msgid "msync writes back only the modified pages mapped by the calling process."
+msgstr ""
+
+#: ../../users.rst:98
+msgid "The following syscalls always return the ENOSYS error."
+msgstr ""
+
+#: ../../users.rst:100
+msgid "migrate_pages()"
+msgstr ""
+
+#: ../../users.rst:101
+msgid "move_pages()"
+msgstr ""
+
+#: ../../users.rst:102
+msgid "set_robust_list()"
+msgstr ""
+
+#: ../../users.rst:104
+msgid "The following syscalls always return the EOPNOTSUPP error."
+msgstr ""
+
+#: ../../users.rst:106
+msgid "arch_prctl(ARCH_SET_GS)"
+msgstr ""
+
+#: ../../users.rst:107
+msgid "signalfd()"
+msgstr ""
+
+#: ../../users.rst:109
+msgid "signalfd4() returns a fd, but signal is not notified through the fd."
+msgstr ""
+
+#: ../../users.rst:111
+msgid "set_rlimit sets the limit values but they are not enforced."
+msgstr ""
+
+#: ../../users.rst:113
+msgid "Address randomization is not supported."
+msgstr ""
+
+#: ../../users.rst:115
+msgid ""
+"brk() extends the heap more than requestd when -h (–extend-heap-by=) "
+"option of mcexec is used with the value larger than 4 KiB. "
+"syscall_pwrite02 of LTP would fail for this reason. This is because the "
+"test expects that the end of the heap is set to the same address as the "
+"argument of sbrk() and expects a segmentation violation occurs when it "
+"tries to access the memory area right next to the boundary. However, the "
+"optimization sets the end to a value larger than the requested. "
+"Therefore, the expected segmentation violation doesn’t occur."
+msgstr ""
+
+#: ../../users.rst:125
+msgid ""
+"setpriority()/getpriority() won’t work. They might set/get the priority "
+"of a random mcexec thread. This is because there’s no fixed "
+"correspondence between a McKernel thread which issues the system call and"
+" a mcexec thread which handles the offload request."
+msgstr ""
+
+#: ../../users.rst:130
+msgid ""
+"mbind() can set the policy but it is not used when allocating physical "
+"pages."
+msgstr ""
+
+#: ../../users.rst:133
+msgid ""
+"MPOL_F_RELATIVE_NODES and MPOL_INTERLEAVE flags for "
+"set_mempolicy()/mbind() are not supported."
+msgstr ""
+
+#: ../../users.rst:136
+msgid ""
+"The MPOL_BIND policy for set_mempolicy()/mbind() works as the same as the"
+" MPOL_PREFERRED policy. That is, the physical page allocator doesn’t give"
+" up the allocation when the specified nodes are running out of pages but "
+"continues to search pages in the other nodes."
+msgstr ""
+
+#: ../../users.rst:141
+msgid ""
+"Kernel dump on Linux panic requires Linux kernel CentOS-7.4 and later. In"
+" addition, crash_kexec_post_notifiers kernel argument must be given to "
+"Linux kernel."
+msgstr ""
+
+#: ../../users.rst:145
+msgid ""
+"setfsuid()/setfsgid() cannot change the id of the calling thread. "
+"Instead, it changes that of the mcexec worker thread which takes the "
+"system-call offload request."
+msgstr ""
+
+#: ../../users.rst:149
+msgid ""
+"mmap (hugeTLBfs): The physical pages corresponding to a map are released "
+"when no McKernel process exist. The next map gets fresh physical pages."
+msgstr ""
+
+#: ../../users.rst:153
+msgid "Sticky bit on executable file has no effect."
+msgstr ""
+
+#: ../../users.rst:155
+msgid ""
+"Linux (RHEL-7 for x86_64) could hang when offlining CPUs in the process "
+"of booting McKernel due to the Linux bug, found in Linux-3.10 and fixed "
+"in the later version. One way to circumvent this is to always assign the "
+"same CPU set to McKernel."
+msgstr ""
+
+#: ../../users.rst:160
+msgid "madvise:"
+msgstr ""
+
+#: ../../users.rst:162
+msgid "MADV_HWPOISON and MADV_SOFT_OFFLINE always returns -EPERM."
+msgstr ""
+
+#: ../../users.rst:163
+msgid "MADV_MERGEABLE and MADV_UNMERGEABLE always returns -EINVAL."
+msgstr ""
+
+#: ../../users.rst:164
+msgid ""
+"MADV_HUGEPAGE and MADV_NOHUGEPAGE on file map returns -EINVAL except on "
+"RHEL-8 for aarch64."
+msgstr ""
+
+#: ../../users.rst:167
+msgid ""
+"brk() and mmap() doesn’t report out-of-memory through its return value. "
+"Instead, page-fault reports the error."
+msgstr ""
+
+#: ../../users.rst:170
+msgid ""
+"Anonymous mmap pre-maps requested number of pages when contiguous pages "
+"are available. Demand paging is used when not available."
+msgstr ""
+
+#: ../../users.rst:173
+msgid ""
+"Mixing page sizes in anonymous shared mapping is not allowed. mmap "
+"creates vm_range with one page size. And munmap or mremap that needs the "
+"reduced page size changes the sizes of all the pages of the vm_range."
+msgstr ""
+
+#: ../../users.rst:178
+msgid ""
+"ihk_os_getperfevent() could time-out when invoked from Fujitsu TCS (job-"
+"scheduler)."
+msgstr ""
+
+#: ../../users.rst:181
+msgid ""
+"The behaviors of madvise and mbind are changed to do nothing and report "
+"success as a workaround for Fugaku."
+msgstr ""
+
+#: ../../users.rst:184
+msgid ""
+"mmap() allows unlimited overcommit. Note that it corresponds to setting "
+"sysctl ``vm.overcommit_memory`` to 1."
+msgstr ""
+
+#~ msgid ""
+#~ "At the heart of the stack is "
+#~ "a low-level software infrastructure "
+#~ "called Interface for Heterogeneous Kernels "
+#~ "(IHK). IHK is a general framework "
+#~ "that provides capabilities for partitioning"
+#~ " resources in a many-core environment"
+#~ " (e.g.,CPU cores and physical memory) "
+#~ "and it enables management of lightweight"
+#~ " kernels. IHK can allocate and "
+#~ "release host resources dynamically and "
+#~ "no reboot of the host machine is"
+#~ " required when altering configuration. IHK"
+#~ " also provides a low-level inter-"
+#~ "kernel messaging infrastructure, called the"
+#~ " Inter-Kernel Communication (IKC) layer."
+#~ " An architectural overview of the "
+#~ "main system components is shown below."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "McKernel is a lightweight kernel written"
+#~ " from scratch. It is designed for "
+#~ "HPC and is booted from IHK. "
+#~ "McKernel retains a binary compatible ABI"
+#~ " with Linux, however, it implements "
+#~ "only a small set of performance "
+#~ "sensitive system calls and the rest "
+#~ "are offloaded to Linux. Specifically, "
+#~ "McKernel has its own memory management,"
+#~ " it supports processes and multi-"
+#~ "threading with a simple round-robin "
+#~ "cooperative (tick-less) scheduler, and "
+#~ "it implements signaling. It also allows"
+#~ " inter-process memory mappings and it"
+#~ " provides interfaces to hardware "
+#~ "performance counters."
+#~ msgstr ""
+
+#~ msgid "Functionality"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "An overview of some of the "
+#~ "principal functionalities of the IHK/McKernel"
+#~ " stack is provided below."
+#~ msgstr ""
+
+#~ msgid "System Call Offloading"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "System call forwarding in McKernel is"
+#~ " implemented as follows. When an "
+#~ "offloaded system call occurs, McKernel "
+#~ "marshals the system call number along"
+#~ " with its arguments and sends a "
+#~ "message to Linux via a dedicated "
+#~ "IKC channel. The corresponding proxy "
+#~ "process running on Linux is by "
+#~ "default waiting for system call requests"
+#~ " through an ioctl() call into IHK’s"
+#~ " system call delegator kernel module. "
+#~ "The delegator kernel module’s IKC "
+#~ "interrupt handler wakes up the proxy "
+#~ "process, which returns to userspace and"
+#~ " simply invokes the requested system "
+#~ "call. Once it obtains the return "
+#~ "value, it instructs the delegator module"
+#~ " to send the result back to "
+#~ "McKernel, which subsequently passes the "
+#~ "value to user-space."
+#~ msgstr ""
+
+#~ msgid "Unified Address Space"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The unified address space model in "
+#~ "IHK/McKernel ensures that offloaded system "
+#~ "calls can seamlessly resolve arguments "
+#~ "even in case of pointers. This "
+#~ "mechanism is depicted below and is "
+#~ "implemented as follows."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "First, the proxy process is compiled "
+#~ "as a position independent binary, which"
+#~ " enables us to map the code and"
+#~ " data segments specific to the proxy"
+#~ " process to an address range which"
+#~ " is explicitly excluded from McKernel’s "
+#~ "user space. The grey box on the"
+#~ " right side of the figure "
+#~ "demonstrates the excluded region. Second, "
+#~ "the entire valid virtual address range"
+#~ " of McKernel’s application user-space "
+#~ "is covered by a special mapping in"
+#~ " the proxy process for which we "
+#~ "use a pseudo file mapping in "
+#~ "Linux. This mapping is indicated by "
+#~ "the blue box on the left side "
+#~ "of the figure."
+#~ msgstr ""
+

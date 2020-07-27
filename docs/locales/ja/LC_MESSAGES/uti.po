@@ -1,0 +1,94 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-04 16:40+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../uti.rst:2
+msgid "Advanced: Enable Utility Thread offloading Interface (UTI)"
+msgstr ""
+
+#: ../../uti.rst:4
+msgid ""
+"UTI enables a runtime such as MPI runtime to spawn utility threads such "
+"as MPI asynchronous progress threads to Linux cores."
+msgstr ""
+
+#: ../../uti.rst:8
+msgid "Install capstone"
+msgstr ""
+
+#: ../../uti.rst:11 ../../uti.rst:22
+msgid "When compute nodes don't have access to repositories"
+msgstr ""
+
+#: ../../uti.rst:13
+msgid "Install EPEL capstone-devel:"
+msgstr ""
+
+#: ../../uti.rst:24
+msgid ""
+"Ask the system administrator to install ``capstone-devel``. Note that it "
+"is in the EPEL repository."
+msgstr ""
+
+#: ../../uti.rst:28
+msgid "Install syscall_intercept"
+msgstr ""
+
+#: ../../uti.rst:37
+msgid "Install UTI for McKernel"
+msgstr ""
+
+#: ../../uti.rst:39
+msgid "Install:"
+msgstr ""
+
+#: ../../uti.rst:49
+msgid "Install McKernel"
+msgstr ""
+
+#: ../../uti.rst:51
+msgid "Add ``-DENABLE_UTI=ON`` option to ``cmake``:"
+msgstr ""
+
+#: ../../uti.rst:58
+msgid "Run programs"
+msgstr ""
+
+#: ../../uti.rst:60
+msgid "Add ``--enable-uti`` option to ``mcexec``:"
+msgstr ""
+
+#: ../../uti.rst:67
+msgid "Install UTI for Linux"
+msgstr ""
+
+#: ../../uti.rst:69
+msgid ""
+"You should skip this step if it's already installed as with, for example,"
+" Fujitsu Technical Computing Suite."
+msgstr ""
+
+#: ../../uti.rst:72
+msgid "Install by make"
+msgstr ""
+
+#: ../../uti.rst:82
+msgid "Install by rpm"
+msgstr ""
+

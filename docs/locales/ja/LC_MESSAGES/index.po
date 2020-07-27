@@ -1,0 +1,95 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-07 10:00+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../index.rst:12
+msgid "Quick Guide"
+msgstr "クイックガイド"
+
+#: ../../index.rst:18
+msgid "Users' Guide"
+msgstr "ユーザガイド"
+
+#: ../../index.rst:24
+msgid "Operators' Guide"
+msgstr "運用ガイド"
+
+#: ../../index.rst:30
+msgid "IHK Developers' Guide"
+msgstr ""
+
+#: ../../index.rst:36
+msgid "McKernel Developers' Guide"
+msgstr ""
+
+#: ../../index.rst:42
+msgid "IHK Specifications"
+msgstr ""
+
+#: ../../index.rst:48
+msgid "McKernel Specifications"
+msgstr ""
+
+#: ../../index.rst:54
+msgid "What's New"
+msgstr ""
+
+#: ../../index.rst:8
+msgid "IHK/McKernel"
+msgstr ""
+
+#: ../../summary.rst:1
+msgid ""
+"IHK/McKernel is a light-weight multi-kernel operating system designed for"
+" high-end supercomputing. It runs Linux and McKernel, a light-weight "
+"kernel (LWK), side-by-side inside compute nodes and aims at the "
+"following:"
+msgstr ""
+
+#: ../../summary.rst:6
+msgid ""
+"Provide scalable and consistent execution of large-scale parallel "
+"scientific applications, but at the same time maintain the ability to "
+"rapidly adapt to new hardware features and emerging programming models"
+msgstr ""
+
+#: ../../summary.rst:10
+msgid ""
+"Provide efficient memory and device management so that resource "
+"contention and data movement are minimized at the system level"
+msgstr ""
+
+#: ../../summary.rst:12
+msgid ""
+"Eliminate OS noise by isolating OS services in Linux and provide jitter "
+"free execution on the LWK"
+msgstr ""
+
+#: ../../summary.rst:14
+msgid ""
+"Support the full POSIX/Linux APIs by selectively offloading (slow-path) "
+"system calls to Linux"
+msgstr ""
+
+#: ../../cover.rst:5
+msgid ""
+"See `Quick Guide -- Installation <quick.html#installation>`__ for jump "
+"start."
+msgstr ""
+
