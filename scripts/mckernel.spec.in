@@ -23,13 +23,13 @@ Summary: IHK/McKernel
 License: GPLv2
 Source0: mckernel-%{version}.tar.gz
 
-Requires: systemd-libs numactl-libs libdwarf
+Requires: systemd-libs numactl-libs libdwarf capstone
 
 # don't use kernel_module_package so that one rpm including .ko and binaries are created
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
 %define cross_compile 1
 %else
-BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel libdwarf-devel
+BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel libdwarf-devel capstone-devel
 # Friendly reminder of the fact that kernel-rpm-macros is no longer included in kernel-devel
 %if 0%{?rhel} >= 8
 BuildRequires: redhat-rpm-config kernel-rpm-macros elfutils-libelf-devel
@@ -107,6 +107,10 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %{_libdir}/libsched_yield.so.1.0.0
 %{_libdir}/libsched_yield.so
 %{_libdir}/libldump2mcdump.so
+%{_libdir}/libmck_syscall_intercept.so
+%{_libdir}/libsyscall_intercept.so.0.1.0
+%{_libdir}/libsyscall_intercept.so.0
+%{_libdir}/libsyscall_intercept.so
 %{_sysconfdir}/irqbalance_mck.in
 %{_mandir}/man1/mcreboot.1.gz
 %{_mandir}/man1/ihkconfig.1.gz
@@ -131,6 +135,9 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %{_includedir}/ihk/ihk_monitor.h
 %{_includedir}/ihk/ihk_debug.h
 %{_includedir}/ihk/ihk_host_driver.h
+%{_includedir}/libsyscall_intercept_hook_point.h
+%{_libdir}/pkgconfig/libsyscall_intercept.pc
+%{_mandir}/man3/libsyscall_intercept.3
 /lib/modules/%{kernel_version}/extra/mckernel/ihk/linux/core/Module.symvers
 
 # taken from /usr/lib/rpm/redhat/kmodtool (kernel_module_package)
