@@ -1,0 +1,191 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-04 16:40+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../install.rst:4
+msgid "Installation"
+msgstr "インストール"
+
+#: ../../install.rst:6
+msgid "The following OS distributions and platforms are recommended:"
+msgstr "推奨OSディストリビューションとプロセッサは以下の通り。"
+
+#: ../../install.rst:8
+msgid "OS distribution"
+msgstr ""
+
+#: ../../install.rst:10
+msgid "CentOS 7.3 or later"
+msgstr ""
+
+#: ../../install.rst:11
+msgid "RHEL 7.3 or later"
+msgstr ""
+
+#: ../../install.rst:13
+msgid "Platform"
+msgstr ""
+
+#: ../../install.rst:15
+msgid "Intel Xeon"
+msgstr ""
+
+#: ../../install.rst:16
+msgid "Intel Xeon Phi"
+msgstr ""
+
+#: ../../install.rst:17
+msgid "Fujitsu A64FX"
+msgstr ""
+
+#: ../../install.rst:20
+msgid "Prepare files for building McKernel"
+msgstr ""
+
+#: ../../install.rst:22
+msgid ""
+"Grant read permission to the System.map file of your kernel version on "
+"the build machine:"
+msgstr ""
+
+#: ../../install.rst:28
+msgid "Install the following packages to the build machine:"
+msgstr ""
+
+#: ../../install.rst:35 ../../install.rst:179
+msgid "When having access to repositories"
+msgstr ""
+
+#: ../../install.rst:37 ../../install.rst:181
+msgid "On RHEL 8, enable the CodeReady Linux Builder (CLB) repository:"
+msgstr ""
+
+#: ../../install.rst:43 ../../install.rst:187
+msgid "On CentOS 8, enable the PowerTools repository:"
+msgstr ""
+
+#: ../../install.rst:49 ../../install.rst:193
+msgid "Install with yum:"
+msgstr ""
+
+#: ../../install.rst:56 ../../install.rst:200
+msgid "When not having access to repositories"
+msgstr ""
+
+#: ../../install.rst:58
+msgid ""
+"Ask the system administrator to install them. Note that ``libdwarf-"
+"devel`` is in the CodeReady Linux Builder repository on RHEL 8 or in the "
+"PowerTools repository on CentOS 8."
+msgstr ""
+
+#: ../../install.rst:61
+msgid "Clone, compile, install"
+msgstr ""
+
+#: ../../install.rst:63
+msgid "Clone the source code:"
+msgstr ""
+
+#: ../../install.rst:71
+msgid "(Optional) Checkout to the specific branch or version:"
+msgstr ""
+
+#: ../../install.rst:79
+msgid ""
+"Foe example, if you want to try the development branch, use “development”"
+" as the pathspec. If you want to try the prerelease version 1.7.0-0.2, "
+"use “1.7.0-0.2”."
+msgstr ""
+
+#: ../../install.rst:83
+msgid "Move to build directory:"
+msgstr ""
+
+#: ../../install.rst:89
+msgid "Run cmake:"
+msgstr ""
+
+#: ../../install.rst:92 ../../install.rst:135
+msgid "When not cross-compiling:"
+msgstr ""
+
+#: ../../install.rst:99 ../../install.rst:142
+msgid "When cross-compiling:"
+msgstr ""
+
+#: ../../install.rst:111
+msgid "Install with cmake"
+msgstr ""
+
+#: ../../install.rst:113
+msgid "Install with make:"
+msgstr ""
+
+#: ../../install.rst:119
+msgid ""
+"The kernel modules and McKernel kernel image should be installed under "
+"the **ihk+mckernel** folder in your home directory."
+msgstr ""
+
+#: ../../install.rst:123
+msgid "Install with rpm"
+msgstr ""
+
+#: ../../install.rst:125
+msgid "Create the tarball and the spec file:"
+msgstr ""
+
+#: ../../install.rst:132
+msgid "Create the rpm package:"
+msgstr ""
+
+#: ../../install.rst:148
+msgid "Install the rpm package:"
+msgstr ""
+
+#: ../../install.rst:154
+msgid ""
+"The kernel modules and McKernel kernel image are installed under the "
+"standard system directories."
+msgstr ""
+
+#: ../../install.rst:158
+msgid "Prepare files and change settings for installing McKernel"
+msgstr ""
+
+#: ../../install.rst:160
+msgid "Disable SELinux of the compute nodes:"
+msgstr ""
+
+#: ../../install.rst:166
+msgid "Change the file to SELINUX=disabled. And then reboot the compute nodes:"
+msgstr ""
+
+#: ../../install.rst:172
+msgid "Install the following packages to the compute nodes:"
+msgstr ""
+
+#: ../../install.rst:202
+msgid ""
+"Ask the system administrator to install them. Note that ``libdwarf`` is "
+"in the CodeReady Linux Builder repository on RHEL 8 or in the PowerTools "
+"repository on CentOS 8."
+msgstr ""
+
