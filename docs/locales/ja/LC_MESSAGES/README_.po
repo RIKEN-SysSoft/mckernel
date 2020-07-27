@@ -1,0 +1,469 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-04 16:40+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../README_.rst:2
+msgid "|McKernel Logo|"
+msgstr ""
+
+#: ../../README_.rst:4
+msgid ""
+"IHK/McKernel is a light-weight multi-kernel operating system designed for"
+" high-end supercomputing. It runs Linux and McKernel, a light-weight "
+"kernel (LWK), side-by-side inside compute nodes and aims at the "
+"following:"
+msgstr ""
+
+#: ../../README_.rst:9
+msgid ""
+"Provide scalable and consistent execution of large-scale parallel "
+"scientific applications, but at the same time maintain the ability to "
+"rapidly adapt to new hardware features and emerging programming models"
+msgstr ""
+
+#: ../../README_.rst:13
+msgid ""
+"Provide efficient memory and device management so that resource "
+"contention and data movement are minimized at the system level"
+msgstr ""
+
+#: ../../README_.rst:15
+msgid ""
+"Eliminate OS noise by isolating OS services in Linux and provide jitter "
+"free execution on the LWK"
+msgstr ""
+
+#: ../../README_.rst:17
+msgid ""
+"Support the full POSIX/Linux APIs by selectively offloading (slow-path) "
+"system calls to Linux"
+msgstr ""
+
+#: ../../README_.rst:21
+msgid "Documentation"
+msgstr ""
+
+#: ../../README_.rst:23
+msgid "Documentation is available `here <https://ihkmckernel.readthedocs.io>`__."
+msgstr ""
+
+#: ../../README_.rst:27
+msgid "Contents"
+msgstr ""
+
+#: ../../README_.rst:29
+msgid "`Background <#background-and-motivation>`__"
+msgstr ""
+
+#: ../../README_.rst:30
+msgid "`Architectural Overview <#architectural-overview>`__"
+msgstr ""
+
+#: ../../README_.rst:31
+msgid "`Installation <#installation>`__"
+msgstr ""
+
+#: ../../README_.rst:32
+msgid "`The Team <#the-team>`__"
+msgstr ""
+
+#: ../../README_.rst:35
+msgid "Background and Motivation"
+msgstr ""
+
+#: ../../README_.rst:37
+msgid ""
+"With the growing complexity of high-end supercomputers, the current "
+"system software stack faces significant challenges as we move forward to "
+"exascale and beyond. The necessity to deal with extreme degree of "
+"parallelism, heterogeneous architectures, multiple levels of memory "
+"hierarchy, power constraints, etc., advocates operating systems that can "
+"rapidly adapt to new hardware requirements, and that can support novel "
+"programming paradigms and runtime systems. On the other hand, a new class"
+" of more dynamic and complex applications are also on the horizon, with "
+"an increasing demand for application constructs such as in-situ analysis,"
+" workflows, elaborate monitoring and performance tools. This complexity "
+"relies not only on the rich features of POSIX, but also on the Linux APIs"
+" (such as the */proc*, */sys* filesystems, etc.) in particular."
+msgstr ""
+
+#: ../../README_.rst:52
+msgid "Two Traditional HPC OS Approaches"
+msgstr ""
+
+#: ../../README_.rst:54
+msgid ""
+"Traditionally, light-weight operating systems specialized for HPC "
+"followed two approaches to tackle scalable execution of large-scale "
+"applications. In the full weight kernel (FWK) approach, a full Linux "
+"environment is taken as the basis, and features that inhibit attaining "
+"HPC scalability are removed, i.e., making it light-weight. The pure "
+"light-weight kernel (LWK) approach, on the other hand, starts from "
+"scratch and effort is undertaken to add sufficient functionality so that "
+"it provides a familiar API, typically something close to that of a "
+"general purpose OS, while at the same time it retains the desired "
+"scalability and reliability attributes. Neither of these approaches "
+"yields a fully Linux compatible environment."
+msgstr ""
+
+#: ../../README_.rst:67
+msgid "The Multi-kernel Approach"
+msgstr ""
+
+#: ../../README_.rst:69
+msgid ""
+"A hybrid approach recognized recently by the system software community is"
+" to run Linux simultaneously with a lightweight kernel on compute nodes "
+"and multiple research projects are now pursuing this direction. The basic"
+" idea is that simulations run on an HPC tailored lightweight kernel, "
+"ensuring the necessary isolation for noiseless execution of parallel "
+"applications, but Linux is leveraged so that the full POSIX API is "
+"supported. Additionally, the small code base of the LWK can also "
+"facilitate rapid prototyping for new, exotic hardware features. "
+"Nevertheless, the questions of how to share node resources between the "
+"two types of kernels, where do device drivers execute, how exactly do the"
+" two kernels interact with each other and to what extent are they "
+"integrated, remain subjects of ongoing debate."
+msgstr ""
+
+#: ../../README_.rst:83
+msgid "Architectural Overview"
+msgstr ""
+
+#: ../../README_.rst:85
+msgid ""
+"At the heart of the stack is a low-level software infrastructure called "
+"Interface for Heterogeneous Kernels (IHK). IHK is a general framework "
+"that provides capabilities for partitioning resources in a many-core "
+"environment (e.g.,CPU cores and physical memory) and it enables "
+"management of lightweight kernels. IHK can allocate and release host "
+"resources dynamically and no reboot of the host machine is required when "
+"altering configuration. IHK also provides a low-level inter-kernel "
+"messaging infrastructure, called the Inter-Kernel Communication (IKC) "
+"layer. An architectural overview of the main system components is shown "
+"below."
+msgstr ""
+
+#: ../../README_.rst:99
+msgid "arch"
+msgstr ""
+
+#: ../../README_.rst:101
+msgid ""
+"McKernel is a lightweight kernel written from scratch. It is designed for"
+" HPC and is booted from IHK. McKernel retains a binary compatible ABI "
+"with Linux, however, it implements only a small set of performance "
+"sensitive system calls and the rest are offloaded to Linux. Specifically,"
+" McKernel has its own memory management, it supports processes and multi-"
+"threading with a simple round-robin cooperative (tick-less) scheduler, "
+"and it implements signaling. It also allows inter-process memory mappings"
+" and it provides interfaces to hardware performance counters."
+msgstr ""
+
+#: ../../README_.rst:112
+msgid "Functionality"
+msgstr ""
+
+#: ../../README_.rst:114
+msgid ""
+"An overview of some of the principal functionalities of the IHK/McKernel "
+"stack is provided below."
+msgstr ""
+
+#: ../../README_.rst:118
+msgid "System Call Offloading"
+msgstr ""
+
+#: ../../README_.rst:120
+msgid ""
+"System call forwarding in McKernel is implemented as follows. When an "
+"offloaded system call occurs, McKernel marshals the system call number "
+"along with its arguments and sends a message to Linux via a dedicated IKC"
+" channel. The corresponding proxy process running on Linux is by default "
+"waiting for system call requests through an ioctl() call into IHK’s "
+"system call delegator kernel module. The delegator kernel module’s IKC "
+"interrupt handler wakes up the proxy process, which returns to userspace "
+"and simply invokes the requested system call. Once it obtains the return "
+"value, it instructs the delegator module to send the result back to "
+"McKernel, which subsequently passes the value to user-space."
+msgstr ""
+
+#: ../../README_.rst:132
+msgid "Unified Address Space"
+msgstr ""
+
+#: ../../README_.rst:134
+msgid ""
+"The unified address space model in IHK/McKernel ensures that offloaded "
+"system calls can seamlessly resolve arguments even in case of pointers. "
+"This mechanism is depicted below and is implemented as follows."
+msgstr ""
+
+#: ../../README_.rst:141
+msgid "unified_ap"
+msgstr ""
+
+#: ../../README_.rst:143
+msgid ""
+"First, the proxy process is compiled as a position independent binary, "
+"which enables us to map the code and data segments specific to the proxy "
+"process to an address range which is explicitly excluded from McKernel’s "
+"user space. The grey box on the right side of the figure demonstrates the"
+" excluded region. Second, the entire valid virtual address range of "
+"McKernel’s application user-space is covered by a special mapping in the "
+"proxy process for which we use a pseudo file mapping in Linux. This "
+"mapping is indicated by the blue box on the left side of the figure."
+msgstr ""
+
+#: ../../README_.rst:153
+msgid "Installation"
+msgstr ""
+
+#: ../../README_.rst:155
+msgid ""
+"For a smooth experience, we recommend the following combination of OS "
+"distributions and platforms:"
+msgstr ""
+
+#: ../../README_.rst:158
+msgid "CentOS 7.3+ running on Intel Xeon, Xeon Phi, Fujitsu A64FX"
+msgstr ""
+
+#: ../../README_.rst:161
+msgid "1. Change SELinux settings"
+msgstr ""
+
+#: ../../README_.rst:163
+msgid "Log in as the root and disable SELinux:"
+msgstr ""
+
+#: ../../README_.rst:169
+msgid "Change the file to SELINUX=disabled"
+msgstr ""
+
+#: ../../README_.rst:172
+msgid "2. Reboot the host machine"
+msgstr ""
+
+#: ../../README_.rst:179
+msgid "3. Prepare packages, kernel symbol table file"
+msgstr ""
+
+#: ../../README_.rst:181
+msgid "You will need the following packages installed:"
+msgstr ""
+
+#: ../../README_.rst:187
+msgid ""
+"Note that to install libdwarf-devel to RHEL-8.2, you need to enable the "
+"CodeReady Linux Builder (CLB) repository and the EPEL repository with the"
+" following commands:"
+msgstr ""
+
+#: ../../README_.rst:195
+msgid "Grant read permission to the System.map file of your kernel version:"
+msgstr ""
+
+#: ../../README_.rst:202
+msgid "4. Obtain sources and compile the kernel"
+msgstr ""
+
+#: ../../README_.rst:204
+msgid "Clone the source code:"
+msgstr ""
+
+#: ../../README_.rst:212
+msgid "(Optional) Checkout to the specific branch or version:"
+msgstr ""
+
+#: ../../README_.rst:220
+msgid ""
+"Foe example, if you want to try the development branch, use “development”"
+" as the pathspec. If you want to try the prerelease version 1.7.0-0.2, "
+"use “1.7.0-0.2”."
+msgstr ""
+
+#: ../../README_.rst:225
+msgid "4.1 Install with cmake"
+msgstr ""
+
+#: ../../README_.rst:227
+msgid "Configure and compile:"
+msgstr ""
+
+#: ../../README_.rst:235
+msgid ""
+"The IHK kernel modules and McKernel kernel image should be installed "
+"under the **ihk+mckernel** folder in your home directory."
+msgstr ""
+
+#: ../../README_.rst:239
+msgid "4.2 Install with rpm"
+msgstr ""
+
+#: ../../README_.rst:241
+msgid "Build rpm:"
+msgstr ""
+
+#: ../../README_.rst:252
+msgid ""
+"The IHK kernel modules and McKernel kernel image are installed under the "
+"system directory."
+msgstr ""
+
+#: ../../README_.rst:256
+msgid "5. Boot McKernel"
+msgstr ""
+
+#: ../../README_.rst:258
+msgid ""
+"A boot script called mcreboot.sh is provided under sbin in the install "
+"folder. To boot on logical CPU 1 with 512MB of memory, use the following "
+"invocation:"
+msgstr ""
+
+#: ../../README_.rst:268
+msgid ""
+"You should see something similar like this if you display the McKernel’s "
+"kernel message log:"
+msgstr ""
+
+#: ../../README_.rst:296
+msgid "6. Run a simple program on McKernel"
+msgstr ""
+
+#: ../../README_.rst:298
+msgid ""
+"The mcexec command line tool (which is also the Linux proxy process) can "
+"be used for executing applications on McKernel:"
+msgstr ""
+
+#: ../../README_.rst:307
+msgid "7. Shutdown McKernel"
+msgstr ""
+
+#: ../../README_.rst:309
+msgid ""
+"Finally, to shutdown McKernel and release CPU/memory resources back to "
+"Linux use the following command:"
+msgstr ""
+
+#: ../../README_.rst:317
+msgid "8. Advanced: Enable Utility Thread offloading Interface (UTI)"
+msgstr ""
+
+#: ../../README_.rst:319
+msgid ""
+"UTI enables a runtime such as MPI runtime to spawn utility threads such "
+"as MPI asynchronous progress threads to Linux cores."
+msgstr ""
+
+#: ../../README_.rst:323
+msgid "8.1 Install capstone"
+msgstr ""
+
+#: ../../README_.rst:325
+msgid "Install EPEL capstone-devel:"
+msgstr ""
+
+#: ../../README_.rst:333
+msgid "8.2 Install syscall_intercept"
+msgstr ""
+
+#: ../../README_.rst:342
+msgid "8.3 Install UTI for McKernel"
+msgstr ""
+
+#: ../../README_.rst:344
+msgid "Install:"
+msgstr ""
+
+#: ../../README_.rst:354
+msgid "8.4 Install McKernel"
+msgstr ""
+
+#: ../../README_.rst:361
+msgid "8.5 Run executable"
+msgstr ""
+
+#: ../../README_.rst:368
+msgid "8.6 Install UTI for Linux for performance comparison"
+msgstr ""
+
+#: ../../README_.rst:370
+msgid "Install by make:"
+msgstr ""
+
+#: ../../README_.rst:379
+msgid "Install by rpm:"
+msgstr ""
+
+#: ../../README_.rst:391
+msgid "The Team"
+msgstr ""
+
+#: ../../README_.rst:393
+msgid ""
+"The McKernel project was started at The University of Tokyo and currently"
+" it is mainly developed at RIKEN. Some of our collaborators include:"
+msgstr ""
+
+#: ../../README_.rst:397
+msgid "Hitachi"
+msgstr ""
+
+#: ../../README_.rst:398
+msgid "Fujitsu"
+msgstr ""
+
+#: ../../README_.rst:399
+msgid "CEA (France)"
+msgstr ""
+
+#: ../../README_.rst:400
+msgid "NEC"
+msgstr ""
+
+#: ../../README_.rst:403
+msgid "License"
+msgstr ""
+
+#: ../../README_.rst:405
+msgid "McKernel is GPL licensed, as found in the LICENSE file."
+msgstr ""
+
+#: ../../README_.rst:408
+msgid "Contact"
+msgstr ""
+
+#: ../../README_.rst:410
+msgid ""
+"Please give your feedback to us via one of the following mailing lists. "
+"Subscription via `www.pccluster.org "
+"<http://www.pccluster.org/mailman/listinfo/mckernel-users>`__ is needed."
+msgstr ""
+
+#: ../../README_.rst:415
+msgid "English: mckernel-users@pccluster.org"
+msgstr ""
+
+#: ../../README_.rst:416
+msgid "Japanese: mckernel-users-jp@pccluster.org"
+msgstr ""
+

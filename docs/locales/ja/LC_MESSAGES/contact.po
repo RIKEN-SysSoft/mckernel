@@ -1,0 +1,39 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-04 16:40+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../contact.rst:2
+msgid "Contact"
+msgstr ""
+
+#: ../../contact.rst:4
+msgid ""
+"Please give your feedback to us via one of the following mailing lists. "
+"Subscription via `www.pccluster.org "
+"<http://www.pccluster.org/mailman/listinfo/mckernel-users>`__ is needed."
+msgstr ""
+
+#: ../../contact.rst:9
+msgid "English: mckernel-users@pccluster.org"
+msgstr ""
+
+#: ../../contact.rst:10
+msgid "Japanese: mckernel-users-jp@pccluster.org"
+msgstr ""
+

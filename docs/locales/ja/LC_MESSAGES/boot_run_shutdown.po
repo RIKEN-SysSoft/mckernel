@@ -1,0 +1,57 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-04 16:40+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../boot_run_shutdown.rst:2
+msgid "Boot McKernel"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:4
+msgid ""
+"A boot script called ``mcreboot.sh`` is provided under ``sbin`` in the "
+"install folder. To boot on logical CPU 1 with 512MB of memory, use the "
+"following invocation:"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:14
+msgid ""
+"You should see something similar like this if you display the McKernel’s "
+"kernel message log:"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:42
+msgid "Run a simple program on McKernel"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:44
+msgid ""
+"The mcexec command line tool (which is also the Linux proxy process) can "
+"be used for executing applications on McKernel:"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:53
+msgid "Shutdown McKernel"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:55
+msgid ""
+"Finally, to shutdown McKernel and release CPU/memory resources back to "
+"Linux use the following command:"
+msgstr ""
+

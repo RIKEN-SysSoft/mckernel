@@ -1,0 +1,458 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-04 16:40+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../quick.rst:6
+msgid "Introduction"
+msgstr ""
+
+#: ../../summary.rst:1
+msgid ""
+"IHK/McKernel is a light-weight multi-kernel operating system designed for"
+" high-end supercomputing. It runs Linux and McKernel, a light-weight "
+"kernel (LWK), side-by-side inside compute nodes and aims at the "
+"following:"
+msgstr ""
+
+#: ../../summary.rst:6
+msgid ""
+"Provide scalable and consistent execution of large-scale parallel "
+"scientific applications, but at the same time maintain the ability to "
+"rapidly adapt to new hardware features and emerging programming models"
+msgstr ""
+
+#: ../../summary.rst:10
+msgid ""
+"Provide efficient memory and device management so that resource "
+"contention and data movement are minimized at the system level"
+msgstr ""
+
+#: ../../summary.rst:12
+msgid ""
+"Eliminate OS noise by isolating OS services in Linux and provide jitter "
+"free execution on the LWK"
+msgstr ""
+
+#: ../../summary.rst:14
+msgid ""
+"Support the full POSIX/Linux APIs by selectively offloading (slow-path) "
+"system calls to Linux"
+msgstr ""
+
+#: ../../background.rst:2
+msgid "Background and Motivation"
+msgstr ""
+
+#: ../../background.rst:4
+msgid ""
+"With the growing complexity of high-end supercomputers, the current "
+"system software stack faces significant challenges as we move forward to "
+"exascale and beyond. The necessity to deal with extreme degree of "
+"parallelism, heterogeneous architectures, multiple levels of memory "
+"hierarchy, power constraints, etc., advocates operating systems that can "
+"rapidly adapt to new hardware requirements, and that can support novel "
+"programming paradigms and runtime systems. On the other hand, a new class"
+" of more dynamic and complex applications are also on the horizon, with "
+"an increasing demand for application constructs such as in-situ analysis,"
+" workflows, elaborate monitoring and performance tools. This complexity "
+"relies not only on the rich features of POSIX, but also on the Linux APIs"
+" (such as the */proc*, */sys* filesystems, etc.) in particular."
+msgstr ""
+
+#: ../../background.rst:19
+msgid "Two Traditional HPC OS Approaches"
+msgstr ""
+
+#: ../../background.rst:21
+msgid ""
+"Traditionally, light-weight operating systems specialized for HPC "
+"followed two approaches to tackle scalable execution of large-scale "
+"applications. In the full weight kernel (FWK) approach, a full Linux "
+"environment is taken as the basis, and features that inhibit attaining "
+"HPC scalability are removed, i.e., making it light-weight. The pure "
+"light-weight kernel (LWK) approach, on the other hand, starts from "
+"scratch and effort is undertaken to add sufficient functionality so that "
+"it provides a familiar API, typically something close to that of a "
+"general purpose OS, while at the same time it retains the desired "
+"scalability and reliability attributes. Neither of these approaches "
+"yields a fully Linux compatible environment."
+msgstr ""
+
+#: ../../background.rst:34
+msgid "The Multi-kernel Approach"
+msgstr ""
+
+#: ../../background.rst:36
+msgid ""
+"A hybrid approach recognized recently by the system software community is"
+" to run Linux simultaneously with a lightweight kernel on compute nodes "
+"and multiple research projects are now pursuing this direction. The basic"
+" idea is that simulations run on an HPC tailored lightweight kernel, "
+"ensuring the necessary isolation for noiseless execution of parallel "
+"applications, but Linux is leveraged so that the full POSIX API is "
+"supported. Additionally, the small code base of the LWK can also "
+"facilitate rapid prototyping for new, exotic hardware features. "
+"Nevertheless, the questions of how to share node resources between the "
+"two types of kernels, where do device drivers execute, how exactly do the"
+" two kernels interact with each other and to what extent are they "
+"integrated, remain subjects of ongoing debate."
+msgstr ""
+
+#: ../../archtecture.rst:2
+msgid "Architectural Overview"
+msgstr ""
+
+#: ../../archtecture.rst:4
+msgid ""
+"At the heart of the stack is a low-level software infrastructure called "
+"Interface for Heterogeneous Kernels (IHK). IHK is a general framework "
+"that provides capabilities for partitioning resources in a many-core "
+"environment (e.g.,CPU cores and physical memory) and it enables "
+"management of lightweight kernels. IHK can allocate and release host "
+"resources dynamically and no reboot of the host machine is required when "
+"altering configuration. IHK also provides a low-level inter-kernel "
+"messaging infrastructure, called the Inter-Kernel Communication (IKC) "
+"layer. An architectural overview of the main system components is shown "
+"below."
+msgstr ""
+
+#: ../../archtecture.rst:18
+msgid ""
+"McKernel is a lightweight kernel written from scratch. It is designed for"
+" HPC and is booted from IHK. McKernel retains a binary compatible ABI "
+"with Linux, however, it implements only a small set of performance "
+"sensitive system calls and the rest are offloaded to Linux. Specifically,"
+" McKernel has its own memory management, it supports processes and multi-"
+"threading with a simple round-robin cooperative (tick-less) scheduler, "
+"and it implements signaling. It also allows inter-process memory mappings"
+" and it provides interfaces to hardware performance counters."
+msgstr ""
+
+#: ../../archtecture.rst:29
+msgid "Functionality"
+msgstr ""
+
+#: ../../archtecture.rst:31
+msgid ""
+"An overview of some of the principal functionalities of the IHK/McKernel "
+"stack is provided below."
+msgstr ""
+
+#: ../../archtecture.rst:35
+msgid "System Call Offloading"
+msgstr ""
+
+#: ../../archtecture.rst:37
+msgid ""
+"System call forwarding in McKernel is implemented as follows. When an "
+"offloaded system call occurs, McKernel marshals the system call number "
+"along with its arguments and sends a message to Linux via a dedicated IKC"
+" channel. The corresponding proxy process running on Linux is by default "
+"waiting for system call requests through an ioctl() call into IHK’s "
+"system call delegator kernel module. The delegator kernel module’s IKC "
+"interrupt handler wakes up the proxy process, which returns to userspace "
+"and simply invokes the requested system call. Once it obtains the return "
+"value, it instructs the delegator module to send the result back to "
+"McKernel, which subsequently passes the value to user-space."
+msgstr ""
+
+#: ../../archtecture.rst:49
+msgid "Unified Address Space"
+msgstr ""
+
+#: ../../archtecture.rst:51
+msgid ""
+"The unified address space model in IHK/McKernel ensures that offloaded "
+"system calls can seamlessly resolve arguments even in case of pointers. "
+"This mechanism is depicted below and is implemented as follows."
+msgstr ""
+
+#: ../../archtecture.rst:58
+msgid ""
+"First, the proxy process is compiled as a position independent binary, "
+"which enables us to map the code and data segments specific to the proxy "
+"process to an address range which is explicitly excluded from McKernel’s "
+"user space. The grey box on the right side of the figure demonstrates the"
+" excluded region. Second, the entire valid virtual address range of "
+"McKernel’s application user-space is covered by a special mapping in the "
+"proxy process for which we use a pseudo file mapping in Linux. This "
+"mapping is indicated by the blue box on the left side of the figure."
+msgstr ""
+
+#: ../../install.rst:4
+msgid "Installation"
+msgstr "インストール"
+
+#: ../../install.rst:6
+msgid "The following OS distributions and platforms are recommended:"
+msgstr "推奨OSディストリビューションとプロセッサは以下の通り。"
+
+#: ../../install.rst:8
+msgid "OS distribution"
+msgstr ""
+
+#: ../../install.rst:10
+msgid "CentOS 7.3 or later"
+msgstr ""
+
+#: ../../install.rst:11
+msgid "RHEL 7.3 or later"
+msgstr ""
+
+#: ../../install.rst:13
+msgid "Platform"
+msgstr ""
+
+#: ../../install.rst:15
+msgid "Intel Xeon"
+msgstr ""
+
+#: ../../install.rst:16
+msgid "Intel Xeon Phi"
+msgstr ""
+
+#: ../../install.rst:17
+msgid "Fujitsu A64FX"
+msgstr ""
+
+#: ../../install.rst:20
+msgid "Prepare files for building McKernel"
+msgstr ""
+
+#: ../../install.rst:22
+msgid ""
+"Grant read permission to the System.map file of your kernel version on "
+"the build machine:"
+msgstr ""
+
+#: ../../install.rst:28
+msgid "Install the following packages to the build machine:"
+msgstr ""
+
+#: ../../install.rst:35 ../../install.rst:179
+msgid "When having access to repositories"
+msgstr ""
+
+#: ../../install.rst:37 ../../install.rst:181
+msgid "On RHEL 8, enable the CodeReady Linux Builder (CLB) repository:"
+msgstr ""
+
+#: ../../install.rst:43 ../../install.rst:187
+msgid "On CentOS 8, enable the PowerTools repository:"
+msgstr ""
+
+#: ../../install.rst:49 ../../install.rst:193
+msgid "Install with yum:"
+msgstr ""
+
+#: ../../install.rst:56 ../../install.rst:200
+msgid "When not having access to repositories"
+msgstr ""
+
+#: ../../install.rst:58
+msgid ""
+"Ask the system administrator to install them. Note that ``libdwarf-"
+"devel`` is in the CodeReady Linux Builder repository on RHEL 8 or in the "
+"PowerTools repository on CentOS 8."
+msgstr ""
+
+#: ../../install.rst:61
+msgid "Clone, compile, install"
+msgstr ""
+
+#: ../../install.rst:63
+msgid "Clone the source code:"
+msgstr ""
+
+#: ../../install.rst:71
+msgid "(Optional) Checkout to the specific branch or version:"
+msgstr ""
+
+#: ../../install.rst:79
+msgid ""
+"Foe example, if you want to try the development branch, use “development”"
+" as the pathspec. If you want to try the prerelease version 1.7.0-0.2, "
+"use “1.7.0-0.2”."
+msgstr ""
+
+#: ../../install.rst:83
+msgid "Move to build directory:"
+msgstr ""
+
+#: ../../install.rst:89
+msgid "Run cmake:"
+msgstr ""
+
+#: ../../install.rst:92 ../../install.rst:135
+msgid "When not cross-compiling:"
+msgstr ""
+
+#: ../../install.rst:99 ../../install.rst:142
+msgid "When cross-compiling:"
+msgstr ""
+
+#: ../../install.rst:111
+msgid "Install with cmake"
+msgstr ""
+
+#: ../../install.rst:113
+msgid "Install with make:"
+msgstr ""
+
+#: ../../install.rst:119
+msgid ""
+"The kernel modules and McKernel kernel image should be installed under "
+"the **ihk+mckernel** folder in your home directory."
+msgstr ""
+
+#: ../../install.rst:123
+msgid "Install with rpm"
+msgstr ""
+
+#: ../../install.rst:125
+msgid "Create the tarball and the spec file:"
+msgstr ""
+
+#: ../../install.rst:132
+msgid "Create the rpm package:"
+msgstr ""
+
+#: ../../install.rst:148
+msgid "Install the rpm package:"
+msgstr ""
+
+#: ../../install.rst:154
+msgid ""
+"The kernel modules and McKernel kernel image are installed under the "
+"standard system directories."
+msgstr ""
+
+#: ../../install.rst:158
+msgid "Prepare files and change settings for installing McKernel"
+msgstr ""
+
+#: ../../install.rst:160
+msgid "Disable SELinux of the compute nodes:"
+msgstr ""
+
+#: ../../install.rst:166
+msgid "Change the file to SELINUX=disabled. And then reboot the compute nodes:"
+msgstr ""
+
+#: ../../install.rst:172
+msgid "Install the following packages to the compute nodes:"
+msgstr ""
+
+#: ../../install.rst:202
+msgid ""
+"Ask the system administrator to install them. Note that ``libdwarf`` is "
+"in the CodeReady Linux Builder repository on RHEL 8 or in the PowerTools "
+"repository on CentOS 8."
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:2
+msgid "Boot McKernel"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:4
+msgid ""
+"A boot script called ``mcreboot.sh`` is provided under ``sbin`` in the "
+"install folder. To boot on logical CPU 1 with 512MB of memory, use the "
+"following invocation:"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:14
+msgid ""
+"You should see something similar like this if you display the McKernel’s "
+"kernel message log:"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:42
+msgid "Run a simple program on McKernel"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:44
+msgid ""
+"The mcexec command line tool (which is also the Linux proxy process) can "
+"be used for executing applications on McKernel:"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:53
+msgid "Shutdown McKernel"
+msgstr ""
+
+#: ../../boot_run_shutdown.rst:55
+msgid ""
+"Finally, to shutdown McKernel and release CPU/memory resources back to "
+"Linux use the following command:"
+msgstr ""
+
+#: ../../team.rst:2
+msgid "The Team"
+msgstr ""
+
+#: ../../team.rst:4
+msgid ""
+"The McKernel project was started at The University of Tokyo and currently"
+" it is mainly developed at RIKEN. Some of our collaborators include:"
+msgstr ""
+
+#: ../../team.rst:8
+msgid "Hitachi"
+msgstr ""
+
+#: ../../team.rst:9
+msgid "Fujitsu"
+msgstr ""
+
+#: ../../team.rst:10
+msgid "CEA (France)"
+msgstr ""
+
+#: ../../team.rst:11
+msgid "NEC"
+msgstr ""
+
+#: ../../license.rst:2
+msgid "License"
+msgstr ""
+
+#: ../../license.rst:4
+msgid "McKernel is GPL licensed, as found in the LICENSE file."
+msgstr ""
+
+#: ../../contact.rst:2
+msgid "Contact"
+msgstr ""
+
+#: ../../contact.rst:4
+msgid ""
+"Please give your feedback to us via one of the following mailing lists. "
+"Subscription via `www.pccluster.org "
+"<http://www.pccluster.org/mailman/listinfo/mckernel-users>`__ is needed."
+msgstr ""
+
+#: ../../contact.rst:9
+msgid "English: mckernel-users@pccluster.org"
+msgstr ""
+
+#: ../../contact.rst:10
+msgid "Japanese: mckernel-users-jp@pccluster.org"
+msgstr ""
+

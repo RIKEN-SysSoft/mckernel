@@ -1,0 +1,1077 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-04 16:40+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../NEWS.rst:3
+msgid "Version 1.7.0rc4 (Apr 15, 2020)"
+msgstr ""
+
+#: ../../NEWS.rst:7 ../../NEWS.rst:111 ../../NEWS.rst:183 ../../NEWS.rst:235
+msgid "McKernel major updates"
+msgstr ""
+
+#: ../../NEWS.rst:8
+msgid "arm64: Contiguous PTE support"
+msgstr ""
+
+#: ../../NEWS.rst:9
+msgid "arm64: Scalable Vector Extension (SVE) support"
+msgstr ""
+
+#: ../../NEWS.rst:10
+msgid "arm64: PMU overflow interrupt support"
+msgstr ""
+
+#: ../../NEWS.rst:11
+msgid "xpmem: Support large page attachment"
+msgstr ""
+
+#: ../../NEWS.rst:12
+msgid "arm64 port: Direct access to Mckernel memory from Linux"
+msgstr ""
+
+#: ../../NEWS.rst:13
+msgid "arm64 port: utility thread offloading, which spawns thread onto Linux CPU"
+msgstr ""
+
+#: ../../NEWS.rst:14
+msgid "eclair: support for live debug"
+msgstr ""
+
+#: ../../NEWS.rst:15
+msgid "Crash utility extension"
+msgstr ""
+
+#: ../../NEWS.rst:16
+msgid "Replace mcoverlayfs with a soft userspace overlay"
+msgstr ""
+
+#: ../../NEWS.rst:17
+msgid "Build system is switched to cmake"
+msgstr ""
+
+#: ../../NEWS.rst:18
+msgid "Core dump includes thread information"
+msgstr ""
+
+#: ../../NEWS.rst:22 ../../NEWS.rst:125 ../../NEWS.rst:208 ../../NEWS.rst:245
+msgid "McKernel major bug fixes"
+msgstr ""
+
+#: ../../NEWS.rst:23
+msgid "shmobj: Fix rusage counting for large page"
+msgstr ""
+
+#: ../../NEWS.rst:24
+msgid "mcctrl control: task start_time changed to u64 nsec"
+msgstr ""
+
+#: ../../NEWS.rst:25
+msgid "mcctrl: add handling for one more level of page tables"
+msgstr ""
+
+#: ../../NEWS.rst:26
+msgid "Add kernel argument to turn on/off time sharing"
+msgstr ""
+
+#: ../../NEWS.rst:27
+msgid "flatten_string / process env: realign env and clear trailing bits"
+msgstr ""
+
+#: ../../NEWS.rst:28
+msgid "madvise: Add MADV_HUGEPAGE support"
+msgstr ""
+
+#: ../../NEWS.rst:29
+msgid "mcctrl: remove in-kernel calls to syscalls"
+msgstr ""
+
+#: ../../NEWS.rst:30
+msgid "arch_cpu_read_write_register: error return fix."
+msgstr ""
+
+#: ../../NEWS.rst:31
+msgid "set_cputime(): interrupt enable/disable fix."
+msgstr ""
+
+#: ../../NEWS.rst:32
+msgid "set_mempolicy(): Add mode check."
+msgstr ""
+
+#: ../../NEWS.rst:33
+msgid "mbind(): Fix memory_range_lock deadlock."
+msgstr ""
+
+#: ../../NEWS.rst:34
+msgid "ihk_ikc_recv: Record channel to packet for release"
+msgstr ""
+
+#: ../../NEWS.rst:35
+msgid "Add set_cputime() kernel to kernel case and mode enum."
+msgstr ""
+
+#: ../../NEWS.rst:36
+msgid "execve: Call preempt_enable() before error-exit"
+msgstr ""
+
+#: ../../NEWS.rst:37
+msgid "memory/x86_64: fix linux safe_kernel_map"
+msgstr ""
+
+#: ../../NEWS.rst:38
+msgid "do_kill(): fix pids table when nr of threads is larger than num_processors"
+msgstr ""
+
+#: ../../NEWS.rst:39
+msgid "shmget: Use transparent huge pages when page size isn't specified"
+msgstr ""
+
+#: ../../NEWS.rst:40
+msgid "prctl: Add support for PR_SET_THP_DISABLE and PR_GET_THP_DISABLE"
+msgstr ""
+
+#: ../../NEWS.rst:41
+msgid "monitor_init: fix undetected hang on highest numbered core"
+msgstr ""
+
+#: ../../NEWS.rst:42
+msgid "init_process_stack: change premapped stack size based on arch"
+msgstr ""
+
+#: ../../NEWS.rst:43
+msgid "x86 syscalls: add a bunch of XXat() delegated syscalls"
+msgstr ""
+
+#: ../../NEWS.rst:44
+msgid "do_pageout: fix direct kernel-user access"
+msgstr ""
+
+#: ../../NEWS.rst:45
+msgid "stack: add hwcap auxval"
+msgstr ""
+
+#: ../../NEWS.rst:46
+msgid "perf counters: add arch-specific perf counters"
+msgstr ""
+
+#: ../../NEWS.rst:47
+msgid "Added check of nohost to terminate_host()."
+msgstr ""
+
+#: ../../NEWS.rst:48
+msgid "kmalloc: Fix address order in free list"
+msgstr ""
+
+#: ../../NEWS.rst:49
+msgid "sysfs: use nr_cpu_ids for cpumasks (fixes libnuma parsing error on ARM)"
+msgstr ""
+
+#: ../../NEWS.rst:50
+msgid "monitor_init: Use ihk_mc_cpu_info()"
+msgstr ""
+
+#: ../../NEWS.rst:51
+msgid "Fix ThunderX2 write-combined PTE flag insanity"
+msgstr ""
+
+#: ../../NEWS.rst:52
+msgid "ARM: eliminate zero page mapping (i.e, init_low_area())"
+msgstr ""
+
+#: ../../NEWS.rst:53
+msgid ""
+"eliminate futex_cmpxchg_enabled check (not used and dereffed a NULL "
+"pointer)"
+msgstr ""
+
+#: ../../NEWS.rst:54
+msgid "page_table: Fix return value of lookup_pte when ptl4 is blank"
+msgstr ""
+
+#: ../../NEWS.rst:55
+msgid "sysfs: add missing symlinks for cpu/node"
+msgstr ""
+
+#: ../../NEWS.rst:56
+msgid "Make Linux handler run when mmap to procfs."
+msgstr ""
+
+#: ../../NEWS.rst:57
+msgid "Separate mmap area from program loading (relocation) area"
+msgstr ""
+
+#: ../../NEWS.rst:58
+msgid "move rusage into kernel ELF image (avoid dynamic alloc before NUMA init)"
+msgstr ""
+
+#: ../../NEWS.rst:59
+msgid "arm: turn off cpu on panic"
+msgstr ""
+
+#: ../../NEWS.rst:60
+msgid "page fault handler: protect thread accesses"
+msgstr ""
+
+#: ../../NEWS.rst:61
+msgid "Register PPD and release_handler at the same time."
+msgstr ""
+
+#: ../../NEWS.rst:62
+msgid ""
+"fix to missing exclusive processing between terminate() and "
+"finalize_process()."
+msgstr ""
+
+#: ../../NEWS.rst:63
+msgid "perfctr_stop: add flags to no 'disable_intens'"
+msgstr ""
+
+#: ../../NEWS.rst:64
+msgid ""
+"fileobj, shmobj: free pages in object destructor (as opposed to "
+"page_unmap())"
+msgstr ""
+
+#: ../../NEWS.rst:65
+msgid "clear_range_l1, clear_range_middle: Fix handling contiguous PTE"
+msgstr ""
+
+#: ../../NEWS.rst:66
+msgid "do_mmap: don't pre-populate the whole file when asked for smaller segment"
+msgstr ""
+
+#: ../../NEWS.rst:67
+msgid "invalidate_one_page: Support shmobj and contiguous PTE"
+msgstr ""
+
+#: ../../NEWS.rst:68
+msgid "ubsan: fix undefined shifts"
+msgstr ""
+
+#: ../../NEWS.rst:69
+msgid "x86: disable zero mapping and add a boot pt for ap trampoline"
+msgstr ""
+
+#: ../../NEWS.rst:70
+msgid "rusage: Don't count PF_PATCH change"
+msgstr ""
+
+#: ../../NEWS.rst:71
+msgid "Fixed time processing."
+msgstr ""
+
+#: ../../NEWS.rst:72
+msgid "copy_user_pte: vmap area not owned by McKernel"
+msgstr ""
+
+#: ../../NEWS.rst:73
+msgid "gencore: Zero-clear ELF header and memory range table"
+msgstr ""
+
+#: ../../NEWS.rst:74
+msgid "rpm: ignore CMakeCache.txt in dist and relax BuildRequires on cross build"
+msgstr ""
+
+#: ../../NEWS.rst:75
+msgid "gencore: Allocate ELF header to heap instead of stack"
+msgstr ""
+
+#: ../../NEWS.rst:76
+msgid "nanosleep: add cpu_pause() in spinwait loop"
+msgstr ""
+
+#: ../../NEWS.rst:77
+msgid "init_process: add missing initializations to proc struct"
+msgstr ""
+
+#: ../../NEWS.rst:78
+msgid "rus_vm_fault: always use a packet on the stack"
+msgstr ""
+
+#: ../../NEWS.rst:79
+msgid "process stack: use PAGE_SIZE in aux vector"
+msgstr ""
+
+#: ../../NEWS.rst:80
+msgid "copy_user_pte: base memobj copy on range & VR_PRIVATE"
+msgstr ""
+
+#: ../../NEWS.rst:81
+msgid "arm64: ptrace: Fix overwriting 1st argument with return value"
+msgstr ""
+
+#: ../../NEWS.rst:82
+msgid "page fault: use cow for private device mappings"
+msgstr ""
+
+#: ../../NEWS.rst:83
+msgid "reproductible builds: remove most install paths in c code"
+msgstr ""
+
+#: ../../NEWS.rst:84
+msgid "page fault: clear writable bit for non-dirtying access to shared ranges"
+msgstr ""
+
+#: ../../NEWS.rst:85
+msgid "mcreboot/mcstop+release: support for regular user execution"
+msgstr ""
+
+#: ../../NEWS.rst:86
+msgid "irqbalance_mck: replace extra service with service drop-in"
+msgstr ""
+
+#: ../../NEWS.rst:87
+msgid "do_mmap: give addr argument a chance even if not MAP_FIXED"
+msgstr ""
+
+#: ../../NEWS.rst:88
+msgid "x86: fix xchg() and cmpxchg() macros"
+msgstr ""
+
+#: ../../NEWS.rst:89
+msgid "IHK: support for using Linux work IRQ as IKC interrupt (optional)"
+msgstr ""
+
+#: ../../NEWS.rst:90
+msgid "MCS: fix ARM64 issue by using smp_XXX() functions (i.e., barrier()s)"
+msgstr ""
+
+#: ../../NEWS.rst:91
+msgid "procfs: add number of threads to stat and status"
+msgstr ""
+
+#: ../../NEWS.rst:92
+msgid "memory_range_lock: Fix deadlock in procfs/sysfs handler"
+msgstr ""
+
+#: ../../NEWS.rst:93
+msgid "flush instruction cache at context switch time if necessary"
+msgstr ""
+
+#: ../../NEWS.rst:94
+msgid "arm64: Fix PMU related functions"
+msgstr ""
+
+#: ../../NEWS.rst:95
+msgid "page_fault_process_memory_range: Disable COW for VM region with zeroobj"
+msgstr ""
+
+#: ../../NEWS.rst:96
+msgid "extend_process_region: Fall back to demand paging when not contiguous"
+msgstr ""
+
+#: ../../NEWS.rst:97
+msgid "munmap: fix deadlock with remote pagefault on vm range lock"
+msgstr ""
+
+#: ../../NEWS.rst:98
+msgid "procfs: if memory_range_lock fails, process later"
+msgstr ""
+
+#: ../../NEWS.rst:99
+msgid "migrate-cpu: Prevent migration target from calling schedule() twice"
+msgstr ""
+
+#: ../../NEWS.rst:100
+msgid "sched_request_migrate(): fix race condition between migration req and IRQs"
+msgstr ""
+
+#: ../../NEWS.rst:101
+msgid "get_one_cpu_topology: Renumber core_id (physical core id)"
+msgstr ""
+
+#: ../../NEWS.rst:102
+msgid "bb7e140 procfs cpuinfo: use sequence number as processor"
+msgstr ""
+
+#: ../../NEWS.rst:103
+msgid "set_host_vma(): do NOT read protect Linux VMA"
+msgstr ""
+
+#: ../../NEWS.rst:107
+msgid "Version 1.6.0 (Nov 11, 2018)"
+msgstr ""
+
+#: ../../NEWS.rst:112
+msgid ""
+"McKernel and Linux share one unified kernel virtual address space. That "
+"is, McKernel sections resides in Linux sections spared for modules.  In "
+"this way, Linux can access the McKernel kernel memory area."
+msgstr ""
+
+#: ../../NEWS.rst:115
+msgid "hugetlbfs support"
+msgstr ""
+
+#: ../../NEWS.rst:116
+msgid "IHK is now included as a git submodule"
+msgstr ""
+
+#: ../../NEWS.rst:117
+msgid "Debug messages are turned on/off in per souce file basis at run-time."
+msgstr ""
+
+#: ../../NEWS.rst:118
+msgid ""
+"It's prohibited for McKernel to access physical memory ranges which Linux"
+" didn't give to McKernel."
+msgstr ""
+
+#: ../../NEWS.rst:119
+msgid "UTI (capability to spawn a thread on Linux CPU) improvement:"
+msgstr ""
+
+#: ../../NEWS.rst:121
+msgid ""
+"System calls issued from the thread are hooked by modifying binary in "
+"memory."
+msgstr ""
+
+#: ../../NEWS.rst:126
+msgid ""
+"#<digits> below denotes the redmine issue number "
+"(https://postpeta.pccluster.org/redmine/)."
+msgstr ""
+
+#: ../../NEWS.rst:128
+msgid "#926: shmget: Hide object with IPC_RMID from shmget"
+msgstr ""
+
+#: ../../NEWS.rst:129
+msgid "#1028: init_process: Inherit parent cpu_set"
+msgstr ""
+
+#: ../../NEWS.rst:130
+msgid "#995: Fix shebang recorded in argv[0]"
+msgstr ""
+
+#: ../../NEWS.rst:131
+msgid "#1024: Fix VMAP virtual address leak"
+msgstr ""
+
+#: ../../NEWS.rst:132
+msgid "#1109: init_process_stack: Support \"ulimit -s unlimited\""
+msgstr ""
+
+#: ../../NEWS.rst:133
+msgid "x86 mem init: do not map identity mapping"
+msgstr ""
+
+#: ../../NEWS.rst:134
+msgid "mcexec_wait_syscall: requeue potential request on interrupted wait"
+msgstr ""
+
+#: ../../NEWS.rst:135
+msgid "mcctrl_ikc_send_wait: fix interrupt with do_frees == NULL"
+msgstr ""
+
+#: ../../NEWS.rst:136
+msgid "pager_req_read: handle short read"
+msgstr ""
+
+#: ../../NEWS.rst:137
+msgid "kprintf: only call eventfd() if it is safe to interrupt"
+msgstr ""
+
+#: ../../NEWS.rst:138
+msgid "process_procfs_request: Add Pid to /proc/<PID>/status"
+msgstr ""
+
+#: ../../NEWS.rst:139
+msgid ""
+"terminate: fix oversubscribe hang when waiting for other threads on same "
+"CPU to die"
+msgstr ""
+
+#: ../../NEWS.rst:140
+msgid "mcexec: Do not close fd returned to mckernel side"
+msgstr ""
+
+#: ../../NEWS.rst:141
+msgid "#976: execve: Clear sigaltstack and fp_regs"
+msgstr ""
+
+#: ../../NEWS.rst:142
+msgid "#1002: perf_event: Specify counter by bit_mask on start/stop"
+msgstr ""
+
+#: ../../NEWS.rst:143
+msgid "#1027: schedule: Don't reschedule immediately when wake up on migrate"
+msgstr ""
+
+#: ../../NEWS.rst:144
+msgid "#mcctrl: lookup unexported symbols at runtime"
+msgstr ""
+
+#: ../../NEWS.rst:145
+msgid "__sched_wakeup_thread: Notify interrupt_exit() of re-schedule"
+msgstr ""
+
+#: ../../NEWS.rst:146
+msgid "futex_wait_queue_me: Spin-sleep when timeout and idle_halt is specified"
+msgstr ""
+
+#: ../../NEWS.rst:147
+msgid "#1167: ihk_os_getperfevent,setperfevent: Timeout IKC sent by mcctrl"
+msgstr ""
+
+#: ../../NEWS.rst:148
+msgid "devobj: fix object size (POSTK_DEBUG_TEMP_FIX_36)"
+msgstr ""
+
+#: ../../NEWS.rst:149
+msgid "mcctrl: remove rus page cache"
+msgstr ""
+
+#: ../../NEWS.rst:150
+msgid "#1021: procfs: Support multiple reads of e.g. ``/proc/*/maps``"
+msgstr ""
+
+#: ../../NEWS.rst:151
+msgid "#1006: wait: Delay wake-up parent within switch context"
+msgstr ""
+
+#: ../../NEWS.rst:152
+msgid "#1164: mem: Check if phys-mem is within the range of McKernel memory"
+msgstr ""
+
+#: ../../NEWS.rst:153
+msgid ""
+"#1039: page_fault_process_memory_range: Remove ihk_mc_map_virtual for CoW"
+" of device map"
+msgstr ""
+
+#: ../../NEWS.rst:154
+msgid "partitioned execution: pass process rank to LWK"
+msgstr ""
+
+#: ../../NEWS.rst:155
+msgid "process/vm: implement access_ok()"
+msgstr ""
+
+#: ../../NEWS.rst:156
+msgid "spinlock: rewrite spinlock to use Linux ticket head/tail format"
+msgstr ""
+
+#: ../../NEWS.rst:157
+msgid "#986: Fix deadlock involving mmap_sem and memory_range_lock"
+msgstr ""
+
+#: ../../NEWS.rst:158
+msgid "Prevent one CPU from getting chosen by concurrent forks"
+msgstr ""
+
+#: ../../NEWS.rst:159
+msgid "#1009: check_signal: system call restart is done only once"
+msgstr ""
+
+#: ../../NEWS.rst:160
+msgid ""
+"#1176: syscall: the signal received during system call processing is not "
+"processed."
+msgstr ""
+
+#: ../../NEWS.rst:161
+msgid "#1036 syscall_time: Handle by McKernel"
+msgstr ""
+
+#: ../../NEWS.rst:162
+msgid "#1165 do_syscall: Delegate system calls to the mcexec with the same pid"
+msgstr ""
+
+#: ../../NEWS.rst:163
+msgid ""
+"#1194 execve: Fix calling ptrace_report_signal after preemption is "
+"disabled"
+msgstr ""
+
+#: ../../NEWS.rst:164
+msgid "#1005 coredump: Exclude special areas"
+msgstr ""
+
+#: ../../NEWS.rst:165
+msgid ""
+"#1018 procfs: Fix pread/pwrite to procfs fail when specified size is "
+"bigger than 4MB"
+msgstr ""
+
+#: ../../NEWS.rst:166
+msgid "#1180 sched_setaffinity: Check migration after decrementing in_interrupt"
+msgstr ""
+
+#: ../../NEWS.rst:167
+msgid "#771, #1179, #1143 ptrace supports threads"
+msgstr ""
+
+#: ../../NEWS.rst:168
+msgid "#1189 procfs/do_fork: wait until procfs entries are registered"
+msgstr ""
+
+#: ../../NEWS.rst:169
+msgid "#1114 procfs: add '/proc/pid/stat' to mckernel side and fix its comm"
+msgstr ""
+
+#: ../../NEWS.rst:170
+msgid "#1116 mcctrl procfs: check entry was returned before using it"
+msgstr ""
+
+#: ../../NEWS.rst:171
+msgid "#1167 ihk_os_getperfevent,setperfevent: Return -ETIME when IKC timeouts"
+msgstr ""
+
+#: ../../NEWS.rst:172
+msgid "mcexec/execve: fix shebangs handling"
+msgstr ""
+
+#: ../../NEWS.rst:173
+msgid "procfs: handle 'comm' on mckernel side"
+msgstr ""
+
+#: ../../NEWS.rst:174
+msgid "ihk_os_setperfevent: Return number of registered events"
+msgstr ""
+
+#: ../../NEWS.rst:175
+msgid "mcexec: fix terminating zero after readlink()"
+msgstr ""
+
+#: ../../NEWS.rst:179
+msgid "Version 1.5.1 (July 9, 2018)"
+msgstr ""
+
+#: ../../NEWS.rst:186
+msgid "Watchdog timer to detect hang of McKernel"
+msgstr ""
+
+#: ../../NEWS.rst:188
+msgid ""
+"mcexec prints out the following line to its stderr when a hang of "
+"McKernel is detected."
+msgstr ""
+
+#: ../../NEWS.rst:194
+msgid ""
+"The watchdog timer is enabled by passing -i <timeout_in_sec> option to "
+"mcreboot.sh. <timeout_in_sec> specifies the interval of checking if "
+"McKernel is alive."
+msgstr ""
+
+#: ../../NEWS.rst:196
+msgid ""
+"For example, specify ``-i 600`` to detect the hang with 10 minutes "
+"interval:"
+msgstr ""
+
+#: ../../NEWS.rst:204
+msgid "The detailed step of the hang detection is as follows."
+msgstr ""
+
+#: ../../NEWS.rst:203
+msgid ""
+"mcexec acquires eventfd for notification from IHK and perform epoll() on "
+"it."
+msgstr ""
+
+#: ../../NEWS.rst:204
+msgid ""
+"A daemon called ihkmond monitors the state of McKernel periodically with "
+"the interval specified by the -i option. It judges that McKernel is "
+"hanging and notifies mcexec by the eventfd if its state hasn't changed "
+"since the last check."
+msgstr ""
+
+#: ../../NEWS.rst:209
+msgid "#1146: pager_req_map(): do not take mmap_sem if not needed"
+msgstr ""
+
+#: ../../NEWS.rst:210
+msgid "#1135: prepare_process_ranges_args_envs(): fix saving cmdline"
+msgstr ""
+
+#: ../../NEWS.rst:211
+msgid "#1144: fileobj/devobj: record path name"
+msgstr ""
+
+#: ../../NEWS.rst:212
+msgid "#1145: fileobj: use MCS locks for per-file page hash"
+msgstr ""
+
+#: ../../NEWS.rst:213
+msgid "#1076: mcctrl: refactor prepare_image into new generic ikc send&wait"
+msgstr ""
+
+#: ../../NEWS.rst:214
+msgid "#1072: execve: fix execve with oversubscribing"
+msgstr ""
+
+#: ../../NEWS.rst:215
+msgid "#1132: execve: use thread variable instead of cpu_local_var(current)"
+msgstr ""
+
+#: ../../NEWS.rst:216
+msgid "#1117: mprotect: do not set page table writable for cow pages"
+msgstr ""
+
+#: ../../NEWS.rst:217
+msgid "#1143: syscall wait4: add _WALL (POSTK_DEBUG_ARCH_DEP_44)"
+msgstr ""
+
+#: ../../NEWS.rst:218
+msgid "#1064: rusage: Fix initialization of rusage->num_processors"
+msgstr ""
+
+#: ../../NEWS.rst:219
+msgid "#1133: pager_req_unmap: Put per-process data at exit"
+msgstr ""
+
+#: ../../NEWS.rst:220
+msgid "#731: do_fork: Propagate error code returned by mcexec"
+msgstr ""
+
+#: ../../NEWS.rst:221
+msgid "#1149: execve: Reinitialize vm_regions's map area on execve"
+msgstr ""
+
+#: ../../NEWS.rst:222
+msgid "#1065: procfs: Show file names in /proc/<PID>/maps"
+msgstr ""
+
+#: ../../NEWS.rst:223
+msgid "#1112: mremap: Fix type of size arguments (from ssize_t to size_t)"
+msgstr ""
+
+#: ../../NEWS.rst:224
+msgid "#1121: sched_getaffinity: Check arguments in the same order as in Linux"
+msgstr ""
+
+#: ../../NEWS.rst:225
+msgid "#1137: mmap, mremap: Check arguments in the same order as in Linux"
+msgstr ""
+
+#: ../../NEWS.rst:226
+msgid "#1122: fix return value of sched_getaffinity"
+msgstr ""
+
+#: ../../NEWS.rst:227
+msgid "#732: fix: /proc/<PID>/maps outputs a unnecessary NULL character"
+msgstr ""
+
+#: ../../NEWS.rst:231
+msgid "Version 1.5.0 (Apr 5, 2018)"
+msgstr ""
+
+#: ../../NEWS.rst:236
+msgid ""
+"Aid for Linux version migration: Detect /proc, /sys format change between"
+" two kernel verions"
+msgstr ""
+
+#: ../../NEWS.rst:238
+msgid "Swap out * Only swap-out anonymous pages for now"
+msgstr ""
+
+#: ../../NEWS.rst:240
+msgid "Improve support of /proc/maps"
+msgstr ""
+
+#: ../../NEWS.rst:241
+msgid "mcstat: Linux tool to show resource usage"
+msgstr ""
+
+#: ../../NEWS.rst:246
+msgid "#727: execve: Fix memory leak when receiving SIGKILL"
+msgstr ""
+
+#: ../../NEWS.rst:247
+msgid "#829: perf_event_open: Support PERF_TYPE_HARDWARE and PERF_TYPE_HW_CACHE"
+msgstr ""
+
+#: ../../NEWS.rst:248
+msgid "#906: mcexec: Check return code of fork()"
+msgstr ""
+
+#: ../../NEWS.rst:249
+msgid "#1038: mcexec: Timeout when incorrect value is given to -n option"
+msgstr ""
+
+#: ../../NEWS.rst:250
+msgid "#943 #945 #946 #960 #961: mcexec: Support strace"
+msgstr ""
+
+#: ../../NEWS.rst:251
+msgid ""
+"#1029: struct thread is not released with stress-test involving signal "
+"and futex"
+msgstr ""
+
+#: ../../NEWS.rst:252
+msgid ""
+"#863 #870 : Respond immediately to terminating signal when offloading "
+"system call"
+msgstr ""
+
+#: ../../NEWS.rst:253
+msgid "#1119: translate_rva_to_rpa(): use 2MB blocks in 1GB pages on x86"
+msgstr ""
+
+#: ../../NEWS.rst:254
+msgid "#898: Shutdown OS only after no in-flight IKC exist"
+msgstr ""
+
+#: ../../NEWS.rst:255
+msgid "#882: release_handler: Destroy objects as the process which opened it"
+msgstr ""
+
+#: ../../NEWS.rst:256
+msgid ""
+"#882: mcexec: Make child process exit if the parent is killed during "
+"fork()"
+msgstr ""
+
+#: ../../NEWS.rst:257
+msgid "#925: XPMEM: Don't destroy per-process object of the parent"
+msgstr ""
+
+#: ../../NEWS.rst:258
+msgid "#885: ptrace: Support the case where a process attaches its child"
+msgstr ""
+
+#: ../../NEWS.rst:259
+msgid "#1031: sigaction: Support SA_RESETHAND"
+msgstr ""
+
+#: ../../NEWS.rst:260
+msgid ""
+"#923: rus_vm_fault: Return error when a thread not performing system call"
+" offloading causes remote page fault"
+msgstr ""
+
+#: ../../NEWS.rst:261
+msgid ""
+"#1032 #1033 #1034: getrusage: Fix ru_maxrss, RUSAGE_CHILDREN, ru_stime "
+"related bugs"
+msgstr ""
+
+#: ../../NEWS.rst:262
+msgid "#1120: getrusage: Fix deadlock on thread->times_update"
+msgstr ""
+
+#: ../../NEWS.rst:263
+msgid "#1123: Fix deadlock related to wait_queue_head_list_node"
+msgstr ""
+
+#: ../../NEWS.rst:264
+msgid "#1124: Fix deadlock of calling terminate() from terminate()"
+msgstr ""
+
+#: ../../NEWS.rst:265
+msgid "#1125: Fix deadlock related to thread status"
+msgstr ""
+
+#: ../../NEWS.rst:267
+msgid "Related functions are: hold_thread(), do_kill() and terminate()"
+msgstr ""
+
+#: ../../NEWS.rst:269
+msgid ""
+"#1126: uti: Fix uti thread on the McKernel side blocks others in "
+"do_syscall()"
+msgstr ""
+
+#: ../../NEWS.rst:270
+msgid "#1066: procfs: Show Linux /proc/self/cgroup"
+msgstr ""
+
+#: ../../NEWS.rst:271
+msgid ""
+"#1127: prepare_process_ranges_args_envs(): fix generating saved_cmdline "
+"to avoid PF in strlen()"
+msgstr ""
+
+#: ../../NEWS.rst:272
+msgid "#1128: ihk_mc_map/unmap_virtual(): do proper TLB invalidation"
+msgstr ""
+
+#: ../../NEWS.rst:273
+msgid ""
+"#1043: terminate(): fix update_lock and threads_lock order to avoid "
+"deadlock"
+msgstr ""
+
+#: ../../NEWS.rst:274
+msgid "#1129: mcreboot.sh: Save ``/proc/irq/*/smp_affinity`` to ``/tmp/mcreboot``"
+msgstr ""
+
+#: ../../NEWS.rst:275
+msgid "#1130: mcexec: drop READ_IMPLIES_EXEC from personality"
+msgstr ""
+
+#: ../../NEWS.rst:279
+msgid "McKernel workarounds"
+msgstr ""
+
+#: ../../NEWS.rst:280
+msgid "Forbid CPU oversubscription"
+msgstr ""
+
+#: ../../NEWS.rst:282
+msgid "It can be turned on by mcreboot.sh -O option"
+msgstr ""
+
+#: ../../NEWS.rst:287
+msgid "Version 1.4.0 (Oct 30, 2017)"
+msgstr ""
+
+#: ../../NEWS.rst:291
+msgid "Abstracted event type support in perf_event_open()"
+msgstr ""
+
+#: ../../NEWS.rst:293
+msgid "PERF_TYPE_HARDWARE and PERF_TYPE_CACHE types are supported."
+msgstr ""
+
+#: ../../NEWS.rst:297
+msgid "Direct user-space access"
+msgstr ""
+
+#: ../../NEWS.rst:298
+msgid ""
+"Code lines using direct user-space access (e.g. passing user-space "
+"pointer to memcpy()) becomes more portable across processor "
+"architectures. The modification follows the following rules."
+msgstr ""
+
+#: ../../NEWS.rst:302
+msgid ""
+"Move the code section as it is to the architecture dependent directory if"
+" it is a part of the critical-path."
+msgstr ""
+
+#: ../../NEWS.rst:304
+msgid ""
+"Otherwise, rewrite the code section by using the portable methods. The "
+"methods include copy_from_user(), copy_to_user(), pte_get_phys() and "
+"phys_to_virt()."
+msgstr ""
+
+#: ../../NEWS.rst:310
+msgid "MPI and OpenMP micro-bench tests"
+msgstr ""
+
+#: ../../NEWS.rst:311
+msgid ""
+"The performance figures of MPI and OpenMP primitives are compared with "
+"those of Linux by using Intel MPI Benchmarks and EPCC OpenMP Micro "
+"Benchmark."
+msgstr ""
+
+#: ../../NEWS.rst:318
+msgid "Version 1.3.0 (Sep 30, 2017)"
+msgstr ""
+
+#: ../../NEWS.rst:322
+msgid "Kernel dump"
+msgstr ""
+
+#: ../../NEWS.rst:323
+msgid "A dump level of \"only kernel memory\" is added."
+msgstr ""
+
+#: ../../NEWS.rst:325
+msgid "The following two levels are available now:"
+msgstr ""
+
+#: ../../NEWS.rst:328
+msgid "0"
+msgstr ""
+
+#: ../../NEWS.rst:328
+msgid "Dump all"
+msgstr ""
+
+#: ../../NEWS.rst:330
+msgid "24"
+msgstr ""
+
+#: ../../NEWS.rst:330
+msgid "Dump only kernel memory"
+msgstr ""
+
+#: ../../NEWS.rst:333
+msgid ""
+"The dump level can be set by -d option in ihkosctl or the argument for "
+"ihk_os_makedumpfile(), as shown in the following examples:"
+msgstr ""
+
+#: ../../NEWS.rst:341
+msgid "Dump file is created when Linux panics."
+msgstr ""
+
+#: ../../NEWS.rst:343
+msgid ""
+"The dump level can be set by dump_level kernel argument, as shown in the "
+"following example:"
+msgstr ""
+
+#: ../../NEWS.rst:350
+msgid ""
+"The IHK dump function is registered to panic_notifier_list when creating "
+"/dev/mcdX and called when Linux panics."
+msgstr ""
+
+#: ../../NEWS.rst:354
+msgid "Quick Process Launch"
+msgstr ""
+
+#: ../../NEWS.rst:356
+msgid ""
+"MPI process launch time and some of the initialization time can be "
+"reduced in application consisting of multiple MPI programs which are "
+"launched in turn in the job script."
+msgstr ""
+
+#: ../../NEWS.rst:360
+msgid ""
+"The following two steps should be performed to use this feature: #. "
+"Replace mpiexec with ql_mpiexec_start and add some lines for "
+"ql_mpiexec_finalize in the job script #. Modify the app so that it can "
+"repeat calculations and wait for the instructions from "
+"ql_mpiexec_{start,finalize} at the end of the loop"
+msgstr ""
+
+#: ../../NEWS.rst:364
+msgid ""
+"The first step is explained using an example. Assume the original job "
+"script looks like this:"
+msgstr ""
+
+#: ../../NEWS.rst:383
+msgid "The job script should be modified like this:"
+msgstr ""
+
+#: ../../NEWS.rst:405
+msgid "The second step is explained using a pseudo-code."
+msgstr ""
+
+#: ../../NEWS.rst:421
+msgid ""
+"qlmpilib.h should be included in the code and libql{mpi,fort}.so should "
+"be linked to the executable file."
+msgstr ""
+

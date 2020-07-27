@@ -1,0 +1,821 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020, Masamichi Takagi, Balazs Gerofi, Yutaka Ishikawa
+# This file is distributed under the same license as the IHK/McKernel
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: IHK/McKernel \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-06 10:10+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+
+#: ../../ops.rst:5
+msgid "McKernelを用いたシステムを運用するシステム管理者を対象として、運用手順を説明する。"
+msgstr ""
+
+#: ../../ops.rst:8
+msgid "Installation"
+msgstr "インストール"
+
+#: ../../ops.rst:10
+msgid "See `Quick Guide -- Installation <quick.html#installation>`__."
+msgstr ""
+
+#: ../../uti.rst:2
+msgid "Advanced: Enable Utility Thread offloading Interface (UTI)"
+msgstr ""
+
+#: ../../uti.rst:4
+msgid ""
+"UTI enables a runtime such as MPI runtime to spawn utility threads such "
+"as MPI asynchronous progress threads to Linux cores."
+msgstr ""
+
+#: ../../uti.rst:8
+msgid "Install capstone"
+msgstr ""
+
+#: ../../uti.rst:11 ../../uti.rst:22
+msgid "When compute nodes don't have access to repositories"
+msgstr ""
+
+#: ../../uti.rst:13
+msgid "Install EPEL capstone-devel:"
+msgstr ""
+
+#: ../../uti.rst:24
+msgid ""
+"Ask the system administrator to install ``capstone-devel``. Note that it "
+"is in the EPEL repository."
+msgstr ""
+
+#: ../../uti.rst:28
+msgid "Install syscall_intercept"
+msgstr ""
+
+#: ../../uti.rst:37
+msgid "Install UTI for McKernel"
+msgstr ""
+
+#: ../../uti.rst:39
+msgid "Install:"
+msgstr ""
+
+#: ../../uti.rst:49
+msgid "Install McKernel"
+msgstr ""
+
+#: ../../uti.rst:51
+msgid "Add ``-DENABLE_UTI=ON`` option to ``cmake``:"
+msgstr ""
+
+#: ../../uti.rst:58
+msgid "Run programs"
+msgstr ""
+
+#: ../../uti.rst:60
+msgid "Add ``--enable-uti`` option to ``mcexec``:"
+msgstr ""
+
+#: ../../uti.rst:67
+msgid "Install UTI for Linux"
+msgstr ""
+
+#: ../../uti.rst:69
+msgid ""
+"You should skip this step if it's already installed as with, for example,"
+" Fujitsu Technical Computing Suite."
+msgstr ""
+
+#: ../../uti.rst:72
+msgid "Install by make"
+msgstr ""
+
+#: ../../uti.rst:82
+msgid "Install by rpm"
+msgstr ""
+
+#: ../../ops.rst:15
+msgid "起動停止"
+msgstr ""
+
+#: ../../ops.rst:18
+msgid "関連ファイル"
+msgstr ""
+
+#: ../../ops.rst:20
+msgid ""
+"SMPプロセッサ向け、x86_64アーキ向けの関連ファイルの場所は以下の通り。 "
+"なお、IHK/McKernelのインストールディレクトリを<install>とする。"
+msgstr ""
+
+#: ../../ops.rst:24
+msgid "<install>/kmod/ihk.ko"
+msgstr ""
+
+#: ../../ops.rst:24
+msgid "IHK-master core"
+msgstr ""
+
+#: ../../ops.rst:26
+msgid "|ihk-smp|"
+msgstr ""
+
+#: ../../ops.rst:26
+msgid "IHK-master driver"
+msgstr ""
+
+#: ../../ops.rst:29
+msgid "|mcctrl|"
+msgstr ""
+
+#: ../../ops.rst:29
+msgid "Delegator module"
+msgstr ""
+
+#: ../../ops.rst:32
+msgid "|mckernel.img|"
+msgstr ""
+
+#: ../../ops.rst:32
+msgid "カーネルイメージ"
+msgstr ""
+
+#: ../../ops.rst:40
+msgid "運用向けコマンド・デーモンのファイルの場所は以下の通り。 なお、IHK/McKernelのインストールディレクトリを<install>とする。"
+msgstr ""
+
+#: ../../ops.rst:44
+msgid "|mcreboot|"
+msgstr ""
+
+#: ../../ops.rst:44 ../../ops.rst:104
+msgid "ブートスクリプト"
+msgstr ""
+
+#: ../../ops.rst:47
+msgid "|mcstop|"
+msgstr ""
+
+#: ../../ops.rst:47 ../../ops.rst:204
+msgid "シャットダウンスクリプト"
+msgstr ""
+
+#: ../../ops.rst:50
+msgid "<install>/bin/mcexec"
+msgstr ""
+
+#: ../../ops.rst:50 ../../ops.rst:242
+msgid "プロセス起動コマンド"
+msgstr ""
+
+#: ../../ops.rst:52
+msgid "<install>/bin/eclair"
+msgstr ""
+
+#: ../../ops.rst:52
+msgid "ダンプ解析ツール"
+msgstr ""
+
+#: ../../ops.rst:54
+msgid "|vmcore2mckdump|"
+msgstr ""
+
+#: ../../ops.rst:54
+msgid "ダンプ形式変換ツール"
+msgstr ""
+
+#: ../../ops.rst:62
+msgid "以下、関連コマンドおよび関連関数のインターフェイスを説明する。"
+msgstr ""
+
+#: ../../ops.rst:65
+msgid "インターフェイス"
+msgstr ""
+
+#: ../../ops.rst:68
+msgid "カーネル引数"
+msgstr ""
+
+#: ../../ops.rst:70
+msgid "McKernelのカーネル引数を表 :numref:`tab-kargs` に示す。"
+msgstr ""
+
+#: ../../ops.rst:74
+msgid "McKernelのカーネル引数"
+msgstr ""
+
+#: ../../ops.rst:77
+msgid "hidos"
+msgstr ""
+
+#: ../../ops.rst:77
+msgid "IKCを有効にする。"
+msgstr ""
+
+#: ../../ops.rst:79
+msgid "|dlv|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "Linuxのpanicハンドラ経由でダンプを行った場合の、ダ"
+msgstr ""
+
+#: ../../ops.rst
+msgid "ンプ対象とするメモリ領域の種類を<level>に設定する。"
+msgstr ""
+
+#: ../../ops.rst
+msgid "設定可能な値は以下の通り。"
+msgstr ""
+
+#: ../../ops.rst:85 ../../ops.rst:166 ../../ops.rst:198 ../../ops.rst:236
+msgid "0"
+msgstr ""
+
+#: ../../ops.rst:86 ../../ops.rst:167
+msgid "IHKがMcKernelに割り当てたメモリ領域を出力する"
+msgstr ""
+
+#: ../../ops.rst:87 ../../ops.rst:168
+msgid "24"
+msgstr ""
+
+#: ../../ops.rst:88 ../../ops.rst:169
+msgid "カーネルが使用しているメモリ領域を出力する"
+msgstr ""
+
+#: ../../ops.rst:90 ../../ops.rst:171
+msgid "指定がなかった場合は24が用いられる。"
+msgstr ""
+
+#: ../../ops.rst:92
+msgid "|allow|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "McKernelに割り当てられたCPU数より大きい数のスレッド"
+msgstr ""
+
+#: ../../ops.rst
+msgid "またはプロセスの生成を許可する。この引数が指定され"
+msgstr ""
+
+#: ../../ops.rst
+msgid "ない場合に、CPU数より大きい数のスレッドまたはプロセ"
+msgstr ""
+
+#: ../../ops.rst
+msgid "スをclone(), fork(), vfork()などで生成しようとする"
+msgstr ""
+
+#: ../../ops.rst
+msgid "と、当該システムコールがEINVALエラーを返す。"
+msgstr ""
+
+#: ../../ops.rst:107 ../../ops.rst:209
+msgid "書式"
+msgstr ""
+
+#: ../../ops.rst:115 ../../ops.rst:219
+msgid "オプション"
+msgstr ""
+
+#: ../../ops.rst:118
+msgid "|opt-c|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "McKernelに割り当てるCPUのリストを指定する。フォー"
+msgstr ""
+
+#: ../../ops.rst
+msgid "マットは以下の通り。"
+msgstr ""
+
+#: ../../ops.rst
+msgid "<CPU logical id>,<CPU logical id>...または"
+msgstr ""
+
+#: ../../ops.rst
+msgid "<CPU logical id>-<CPU logical id>,<CPU logical id>"
+msgstr ""
+
+#: ../../ops.rst
+msgid "-<CPU logical id>...または両者の混合。"
+msgstr ""
+
+#: ../../ops.rst:124
+msgid "|opt-r|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "McKernelのCPUがIKCメッセージを送るLinux"
+msgstr ""
+
+#: ../../ops.rst
+msgid "CPUを指定する。フォーマットは以下の通り。"
+msgstr ""
+
+#: ../../ops.rst
+msgid "<CPU list>:<CPU id>+<CPU list>:<CPU id>..."
+msgstr ""
+
+#: ../../ops.rst
+msgid "<CPU list>のフォーマットは-cオプションにおけるもの"
+msgstr ""
+
+#: ../../ops.rst
+msgid "と同じである。"
+msgstr ""
+
+#: ../../ops.rst
+msgid "各<CPU list>:<CPU id>は<CPU list>で示されるMcKernel"
+msgstr ""
+
+#: ../../ops.rst
+msgid "のCPUが<CPU logical id>で示されるLinuxのCPUにIKC"
+msgstr ""
+
+#: ../../ops.rst
+msgid "メッセージを送信することを意味する。"
+msgstr ""
+
+#: ../../ops.rst:133
+msgid "|opt-m|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "McKernelに割り当てるメモリ領域を指定する。フォーマッ"
+msgstr ""
+
+#: ../../ops.rst
+msgid "トは以下の通り。"
+msgstr ""
+
+#: ../../ops.rst
+msgid "<size>@<NUMA-id>, <size>@<NUMA-id>..."
+msgstr ""
+
+#: ../../ops.rst:137
+msgid "|opt-f|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "ihkmondが使用するsyslogプロトコルのfacilityを指定す"
+msgstr ""
+
+#: ../../ops.rst
+msgid "る。デフォルトはLOG_LOCAL6。"
+msgstr ""
+
+#: ../../ops.rst:140
+msgid "|opt-o|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "IHKのデバイスファイル(/dev/mcd*, /dev/mcos*)のオー"
+msgstr ""
+
+#: ../../ops.rst
+msgid "ナーとグループの値を<user>[:<group>]の形式で指定す"
+msgstr ""
+
+#: ../../ops.rst
+msgid "る。デフォルトはmcreboot.shを実行したユーザ。"
+msgstr ""
+
+#: ../../ops.rst:144
+msgid "|opt-i|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "ihkmondがハングアップ検知のためにOS状態を確認する時"
+msgstr ""
+
+#: ../../ops.rst
+msgid "間間隔を秒単位で指定する。-1が指定された場合はハン"
+msgstr ""
+
+#: ../../ops.rst
+msgid "グアップ検知を行わない。指定がない場合はハングアッ"
+msgstr ""
+
+#: ../../ops.rst
+msgid "プ検知を行わない。"
+msgstr ""
+
+#: ../../ops.rst:149
+msgid "|opt-k|"
+msgstr ""
+
+#: ../../ops.rst
+msgid "カーネルメッセージの/dev/logへのリダイレクト有無を"
+msgstr ""
+
+#: ../../ops.rst
+msgid "指定する。0が指定された場合はリダイレクトを行わず、"
+msgstr ""
+
+#: ../../ops.rst
+msgid "0以外が指定された場合はリダイレクトを行う。指定がな"
+msgstr ""
+
+#: ../../ops.rst
+msgid "い場合はリダイレクトを行わない。"
+msgstr ""
+
+#: ../../ops.rst:154
+msgid "-q <irq>"
+msgstr ""
+
+#: ../../ops.rst
+msgid "IHKが使用するIRQ番号を指定する。指定がない場合は"
+msgstr ""
+
+#: ../../ops.rst
+msgid "64-255の範囲で空いているものを使用する。"
+msgstr ""
+
+#: ../../ops.rst:157
+msgid "-t"
+msgstr ""
+
+#: ../../ops.rst
+msgid "（x86_64アーキテクチャのみ）Turbo"
+msgstr ""
+
+#: ../../ops.rst
+msgid "Boostをオンにする。デフォルトはオフ。"
+msgstr ""
+
+#: ../../ops.rst:160
+msgid "-d <level>"
+msgstr ""
+
+#: ../../ops.rst:173
+msgid "-O"
+msgstr ""
+
+#: ../../ops.rst
+msgid "またはプロセスの生成を許可する。指定がない場合は許可"
+msgstr ""
+
+#: ../../ops.rst
+msgid "しない。すなわち、CPU数より大きい数のスレッドまたは"
+msgstr ""
+
+#: ../../ops.rst
+msgid "プロセスを生成しようとするとエラーとなる。"
+msgstr ""
+
+#: ../../ops.rst:189 ../../ops.rst:226
+msgid "説明"
+msgstr ""
+
+#: ../../ops.rst:191
+msgid ""
+"McKernel関連カーネルモジュールをinsmodし、<cpulist>で指定されたCPUと<memlist>で指定されたメモリ領域からなるパーティションを作成し、IKC"
+" mapを<ikcmap>に設定し、前記パーティションにMcKernelをブートする。"
+msgstr ""
+
+#: ../../ops.rst:195 ../../ops.rst:233
+msgid "戻り値"
+msgstr ""
+
+#: ../../ops.rst:198 ../../ops.rst:236
+msgid "正常終了"
+msgstr ""
+
+#: ../../ops.rst:200 ../../ops.rst:238
+msgid "0以外"
+msgstr ""
+
+#: ../../ops.rst:200 ../../ops.rst:238
+msgid "エラー"
+msgstr ""
+
+#: ../../ops.rst:221
+msgid "なし"
+msgstr ""
+
+#: ../../ops.rst:228
+msgid "McKernelをシャットダウンし、McKernel用パーティションを削除し、関連カーネルモジュールをrmmodする。"
+msgstr ""
+
+#: ../../ops.rst:247
+msgid "ダンプ解析コマンド"
+msgstr ""
+
+#: ../../ops.rst:252
+msgid "ダンプ形式変換コマンド"
+msgstr ""
+
+#: ../../ops.rst:257
+msgid "ブート手順"
+msgstr ""
+
+#: ../../ops.rst:259
+msgid "mcreboot.shを用いてブート手順を説明する。"
+msgstr ""
+
+#: ../../ops.rst:261 ../../ops.rst:908
+msgid "スクリプトは以下の通り。"
+msgstr ""
+
+#: ../../ops.rst:854 ../../ops.rst:1052
+msgid "手順は以下の通り。"
+msgstr ""
+
+#: ../../ops.rst:856
+msgid "ihkmondを起動する。ihkmondは任意のタイミングで起動してよい。これは、ihkmondはOSインスタンスの作成を検知して動作を開始するためである。（83行目）"
+msgstr ""
+
+#: ../../ops.rst:858
+msgid "Linuxのカーネルバージョンが、mcoverlayfsが動作するものであるかを確認する。（200–216行目）"
+msgstr ""
+
+#: ../../ops.rst:860
+msgid "irqbalanceを停止する。（251–257行目）"
+msgstr ""
+
+#: ../../ops.rst:862
+msgid ""
+"/proc/irq/[n]/affinityの設定を保存した上でMcKernel "
+"CPUを担当から外す。担当CPUが無くなる場合は、全てのLinux CPUを指定する。（269–303行目）"
+msgstr ""
+
+#: ../../ops.rst:866
+msgid "ihk.koをinsmodする。（307行目）"
+msgstr ""
+
+#: ../../ops.rst:868
+msgid "Linuxによるメモリフラグメンテーションを緩和するために以下を実施する。（313–320行目）"
+msgstr ""
+
+#: ../../ops.rst:870
+msgid "アクティブでないプロセスを積極的にスワップアウトするように設定する"
+msgstr ""
+
+#: ../../ops.rst:872
+msgid "クリーンなページキャッシュを無効化し、またdentriesやinodeのslabオブジェクトのうち可能なものを破棄する"
+msgstr ""
+
+#: ../../ops.rst:874
+msgid "連続する空き領域を結合してより大きな空き領域にまとめる"
+msgstr ""
+
+#: ../../ops.rst:876
+msgid ""
+"ihk-smp-x86.koをinsmodする。（340行目）ihk-smp-x86.koは関数をihk.koに登録する。このため、ihk-"
+"smp-x86.koはihk.koをinsmodした後にinsmodする必要がある。"
+msgstr ""
+
+#: ../../ops.rst:878
+msgid "メモリを予約する。（370行目）"
+msgstr ""
+
+#: ../../ops.rst:880
+msgid "CPUを予約する。（374行目）"
+msgstr ""
+
+#: ../../ops.rst:882
+msgid "McKernelのカーネルモジュールmcctrl.koをinsmodする。（382行目）mcctrl.koはMcKernelブート時に呼ばれる関数をihk.koに登録する。このため、mcctrl.koのinsmodはihk.koのinsmodの後に、またブートの前に行う必要がある。"
+msgstr ""
+
+#: ../../ops.rst:884
+msgid "OSインスタンスを作成する。（406行目）"
+msgstr ""
+
+#: ../../ops.rst:886
+msgid "OSインスタンスにCPUを割り当てる。（412行目）"
+msgstr ""
+
+#: ../../ops.rst:888
+msgid "McKernel CPUのIKCメッセージ送信先のLinux CPUを設定する。（419行目）"
+msgstr ""
+
+#: ../../ops.rst:890
+msgid "OSインスタンスにメモリを割り当てる。（426行目）"
+msgstr ""
+
+#: ../../ops.rst:892
+msgid "カーネルイメージをロードする。（432行目）"
+msgstr ""
+
+#: ../../ops.rst:894
+msgid "カーネル引数をカーネルに渡す。（438行目）"
+msgstr ""
+
+#: ../../ops.rst:896
+msgid "カーネルをブートする。（444行目）"
+msgstr ""
+
+#: ../../ops.rst:898
+msgid ""
+"/proc, "
+"/sysファイルの準備をする。また、その中でmcoverlayfs.koをinsmodする。mcoverlayfs.koは他モジュールとの依存関係を持たない。（454行目から567行目）なお、関数インターフェイスでの対応関数はihk_os_create_pseudofs()である。"
+msgstr ""
+
+#: ../../ops.rst:900
+msgid "irqbalanceを、Linux CPUのみを対象とする設定で開始する。（569–587行目）"
+msgstr ""
+
+#: ../../ops.rst:904
+msgid "シャットダウン手順"
+msgstr ""
+
+#: ../../ops.rst:906
+msgid "mcstop+release.shを用いてシャットダウン手順を説明する。"
+msgstr ""
+
+#: ../../ops.rst:1054
+msgid "ブート時にLinux CPUのみを対象とする設定で開始されたirqbalanceを停止する。（24–33行目）"
+msgstr ""
+
+#: ../../ops.rst:1057
+msgid "全てのOSインスタンスを破壊する。OSインスタンスに割り当てられていた資源はIHKがLWKのために予約した状態に移行する。（35–50行目）"
+msgstr ""
+
+#: ../../ops.rst:1059
+msgid "IHKがLWKのために予約していた資源を開放する。（52–77行目）"
+msgstr ""
+
+#: ../../ops.rst:1061
+msgid "mcctrl.koをrmmodする。（81行目）"
+msgstr ""
+
+#: ../../ops.rst:1063
+msgid ""
+"/proc, "
+"/sysファイルの準備をする。また、その中でmcoverlayfs.koをrmmodする。（87–100行目）なお、関数インターフェイスでの対応関数はihk_os_destroy_pseudofs()である。"
+msgstr ""
+
+#: ../../ops.rst:1065
+msgid "ihk-smp-x86.koをrmmodする。（104行目）"
+msgstr ""
+
+#: ../../ops.rst:1067
+msgid "ihk.koをrmmodする。（112行目）"
+msgstr ""
+
+#: ../../ops.rst:1069
+msgid "ihkmondを停止する。（121行目）"
+msgstr ""
+
+#: ../../ops.rst:1071
+msgid "/proc/irq/[n]/affinityの設定をブート時に保存しておいたものに戻し、ブート前の設定でirqbalanceを開始する。（124–135行目）"
+msgstr ""
+
+#: ../../ops.rst:1073
+msgid "Linuxカーネルのスワップアウト積極度の設定をデフォルトの値に戻す。（138行目）"
+msgstr ""
+
+#~ msgid "The following OS distributions and platforms are recommended:"
+#~ msgstr "推奨OSディストリビューションとプロセッサは以下の通り。"
+
+#~ msgid "OS distribution"
+#~ msgstr ""
+
+#~ msgid "CentOS 7.3 or later"
+#~ msgstr ""
+
+#~ msgid "RHEL 7.3 or later"
+#~ msgstr ""
+
+#~ msgid "Platform"
+#~ msgstr ""
+
+#~ msgid "Intel Xeon"
+#~ msgstr ""
+
+#~ msgid "Intel Xeon Phi"
+#~ msgstr ""
+
+#~ msgid "Fujitsu A64FX"
+#~ msgstr ""
+
+#~ msgid "Prepare files for building McKernel"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Grant read permission to the System.map"
+#~ " file of your kernel version on "
+#~ "the build machine:"
+#~ msgstr ""
+
+#~ msgid "Install the following packages to the build machine:"
+#~ msgstr ""
+
+#~ msgid "When having access to repositories"
+#~ msgstr ""
+
+#~ msgid "On RHEL 8, enable the CodeReady Linux Builder (CLB) repository:"
+#~ msgstr ""
+
+#~ msgid "On CentOS 8, enable the PowerTools repository:"
+#~ msgstr ""
+
+#~ msgid "Install with yum:"
+#~ msgstr ""
+
+#~ msgid "When not having access to repositories"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Ask the system administrator to install"
+#~ " them. Note that ``libdwarf-devel`` "
+#~ "is in the CodeReady Linux Builder "
+#~ "repository on RHEL 8 or in the "
+#~ "PowerTools repository on CentOS 8."
+#~ msgstr ""
+
+#~ msgid "Clone, compile, install"
+#~ msgstr ""
+
+#~ msgid "Clone the source code:"
+#~ msgstr ""
+
+#~ msgid "(Optional) Checkout to the specific branch or version:"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Foe example, if you want to try"
+#~ " the development branch, use “development”"
+#~ " as the pathspec. If you want "
+#~ "to try the prerelease version 1.7.0-0.2,"
+#~ " use “1.7.0-0.2”."
+#~ msgstr ""
+
+#~ msgid "Move to build directory:"
+#~ msgstr ""
+
+#~ msgid "Run cmake:"
+#~ msgstr ""
+
+#~ msgid "When not cross-compiling:"
+#~ msgstr ""
+
+#~ msgid "When cross-compiling:"
+#~ msgstr ""
+
+#~ msgid "Install with cmake"
+#~ msgstr ""
+
+#~ msgid "Install with make:"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The kernel modules and McKernel kernel"
+#~ " image should be installed under the"
+#~ " **ihk+mckernel** folder in your home "
+#~ "directory."
+#~ msgstr ""
+
+#~ msgid "Install with rpm"
+#~ msgstr ""
+
+#~ msgid "Create the tarball and the spec file:"
+#~ msgstr ""
+
+#~ msgid "Create the rpm package:"
+#~ msgstr ""
+
+#~ msgid "Install the rpm package:"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The kernel modules and McKernel kernel"
+#~ " image are installed under the "
+#~ "standard system directories."
+#~ msgstr ""
+
+#~ msgid "Prepare files and change settings for installing McKernel"
+#~ msgstr ""
+
+#~ msgid "Disable SELinux of the compute nodes:"
+#~ msgstr ""
+
+#~ msgid "Change the file to SELINUX=disabled. And then reboot the compute nodes:"
+#~ msgstr ""
+
+#~ msgid "Install the following packages to the compute nodes:"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Ask the system administrator to install"
+#~ " them. Note that ``libdwarf`` is in"
+#~ " the CodeReady Linux Builder repository "
+#~ "on RHEL 8 or in the PowerTools "
+#~ "repository on CentOS 8."
+#~ msgstr ""
+
