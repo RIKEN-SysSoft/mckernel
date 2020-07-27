@@ -41,32 +41,6 @@ and then install it to your home directory of the login node:
    sed -i 's#/usr/#'"$HOME"'/'"$(uname -p)"'/usr/#' $HOME/$(uname -p)/usr/lib64/pkgconfig/capstone.pc
 
 
-Install syscall_intercept
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-   git clone https://github.com/RIKEN-SysSoft/syscall_intercept.git
-   mkdir build && cd build
-
-When ``capstone`` and ``capstone-devel`` are installed into the system directory:
-
-::
-
-   cmake ../syscall_intercept/arch/aarch64 -DCMAKE_INSTALL_PREFIX=${HOME}/$(uname -p)/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DTREAT_WARNINGS_AS_ERRORS=OFF
-
-When ``capstone`` and ``capstone-devel`` are installed into your home directory:
-
-::
-
-   CMAKE_PREFIX_PATH=${HOME}/$(uname -p)/usr cmake ../syscall_intercept/arch/aarch64 -DCMAKE_INSTALL_PREFIX=${HOME}/$(uname -p)/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DTREAT_WARNINGS_AS_ERRORS=OFF
-
-Install:
-
-::
-
-   make && make install && make test
-
 Install UTI for McKernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -79,6 +53,7 @@ Install:
    ../uti/configure --prefix=<mckernel-install> --with-rm=mckernel
    make && make install
 
+
 Install McKernel
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -86,11 +61,11 @@ Install McKernel
 
 ::
 
-   CMAKE_PREFIX_PATH=${HOME}/$(uname -p)/usr cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel -DENABLE_UTI=ON $HOME/src/ihk+mckernel/mckernel
+   cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel -DENABLE_UTI=ON $HOME/src/ihk+mckernel/mckernel
    make -j install
 
 Run programs
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 ``mcexec`` with ``--enable-uti`` option:
 
@@ -99,9 +74,9 @@ Run programs
    mcexec --enable-uti <command>
 
 Install UTI for Linux
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
-You should skip this step if it's already installed as with, for example, Fujitsu Technical Computing Suite.
+You can skip this step if you don't want to develop a run-time using UTI, or if it's already installed with, for example, Fujitsu Technical Computing Suite.
 
 Install by make
 """""""""""""""
@@ -124,3 +99,4 @@ Install by rpm
    rm -f ~/rpmbuild/SOURCES/<version>.tar.gz
    rpmbuild -ba ./scripts/uti.spec
    rpm -Uvh uti-<version>-<release>-<arch>.rpm
+
