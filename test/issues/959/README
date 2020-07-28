@@ -1,0 +1,88 @@
+【Issue#959 動作確認】
+□ テスト内容
+本テストは2つのNUMAノード(node0, node1)を使用してMPOL_INTERLEAVEの動作を確認するテストである。
+2つ以上のNUMAノードを持つ環境で実行すること。
+
+1. INTERLEAVEするノードセットに十分なメモリ容量がある場合の動作確認
+C959T01: set_mempolicyによるmempolicy設定時の動作 (2ノード)
+	node0, node1 からそれぞれ10GBのメモリをMcKernelに割り当てた状態で
+	下記の処理を確認する
+	 (1) set_mempolicy() でプロセスのmempolicyを、node0, node1 でのINTERLEAVEに設定する
+	 (2) 6GBのメモリを確保し、書き込みを行う
+	 (3) McKernelの2つのNUMAノードから均等にメモリが使用されていることを確認する
+
+C959T02: mbindによるmempolicy設定時の動作 (2ノード)
+	node0, node1 からそれぞれ10GBのメモリをMcKernelに割り当てた状態で
+	下記の処理を確認する
+	 (1) set_mempolicy() でプロセスのmempolicyを、node0 でのBINDに設定する
+	 (2) 6GBのメモリを確保する
+	 (3) mbind() で(2)で確保した領域のmempolicyを、node0, node1 でのINTERLEAVEに設定する
+	 (4) McKernelの2つのNUMAノードから均等にメモリが使用されていることを確認する
+
+C959T03: set_mempolicyによるmempolicy設定時の動作 (1ノード)
+	node0, node1 からそれぞれ10GBのメモリをMcKernelに割り当てた状態で
+	下記の処理を確認する
+	 (1) set_mempolicy() でプロセスのmempolicyを、 node1 でのINTERLEAVEに設定する
+	 (2) 6GBのメモリを確保し、書き込みを行う
+	 (3) McKernelのnode1から 6GBが使用されていることを確認する
+
+C959T04: mbindによるmempolicy設定時の動作 (2ノード)
+	node0, node1 からそれぞれ10GBのメモリをMcKernelに割り当てた状態で
+	下記の処理を確認する
+	 (1) set_mempolicy() でプロセスのmempolicyを、node0 でのBINDに設定する
+	 (2) 6GBのメモリを確保する
+	 (3) mbind() で(2)で確保した領域のmempolicyを、node1 でのINTERLEAVEに設定する
+	 (4) McKernelのnode1から 6GBが使用されていることを確認する
+
+2. INTERLEAVEするノードセットにメモリ容量が不足している場合の動作確認
+C959T05: set_mempolicyによるmempolicy設定時の動作
+	node0 に10GB、 node1 に2GBのメモリをそれぞれMcKernelに割り当てた状態で
+	下記の処理を確認する
+	 (1) set_mempolicy() でプロセスのmempolicyを、node1 でのINTERLEAVEに設定する
+	 (2) 6GBのメモリを確保し、書き込みを行う
+	 (3) McKernelのnode0から4GB, node1から2GBがそれぞれ使用されていることを確認する
+
+C959T06: mbindによるmempolicy設定時の動作
+	node0 に10GB、 node1 に2GBのメモリをそれぞれMcKernelに割り当てた状態で
+	下記の処理を確認する
+	 (1) set_mempolicy() でプロセスのmempolicyを、node0 でのBINDに設定する
+	 (2) 6GBのメモリを確保する
+	 (3) mbind() で(2)で確保した領域のmempolicyを、node1 でのINTERLEAVEに設定する
+	 (4) McKernelのnode0から4GB, node1から2GBがそれぞれ使用されていることを確認する
+
+3. 以下のLTPを用いて既存のmbind機能に影響がないことを確認する
+	- mbind01
+ 	- get_mempolicy01
+
+※以下のテストはaarch64向けのテストセットにのみ存在するため、aarch64環境のみ実施
+4. 以下のOSTESTを用いて既存のmbind機能に影響がないことを確認する
+	- ostest-mbind.000
+	- ostest-mbind.001
+	- ostest-mbind.002
+	- ostest-mbind.003
+	- ostest-mbind.004
+	- ostest-mbind.005
+	- ostest-mbind.006
+	- ostest-mbind.007
+	- ostest-mbind.008
+	- ostest-mbind.009
+	- ostest-mbind.010
+	- ostest-mbind.011
+	- ostest-mbind.012
+
+□ 実行手順
+・下記の手順でテストを実行する
+$ cd <mckernel>
+$ patch -p0 < test/issues/959/test_print.patch
+(build mckernel)
+$ cd test/issues/959
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64result.log, aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
