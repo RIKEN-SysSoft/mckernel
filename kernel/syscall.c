@@ -9142,7 +9142,9 @@ SYSCALL_DECLARE(mbind)
 		return -EINVAL;
 	}
 
+#ifdef ENABLE_FUGAKU_HACKS
 	return 0;
+#endif
 
 	memset(numa_mask, 0, sizeof(numa_mask));
 
