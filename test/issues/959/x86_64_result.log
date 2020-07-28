@@ -1,0 +1,313 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7 -m 10G@0,10G@1 -O -e anon_on_demand ... done
+*** C959T01 start *******************************
+INTERLEAVE BIT_MASK: 0x3
+set_mempolicy: INTERLEAVE  mask 0x3
+** Difference of numa_stat **
+[OK]  NUMA[0] 0xc0000000
+[OK]  NUMA[1] 0xc0000000
+*** C959T01 PASSED ******************************
+
+*** C959T02 start *******************************
+INTERLEAVE BIT_MASK: 0x3
+set_mempolicy: BIND  mask 0x1
+mbind        : INTERLEAVE  mask 0x3
+** Difference of numa_stat **
+[OK]  NUMA[0] 0xc0000000
+[OK]  NUMA[1] 0xc0000000
+*** C959T02 PASSED ******************************
+
+*** C959T03 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x0
+[OK]  NUMA[1] 0x180000000
+*** C959T03 PASSED ******************************
+
+*** C959T04 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: BIND  mask 0x1
+mbind        : INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x0
+[OK]  NUMA[1] 0x180000000
+*** C959T04 PASSED ******************************
+
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7 -m 10G@0,2G@1 -O -e anon_on_demand ... done
+*** C959T05 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x100000000
+[OK]  NUMA[1] 0x80000000
+*** C959T05 PASSED ******************************
+
+*** C959T06 start *******************************
+INTERLEAVE BIT_MASK: 0x2
+set_mempolicy: BIND  mask 0x1
+mbind        : INTERLEAVE  mask 0x2
+** Difference of numa_stat **
+[OK]  NUMA[0] 0x100000000
+[OK]  NUMA[1] 0x80000000
+*** C959T06 PASSED ******************************
+
+*** C959T07 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+mbind01.c:181: INFO: case MPOL_DEFAULT
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_DEFAULT (target exists)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_BIND (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_BIND
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_INTERLEAVE (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_INTERLEAVE
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED (no target)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case UNKNOWN_POLICY
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_DEFAULT (invalid flags)
+mbind01.c:230: PASS: Test passed
+mbind01.c:181: INFO: case MPOL_PREFERRED (invalid nodemask)
+mbind01.c:230: PASS: Test passed
+
+Summary:
+passed   11
+failed   0
+skipped  0
+warnings 0
+*** C959T07 PASSED (11)
+
+*** C959T08 start *******************************
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=0 errno=0 (Success)
+RESULT: return value(ret)=0 errno=0 (Success)
+EXPECT: return value(ret)=-1 errno=14 (Bad address)
+RESULT: return value(ret)=-1 errno=14 (Bad address)
+EXPECT: return value(ret)=-1 errno=22 (Invalid argument)
+RESULT: return value(ret)=-1 errno=22 (Invalid argument)
+get_mempolicy01    0  TINFO  :  (case00) START
+get_mempolicy01    1  TPASS  :  (case00) END
+get_mempolicy01    0  TINFO  :  (case01) START
+get_mempolicy01    2  TPASS  :  (case01) END
+get_mempolicy01    0  TINFO  :  (case02) START
+get_mempolicy01    3  TPASS  :  (case02) END
+get_mempolicy01    0  TINFO  :  (case03) START
+get_mempolicy01    4  TPASS  :  (case03) END
+get_mempolicy01    0  TINFO  :  (case04) START
+get_mempolicy01    5  TPASS  :  (case04) END
+get_mempolicy01    0  TINFO  :  (case05) START
+get_mempolicy01    6  TPASS  :  (case05) END
+get_mempolicy01    0  TINFO  :  (case06) START
+get_mempolicy01    7  TPASS  :  (case06) END
+get_mempolicy01    0  TINFO  :  (case07) START
+get_mempolicy01    8  TPASS  :  (case07) END
+get_mempolicy01    0  TINFO  :  (case08) START
+get_mempolicy01    9  TPASS  :  (case08) END
+get_mempolicy01    0  TINFO  :  (case09) START
+get_mempolicy01   10  TPASS  :  (case09) END
+get_mempolicy01    0  TINFO  :  (case10) START
+get_mempolicy01   11  TPASS  :  (case10) END
+get_mempolicy01    0  TINFO  :  (case11) START
+get_mempolicy01   12  TPASS  :  (case11) END
+*** C959T08 PASSED (12)
+
+*** C959T09 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 1
+ARGS: -n 2
+RESULT: ok
+*** C959T09 PASSED
+
+*** C959T10 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 3
+ARGS: -n 2
+RESULT: ok
+*** C959T10 PASSED
+
+*** C959T11 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 5
+ARGS: -n 2
+RESULT: ok
+*** C959T11 PASSED
+
+*** C959T12 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 9
+ARGS: -n 2
+RESULT: ok
+*** C959T12 PASSED
+
+*** C959T13 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 12
+ARGS: -n 2
+RESULT: ok
+*** C959T13 PASSED
+
+*** C959T14 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 14
+ARGS: -n 2
+RESULT: ok
+*** C959T14 PASSED
+
+*** C959T15 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 15
+ARGS: -n 2
+region 0
+get      : mode = 2, node_mask = 1
+m_expect : mode = 2, node_mask = 1
+
+region 1
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+region 2
+get      : mode = 3, node_mask = 3
+m_expect : mode = 3, node_mask = 3
+
+region 3
+get      : mode = 3, node_mask = 3
+m_expect : mode = 3, node_mask = 3
+
+region 4
+get      : mode = 3, node_mask = 3
+m_expect : mode = 3, node_mask = 3
+
+region 5
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+region 6
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+RESULT: ok
+*** C959T15 PASSED
+
+*** C959T16 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 16
+ARGS: -n 2
+region 0
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+region 1
+get      : mode = 2, node_mask = 1
+m_expect : mode = 2, node_mask = 1
+
+region 2
+get      : mode = 2, node_mask = 1
+m_expect : mode = 2, node_mask = 1
+
+region 3
+get      : mode = 2, node_mask = 1
+m_expect : mode = 2, node_mask = 1
+
+region 4
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+region 5
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+region 6
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+RESULT: ok
+*** C959T16 PASSED
+
+*** C959T17 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 20
+ARGS: -n 2
+region 0
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+region 1
+get      : mode = 3, node_mask = 3
+m_expect : mode = 3, node_mask = 3
+
+region 2
+get      : mode = 3, node_mask = 3
+m_expect : mode = 3, node_mask = 3
+
+region 3
+get      : mode = 2, node_mask = 1
+m_expect : mode = 2, node_mask = 1
+
+region 4
+get      : mode = 2, node_mask = 1
+m_expect : mode = 2, node_mask = 1
+
+region 5
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+region 6
+get      : mode = 0, node_mask = 0
+m_expect : mode = 0, node_mask = 0
+
+RESULT: ok
+*** C959T17 PASSED
+
+*** C959T18 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 24
+ARGS: -n 2
+RESULT: ok
+*** C959T18 PASSED
+
+*** C959T19 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 26
+ARGS: -n 2
+nodemask = 0
+RESULT: ok
+*** C959T19 PASSED
+
+*** C959T20 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 28
+ARGS: -n 2
+RESULT: ok
+*** C959T20 PASSED
+
+*** C959T21 start *******************************
+TEST_SUITE: mbind
+TEST_NUMBER: 30
+ARGS: -n 2
+RESULT: ok
+*** C959T21 PASSED

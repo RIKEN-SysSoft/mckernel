@@ -9389,6 +9389,10 @@ mbind_update_only:
 					sizeof(numa_mask));
 			}
 			range_policy->numa_mem_policy = mode;
+			if (mode == MPOL_INTERLEAVE) {
+				range_policy->il_prev =
+						PROCESS_NUMA_MASK_BITS - 1;
+			}
 
 			break;
 
@@ -9550,6 +9554,9 @@ SYSCALL_DECLARE(set_mempolicy)
 			}
 
 			vm->numa_mem_policy = mode;
+			if (mode == MPOL_INTERLEAVE) {
+				vm->il_prev = PROCESS_NUMA_MASK_BITS - 1;
+			}
 			error = 0;
 			break;
 
