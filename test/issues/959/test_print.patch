@@ -1,0 +1,14 @@
+diff --git kernel/mem.c kernel/mem.c
+index e464eb2..7086c6a 100644
+--- kernel/mem.c
++++ kernel/mem.c
+@@ -749,6 +749,9 @@ retry_interleave:
+ #endif
+ 		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
+ 			__FUNCTION__, npages);
++		if (numa_mem_policy == MPOL_INTERLEAVE) {
++			kprintf("TEST_959: reach HERE\n");
++		}
+ 	}
+ 
+ distance_based:
