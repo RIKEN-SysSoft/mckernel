@@ -406,6 +406,7 @@ struct vm_range_numa_policy {
 	unsigned long start, end;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 	int numa_mem_policy;
+	int il_prev;
 };
 
 struct vm_regions {
@@ -797,6 +798,7 @@ struct process_vm {
 	long currss;
 	DECLARE_BITMAP(numa_mask, PROCESS_NUMA_MASK_BITS);
 	int numa_mem_policy;
+	int il_prev;
 	/* Protected by memory_range_lock */
 	struct rb_root vm_range_numa_policy_tree;
 	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
