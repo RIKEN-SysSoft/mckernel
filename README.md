@@ -64,7 +64,7 @@ First, the proxy process is compiled as a position independent binary, which ena
 
 For a smooth experience, we recommend the following combination of OS distributions and platforms:
 
-- CentOS 7.3+ running on Intel Xeon / Xeon Phi
+- CentOS 7.3+ running on Intel Xeon, Xeon Phi, Fujitsu A64FX
 
 
 ##### 1. Change SELinux settings
@@ -85,7 +85,12 @@ sudo reboot
 You will need the following packages installed:
 
 ~~~~
-sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git
+sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git libdwarf-devel
+~~~~
+
+Note that to install libdwarf-devel to RHEL-8.2, you need to enable the CodeReady Linux Builder (CLB) repository and the EPEL repository with the following commands:
+~~~~
+sudo subscription-manager repos --enable codeready-builder-for-rhel-8-$(/bin/arch)-rpms
 ~~~~
 
 Grant read permission to the System.map file of your kernel version:
@@ -114,19 +119,7 @@ git submodule update
 
 Foe example, if you want to try the development branch, use "development" as the pathspec. If you want to try the prerelease version 1.7.0-0.2, use "1.7.0-0.2".
 
-###### 4.1 Install required packages
-
-~~~~
-sudo yum install systemd-libs numactl-libs elfutils-libelf libdwarf
-~~~~
-
-Note that you need to enable CodeReady Linux Builder (CLB) repository with RHEL-8.2 with the following command:
-
-~~~~
-subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
-~~~~
-
-###### 4.2 Install with cmake
+###### 4.1 Install with cmake
 
 Configure and compile:
 
@@ -138,9 +131,9 @@ make -j install
 
 The IHK kernel modules and McKernel kernel image should be installed under the **ihk+mckernel** folder in your home directory.
 
-###### 4.3 Install with rpm
+###### 4.2 Install with rpm
 
-Configure, compile and build rpm:
+Build rpm:
 
 ~~~~
 mkdir -p build && cd build
@@ -213,23 +206,23 @@ sudo ./sbin/mcstop+release.sh
 
 UTI enables a runtime such as MPI runtime to spawn utility threads such as MPI asynchronous progress threads to Linux cores.
 
-1. Install capstone
+###### 7.1 Install capstone
 
 Install EPEL capstone-devel:
 
 ~~~~
-sudo yum install epel-release
+sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 sudo yum install capstone-devel
 ~~~~
 
-2. Install syscall_intercept
+###### 7.2 Install syscall_intercept
 
 ~~~~
 git clone https://github.com/RIKEN-SysSoft/syscall_intercept.git
 cmake ../arch/aarch64 -DCMAKE_INSTALL_PREFIX=<syscall-intercept-install> -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DTREAT_WARNINGS_AS_ERRORS=OFF
 ~~~~
 
-3. Install UTI for McKernel
+###### 7.3 Install UTI for McKernel
 
 Install:
 
@@ -240,19 +233,19 @@ mkdir build && cd build
 make && make install
 ~~~~
 
-4. Install McKernel
+###### 7.4 Install McKernel
 
 ~~~~
 CMAKE_PREFIX_PATH=<syscall-intercept-install> cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel -DENABLE_UTI=ON $HOME/src/ihk+mckernel/mckernel
 ~~~~
 
-5. Run executable
+###### 7.5 Run executable
 
 ~~~~
 mcexec --enable-uti <command>
 ~~~~
 
-6. Install UTI for Linux for performance comparison
+###### 7.6 Install UTI for Linux for performance comparison
 
 Install by make:
 
