@@ -23,10 +23,14 @@ are described below.
 .TP
 .B	-n N
 Specify the number of MPI ranks run on the node.
-e.g.,
+For example,
+.br
    $ mpirun -n 32 -ppn 4 mcexec -n 4 ./a.out
-In the above example, the ./a.out program runs on eight nodes each of
+.br
+the ./a.out program runs on eight nodes each of
 which has four processes.
+You must specify this option when running a MPI program.
+Undefined behavior results if not.
 
 .TP
 .B	-t N
