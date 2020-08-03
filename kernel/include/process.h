@@ -578,6 +578,7 @@ struct process {
 #endif // PROFILE_ENABLE
 	int nr_processes; /* For partitioned execution */
 	int process_rank; /* Rank in partition */
+	struct program_load_desc *desc;
 	int coredump_barrier_count, coredump_barrier_count2;
 	mcs_rwlock_lock_t coredump_lock; // lock for coredump
 };

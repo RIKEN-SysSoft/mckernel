@@ -2127,6 +2127,12 @@ SYSCALL_DECLARE(mprotect)
 	const intptr_t start = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	const int prot = ihk_mc_syscall_arg2(ctx);
+
+	return do_mprotect(start, len0, prot);
+}
+
+int do_mprotect(intptr_t start, size_t len0, int prot)
+{
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
 	size_t len;
@@ -2587,7 +2593,7 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 	
 	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 
-	desc = ihk_mc_alloc_pages(4, IHK_MC_AP_NOWAIT);
+	desc = kmalloc(4 * PAGE_SIZE, IHK_MC_AP_NOWAIT);
 	if (!desc) {
 		kprintf("execve(): ERROR: allocating program descriptor\n");
 		return -ENOMEM;
@@ -2595,9 +2601,9 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 
 	memset((void*)desc, 0, 4 * PAGE_SIZE);
 
-	/* Request host to open executable and load ELF section descriptions */
+	/* Request host to get ELF section descriptions */
 	request.number = __NR_execve;  
-	request.args[0] = 1;  /* 1st phase - get ELF desc */
+	request.args[0] = 1;  /* get ELF desc */
 	request.args[1] = dirfd;
 	request.args[2] = (unsigned long)filename;
 	request.args[3] = virt_to_phys(desc);
@@ -2669,29 +2675,19 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 	 */
 	vm->region.map_start = vm->region.map_end = LD_TASK_UNMAPPED_BASE;
 
-	/* Create virtual memory ranges and update args/envs */
+	/* Load executables and update args/envs */
 	if (prepare_process_ranges_args_envs(thread, desc, desc,
 				PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
 				argv_flat, argv_flat_len, envp_flat, envp_flat_len) != 0) {
 		kprintf("execve(): PANIC: preparing ranges, args, envs, stack\n");
 		panic("");
 	}
+	/* desc must be freed in load_executable or release_process */
+	proc->desc = desc;
 	
 	/* Clear host user space PTEs */
 	clear_host_pte(vm->region.user_start,
 			(vm->region.user_end - vm->region.user_start), 0);
-
-	/* Request host to transfer ELF image */
-	request.number = __NR_execve;
-	request.args[0] = 2;  /* 2nd phase - transfer ELF image */
-	request.args[1] = virt_to_phys(desc);
-	request.args[2] = sizeof(struct program_load_desc) + 
-		sizeof(struct program_image_section) * desc->num_sections;
-
-	if ((ret = do_syscall(&request, ihk_mc_get_processor_id())) != 0) {
-		preempt_enable();
-		goto end;
-	}
 
 	for(i = 0; i < _NSIG; i++){
 		if(thread->sigcommon->action[i].sa.sa_handler != SIG_IGN &&
@@ -2724,7 +2720,6 @@ end:
 	if (argv_flat) {
 		kfree(argv_flat);
 	}
-	ihk_mc_free_pages(desc, 4);
 
 	if (!ret) {
 		unsigned long irqstate;
@@ -2740,6 +2735,10 @@ end:
 
 		/* not reached */
 		return -EFAULT;
+	}
+	else {
+		kfree(desc);
+		proc->desc = NULL;
 	}
 
 	/* no preempt_enable, errors can only happen before we disabled it */
