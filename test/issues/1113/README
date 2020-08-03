@@ -1,0 +1,80 @@
+【Issue#1113 動作確認】
+□ テスト内容
+1. Issueで報告された再現手順での確認
+C1113T01: ppnを変更しながらMPI実行
+	ppn を8, 32, 64, 128 と変更してMPIでMcKernelプロセスを実行し、
+	それぞれが正常に終了することを確認する
+
+2. 既存のプログラムロード機能に影響がないことを確認
+C1113T02: /proc/<PID>/maps での表示
+	実行対象プログラム、インタープリタのファイル名が/proc/<PID>/maps に
+	表示されることを確認
+
+C1113T03: static linkのプログラム
+	static linkされたプログラムが正常に実行されることを確認
+
+C1113T04: シェルスクリプト
+	シェルスクリプトが正常に実行されることを確認
+
+C1113T05: fork, exec 機能
+	fork後にexecveを行うテストプログラムが正常に実行されることを確認
+
+C1113T06: 同一実行ファイルの並列実行
+	同一の実行可能ファイルを、プロセスの生存期間がオーバーラップする状況で
+	並列に実行した際に正常に実行されることを確認
+
+3. libhugetlbfsへの対応を確認
+C1113T07: ラージページサイズの.data, .bssセクションを持つ実行ファイルの実行
+	8MB の大きさの.data, .bssセクションを持つプログラムを実行し、
+	/proc/self/maps の内容から、libhugetlbfsによるマップが
+	行われていることを確認
+	なお、ラージページのサイズは2MBとしている
+
+4. 既存のfork, execveの機能に影響がないことをLTPを用いて確認
+	以下のLTPテストケースを実行し、PASSすることを確認
+	 - fork01
+	 - fork02
+	 - fork03
+	 - fork04
+	 - fork07
+	 - fork08
+	 - fork09
+	 - fork10
+	 - fork11
+	 - execve01
+	 - execve02
+	 - execve03
+	 - execve05
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
+
+[note]
+apollo08でテストを実施した際に、libhugetlbfsが正しく動作しない現象に遭遇した。
+具体的には、libhugetlbfsを利用したビルドの際に、.dataセクションの位置がアドレス空間の
+先頭付近に設定され、正しく動作しなくなる現象。
+
+原因は、gccからの/usr/share/ld.libhugetlbfs の呼び出しの際に-marchオプションが未指定となり、
+common-page-size, max-page-size の指定が空になってしまうこと。
+
+work around として、/usr/share/ld.libhugetlbfs に下記修正を加えてテストを実行した。
+--- ld.hugetlbfs_org    2018-08-03 02:38:16.000000000 +0900
++++ ld.hugetlbfs        2020-09-02 08:43:05.131148500 +0900
+@@ -88,6 +88,7 @@
+ elf_i386|elf_x86_64)   HPAGE_SIZE=$((4*$MB)) SLICE_SIZE=$HPAGE_SIZE ;;
+ elf_s390|elf64_s390)   HPAGE_SIZE=$((1*$MB)) SLICE_SIZE=$HPAGE_SIZE ;;
+ armelf_linux_eabi|aarch64elf)  HPAGE_SIZE=$((2*MB)) SLICE_SIZE=$HPAGE_SIZE ;;
++*)     HPAGE_SIZE=$((2*$MB)) SLICE_SIZE=$HPAGE_SIZE ;;
+ esac
+
+ if [ "$HTLB_ALIGN" == "slice" ]; then
+

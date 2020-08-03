@@ -560,6 +560,7 @@ ENTRY(ret_from_fork)
 	blr	x19
 1:	get_thread_info tsk
 	bl	release_runq_lock
+	bl	load_executable
 	bl	utilthr_migrate
 	b	ret_to_user
 ENDPROC(ret_from_fork)

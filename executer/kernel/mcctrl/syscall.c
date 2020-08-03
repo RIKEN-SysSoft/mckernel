@@ -1185,7 +1185,19 @@ out:
 	return error;
 }
 
-static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off, size_t size, uintptr_t rpa)
+enum page_mode {
+	PM_NONE =               0x00,
+	PM_PENDING_FREE =       0x01,
+	PM_WILL_PAGEIO =        0x02,
+	PM_PAGEIO =             0x03,
+	PM_DONE_PAGEIO =        0x04,
+	PM_PAGEIO_EOF =         0x05,
+	PM_PAGEIO_ERROR =       0x06,
+	PM_MAPPED =             0x07,
+};
+
+static int pager_req_read(ihk_os_t os, uintptr_t handle, off_t off,
+		size_t size, uintptr_t rpa, uintptr_t mode_rpa)
 {
 	ssize_t ss, n;
 	struct pager *pager;
@@ -1282,6 +1294,22 @@ out:
 	if (file) {
 		fput(file);
 	}
+
+	/* update mckernel page on this side to avoid issues
+	 * with concurrent requests and scheduling
+	 */
+	phys = ihk_device_map_memory(dev, mode_rpa, sizeof(enum page_mode));
+	buf = ihk_device_map_virtual(dev, phys,
+			sizeof(enum page_mode), NULL, 0);
+	if (ss < 0)
+		*((enum page_mode *)buf) = PM_PAGEIO_ERROR;
+	else if (ss == 0)
+		*((enum page_mode *)buf) = PM_PAGEIO_EOF;
+	else
+		*((enum page_mode *)buf) = PM_DONE_PAGEIO;
+	ihk_device_unmap_virtual(dev, buf, size);
+	ihk_device_unmap_memory(dev, phys, size);
+
 	dprintk("pager_req_read(%lx,%lx,%lx,%lx): %ld\n", handle, off, size, rpa, ss);
 	return ss;
 }
@@ -1800,7 +1828,8 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 		break;
 
 	case PAGER_REQ_READ:
-		ret = pager_req_read(os, req->args[1], req->args[2], req->args[3], req->args[4]);
+		ret = pager_req_read(os, req->args[1], req->args[2],
+				     req->args[3], req->args[4], req->args[5]);
 		break;
 
 	case PAGER_REQ_WRITE:
