@@ -2768,7 +2768,7 @@ release_process(struct process *proc)
 		}
 		ihk_mc_spinlock_unlock(&proc->mckfd_lock, irqstate);
 	}
-
+	kfree(proc->desc);
 	kfree(proc);
 
 	/* no process left */

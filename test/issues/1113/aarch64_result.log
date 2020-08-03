@@ -1,0 +1,295 @@
+mcreboot.sh -c 1-4 -m 10G@0 -O ... done
+*** C1113T01 start *******************************
+[MPI's machine file]
+localhost
+**
+[OK] ppn 8
+[OK] ppn 32
+[OK] ppn 64
+[OK] ppn 128
+
+*** C1113T02 start *******************************
+000000400000-000000410000 r-xp 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/print_maps
+000000410000-000000420000 r--p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/print_maps
+000000420000-000000430000 rw-p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/print_maps
+080000000000-080000020000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000020000-080000030000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000030000-080000040000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+0ffffffe0000-100000000000 rw-p 0 0:0 0
+100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
+100000040000-1000001b0000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001b0000-1000001c0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001c0000-1000001d0000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+3fffffe00000-400000000000 rw-p 0 0:0 0                  [stack]
+[OK] /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/print_maps is found in maps
+[OK] /usr/lib64/ld-2.17.so is found in maps
+
+*** C1113T03 start *******************************
+000000400000-000000490000 r-xp 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/static_print_maps
+000000490000-0000004b0000 rw-p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/static_print_maps
+000020000000-000020010000 rw-p 0 0:0 0                  [heap]
+000020010000-000020040000 rw-p 0 0:0 0                  [heap]
+000020040000-000020050000 rw-p 0 0:0 0                  [heap]
+0ffffffe0000-100000000000 rw-p 0 0:0 0
+100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
+3fffffe00000-400000000000 rw-p 0 0:0 0                  [stack]
+[OK] exec static link program
+
+*** C1113T04 start *******************************
+Hello!! This is test program
+[OK] exec shell script
+
+*** C1113T05 start *******************************
+000000400000-000000410000 r-xp 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/print_maps
+000000410000-000000420000 r--p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/print_maps
+000000420000-000000430000 rw-p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/print_maps
+080000000000-080000020000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000020000-080000030000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000030000-080000040000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+0ffffffe0000-100000000000 rw-p 0 0:0 0
+100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
+100000040000-1000001b0000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001b0000-1000001c0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001c0000-1000001d0000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+3fffffe00000-400000000000 rw-p 0 0:0 0                  [stack]
+ Child exited normaly
+[OK] fork and exec
+
+*** C1113T06 start *******************************
+ parallel exec same executable: ok:300 ng:0
+*** C1113T06: PASSED
+
+*** C1113T07 start *******************************
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Found pagesize 2048 kB
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Detected page sizes:
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO:    Size: 2048 kB (default)  Mount: /dev/hugepages
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Parsed kernel version: [4] . [14] . [0]  [pre-release: 115]
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Feature private_reservations is present in this kernel
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Feature noreserve_safe is present in this kernel
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Feature map_hugetlb is present in this kernel
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Kernel has MAP_PRIVATE reservations.  Disabling heap prefaulting.
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Kernel supports MAP_HUGETLB
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: HUGETLB_SHARE=0, sharing disabled
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: HUGETLB_NO_RESERVE=no, reservations enabled
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Segment 0 (phdr 2): 0x400000-0x400b2c  (filesz=0xb2c) (prot = 0x5)
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Segment 1 (phdr 3): 0x7ffde0-0x1800040  (filesz=0x800258) (prot = 0x3)
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: DEBUG: Total memsz = 0x1000d8c, memsz of largest segment = 0x1000260
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: libhugetlbfs version: 2.16 (modified)
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23575]: WARNING: Unable to verify address range 0x410000 - 0x600000.  Not empty?
+000000400000-000000410000 r-xp 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+0000007f0000-000000800000 r--p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+000000800000-000001010000 rw-p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+000001010000-000001810000 rw-s 0 0:0 0
+000020000000-000020030000 rw-p 0 0:0 0                  [heap]
+080000000000-080000020000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000020000-080000030000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000030000-080000040000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+0ffffffe0000-100000000000 rw-p 0 0:0 0
+100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
+100000040000-1000001b0000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001b0000-1000001c0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001c0000-1000001d0000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001d0000-1000001f0000 r-xp 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+1000001f0000-100000200000 r--p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000200000-100000210000 rw-p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000210000-100000220000 r-xp 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000220000-100000230000 r--p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000230000-100000240000 rw-p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000240000-100000430000 r--p 0 0:0 0
+100000430000-100000440000 rw-p 0 0:0 0
+3fffffe00000-400000000000 rw-p 0 0:0 0                  [stack]
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23575]: INFO: Mapped hugeseg at 0x100000600000. Copying 0xb2c bytes and 0 extra bytes from 0x400000...done
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Prepare succeeded
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23582]: WARNING: Unable to verify address range 0x600000 - 0x7f0000.  Not empty?
+000000400000-000000410000 r-xp 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+0000007f0000-000000800000 r--p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+000000800000-000001010000 rw-p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+000001010000-000001810000 rw-s 0 0:0 0
+000020000000-000020030000 rw-p 0 0:0 0                  [heap]
+080000000000-080000020000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000020000-080000030000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000030000-080000040000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+0ffffffe0000-100000000000 rw-p 0 0:0 0
+100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
+100000040000-1000001b0000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001b0000-1000001c0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001c0000-1000001d0000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001d0000-1000001f0000 r-xp 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+1000001f0000-100000200000 r--p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000200000-100000210000 rw-p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000210000-100000220000 r-xp 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000220000-100000230000 r--p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000230000-100000240000 rw-p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000240000-100000430000 r--p 0 0:0 0
+100000430000-100000440000 rw-p 0 0:0 0
+3fffffe00000-400000000000 rw-p 0 0:0 0                  [stack]
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23582]: WARNING: Unable to verify address range 0x1810000 - 0x1a00000.  Not empty?
+000000400000-000000410000 r-xp 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+0000007f0000-000000800000 r--p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+000000800000-000001010000 rw-p 0 0:0 0                  /home/satoken/old_srcs/src_kyokaV/mckernel/test/issues/_1113/bigbssdata
+000001010000-000001810000 rw-s 0 0:0 0
+000020000000-000020030000 rw-p 0 0:0 0                  [heap]
+080000000000-080000020000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000020000-080000030000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000030000-080000040000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+0ffffffe0000-100000000000 rw-p 0 0:0 0
+100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
+100000040000-1000001b0000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001b0000-1000001c0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001c0000-1000001d0000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001d0000-1000001f0000 r-xp 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+1000001f0000-100000200000 r--p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000200000-100000210000 rw-p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000210000-100000220000 r-xp 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000220000-100000230000 r--p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000230000-100000240000 rw-p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000440000-100000630000 r--p 0 0:0 0
+100000630000-100000640000 rw-p 0 0:0 0
+3fffffe00000-400000000000 rw-p 0 0:0 0                  [stack]
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23582]: INFO: Mapped hugeseg at 0x100000800000. Copying 0x800258 bytes and 0 extra bytes from 0x7ffde0...done
+libhugetlbfs [apollo08.postk.local.r-ccs.riken.jp:23566]: INFO: Prepare succeeded
+000000400000-000000600000 r-xp 0 0:0 0                  /dev/hugepages/libhugetlbfs.tmp.PCh9ad (deleted)
+000000600000-000001a00000 rw-p 0 0:0 0                  /dev/hugepages/libhugetlbfs.tmp.2AQQli (deleted)
+080000000000-080000020000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000020000-080000030000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+080000030000-080000040000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+0ffffffe0000-100000000000 rw-p 0 0:0 0
+100000000000-100000010000 r--s 0 0:0 0                  [vsyscall]
+100000010000-100000020000 r-xs 0 0:0 0                  [vdso]
+100000040000-1000001b0000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001b0000-1000001c0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001c0000-1000001d0000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+1000001d0000-1000001f0000 r-xp 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+1000001f0000-100000200000 r--p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000200000-100000210000 rw-p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+100000210000-100000220000 r-xp 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000220000-100000230000 r--p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+100000230000-100000240000 rw-p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+3fffffe00000-400000000000 rw-p 0 0:0 0                  [stack]
+[OK] libhugetlbfs is working
+
+*** C1113T08 start *******************************
+fork01      1  TPASS  :  fork() returned 23610
+fork01      2  TPASS  :  child pid and fork() return agree: 23610
+*** C1113T08 PASSED (2)
+
+*** C1113T09 start *******************************
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+*** C1113T09 PASSED (1)
+
+*** C1113T10 start *******************************
+fork03      0  TINFO  :  process id in parent of child from fork : 23658
+fork03      1  TPASS  :  test 1 PASSED
+*** C1113T10 PASSED (1)
+
+*** C1113T11 start *******************************
+fork04      1  TPASS  :  Env var TERM unchanged after fork(): xterm
+fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
+fork04      3  TPASS  :  Env var TESTPROG unchanged after fork(): FRKTCS04
+*** C1113T11 PASSED (3)
+
+*** C1113T12 start *******************************
+fork07      0  TINFO  :  Forking 100 children
+fork07      0  TINFO  :  Forked all 100 children, now collecting
+fork07      0  TINFO  :  Collected all 100 children
+fork07      1  TPASS  :  100/100 children read correctly from an inheritted fd
+*** C1113T12 PASSED (1)
+
+*** C1113T13 start *******************************
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  second child got char: b
+fork08      1  TPASS  :  Test passed in childnumber 2
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  parent forksval: 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      1  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      2  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      3  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  Number of processes forked is 2
+*** C1113T13 PASSED (4)
+
+*** C1113T14 start *******************************
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 6
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      0  TINFO  :  Child opened new file #1023
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 6
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      1  TPASS  :  test 1 PASSED
+*** C1113T14 PASSED (1)
+
+*** C1113T15 start *******************************
+fork10      0  TINFO  :  fork child A
+fork10      1  TPASS  :  test 1 PASSED
+*** C1113T15 PASSED (1)
+
+*** C1113T16 start *******************************
+fork11      1  TPASS  :  fork test passed, 100 processes
+*** C1113T16 PASSED (1)
+
+*** C1113T17 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve01_child.c:46: PASS: execve01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1113T17 PASSED (1)
+
+*** C1113T18 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve02.c:66: PASS: execve() failed expectedly: EACCES
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1113T18 PASSED (1)
+
+*** C1113T19 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve03.c:144: PASS: execve failed as expected: ENAMETOOLONG
+execve03.c:144: PASS: execve failed as expected: ENOENT
+execve03.c:144: PASS: execve failed as expected: ENOTDIR
+execve03.c:144: PASS: execve failed as expected: EFAULT
+execve03.c:144: PASS: execve failed as expected: EACCES
+execve03.c:144: PASS: execve failed as expected: ENOEXEC
+
+Summary:
+passed   6
+failed   0
+skipped  0
+warnings 0
+*** C1113T19 PASSED (6)
+
+*** C1113T20 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+
+Summary:
+passed   8
+failed   0
+skipped  0
+warnings 0
+*** C1113T20 PASSED (8)

@@ -1,0 +1,242 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 1-4 -m 10G@0 -O ... done
+*** C1113T01 start *******************************
+[MPI's machine file]
+localhost
+**
+[OK] ppn 8
+[OK] ppn 32
+[OK] ppn 64
+[OK] ppn 128
+
+*** C1113T02 start *******************************
+000000400000-000000401000 r-xp 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/print_maps
+000000600000-000000601000 r--p 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/print_maps
+000000601000-000000602000 rw-p 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/print_maps
+155555600000-155555622000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555821000-155555822000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555822000-155555823000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555823000-155555824000 rw-s 0 0:0 0
+2aaaaa9fc000-2aaaaaa00000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa02000 r-xs 0 0:0 0                  [vdso]
+2aaaaaa02000-2aaaaaa03000 rw-p 0 0:0 0
+2aaaaaa19000-2aaaaaa1a000 rw-p 0 0:0 0
+2aaaaaa1a000-2aaaaabdd000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaabdd000-2aaaaaddc000 ---p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaaddc000-2aaaaade0000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaade0000-2aaaaade2000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaade2000-2aaaaade7000 rw-p 0 0:0 0
+2aaaaade7000-2aaaaade9000 rw-p 0 0:0 0
+547fffe00000-548000000000 rw-p 0 0:0 0                  [stack]
+[OK] /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/print_maps is found in maps
+[OK] /usr/lib64/ld-2.17.so is found in maps
+
+*** C1113T03 start *******************************
+000000400000-0000004bd000 r-xp 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/static_print_maps
+0000006bc000-0000006bf000 rw-p 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/static_print_maps
+0000006bf000-0000006c1000 rw-s 0 0:0 0
+000000800000-000000802000 rw-p 0 0:0 0                  [heap]
+000000802000-000000823000 rw-p 0 0:0 0                  [heap]
+000000823000-000000824000 rw-p 0 0:0 0                  [heap]
+2aaaaa9fc000-2aaaaaa00000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa02000 r-xs 0 0:0 0                  [vdso]
+547fffe00000-548000000000 rw-p 0 0:0 0                  [stack]
+[OK] exec static link program
+
+*** C1113T04 start *******************************
+Hello!! This is test program
+[OK] exec shell script
+
+*** C1113T05 start *******************************
+000000400000-000000401000 r-xp 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/print_maps
+000000600000-000000601000 r--p 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/print_maps
+000000601000-000000602000 rw-p 0 0:0 0                  /home/satoken/mck_srcs/kyokaV/mckernel/test/issues/1113/print_maps
+155555600000-155555622000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555821000-155555822000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555822000-155555823000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555823000-155555824000 rw-s 0 0:0 0
+2aaaaa9fe000-2aaaaaa00000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa02000 r-xs 0 0:0 0                  [vdso]
+2aaaaaa02000-2aaaaaa03000 rw-p 0 0:0 0
+2aaaaaa19000-2aaaaabdc000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaabdc000-2aaaaaddb000 ---p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaaddb000-2aaaaaddf000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaaddf000-2aaaaade1000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaade1000-2aaaaade6000 rw-p 0 0:0 0
+2aaaaade6000-2aaaaade7000 rw-p 0 0:0 0
+2aaaaade7000-2aaaaade9000 rw-p 0 0:0 0
+547fffe00000-548000000000 rw-p 0 0:0 0                  [stack]
+ Child exited normaly
+[OK] fork and exec
+
+*** C1113T06 start *******************************
+ parallel exec same executable: ok:300 ng:0
+*** C1113T06: PASSED
+
+*** C1113T07 start *******************************
+libhugetlbfs [wallaby12:25653]: INFO: Found pagesize 2048 kB
+libhugetlbfs [wallaby12:25653]: INFO: Detected page sizes:
+libhugetlbfs [wallaby12:25653]: INFO:    Size: 2048 kB (default)  Mount: /dev/hugepages
+libhugetlbfs [wallaby12:25653]: INFO: Parsed kernel version: [3] . [10] . [0]  [pre-release: 693]
+libhugetlbfs [wallaby12:25653]: INFO: Feature private_reservations is present in this kernel
+libhugetlbfs [wallaby12:25653]: INFO: Feature noreserve_safe is present in this kernel
+libhugetlbfs [wallaby12:25653]: INFO: Feature map_hugetlb is present in this kernel
+libhugetlbfs [wallaby12:25653]: INFO: Kernel has MAP_PRIVATE reservations.  Disabling heap prefaulting.
+libhugetlbfs [wallaby12:25653]: INFO: Kernel supports MAP_HUGETLB
+libhugetlbfs [wallaby12:25653]: INFO: HUGETLB_SHARE=0, sharing disabled
+libhugetlbfs [wallaby12:25653]: INFO: HUGETLB_NO_RESERVE=no, reservations enabled
+libhugetlbfs [wallaby12:25653]: INFO: Segment 0 (phdr 2): 0x400000-0x40096c  (filesz=0x96c) (prot = 0x5)
+libhugetlbfs [wallaby12:25653]: INFO: Segment 1 (phdr 3): 0xbffe00-0x1c00080  (filesz=0x800260) (prot = 0x3)
+libhugetlbfs [wallaby12:25653]: DEBUG: Total memsz = 0x1000bec, memsz of largest segment = 0x1000280
+libhugetlbfs [wallaby12:25653]: INFO: libhugetlbfs version: 2.16 (modified)
+libhugetlbfs [wallaby12:25662]: INFO: Mapped hugeseg at 0x2aaaab400000. Copying 0x96c bytes and 0 extra bytes from 0x400000...done
+libhugetlbfs [wallaby12:25653]: INFO: Prepare succeeded
+libhugetlbfs [wallaby12:25668]: INFO: Mapped hugeseg at 0x2aaaab400000. Copying 0x800260 bytes and 0 extra bytes from 0xbffe00...done
+libhugetlbfs [wallaby12:25653]: INFO: Prepare succeeded
+000000400000-000000600000 r-xp 0 0:0 0                  /dev/hugepages/libhugetlbfs.tmp.ehfbbH (deleted)
+000000a00000-000001e00000 rw-p 0 0:0 0                  /dev/hugepages/libhugetlbfs.tmp.NGjiQL (deleted)
+155555600000-155555622000 r-xp 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555821000-155555822000 r--p 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555822000-155555823000 rw-p 0 0:0 0                  /usr/lib64/ld-2.17.so
+155555823000-155555824000 rw-s 0 0:0 0
+2aaaaa9fe000-2aaaaaa00000 rw-p 0 0:0 0
+2aaaaaa00000-2aaaaaa02000 r-xs 0 0:0 0                  [vdso]
+2aaaaaa02000-2aaaaaa03000 rw-p 0 0:0 0
+2aaaaaa19000-2aaaaabdc000 r-xp 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaabdc000-2aaaaaddb000 ---p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaaddb000-2aaaaaddf000 r--p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaaddf000-2aaaaade1000 rw-p 0 0:0 0                  /usr/lib64/libc-2.17.so
+2aaaaade1000-2aaaaade6000 rw-p 0 0:0 0
+2aaaaade6000-2aaaaadf5000 r-xp 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+2aaaaadf5000-2aaaaaff5000 ---p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+2aaaaaff5000-2aaaaaff6000 r--p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+2aaaaaff6000-2aaaaaff7000 rw-p 0 0:0 0                  /usr/lib64/libhugetlbfs.so
+2aaaaaff7000-2aaaab002000 rw-p 0 0:0 0
+2aaaab002000-2aaaab003000 rw-p 0 0:0 0
+2aaaab003000-2aaaab005000 r-xp 0 0:0 0                  /usr/lib64/libdl-2.17.so
+2aaaab005000-2aaaab205000 ---p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+2aaaab205000-2aaaab206000 r--p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+2aaaab206000-2aaaab207000 rw-p 0 0:0 0                  /usr/lib64/libdl-2.17.so
+2aaaab207000-2aaaab209000 rw-p 0 0:0 0
+547fffe00000-548000000000 rw-p 0 0:0 0                  [stack]
+[OK] libhugetlbfs is working
+
+*** C1113T08 start *******************************
+fork01      1  TPASS  :  fork() returned 20198
+fork01      2  TPASS  :  child pid and fork() return agree: 20198
+*** C1113T08 PASSED (2)
+
+*** C1113T09 start *******************************
+fork02      0  TINFO  :  Inside parent
+fork02      0  TINFO  :  exit status of wait 0
+fork02      1  TPASS  :  test 1 PASSED
+*** C1113T09 PASSED (1)
+
+*** C1113T10 start *******************************
+fork03      0  TINFO  :  process id in parent of child from fork : 20246
+fork03      1  TPASS  :  test 1 PASSED
+*** C1113T10 PASSED (1)
+
+*** C1113T11 start *******************************
+fork04      1  TPASS  :  Env var TERM unchanged after fork(): xterm-256color
+fork04      2  TPASS  :  Env var NoTSetzWq unchanged after fork(): getenv() does not find variable set
+fork04      3  TPASS  :  Env var TESTPROG unchanged after fork(): FRKTCS04
+*** C1113T11 PASSED (3)
+
+*** C1113T12 start *******************************
+fork07      0  TINFO  :  Forking 100 children
+fork07      0  TINFO  :  Forked all 100 children, now collecting
+fork07      0  TINFO  :  Collected all 100 children
+fork07      1  TPASS  :  100/100 children read correctly from an inheritted fd
+*** C1113T12 PASSED (1)
+
+*** C1113T13 start *******************************
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  second child got char: b
+fork08      1  TPASS  :  Test passed in childnumber 2
+fork08      0  TINFO  :  parent forksval: 1
+fork08      0  TINFO  :  parent forksval: 2
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      1  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      2  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  exit status of wait  expected 0 got 0
+fork08      3  TPASS  :  parent test PASSED
+fork08      0  TINFO  :  Number of processes forked is 2
+*** C1113T13 PASSED (4)
+
+*** C1113T14 start *******************************
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 6
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      0  TINFO  :  Child opened new file #1023
+fork09      0  TINFO  :  OPEN_MAX is 1024
+fork09      0  TINFO  :  first file descriptor is 6
+fork09      0  TINFO  :  Parent reporting 1023 files open
+fork09      1  TPASS  :  test 1 PASSED
+*** C1113T14 PASSED (1)
+
+*** C1113T15 start *******************************
+fork10      0  TINFO  :  fork child A
+fork10      1  TPASS  :  test 1 PASSED
+*** C1113T15 PASSED (1)
+
+*** C1113T16 start *******************************
+fork11      1  TPASS  :  fork test passed, 100 processes
+*** C1113T16 PASSED (1)
+
+*** C1113T17 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve01_child.c:46: PASS: execve01_child executed
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1113T17 PASSED (1)
+
+*** C1113T18 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve02.c:66: PASS: execve() failed expectedly: EACCES
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1113T18 PASSED (1)
+
+*** C1113T19 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve03.c:144: PASS: execve failed as expected: ENAMETOOLONG
+execve03.c:144: PASS: execve failed as expected: ENOENT
+execve03.c:144: PASS: execve failed as expected: ENOTDIR
+execve03.c:144: PASS: execve failed as expected: EFAULT
+execve03.c:144: PASS: execve failed as expected: EACCES
+execve03.c:144: PASS: execve failed as expected: ENOEXEC
+
+Summary:
+passed   6
+failed   0
+skipped  0
+warnings 0
+*** C1113T19 PASSED (6)
+
+*** C1113T20 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+execve_child.c:34: PASS: argv[1] is canary, expected 'canary'
+
+Summary:
+passed   8
+failed   0
+skipped  0
+warnings 0
+*** C1113T20 PASSED (8)

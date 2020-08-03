@@ -268,6 +268,8 @@ struct program_load_desc *load_elf(FILE *fp, char **interp_pathp)
 	memset(desc, '\0', sizeof(struct program_load_desc)
 	                   + sizeof(struct program_image_section) * nhdrs);
 	desc->magic = PLD_MAGIC;
+	desc->exec_path_va = 0;
+	desc->interp_path_va = 0;
 	fseek(fp, hdr.e_phoff, SEEK_SET);
 	j = 0;
 	desc->num_sections = nhdrs;
@@ -594,6 +596,7 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 	char *interp_path;
 	char *shebang = NULL;
 	size_t shebang_len = 0;
+	char *real_exec_path = NULL;
 	struct program_load_desc *desc;
 	int ret = 0;
 	struct stat sb;
@@ -701,8 +704,17 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 		return 1;
 	}
 
+	/* realpath() allocate a buffer of up to PATH_MAX bytes */
+	if (!(real_exec_path = realpath(exec_path, NULL))) {
+		fprintf(stderr, "Error: Failed to get realpath of %s\n",
+			exec_path);
+		return 1;
+	}
+	desc->exec_path_va = (unsigned long)real_exec_path;
+
 	if (interp_path) {
 		char *path;
+		char *real_interp_path;
 
 		path = search_file(interp_path, X_OK);
 		if (!path) {
@@ -717,6 +729,14 @@ int load_elf_desc(char *filename, struct program_load_desc **desc_p,
 			fclose(fp);
 			return 1;
 		}
+
+		/* realpath() allocate a buffer of up to PATH_MAX bytes */
+		if (!(real_interp_path = realpath(path, NULL))) {
+			fprintf(stderr, "Error: Failed to get realpath of %s\n",
+				path);
+			return 1;
+		}
+		desc->interp_path_va = (unsigned long)real_interp_path;
 
 		desc = load_interp(desc, interp);
 		if (!desc) {
@@ -802,100 +822,6 @@ int load_elf_desc_shebang(char *shebang_argv0,
 
 		return load_elf_desc_shebang(shebang, desc_p, shebang_argv_p,
 					     execvp);
-	}
-
-	return 0;
-}
-
-int transfer_image(int fd, struct program_load_desc *desc)
-{
-	struct remote_transfer pt;
-	unsigned long s, e, flen, rpa;
-	int i, l, lr;
-	FILE *fp;
-
-	for (i = 0; i < desc->num_sections; i++) {
-		fp = desc->sections[i].fp;
-		s = (desc->sections[i].vaddr) & page_mask;
-		e = (desc->sections[i].vaddr + desc->sections[i].len
-		     + page_size - 1) & page_mask;
-		rpa = desc->sections[i].remote_pa;
-
-		if (fseek(fp, desc->sections[i].offset, SEEK_SET) != 0) {
-			fprintf(stderr, "transfer_image(): error: seeking file position\n");
-			return -1;
-		}
-		flen = desc->sections[i].filesz;
-
-		__dprintf("seeked to %lx | size %ld\n",
-		          desc->sections[i].offset, flen);
-
-		while (s < e) {
-			memset(&pt, '\0', sizeof pt);
-			pt.rphys = rpa;
-			pt.userp = dma_buf;
-			pt.size = page_size;
-			pt.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
-			lr = 0;
-			
-			memset(dma_buf, 0, page_size);
-			if (s < desc->sections[i].vaddr) {
-				l = desc->sections[i].vaddr 
-					& (page_size - 1);
-				lr = page_size - l;
-				if (lr > flen) {
-					lr = flen;
-				}
-				if (fread(dma_buf + l, 1, lr, fp) != lr) {
-					if (ferror(fp) > 0) {
-						fprintf(stderr, "transfer_image(): error: accessing file\n");
-						return -EINVAL;
-					}
-					else if (feof(fp) > 0) {
-						fprintf(stderr, "transfer_image(): file too short?\n");
-						return -EINVAL;
-					}
-					else {
-						/* TODO: handle smaller reads.. */
-						return -EINVAL;
-					}
-				}
-				flen -= lr;
-			} 
-			else if (flen > 0) {
-				if (flen > page_size) {
-					lr = page_size;
-				} else {
-					lr = flen;
-				}
-				if (fread(dma_buf, 1, lr, fp) != lr) {
-					if (ferror(fp) > 0) {
-						fprintf(stderr, "transfer_image(): error: accessing file\n");
-						return -EINVAL;
-					}
-					else if (feof(fp) > 0) {
-						fprintf(stderr, "transfer_image(): file too short?\n");
-						return -EINVAL;
-					}
-					else {
-						/* TODO: handle smaller reads.. */
-						return -EINVAL;
-					}
-				}
-				flen -= lr;
-			} 
-			s += page_size;
-			rpa += page_size;
-			
-			/* No more left to upload.. */
-			if (lr == 0 && flen == 0) break;
-
-			if (ioctl(fd, MCEXEC_UP_TRANSFER,
-						(unsigned long)&pt)) {
-				perror("dma");
-				break;
-			}
-		}
 	}
 
 	return 0;
@@ -2677,6 +2603,13 @@ int main(int argc, char **argv)
 	desc->uti_use_last_cpu = uti_use_last_cpu;
 	desc->thp_disable = get_thp_disable();
 
+	if ((error = init_worker_threads(fd)) != 0) {
+		fprintf(stderr, "%s: Error: creating worker threads: %s\n",
+			__func__, strerror(-error));
+		close(fd);
+		return 1;
+	}
+
 	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
 		perror("prepare");
@@ -2685,10 +2618,6 @@ int main(int argc, char **argv)
 	}
 
 	print_desc(desc);
-	if (transfer_image(fd, desc) < 0) {
-		fprintf(stderr, "error: transferring image\n");
-		return -1;
-	}
 	fflush(stdout);
 	fflush(stderr);
 	
@@ -2718,13 +2647,6 @@ int main(int argc, char **argv)
 #endif
 
 	init_sigaction();
-
-	if ((error = init_worker_threads(fd)) != 0) {
-		fprintf(stderr, "%s: Error: creating worker threads: %s\n",
-			__func__, strerror(-error));
-		close(fd);
-		return 1;
-	}
 
 	if (ioctl(fd, MCEXEC_UP_START_IMAGE, (unsigned long)desc) != 0) {
 		perror("exec");
@@ -4243,8 +4165,6 @@ fork_err:
 		/* Actually, performing execveat() for McKernel */
 		case __NR_execve: {
 
-			/* Execve phase */
-			switch (w.sr.args[0]) {
 				struct program_load_desc *desc;
 				struct remote_transfer trans;
 				char *filename;
@@ -4254,8 +4174,7 @@ fork_err:
 				size_t size;
 				int ret, dirfd, flags;
 
-				/* Load descriptor phase */
-				case 1:
+				/* Load descriptor */
 					shebang_argv = NULL;
 					buffer = NULL;
 					desc = NULL;
@@ -4267,13 +4186,13 @@ fork_err:
 						filename, flags,
 						pathbuf, PATH_MAX);
 					if (ret) {
-						goto return_execve1;
+						goto return_execve;
 					}
 					filename = pathbuf;
 
 					if ((ret = load_elf_desc_shebang(filename, &desc,
 									 &shebang_argv, 0)) != 0) {
-						goto return_execve1;
+						goto return_execve;
 					}
 
 					desc->enable_vdso = enable_vdso;
@@ -4298,7 +4217,7 @@ fork_err:
 								filename);
 							free(shebang_argv_flat);
 							ret = ENOMEM;
-							goto return_execve1;
+							goto return_execve;
 						}
 						memcpy(buffer, desc, size);
 						memcpy(buffer + size, shebang_argv_flat,
@@ -4318,70 +4237,24 @@ fork_err:
 							"execve(): error transfering ELF for file %s\n", 
 							filename);
 						ret = -errno;
-						goto return_execve1;
+						goto return_execve;
 					}
 					
 					__dprintf("execve(): load_elf_desc() for %s OK\n",
 						  filename);
 
-					ret = 0;
-return_execve1:
-					/* We can't be sure next phase will succeed */
-					/* TODO: what shall we do with fp in desc?? */
-					if (buffer != (char *)desc)
-						free(buffer);
-					free(desc);
-
-					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-
-				/* Copy program image phase */
-				case 2:
-					
-					ret = -1;
-					/* Alloc descriptor */
-					desc = malloc(w.sr.args[2]);
-					if (!desc) {
-						fprintf(stderr, "execve(): error allocating desc\n");
-						goto return_execve2;
-					}
-					memset(desc, '\0', w.sr.args[2]);
-
-					/* Copy descriptor from co-kernel side */
-					trans.userp = (void*)desc;
-					trans.rphys = w.sr.args[1];
-					trans.size = w.sr.args[2];
-					trans.direction = MCEXEC_UP_TRANSFER_FROM_REMOTE;
-					
-					if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
-						fprintf(stderr, 
-							"execve(): error obtaining ELF descriptor\n");
-						ret = EINVAL;
-						goto return_execve2;
-					}
-					
-					__dprintf("%s", "execve(): transfer ELF desc OK\n");
-
-					if (transfer_image(fd, desc) != 0) {
-						fprintf(stderr, "error: transferring image\n");
-						return -1;
-					}
-					__dprintf("%s", "execve(): image transferred\n");
-
 					if (close_cloexec_fds(fd) < 0) {
 						ret = EINVAL;
-						goto return_execve2;
+						goto return_execve;
 					}
 
 					ret = 0;
-return_execve2:					
+return_execve:
+					if (buffer != (char *)desc) {
+						free(buffer);
+					}
+					free(desc);
 					do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
-					break;
-
-				default:
-					fprintf(stderr, "execve(): ERROR: invalid execve phase\n");
-					break;
-			}
 
 			break;
 		}

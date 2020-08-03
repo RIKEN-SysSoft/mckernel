@@ -57,6 +57,46 @@ void check_mapping_for_proc(struct thread *thread, unsigned long addr)
 	}
 }
 
+static int fill_zero_to_user(unsigned long dest, unsigned long length)
+{
+	void *zero_buf;
+	unsigned long len, offset, remain;
+	int ret = 0;
+
+	remain = length;
+	offset = 0;
+	zero_buf = kmalloc(PAGE_SIZE, IHK_MC_AP_NOWAIT);
+
+	if (!zero_buf) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	memset(zero_buf, 0, PAGE_SIZE);
+	len = length;
+	while (remain > 0) {
+		if (remain > PAGE_SIZE) {
+			len = PAGE_SIZE;
+		}
+		else {
+			len = remain;
+		}
+
+		ret = copy_to_user((void *)dest + offset, zero_buf, len);
+		if (ret) {
+			goto out;
+		}
+
+		remain -= len;
+		offset += len;
+	}
+
+ out:
+	kfree(zero_buf);
+
+	return ret;
+}
+
 /* 
  * Prepares the process ranges based on the ELF header described 
  * in program_load_desc and updates physical address in "p" so that
@@ -75,13 +115,11 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 {
 	char *args_envs, *args_envs_r;
 	unsigned long args_envs_p, args_envs_rp = 0, envs_offset;
-	unsigned long s, e, up;
+	unsigned long e, fmap_start, fmap_end, anon_end;
 	char **argv;
 	int i, n, argc, envc, args_envs_npages = 0;
 	char **env;
-	int range_npages;
 	int argenv_page_count = 0;
-	void *up_v;
 	unsigned long addr;
 	unsigned long flags;
 	uintptr_t interp_obase = -1;
@@ -92,16 +130,12 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	struct address_space *as = vm->address_space;
 	long aout_base;
 	int error;
-	struct vm_range *range;
-	unsigned long ap_flags;
-	enum ihk_mc_pt_attribute ptattr;
 	
 	n = p->num_sections;
 
 	vm->region.data_start = ULONG_MAX;
 	aout_base = (pn->reloc)? vm->region.map_end: 0;
 	for (i = 0; i < n; i++) {
-		ap_flags = 0;
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
@@ -119,78 +153,30 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			pn->sections[i].vaddr += aout_base;
 			p->sections[i].vaddr = pn->sections[i].vaddr;
 		}
-		s = (pn->sections[i].vaddr) & PAGE_MASK;
-		e = (pn->sections[i].vaddr + pn->sections[i].len
+		fmap_start = (pn->sections[i].vaddr) & PAGE_MASK;
+		fmap_end = (pn->sections[i].vaddr + pn->sections[i].filesz
 				+ PAGE_SIZE - 1) & PAGE_MASK;
-		range_npages = ((pn->sections[i].vaddr - s) +
-			pn->sections[i].filesz + PAGE_SIZE - 1) >> PAGE_SHIFT;
-		flags = VR_NONE;
-		flags |= PROT_TO_VR_FLAG(pn->sections[i].prot);
-		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-		flags |= VR_DEMAND_PAGING;
-
-		/* Non-TEXT sections that are large respect user allocation policy
-		 * unless user explicitly requests otherwise */
-		if (i >= 1 && pn->sections[i].len >= pn->mpol_threshold &&
-				!(pn->mpol_flags & MPOL_NO_BSS)) {
-			dkprintf("%s: section: %d size: %d pages -> IHK_MC_AP_USER\n",
-					__FUNCTION__, i, range_npages);
-			ap_flags = IHK_MC_AP_USER;
-			flags |= VR_AP_USER;
-		}
-
-		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
-					pn->sections[i].len > LARGE_PAGE_SIZE ?
-					LARGE_PAGE_SHIFT : PAGE_SHIFT,
-					&range) != 0) {
-			kprintf("ERROR: adding memory range for ELF section %i\n", i);
-			goto err;
-		}
-
-		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
-						IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
-			kprintf("ERROR: alloc pages for ELF section %i\n", i);
-			goto err;
-		}
-
-		up = virt_to_phys(up_v);
-
-		ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
-		error = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
-									(void *)range->start,
-									(void *)range->start + (range_npages * PAGE_SIZE),
-									up, ptattr,
-									range->pgshift, range, 0);
-
-		if (error) {
-			kprintf("%s: ihk_mc_pt_set_range failed. %d\n",
-					__FUNCTION__, error);
-			ihk_mc_free_pages_user(up_v, range_npages);
-			goto err;
-		}
-
-		// memory_stat_rss_add() is called in ihk_mc_pt_set_range()
-
-		p->sections[i].remote_pa = up;
+		anon_end = (pn->sections[i].vaddr + pn->sections[i].len
+				+ PAGE_SIZE - 1) & PAGE_MASK;
 
 		if (pn->sections[i].interp) {
-			vm->region.map_end = e;
+			vm->region.map_end = anon_end;
 		}
 		else if (pn->sections[i].prot & PROT_EXEC) {
-			vm->region.text_start = s;
-			vm->region.text_end = e;
+			vm->region.text_start = fmap_start;
+			vm->region.text_end = fmap_end;
 		} 
 		else {
 			vm->region.data_start =
-				(s < vm->region.data_start ? 
-				 s : vm->region.data_start);
+				(fmap_start < vm->region.data_start ?
+				 fmap_start : vm->region.data_start);
 			vm->region.data_end = 
-				(e > vm->region.data_end ? 
-				 e : vm->region.data_end);
+				(anon_end > vm->region.data_end ?
+				 anon_end : vm->region.data_end);
 		}
 
 		if (aout_base) {
-			vm->region.map_end = e;
+			vm->region.map_end = anon_end;
 		}
 	}
 
@@ -433,6 +419,155 @@ err:
 	return -1;
 }
 
+int load_executable(void)
+{
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+	struct process_vm *vm = proc->vm;
+	struct program_load_desc *desc = proc->desc;
+	ihk_mc_user_context_t ctx1, ctx2;
+	int i, n, fd, error, ap_flag, ret = 0;
+	unsigned long fmap_start, fmap_end, anon_start, anon_end;
+	struct vm_range *range;
+	intptr_t map_addr;
+	unsigned long section_start, section_file_end;
+	unsigned long vrflag;
+
+	if (!desc) {
+		/* loading is not needed */
+		goto out;
+	}
+
+	n = desc->num_sections;
+	for (i = 0; i < n; i++) {
+		ap_flag = 0;
+		fmap_start = (desc->sections[i].vaddr) & PAGE_MASK;
+		fmap_end = (desc->sections[i].vaddr + desc->sections[i].filesz
+				+ PAGE_SIZE - 1) & PAGE_MASK;
+		anon_start = fmap_end;
+		anon_end = (desc->sections[i].vaddr + desc->sections[i].len
+				+ PAGE_SIZE - 1) & PAGE_MASK;
+
+		/* open ELF file (exec/interp) */
+		memset(&ctx1, '0', sizeof(ihk_mc_user_context_t));
+		memset(&ctx2, '0', sizeof(ihk_mc_user_context_t));
+
+		ihk_mc_syscall_arg0(&ctx1) = AT_FDCWD;
+		if (desc->sections[i].interp) {
+			ihk_mc_syscall_arg1(&ctx1) = desc->interp_path_va;
+		}
+		else {
+			ihk_mc_syscall_arg1(&ctx1) = desc->exec_path_va;
+		}
+
+		ihk_mc_syscall_arg2(&ctx1) = 0x0; //O_RDONLY
+		fd = (int)syscall_generic_forwarding(__NR_openat, &ctx1);
+		if (fd < 0) {
+			kprintf("ERROR: opening exec/interp\n");
+			ret = -1;
+			goto out;
+		}
+
+		/* load section by file_map */
+		map_addr = do_mmap(fmap_start, fmap_end - fmap_start,
+				PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE,
+				fd, desc->sections[i].offset & PAGE_MASK);
+		if (map_addr != fmap_start) {
+			kprintf("ERROR: file map FIXED\n");
+			ret = -1;
+			goto out;
+		}
+
+		/* close ELF file */
+		ihk_mc_syscall_arg0(&ctx2) = fd;
+		syscall_generic_forwarding(__NR_close, &ctx2);
+		fd = -1;
+
+		/* zero clear unintented part from vm_range */
+		section_start = desc->sections[i].vaddr;
+		section_file_end = desc->sections[i].vaddr +
+				desc->sections[i].filesz;
+
+		if (fmap_start < section_start) {
+			if (fill_zero_to_user(fmap_start,
+					section_start - fmap_start)) {
+				kprintf("ERROR: filling zero to user space\n");
+				ret = -1;
+				goto out;
+			}
+		}
+
+		if (fmap_end > section_file_end) {
+			if (fill_zero_to_user(section_file_end,
+					fmap_end - section_file_end)) {
+				kprintf("ERROR: filling zero to user space\n");
+				ret = -1;
+				goto out;
+			}
+		}
+
+		range = lookup_process_memory_range(vm, fmap_start,
+				fmap_start + 1);
+		if (!range) {
+			kprintf("ERROR: vm_range is not found\n");
+			ret = -1;
+			goto out;
+		}
+
+		/* Non-TEXT sections that are large respect user allocation
+		 * policy unless user explicitly requests otherwise
+		 */
+		if (i >= 1 && desc->sections[i].len >= desc->mpol_threshold &&
+				!(desc->mpol_flags & MPOL_NO_BSS)) {
+			dkprintf("%s: section: %d size: %d pages -> IHK_MC_AP_USER\n",
+				__func__, i,
+				(fmap_end - fmap_start) / PAGE_SIZE);
+			ap_flag = 1;
+		}
+
+		if (ap_flag) {
+			range->flag |= VR_AP_USER;
+		}
+
+		/* update prot with desc's prot */
+		error = do_mprotect(fmap_start, fmap_end - fmap_start,
+				desc->sections[i].prot);
+		if (error) {
+			kprintf("ERROR: mprotect to file map space\n");
+			ret = -1;
+			goto out;
+		}
+
+		/* allocating extra space */
+		if (anon_start != anon_end) {
+			vrflag = VR_NONE;
+			vrflag |= PROT_TO_VR_FLAG(desc->sections[i].prot);
+			vrflag |= VRFLAG_PROT_TO_MAXPROT(vrflag);
+			vrflag |= VR_DEMAND_PAGING;
+			error = add_process_memory_range(vm, anon_start,
+					anon_end, NOPHYS, vrflag, NULL, 0,
+					(anon_end - anon_start) >
+					LARGE_PAGE_SIZE ?
+					LARGE_PAGE_SHIFT : PAGE_SHIFT, &range);
+			if (error) {
+				kprintf("ERROR: adding memory range\n");
+				ret = -1;
+				goto out;
+			}
+
+			if (ap_flag) {
+				range->flag |= VR_AP_USER;
+			}
+		}
+	}
+
+ out:
+	kfree(proc->desc);
+	proc->desc = NULL;
+
+	return ret;
+}
+
 /*
  * Communication with host 
  */
@@ -577,7 +712,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 	dkprintf("new process : %p [%d] / table : %p\n", proc, proc->pid,
 	        vm->address_space->page_table);
 
-	kfree(pn);
+	/* pn must be freed in load_executable or release_process */
+	thread->proc->desc = pn;
 
 	ihk_mc_unmap_virtual(p, npages);
 	ihk_mc_unmap_memory(NULL, phys, sz);
