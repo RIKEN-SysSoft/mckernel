@@ -143,6 +143,11 @@ void arch_save_panic_regs(void *irq_regs)
 
 	clv = get_arm64_this_cpu_local();
 
+	/* If kernel mode PF occurred, unroll the causing call stack */
+	if (cpu_local_var(kernel_mode_pf_regs)) {
+		regs = cpu_local_var(kernel_mode_pf_regs);
+	}
+
 	/* For user-space, use saved kernel context */
 	if (regs->pc < USER_END) {
 		memset(clv->arm64_cpu_local_thread.panic_regs,
