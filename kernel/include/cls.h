@@ -79,6 +79,7 @@ struct cpu_local_var {
 	ihk_spinlock_t runq_lock;
 	unsigned long runq_irqstate;
 	struct thread *current;
+	void *kernel_mode_pf_regs;
 	int prevpid;
 	struct list_head runq;
 	size_t runq_len;
