@@ -1338,6 +1338,7 @@ static void unhandled_page_fault(struct thread *thread, void *fault_addr,
 	ihk_mc_debug_show_interrupt_context(regs);
 
 	if (!(reason & PF_USER)) {
+		cpu_local_var(kernel_mode_pf_regs) = regs;
 		panic("panic: kernel mode PF");
 	}
 
