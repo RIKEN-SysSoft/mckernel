@@ -2463,6 +2463,13 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* Fugaku: use FLIB_NUM_PROCESS_ON_NODE if -n is not specified */
+	if (getenv("FLIB_NUM_PROCESS_ON_NODE") && nr_processes == 0) {
+		nr_processes = atoi(getenv("FLIB_NUM_PROCESS_ON_NODE"));
+		__dprintf("%s: using FLIB_NUM_PROCESS_ON_NODE: %d\n",
+			__func__, nr_processes);
+	}
+
 	if (nr_processes > ncpu) {
 		fprintf(stderr, "error: nr_processes can't exceed nr. of CPUs\n");
 		return EINVAL;
@@ -2592,9 +2599,10 @@ int main(int argc, char **argv)
 
 		desc->cpu = target_core;
 		desc->process_rank = process_rank;
+
 		/* Fugaku specific: Fujitsu node-local rank */
-		if (getenv("PLE_RANK_ON_NODE")) {
-			desc->process_rank = atoi(getenv("PLE_RANK_ON_NODE"));
+		if (getenv("FLIB_RANK_ON_NODE")) {
+			desc->process_rank = atoi(getenv("FLIB_RANK_ON_NODE"));
 			__dprintf("%s: rank: %d, target CPU: %d\n",
 				__func__, desc->process_rank, desc->cpu);
 		}
