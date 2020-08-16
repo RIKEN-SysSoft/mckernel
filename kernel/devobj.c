@@ -113,7 +113,7 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 		__FUNCTION__, fd, len, off, result.handle, result.maxprot);
 
 	obj->memobj.ops = &devobj_ops;
-	obj->memobj.flags = MF_HAS_PAGER | MF_DEV_FILE;
+	obj->memobj.flags = MF_HAS_PAGER | MF_REMAP_FILE_PAGES | MF_DEV_FILE;
 	obj->memobj.size = len;
 	ihk_atomic_set(&obj->memobj.refcnt, 1);
 	obj->handle = result.handle;
