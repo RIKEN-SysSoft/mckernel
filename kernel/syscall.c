@@ -8702,7 +8702,7 @@ SYSCALL_DECLARE(remap_file_pages)
 	if (!range || (start < range->start) || (range->end < end)
 			|| (range->flag & VR_PRIVATE)
 			|| (range->flag & (VR_REMOTE|VR_IO_NOCACHE|VR_RESERVED))
-			|| !range->memobj) {
+			|| !is_callable_remap_file_pages(range->memobj)) {
 		ekprintf("sys_remap_file_pages(%#lx,%#lx,%#x,%#lx,%#x):"
 				"invalid VMR:[%#lx-%#lx) %#lx %p\n",
 				start0, size, prot, pgoff, flags,
