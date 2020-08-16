@@ -5641,9 +5641,49 @@ struct kshmid_ds {
 	struct list_head chain;
 };
 
-int the_maxi = -1;
+static int the_maxi = -1;
+unsigned long shmid_index[512];
+
+static int get_shmid_index(void)
+{
+	for (;;) {
+		int i;
+		unsigned long x;
+
+		the_maxi = (the_maxi + 1) & 0x7fff;
+		i = the_maxi / 64;
+		x = 1UL << (the_maxi % 64);
+		if (!(shmid_index[i] & x)) {
+			shmid_index[i] |= x;
+			return the_maxi;
+		}
+	}
+}
+
+static int get_shmid_max_index(void)
+{
+	int i;
+	int j;
+	int index = 0;
+	unsigned long x;
+	unsigned long y;
+
+	for (i = 511; i >= 0; i--) {
+		if ((y = shmid_index[i])) {
+			index = i * 64;
+			for (x = 1, j = -1; y; j++, x <<= 1) {
+				if (y & x) {
+					y &= ~x;
+				}
+			}
+			index += j;
+			break;
+		}
+	}
+	return index;
+}
+
 LIST_HEAD(kds_list);
-LIST_HEAD(kds_free_list);
 struct shminfo the_shminfo = {
 	.shmmax = 64L * 1024 * 1024 * 1024,
 	.shmmin = 1,
@@ -5864,7 +5904,7 @@ int do_shmget(const key_t key, const size_t size, const int shmflg)
 		return error;
 	}
 
-	obj->index = ++the_maxi;
+	obj->index = get_shmid_index();
 
 	list_add(&obj->chain, &kds_list);
 	++the_shm_info.used_ids;
@@ -6150,7 +6190,7 @@ SYSCALL_DECLARE(shmctl)
 			return error;
 		}
 
-		maxi = the_maxi;
+		maxi = get_shmid_max_index();
 		if (maxi < 0) {
 			maxi = 0;
 		}
@@ -6257,7 +6297,7 @@ SYSCALL_DECLARE(shmctl)
 			return error;
 		}
 
-		maxi = the_maxi;
+		maxi = get_shmid_max_index();
 		if (maxi < 0) {
 			maxi = 0;
 		}
