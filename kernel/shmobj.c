@@ -225,8 +225,6 @@ int shmobj_create_indexed(struct shmid_ds *ds, struct shmobj **objp)
 static void shmobj_destroy(struct shmobj *obj)
 {
 	extern struct shm_info the_shm_info;
-	extern struct list_head kds_free_list;
-	extern int the_maxi;
 	struct shmlock_user *user;
 	size_t size;
 	int npages;
@@ -306,27 +304,13 @@ static void shmobj_destroy(struct shmobj *obj)
 		kfree(obj);
 	}
 	else {
+		int i = obj->index / 64;
+		unsigned long x = 1UL << (obj->index % 64);
+
 		list_del(&obj->chain);
 		--the_shm_info.used_ids;
-
-		list_add(&obj->chain, &kds_free_list);
-		/* For index reuse, release in descending order of index. */
-		for (;;) {
-			struct shmobj *p;
-
-			list_for_each_entry(p, &kds_free_list, chain) {
-				if (p->index == the_maxi) {
-					break;
-				}
-			}
-			if (&p->chain == &kds_free_list) {
-				break;
-			}
-
-			list_del(&p->chain);
-			kfree(p);
-			--the_maxi;
-		}
+		shmid_index[i] &= ~x;
+		kfree(obj);
 	}
 	return;
 }
