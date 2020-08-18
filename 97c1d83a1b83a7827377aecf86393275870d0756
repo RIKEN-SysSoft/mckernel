@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "b6b4fd3e_941d879b",
+        "filename": "kernel/devobj.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-08-18T01:34:09Z",
+      "side": 1,
+      "message": "メモ：hugefileobjは、remap_file_pagesはできない。なお、pager_req_create()でMF_HUGETLBFSのみを設定する。",
+      "range": {
+        "startLine": 116,
+        "startChar": 36,
+        "endLine": 116,
+        "endChar": 55
+      },
+      "revId": "97c1d83a1b83a7827377aecf86393275870d0756",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "b934ceea_41f607e0",
         "filename": "kernel/include/memobj.h",
         "patchSetId": 2
