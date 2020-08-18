@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b934ceea_41f607e0",
+        "filename": "kernel/include/memobj.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 185,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-08-18T00:40:31Z",
+      "side": 1,
+      "message": "is_remap_file_pages_possible\nのほうがいいと思います。",
+      "range": {
+        "startLine": 185,
+        "startChar": 0,
+        "endLine": 185,
+        "endChar": 69
+      },
+      "revId": "97c1d83a1b83a7827377aecf86393275870d0756",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
