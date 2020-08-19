@@ -1,0 +1,616 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "581aaac8_fc1d598f",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 191,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a7072870_5711b265",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 367,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "678dbd2f_9134c30a",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 370,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5daa8be3_a880ab31",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 378,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+      $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0fd6080_ca169032",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 382,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ddc8c16_fe3f9e86",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 392,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+      $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "190b485f_9441d8e9",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 394,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+      $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cdddb968_2c883571",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 397,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "edf76252_303f5559",
+        "filename": "docs/NEWS.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 402,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "30d1666b_8df4dccb",
+        "filename": "docs/locales/ja/LC_MESSAGES/operators.po",
+        "patchSetId": 2
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "WARNING: \u0027followings\u0027 may be misspelled - perhaps \u0027following\u0027?\n+\"In the followings, the install directory of IHK/McKernel is shown as \"",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb470a5b_0f648e92",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "WARNING: \u0027followings\u0027 may be misspelled - perhaps \u0027following\u0027?\n+In the followings, the install directory of IHK/McKernel is shown as ``\u003cinstall\u003e`` .",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c0b9b98_1e13d932",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 99,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d09eac19_a76406be",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "200d9b29_207f7615",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 349,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "WARNING: \u0027occured\u0027 may be misspelled - perhaps \u0027occurred\u0027?\n+   # Revert any state that has been initialized before the error occured.",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55f999c8_5dffbdea",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 655,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^I# Retry when conflicting with ihkmond $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6be4181_be318922",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 719,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8c9d5b75_a9b9836c",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 720,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc69499e_868875f4",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 726,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos/linux_proc ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e95db5e_e1cd0548",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 727,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos/linux_proc; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99b7cfdf_d70f6de7",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 741,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos/mcos0_proc ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a8ed148_6ab9737c",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 742,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos/mcos0_proc; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e38b69b3_8736696e",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 744,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos/mcos0_proc_upper ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64cb1c61_1145eebd",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 745,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos/mcos0_proc_upper; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ed3568b_15aebdf9",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 747,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos/mcos0_proc_work ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9d2e7a3a_0ded1773",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos/mcos0_proc_work; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87fe2b44_bc1892a6",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 763,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos/mcos0_sys ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd8eddf1_a7b601af",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 764,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos/mcos0_sys; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "905c12a3_25d729c0",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 766,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos/mcos0_sys_upper ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f32045ce_a91953b4",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 767,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos/mcos0_sys_upper; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8604650a_fc4d483a",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 769,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^Iif [ ! -e /tmp/mcos/mcos0_sys_work ]; then $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "36cfadcc_027dd92e",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 770,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^Imkdir -p /tmp/mcos/mcos0_sys_work; $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b5283a88_4c697328",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 912,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dfa9a6c2_e6a8a829",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 916,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   # $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3940773c_644a270e",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 919,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e7028a90_c942609b",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 926,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e4f7bd9_ec8216e4",
+        "filename": "docs/operators.rst",
+        "patchSetId": 2
+      },
+      "lineNbr": 949,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-08-19T03:46:43Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+   ^I^I# Retry when conflicting with ihkmond $",
+      "revId": "e17e86840b6ec1c018b0be8cacf6f96c626eb162",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
