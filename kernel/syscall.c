@@ -1304,6 +1304,11 @@ void terminate(int rc, int sig)
 				tof_utofu_release_cq(proc->fd_pde_data[fd]);
 				proc->fd_pde_data[fd] = NULL;
 			}
+
+			if (proc->fd_path[fd]) {
+				kfree(proc->fd_path[fd]);
+				proc->fd_path[fd] = NULL;
+			}
 		}
 	}
 #endif
