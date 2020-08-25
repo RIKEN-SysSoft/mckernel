@@ -1149,8 +1149,11 @@ straight_out:
 					(range->straight_start - (unsigned long)vm->proc->straight_va)),
 				(range->end - range->start) >> PAGE_SHIFT);
 
-		dkprintf("%s: straight range 0x%lx @ straight 0x%lx physical memory freed\n",
-				__FUNCTION__, range->start, range->straight_start);
+		dkprintf("%s: straight range 0x%lx @ straight 0x%lx (phys: 0x%lx)"
+				" physical memory freed\n",
+				__FUNCTION__, range->start, range->straight_start,
+				vm->proc->straight_pa +
+				(range->straight_start - (unsigned long)vm->proc->straight_va));
 	}
 	/* For the main straight mapping, free page tables */
 	else if (range->start == (unsigned long)vm->proc->straight_va &&
@@ -1161,9 +1164,8 @@ straight_out:
 				(void *)start, (void *)end);
 		ihk_mc_spinlock_unlock_noirq(&vm->page_table_lock);
 
-		dkprintf("%s: straight mapping 0x%lx unmapped\n",
+		dkprintf("%s: main straight mapping 0x%lx unmapped\n",
 				__FUNCTION__, vm->proc->straight_va);
-		vm->proc->straight_va = 0;
 		vm->proc->straight_len = 0;
 	}
 
