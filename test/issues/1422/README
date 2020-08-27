@@ -1,0 +1,31 @@
+【Issue#1422 動作確認】
+□ テスト内容
+1. ファイルマップのEOFを超えたアクセスでSIGBUSが発生した場合に、
+   memory_stat_mapped_fileがマイナスにならないことを確認する。
+2. ファイルマップ機能が正常に動作することを、LTPの以下のテストで確認する。
+mmap01 mmap01
+mmap02 mmap02
+mmap03 mmap03
+mmap04 mmap04
+mmap05 mmap05
+mmap06 mmap06
+mmap07 mmap07
+mmap08 mmap08
+mmap09 mmap09
+mmap12 mmap12
+mmap13 mmap13
+mmap14 mmap14
+mmap15 mmap15
+3. ファイルマップ機能が正常に動作することを、ostestの mmap_fileで確認する。
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している。
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する。
+
+□ 実行結果
+result.log を参照。
+すべての項目にPASSしていることを確認。
