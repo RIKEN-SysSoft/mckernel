@@ -557,10 +557,8 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	struct fileobj *obj = to_fileobj(memobj);
 	int error = -1;
 	void *virt = NULL;
-	int npages;
 	uintptr_t phys = -1;
 	struct page *page;
-	struct pageio_args *args = NULL;
 	struct mcs_lock_node mcs_node;
 	int hash = (off >> PAGE_SHIFT) & FILEOBJ_PAGE_HASH_MASK;	
 
@@ -608,7 +606,6 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		*physp = virt_to_phys(virt);
 		dkprintf("%s: MF_ZEROFILL: off: %lu -> 0x%lx resolved\n",
 				__FUNCTION__, off, virt_to_phys(virt));
-		virt = NULL;
 		goto out_nolock;
 	}
 
@@ -616,6 +613,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	page = __fileobj_page_hash_lookup(obj, hash, off);
 	if (!page || (page->mode == PM_WILL_PAGEIO)
 			|| (page->mode == PM_PAGEIO)) {
+		struct pageio_args *args;
 		args = kmalloc(sizeof(*args), IHK_MC_AP_NOWAIT);
 		if (!args) {
 			error = -ENOMEM;
@@ -626,7 +624,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		}
 
 		if (!page) {
-			npages = 1 << p2align;
+			int npages = 1 << p2align;
 
 			virt = ihk_mc_alloc_pages_user(npages, (IHK_MC_AP_NOWAIT |
 					((to_memobj(obj)->flags & MF_ZEROFILL) ?
@@ -638,6 +636,7 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 						"alloc failed. %d\n",
 						obj, off, p2align, virt_addr, physp,
 						error);
+				kfree(args);
 				goto out;
 			}
 			phys = virt_to_phys(virt);
@@ -666,8 +665,6 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 		proc->pgio_arg = args;
 
 		error = -ERESTART;
-		virt = NULL;
-		args = NULL;
 		goto out;
 	}
 	else if (page->mode == PM_DONE_PAGEIO) {
@@ -676,11 +673,11 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 	}
 	else if (page->mode == PM_PAGEIO_EOF) {
 		error = -ERANGE;
-		goto out;
+		goto pageio_error;
 	}
 	else if (page->mode == PM_PAGEIO_ERROR) {
 		error = -EIO;
-		goto out;
+		goto pageio_error;
 	}
 
 	ihk_atomic_inc(&page->count);
@@ -688,19 +685,22 @@ static int fileobj_get_page(struct memobj *memobj, off_t off,
 
 	error = 0;
 	*physp = page_to_phys(page);
-	virt = NULL;
 out:
 	mcs_lock_unlock(&obj->page_hash_locks[hash], &mcs_node);
 out_nolock:
-	if (virt) {
-		ihk_mc_free_pages_user(virt, npages);
-	}
-	if (args) {
-		kfree(args);
-	}
 	dkprintf("fileobj_get_page(%p,%lx,%x,%x,%p): %d %lx\n",
 			obj, off, p2align, virt_addr, physp, error, phys);
 	return error;
+
+pageio_error:
+	__fileobj_page_hash_remove(page);
+	virt = phys_to_virt(page_to_phys(page));
+	if (page_unmap(page)) {
+		ihk_mc_free_pages_user(virt, 1);
+		kfree(page);
+	}
+
+	goto out;
 }
 
 static int fileobj_flush_page(struct memobj *memobj, uintptr_t phys,

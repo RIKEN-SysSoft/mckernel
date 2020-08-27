@@ -1,0 +1,105 @@
+cc -g -O0 -Wall -I/root/mck/target/include -L/root/mck/target/lib64 -lihk -Wl,-rpath=/root/mck/target/lib64 get_rusage.c -o get_rusage
+cc -g -O0 -Wall -I/root/mck/target/include filemap_sigbus.c -o filemap_sigbus
+./C1422.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 12-15 -m 512M@4 ... done
+
+*** get_rusage test
+./C1422.sh: line 12: 453200 Bus error               (core dumped) $MCEXEC ./filemap_sigbus ./tmp
+TEST OK.
+
+*** LTP
+mmap01      1  TPASS  :  Functionality of mmap() successful
+mmap02      1  TPASS  :  Functionality of mmap() successful
+mmap03      1  TPASS  :  mmap() functionality is correct
+mmap04      1  TPASS  :  Functionality of mmap() successful
+mmap05      1  TPASS  :  Got SIGSEGV as expected
+mmap06      1  TPASS  :  mmap failed with EACCES
+mmap07      1  TPASS  :  mmap failed with EACCES
+mmap08      1  TPASS  :  mmap failed with EBADF
+mmap09      1  TPASS  :  ftruncate mmaped file to a smaller size
+mmap09      2  TPASS  :  ftruncate mmaped file to a larger size
+mmap09      3  TPASS  :  ftruncate mmaped file to 0 size
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+mmap12.c:103: INFO: All pages are present
+mmap12.c:127: PASS: File mapped properly
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+mmap13      1  TPASS  :  Got SIGBUS as expected
+mmap14      1  TPASS  :  Functionality of mmap() successful
+mmap15      1  TPASS  :  mmap into high region failed as expected: errno=ENOMEM(12): Cannot allocate memory
+
+*** ostest, check ok
+[OK] mmap_file 0
+[OK] mmap_file 2
+[OK] mmap_file 4
+[OK] mmap_file 6
+[OK] mmap_file 10
+[OK] mmap_file 11
+[OK] mmap_file 32
+[OK] mmap_file 34
+[OK] mmap_file 36
+[OK] mmap_file 38
+[OK] mmap_file 40
+[OK] mmap_file 41
+[OK] mmap_file 42
+[OK] mmap_file 43
+[OK] mmap_file 48
+
+*** otest, check mmap error.
+[OK] mmap_file 8
+[OK] mmap_file 9
+[OK] mmap_file 16
+[OK] mmap_file 17
+[OK] mmap_file 18
+[OK] mmap_file 19
+[OK] mmap_file 20
+[OK] mmap_file 21
+[OK] mmap_file 22
+[OK] mmap_file 23
+[OK] mmap_file 24
+[OK] mmap_file 25
+[OK] mmap_file 26
+[OK] mmap_file 27
+[OK] mmap_file 28
+[OK] mmap_file 29
+[OK] mmap_file 30
+[OK] mmap_file 31
+
+*** oetest, check page fault
+./C1422.sh: line 60: 453714 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 1
+./C1422.sh: line 60: 453724 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 3
+./C1422.sh: line 60: 453734 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 5
+./C1422.sh: line 60: 453744 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 7
+./C1422.sh: line 60: 453754 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 12
+./C1422.sh: line 60: 453764 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 13
+./C1422.sh: line 60: 453774 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 14
+./C1422.sh: line 60: 453784 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 15
+./C1422.sh: line 60: 453794 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 33
+./C1422.sh: line 60: 453804 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 35
+./C1422.sh: line 60: 453814 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 37
+./C1422.sh: line 60: 453824 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 39
+./C1422.sh: line 60: 453836 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 44
+./C1422.sh: line 60: 453846 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 45
+./C1422.sh: line 60: 453856 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 46
+./C1422.sh: line 60: 453866 Segmentation fault      (core dumped) $MCEXEC $TESTMCK -s mmap_file -n $i -- -f ./tmp > /dev/null
+[OK] mmap_file 47
