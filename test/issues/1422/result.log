@@ -1,0 +1,3 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 12-15 -m 512M@4 ... done
+TEST OK.

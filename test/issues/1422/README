@@ -1,0 +1,12 @@
+============
+What to test
+============
+When SIGBUS occurs due to writing larger than the file size mapped by mmap(),
+confirm that the memory_stat_mapped_file obtained by ihk_os_getrusage() is
+correct.
+
+============
+How to test
+============
+(1) make test
+(2) Check the result is "TEST OK"
