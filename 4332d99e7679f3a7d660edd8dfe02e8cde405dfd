@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4e63a259_c629641b",
+        "filename": "test/issues/1422/C1422.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-08-28T06:35:11Z",
+      "side": 1,
+      "message": "./issues/1122/C1122.sh\nを参考に、ostestも追加してください。\n\n1. 以下のファイルの中身を見て、コマンドラインを見つける\n\u003costest-install\u003e/scripts/ostest-mmap_file.000\n2. 以下のファイルの中身を見て、準備処理、PASS/FAIL判定処理の方法を見つける\n\u003costest\u003e/util/{init,fini,exec,check}/mmap_file.*.sh\n3. 上記をこのスクリプトに埋め込む\n\nSEGVが期待されているような場合は、以下のようにexit statusを確認したほうが楽かもしれません。\n$ ../work/mck/bin/mcexec /work/mcktest/ostest/bin/test_mck -s mmap_file -n 1 -- -f ./file\nTEST_SUITE: mmap_file\nTEST_NUMBER: 1\nARGS: -f ./file\nTerminate by signal 11\nSegmentation fault\n$ echo $?\n139",
+      "revId": "4332d99e7679f3a7d660edd8dfe02e8cde405dfd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "122333f2_7938a064",
+        "filename": "test/issues/1422/README",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-08-28T06:35:11Z",
+      "side": 1,
+      "message": "以下を書いてください。\n□テスト内容\n1. ファイルマップのEOFを越えた位置にアクセスしてSIGBUSを発生させた場合にmemory_stat_mapped_fileがマイナスにならないことを確認する。\n2. file map機能が正常に動作することを、LTPの以下のテストで確認する。\nmmap01 mmap01\nmmap02 mmap02\nmmap03 mmap03\nmmap04 mmap04\nmmap05 mmap05\nmmap06 mmap06\nmmap07 mmap07\nmmap08 mmap08\nmmap09 mmap09\nmmap12 mmap12\nmmap13 mmap13\nmmap14 mmap14\nmmap15 mmap15\n3. file map機能が正常に動作することを、ostestのmmap_fileで確認する。\n\n\nまた、以下も書いてください。\n□ 実行手順\n$ make test\n\nMcKernelのインストール先や、OSTEST, LTPの配置場所は、\n$HOME/.mck_test_config を参照している\n.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを\n$HOMEにコピーし、適宜編集する\n\n□ 実行結果\nx86_64_result.log aarch64_result.log 参照。\nすべての項目をPASSしていることを確認。\n\n\n.mck_test_configの例は以下です。\n$ cat ~/.mck_test_config\n# Config file for McKernel tests\n: ${BIN:\u003d/home/mcktest/project/os/install/bin}\n: ${SBIN:\u003d/home/mcktest/project/os/install/sbin}\n: ${OSTEST:\u003d/home/mcktest/project/src/ostest-arm64}\n: ${LTP:\u003d/home/mcktest/project/src/ltp/install}\nBOOTPARAM\u003d\"-m 10G@0,10G@1 -c 2-27,30-55,58-83,86-111 -r 2-14:0+15-27:1+30-42:28+43-55:29+58-70:56+71-83:57+86-98:84+99-111:85 -O\"\nBOOTPARAM\u003d\"-m 16G@0,16G@1 -c 13-16 -O\"\n: ${MCKERNEL_VERSION:\u003d1.7.0rc4}\nMCK_DIR\u003d/home/mcktest/project/os/install\n\n\n（参考）\nhttps://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/496832",
+      "revId": "4332d99e7679f3a7d660edd8dfe02e8cde405dfd",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
