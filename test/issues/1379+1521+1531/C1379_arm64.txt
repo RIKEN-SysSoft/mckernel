@@ -1,0 +1,74 @@
+Script started on Tue 01 Sep 2020 07:13:12 AM JST
+[shirasawa@apollo15 1379+1521+1531]$ uname -m
+aarch64
+[shirasawa@apollo15 1379+1521+1531]$ make test
+sh ./C1379.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 2-31 -m 2G@0,2G@1 -O ... done
+tst_test.c:1096: INFO: Timeout per run is 0h 00m 20s
+../../../../../include/tst_fuzzy_sync.h:477: INFO: Minimum sampling period ended
+../../../../../include/tst_fuzzy_sync.h:301: INFO: loop = 1024, delay_bias = 0
+../../../../../include/tst_fuzzy_sync.h:290: INFO: start_a - start_b: { avg =    21ns, avg_dev =     9ns, dev_ratio = 0.45 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_a - start_a  : { avg = 403181ns, avg_dev =    63ns, dev_ratio = 0.00 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_b - start_b  : { avg =  2429ns, avg_dev =    24ns, dev_ratio = 0.01 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_a - end_b    : { avg = 400772ns, avg_dev =    78ns, dev_ratio = 0.00 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: spins            : { avg = 61836  , avg_dev =    15  , dev_ratio = 0.00 }
+../../../../../include/tst_fuzzy_sync.h:489: INFO: Reached deviation ratios < 0.10, introducing randomness
+../../../../../include/tst_fuzzy_sync.h:492: INFO: Delay range is [-462, 62221]
+../../../../../include/tst_fuzzy_sync.h:301: INFO: loop = 4616, delay_bias = 0
+../../../../../include/tst_fuzzy_sync.h:290: INFO: start_a - start_b: { avg =    32ns, avg_dev =     3ns, dev_ratio = 0.10 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_a - start_a  : { avg = 402983ns, avg_dev =    38ns, dev_ratio = 0.00 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_b - start_b  : { avg =  2998ns, avg_dev =    30ns, dev_ratio = 0.01 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_a - end_b    : { avg = 400017ns, avg_dev =    27ns, dev_ratio = 0.00 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: spins            : { avg = 61763  , avg_dev =    50  , dev_ratio = 0.00 }
+../../../../../include/tst_fuzzy_sync.h:606: INFO: Exceeded execution time, requesting exit
+shmctl05.c:97: PASS: didn't crash
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1379T01: shmctl05 PASS (1)
+shmctl01    1  TPASS  :  pid, size, # of attaches and mode are correct - pass #1
+shmctl01    2  TPASS  :  pid, size, # of attaches and mode are correct - pass #2
+shmctl01    3  TPASS  :  new mode and change time are correct
+shmctl01    4  TPASS  :  get correct shared memory limits
+shmctl01    5  TPASS  :  get correct shared memory id
+shmctl01    6  TPASS  :  SHM_LOCK is set
+shmctl01    7  TPASS  :  SHM_LOCK is cleared
+shmctl01    8  TPASS  :  shared memory appears to be removed
+*** C1379T02: shmctl01 PASS (8)
+shmctl02    1  TPASS  :  expected failure - errno = 13 : Permission denied
+shmctl02    2  TPASS  :  expected failure - errno = 14 : Bad address
+shmctl02    3  TPASS  :  expected failure - errno = 14 : Bad address
+shmctl02    4  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmctl02    5  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmctl02    6  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
+shmctl02    7  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
+*** C1379T03: shmctl02 PASS (5)
+shmctl03    1  TPASS  :  expected failure - errno = 13 : Permission denied
+shmctl03    2  TPASS  :  expected failure - errno = 1 : Operation not permitted
+shmctl03    3  TPASS  :  expected failure - errno = 1 : Operation not permitted
+*** C1379T04: shmctl03 PASS (3)
+shmctl04    1  TPASS  :  SHM_INFO call succeeded
+*** C1379T05: shmctl04 PASS (1)
+remap_file_pages01    1  TPASS  :  Non-Linear shm file OK
+remap_file_pages01    2  TPASS  :  Non-Linear /tmp/ file OK
+*** C1379T06: remap_file_pages01 PASS (2)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+remap_file_pages02.c:86: PASS: remap_file_pages(2) start is not valid MAP_SHARED mapping: EINVAL
+remap_file_pages02.c:86: PASS: remap_file_pages(2) start is invalid: EINVAL
+remap_file_pages02.c:86: PASS: remap_file_pages(2) size is invalid: EINVAL
+remap_file_pages02.c:86: PASS: remap_file_pages(2) prot is invalid: EINVAL
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+*** C1379T07: remap_file_pages02 PASS (4)
+[shirasawa@apollo15 1379+1521+1531]$ exit
+exit
+
+Script done on Tue 01 Sep 2020 07:14:15 AM JST

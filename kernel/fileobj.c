@@ -236,6 +236,7 @@ int fileobj_create(int fd, struct memobj **objp, int *maxprotp, int flags,
 	memset(newobj, 0, sizeof(*newobj));
 	newobj->memobj.ops = &fileobj_ops;
 	newobj->memobj.flags = MF_HAS_PAGER | MF_REG_FILE |
+		MF_REMAP_FILE_PAGES |
 		((flags & MAP_PRIVATE) ? MF_PRIVATE : 0);
 	newobj->handle = result.handle;
 

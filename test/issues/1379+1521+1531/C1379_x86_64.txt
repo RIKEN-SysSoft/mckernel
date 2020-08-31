@@ -1,0 +1,66 @@
+Script started on Tue Sep  1 06:30:33 2020
+bash-4.2$ uname -m
+x86_64
+bash-4.2$ make test
+sh ./C1379.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 ... done
+tst_test.c:1096: INFO: Timeout per run is 0h 00m 20s
+../../../../../include/tst_fuzzy_sync.h:477: INFO: Minimum sampling period ended
+../../../../../include/tst_fuzzy_sync.h:301: INFO: loop = 1024, delay_bias = 0
+../../../../../include/tst_fuzzy_sync.h:290: INFO: start_a - start_b: { avg =  -341ns, avg_dev =   260ns, dev_ratio = 0.76 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_a - start_a  : { avg = 61009ns, avg_dev =   434ns, dev_ratio = 0.01 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_b - start_b  : { avg = 12223ns, avg_dev =   596ns, dev_ratio = 0.05 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: end_a - end_b    : { avg = 48445ns, avg_dev =   377ns, dev_ratio = 0.01 }
+../../../../../include/tst_fuzzy_sync.h:290: INFO: spins            : { avg = 18529  , avg_dev =  1533  , dev_ratio = 0.08 }
+../../../../../include/tst_fuzzy_sync.h:606: INFO: Exceeded execution time, requesting exit
+shmctl05.c:97: PASS: didn't crash
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1379T01: shmctl05 PASS (1)
+shmctl01    1  TPASS  :  pid, size, # of attaches and mode are correct - pass #1
+shmctl01    2  TPASS  :  pid, size, # of attaches and mode are correct - pass #2
+shmctl01    3  TPASS  :  new mode and change time are correct
+shmctl01    4  TPASS  :  get correct shared memory limits
+shmctl01    5  TPASS  :  get correct shared memory id
+shmctl01    6  TPASS  :  SHM_LOCK is set
+shmctl01    7  TPASS  :  SHM_LOCK is cleared
+shmctl01    8  TPASS  :  shared memory appears to be removed
+*** C1379T02: shmctl01 PASS (8)
+shmctl02    1  TPASS  :  expected failure - errno = 13 : Permission denied
+shmctl02    2  TPASS  :  expected failure - errno = 14 : Bad address
+shmctl02    3  TPASS  :  expected failure - errno = 14 : Bad address
+shmctl02    4  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmctl02    5  TPASS  :  expected failure - errno = 22 : Invalid argument
+shmctl02    6  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
+shmctl02    7  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
+*** C1379T03: shmctl02 PASS (5)
+shmctl03    1  TPASS  :  expected failure - errno = 13 : Permission denied
+shmctl03    2  TPASS  :  expected failure - errno = 1 : Operation not permitted
+shmctl03    3  TPASS  :  expected failure - errno = 1 : Operation not permitted
+*** C1379T04: shmctl03 PASS (3)
+shmctl04    1  TPASS  :  SHM_INFO call succeeded
+*** C1379T05: shmctl04 PASS (1)
+remap_file_pages01    1  TPASS  :  Non-Linear shm file OK
+remap_file_pages01    2  TPASS  :  Non-Linear /tmp/ file OK
+*** C1379T06: remap_file_pages01 PASS (2)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+remap_file_pages02.c:86: PASS: remap_file_pages(2) start is not valid MAP_SHARED mapping: EINVAL
+remap_file_pages02.c:86: PASS: remap_file_pages(2) start is invalid: EINVAL
+remap_file_pages02.c:86: PASS: remap_file_pages(2) size is invalid: EINVAL
+remap_file_pages02.c:86: PASS: remap_file_pages(2) prot is invalid: EINVAL
+
+Summary:
+passed   4
+failed   0
+skipped  0
+warnings 0
+*** C1379T07: remap_file_pages02 PASS (4)
+bash-4.2$ exit
+exit
+
+Script done on Tue Sep  1 06:31:10 2020
