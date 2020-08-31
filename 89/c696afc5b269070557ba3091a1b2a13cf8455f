@@ -1,0 +1,8 @@
+Verified+1: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Build-arm64+1: riken-syssoft-gerrit <syssoft-gerrit@ml.riken.jp>
+Code-Review+2: Masamichi Takagi <masamichi.takagi@gmail.com>
+Submitted-by: Masamichi Takagi <masamichi.takagi@gmail.com>
+Submitted-at: Mon, 31 Aug 2020 07:23:07 +0000
+Reviewed-on: https://review.gerrithub.io/c/RIKEN-SysSoft/mckernel/+/501449
+Project: RIKEN-SysSoft/mckernel
+Branch: refs/heads/development
