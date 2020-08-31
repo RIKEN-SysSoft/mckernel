@@ -679,4 +679,5 @@ extern int (*linux_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 extern void terminate_host(int pid, struct thread *thread);
 struct sig_pending *getsigpending(struct thread *thread, int delflag);
 int interrupt_from_user(void *regs0);
+extern unsigned long shmid_index[];
 #endif
