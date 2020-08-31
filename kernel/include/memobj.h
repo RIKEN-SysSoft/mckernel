@@ -37,6 +37,7 @@ enum {
 	MF_SHM =     0x40000,
 	MF_HUGETLBFS = 0x100000,
 	MF_PRIVATE   = 0x200000, /* To prevent flush in clear_range_* */
+	MF_REMAP_FILE_PAGES = 0x400000, /* remap_file_pages possible */
 };
 
 #define MEMOBJ_READY              0
@@ -178,6 +179,13 @@ static inline int is_freeable(struct memobj *memobj)
 	if (memobj && (memobj->flags & MF_XPMEM))
 		return 0;
 
+	return 1;
+}
+
+static inline int is_callable_remap_file_pages(struct memobj *memobj)
+{
+	if (!memobj || !(memobj->flags & MF_REMAP_FILE_PAGES))
+		return 0;
 	return 1;
 }
 

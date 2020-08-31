@@ -1,0 +1,25 @@
+【Issue#1379, Issue#1521, Issue#1531 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+C1379T01 LTP shmctl05を実行し、全てのテストケースがPASSすること。
+
+2. LTP を用いて既存処理に影響しないことを確認
+   shmctl, remap_file_pages処理を変更したため、それらを使用するLTPを選定した。
+   全てPASSすること。
+C1379T02 shmctl01: shmctl の基本機能の確認
+C1379T03 shmctl01: shmctl の基本機能の確認
+C1379T04 shmctl01: shmctl の基本機能の確認
+C1379T05 shmctl01: shmctl の基本機能の確認
+C1379T06 remap_file_pages01: remap_file_pages の基本機能の確認
+C1379T07 remap_file_pages02: remap_file_pages の基本機能の確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+□ 実行結果
+C1379_x86_64.txt(x86_64実行結果)、C1379_arm64.txt(arm64実行結果)参照。
+全ての項目が PASS していることを確認。
