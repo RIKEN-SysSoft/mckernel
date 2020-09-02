@@ -1,3 +1,9 @@
+option(ENABLE_GCOV "Enable GCOV" OFF)
+if (ENABLE_GCOV)
+       add_compile_options("-fprofile-arcs" "-ftest-coverage")
+       add_link_options("-lgcov" "--coverage")
+endif(ENABLE_GCOV)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/arch/${ARCH})
 
 if(ARCH STREQUAL "x86_64")
