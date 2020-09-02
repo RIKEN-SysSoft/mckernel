@@ -239,17 +239,17 @@ McKernelをシャットダウンし、McKernel用パーティションを削除�
 プロセス起動コマンド
 ~~~~~~~~~~~~~~~~~~~~
 
-.. include:: spec/mcexec.rst
+.. .. include:: spec/mcexec.rst
 
 ダンプ解析コマンド
 ~~~~~~~~~~~~~~~~~~
 
-.. include:: spec/eclair.rst
+.. .. include:: spec/eclair.rst
 
 ダンプ形式変換コマンド
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. include:: spec/vmcore2mckdump.rst
+.. .. include:: spec/vmcore2mckdump.rst
 
 ブート手順
 ----------
