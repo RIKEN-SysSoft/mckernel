@@ -1,21 +1,33 @@
 =============================================
-Version 1.7.0rc4 (Apr 15, 2020)
+Version 1.7.0-0.93 (Aug 1, 2020)
 =============================================
+
+----------------------
+IHK major updates
+----------------------
+#. ihklib: add ihk_create_os_str
+
+------------------------
+IHK major bug fixes
+------------------------
+#. make /dev/mcdN sharable
+#. acpi: compat: RHEL-8.2
+#. gic_chip_data: compat: RHEL-8.3
 
 ----------------------
 McKernel major updates
 ----------------------
-1. arm64: Contiguous PTE support
-2. arm64: Scalable Vector Extension (SVE) support
-3. arm64: PMU overflow interrupt support
-4. xpmem: Support large page attachment
-5. arm64 port: Direct access to Mckernel memory from Linux
-6. arm64 port: utility thread offloading, which spawns thread onto Linux CPU
-7. eclair: support for live debug
-8. Crash utility extension
-9. Replace mcoverlayfs with a soft userspace overlay
-10. Build system is switched to cmake
-11. Core dump includes thread information
+#. arm64: Contiguous PTE support
+#. arm64: Scalable Vector Extension (SVE) support
+#. arm64: PMU overflow interrupt support
+#. arm64 port: Direct access to Mckernel memory from Linux
+#. arm64 port: utility thread offloading, which spawns thread onto Linux CPU
+#. eclair: support for live debug
+#. Crash utility extension
+#. Replace mcoverlayfs with a soft userspace overlay
+#. Build system is switched to cmake
+#. Core dump includes thread information
+#. mcinspect and mcps: DWARF based LWK inspection
 
 ------------------------
 McKernel major bug fixes
@@ -101,6 +113,18 @@ McKernel major bug fixes
 #. get_one_cpu_topology: Renumber core_id (physical core id)
 #. bb7e140 procfs cpuinfo: use sequence number as processor
 #. set_host_vma(): do NOT read protect Linux VMA
+#. hugefileobj: rewrite page allocation/handling
+#. VM: use RW spinlock for vm_range_lock
+#. /dev/shm: use Linux PFNs and populate mappings
+#. Make struct ihk_os_rusage compatible with mckernel_rusage (workaround for Fugaku)
+#. Record pthread routine address in clone(), keep helper threads on caller CPU core (workaround for Fugaku)
+#. struct process: fix type of group_exit_status
+#. tgkill: Fix argument validatation
+#. set_robust_list: Add error check
+#. mcexec: Don't forward SIGTSTP SIGTTIN SIGTTOUT to mckernel
+#. syscall: add prlimit64
+#. stack: grow on page fault
+#. mcexec: use FLIB_NUM_PROCESS_ON_NODE when -n not specified (Fugaku specific)
 
 ===========================================
 Version 1.6.0 (Nov 11, 2018)
