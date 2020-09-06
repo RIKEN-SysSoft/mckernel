@@ -46,6 +46,8 @@
 #include <linux/kdev_t.h>
 #include <linux/hugetlb.h>
 #include <linux/proc_fs.h>
+#include <linux/rbtree.h>
+#include <linux/llist.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -2220,6 +2222,93 @@ int __do_in_kernel_irq_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 	return 0;
 }
 
+/*
+ * Memory clearing helpers.
+ */
+struct node_distance;
+
+#define IHK_RBTREE_ALLOCATOR
+
+#ifdef IHK_RBTREE_ALLOCATOR
+struct free_chunk {
+	unsigned long addr, size;
+	struct rb_node node;
+	struct llist_node list;
+};
+#endif
+
+typedef struct mcs_lock_node {
+#ifndef SPIN_LOCK_IN_MCS
+	unsigned long locked;
+	struct mcs_lock_node *next;
+#endif
+	unsigned long irqsave;
+#ifdef SPIN_LOCK_IN_MCS
+	ihk_spinlock_t spinlock;
+#endif
+#ifndef ENABLE_UBSAN
+} __aligned(64) mcs_lock_node_t;
+#else
+} mcs_lock_node_t;
+#endif
+
+struct ihk_mc_numa_node {
+	int id;
+	int linux_numa_id;
+	int type;
+	struct list_head allocators;
+	struct node_distance *nodes_by_distance;
+#ifdef IHK_RBTREE_ALLOCATOR
+	atomic_t zeroing_workers;
+	atomic_t nr_to_zero_pages;
+	struct llist_head zeroed_list;
+	struct llist_head to_zero_list;
+	struct rb_root free_chunks;
+	mcs_lock_node_t lock;
+
+	unsigned long nr_pages;
+	/*
+	 * nr_free_pages: all freed pages, zeroed if zero_at_free
+	 */
+	unsigned long nr_free_pages;
+	unsigned long min_addr;
+	unsigned long max_addr;
+#endif
+};
+
+void mcctrl_zero_mckernel_pages(unsigned long arg)
+{
+	struct llist_node *llnode;
+	struct ihk_mc_numa_node *node =
+		(struct ihk_mc_numa_node *)arg;
+
+	/* Iterate free chunks */
+	while ((llnode = llist_del_first(&node->to_zero_list))) {
+		unsigned long addr;
+		unsigned long size;
+		struct free_chunk *chunk =
+			container_of(llnode, struct free_chunk, list);
+
+		addr = chunk->addr;
+		size = chunk->size;
+
+		memset(phys_to_virt(addr) + sizeof(*chunk), 0,
+				chunk->size - sizeof(*chunk));
+		llist_add(&chunk->list, &node->zeroed_list);
+
+		dprintk("%s: zeroed %lu pages @ McKernel NUMA %d (chunk: 0x%lx:%lu)\n",
+				__func__,
+				size >> PAGE_SHIFT,
+				node->id,
+				addr, size);
+		barrier();
+		atomic_sub((int)(size >> PAGE_SHIFT), &node->nr_to_zero_pages);
+	}
+
+	atomic_dec(&node->zeroing_workers);
+}
+
+
 int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 {
 	struct syscall_request *sc = &packet->req;
@@ -2239,6 +2328,14 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 	case __NR_mprotect:
 		ret = remap_user_space(sc->args[0], sc->args[1], sc->args[2]);
 		break;
+
+	case __NR_move_pages:
+		/*
+		 * move pages is used for zeroing McKernel side memory,
+		 * this call is NOT offloaded by applications.
+		 */
+		mcctrl_zero_mckernel_pages(sc->args[0]);
+		goto out_no_syscall_return;
 
 	case __NR_exit_group: {
 	
@@ -2324,6 +2421,8 @@ sched_setparam_out:
 	}
 
 	__return_syscall(os, packet, ret, 0);
+
+out_no_syscall_return:
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
 	error = 0;
