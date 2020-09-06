@@ -55,6 +55,8 @@ typedef unsigned long ihk_mc_ap_flag;
 
 #define IHK_MC_AP_BANDWIDTH       0x010000
 #define IHK_MC_AP_LATENCY         0x020000
+/* Only allocate from the closest NUMA node */
+#define IHK_MC_AP_NUMA_STRICT     0x040000
 
 #define IHK_MC_PG_KERNEL       0
 #define IHK_MC_PG_USER         1
