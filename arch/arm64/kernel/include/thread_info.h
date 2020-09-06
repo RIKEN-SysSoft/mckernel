@@ -2,7 +2,7 @@
 #ifndef __HEADER_ARM64_COMMON_THREAD_INFO_H
 #define __HEADER_ARM64_COMMON_THREAD_INFO_H
 
-#define MIN_KERNEL_STACK_SHIFT	15
+#define MIN_KERNEL_STACK_SHIFT	18
 
 #include <arch-memory.h>
 
