@@ -1873,10 +1873,18 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	res->ret = ret;
 	res->stid = stid;
 
-	/* Record PDE_DATA after ioctl() calls for Tofu driver */
-	if (packet->req.number == __NR_ioctl && ret == 0) {
+	/* Record PDE_DATA after open()/ioctl() calls for Tofu driver */
+	if ((packet->req.number == __NR_ioctl && ret == 0) ||
+			(packet->req.number == __NR_openat && ret > 1)) {
 		char *pathbuf, *fullpath;
-		struct fd f = fdget(packet->req.args[0]);
+		struct fd f;
+
+		if (packet->req.number == __NR_ioctl) {
+			f = fdget(packet->req.args[0]);
+		}
+		else if (packet->req.number == __NR_openat) {
+			f = fdget(ret);
+		}
 
 		if (!f.file) {
 			goto out_notify;
@@ -1894,17 +1902,18 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 
 		if (!strncmp("/proc/tofu/dev/", fullpath, 15)) {
 			res->pde_data = PDE_DATA(file_inode(f.file));
-			printk("%s: fd: %ld, path: %s, PDE_DATA: 0x%lx\n",
+			dprintk("%s: %s(): fd: %ld, path: %s, PDE_DATA: 0x%lx\n",
 				__func__,
+				packet->req.number == __NR_ioctl ? "ioctl" : "openat",
 				packet->req.args[0],
 				fullpath,
 				(unsigned long)res->pde_data);
-			printk("%s: pgd_index: %ld, pmd_index: %ld, pte_index: %ld\n",
+			dprintk("%s: pgd_index: %ld, pmd_index: %ld, pte_index: %ld\n",
 				__func__,
 				pgd_index((unsigned long)res->pde_data),
 				pmd_index((unsigned long)res->pde_data),
 				pte_index((unsigned long)res->pde_data));
-			printk("MAX_USER_VA_BITS: %d, PGDIR_SHIFT: %d\n",
+			dprintk("MAX_USER_VA_BITS: %d, PGDIR_SHIFT: %d\n",
 				MAX_USER_VA_BITS, PGDIR_SHIFT);
 		}
 
