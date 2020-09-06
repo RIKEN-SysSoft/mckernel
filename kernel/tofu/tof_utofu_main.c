@@ -19,6 +19,28 @@
 #include <tofu/tofu_generated-tof_core_cq.h>
 #include <tofu/tofu_generated-tof_utofu_device.h>
 #include <tofu/tofu_generated-tof_utofu_cq.h>
+
+
+struct kmalloc_cache_header tofu_scatterlist_cache[8];
+struct kmalloc_cache_header tofu_mbpt_cache[8];
+struct ihk_mc_page_cache_header tofu_mbpt_sg_pages_cache[8];
+
+
+typedef ihk_spinlock_t spinlock_t;
+struct tof_core_irq;
+struct tof_core_irq {
+	void *reg;  /* base address of interrupt controller registers */
+	uint64_t (*handler)(struct tof_core_irq *, uint64_t, void*);
+	uint64_t panic_mask;
+	uint64_t warn_mask;
+	uint64_t task_mask;  /* cleared in tasklets */
+	uint64_t all_mask;
+	char name[16];
+};
+
+typedef void (*tof_core_signal_handler)(int, int, uint64_t, uint64_t);
+#include <tofu/tofu_generated-tof_core_bg.h>
+#include <tofu/tofu_generated-tof_utofu_bg.h>
 #include <tofu/tofu_generated-tof_utofu_mbpt.h>
 
 #define TOF_UTOFU_VERSION TOF_UAPI_VERSION
@@ -59,6 +81,8 @@
 	__x - (__x % (y));				\
 }							\
 )
+
+ihk_spinlock_t tofu_tni_cq_lock[6][12];
 
 struct tof_utofu_trans_list {
 	int16_t prev;
@@ -454,7 +478,9 @@ static int tof_utofu_alloc_mbpt(struct tof_utofu_cq *ucq, uint32_t npages, struc
 	struct tof_utofu_mbpt *mbpt;
 
 	//sg = tof_util_alloc(nsgents * sizeof(*sg), GFP_ATOMIC);
-	sg = kmalloc(sizeof(*sg), IHK_MC_AP_NOWAIT);
+	//sg = kmalloc(sizeof(*sg), IHK_MC_AP_NOWAIT);
+	sg = kmalloc_cache_alloc(&tofu_scatterlist_cache[ihk_mc_get_numa_id()],
+			sizeof(*sg));
 	if(sg == NULL){
 		raw_rc_output(-ENOMEM);
 		return -ENOMEM;
@@ -473,16 +499,26 @@ static int tof_utofu_alloc_mbpt(struct tof_utofu_cq *ucq, uint32_t npages, struc
 	//	memset(buf, 0, PAGE_SIZE);
 	//	sg_set_buf(&sg[i], buf, PAGE_SIZE);
 	//}
-	sg->pages = ihk_mc_alloc_pages(nsgents, IHK_MC_AP_NOWAIT);
+	if (0 && nsgents == 1) {
+		sg->pages = ihk_mc_page_cache_alloc(
+				&tofu_mbpt_sg_pages_cache[ihk_mc_get_numa_id()], 1);
+	}
+	else {
+		sg->pages = ihk_mc_alloc_pages(nsgents, IHK_MC_AP_NOWAIT);
+	}
 	if (!sg->pages) {
 		raw_rc_output(-ENOMEM);
 		ret = -ENOMEM;
 		goto free_sg;
 	}
-	memset(sg->pages, 0, PAGE_SIZE * nsgents);
+
+	if (!zero_at_free)
+		memset(sg->pages, 0, PAGE_SIZE * nsgents);
 
 	//mbpt = tof_util_alloc(sizeof(*mbpt), GFP_ATOMIC);
-	mbpt = kmalloc(sizeof(*mbpt), IHK_MC_AP_NOWAIT);
+	//mbpt = kmalloc(sizeof(*mbpt), IHK_MC_AP_NOWAIT);
+	mbpt = kmalloc_cache_alloc(&tofu_mbpt_cache[ihk_mc_get_numa_id()],
+		sizeof(*mbpt));
 	if(mbpt == NULL){
 		raw_rc_output(-ENOMEM);
 		ret = -ENOMEM;
@@ -539,11 +575,19 @@ free_ent:
 	//for(i = i - 1; i >= 0; i--){
 	//	tof_util_free_pages((unsigned long)sg_virt(&sg[i]), 0);
 	//}
-	kfree(mbpt);
+	//kfree(mbpt);
+	kmalloc_cache_free(mbpt);
 free_sg_pages:
-	ihk_mc_free_pages(sg->pages, nsgents);
+	if (0 && nsgents == 1) {
+		ihk_mc_page_cache_free(
+				&tofu_mbpt_sg_pages_cache[ihk_mc_get_numa_id()], sg->pages);
+	}
+	else {
+		ihk_mc_free_pages(sg->pages, nsgents);
+	}
 free_sg:
-	kfree(sg);
+	//kfree(sg);
+	kmalloc_cache_free(sg);
 
 	return ret;
 }
@@ -729,9 +773,25 @@ static int tof_utofu_update_mbpt_entries(struct tof_utofu_cq *ucq,
 
 static void tof_utofu_free_mbpt(struct tof_utofu_cq *ucq, struct tof_utofu_mbpt *mbpt){
 	int i;
+	int disabled = 0;
+#ifdef PROFILE_ENABLE
+	unsigned long ts;
+#endif // PROFILE_ENABLE
 
+	/*
+	 * Once we hit an empty entry after disabling some,
+	 * we know the rest are not used because all stag
+	 * registrations are contiguous.
+	 */
 	for(i = 0; i < mbpt->nsgents * PAGE_SIZE / sizeof(struct tof_icc_mbpt_entry); i++){
-		tof_utofu_disable_mbpt(mbpt, i);
+		uintptr_t iova = tof_utofu_disable_mbpt(mbpt, i);
+		if (iova) {
+			++disabled;
+		}
+
+		if (disabled > 0 && !iova) {
+			break;
+		}
 		//uintptr_t iova;
 		//iova = tof_utofu_disable_mbpt(mbpt, i);
 		//if(iova){
@@ -746,13 +806,28 @@ static void tof_utofu_free_mbpt(struct tof_utofu_cq *ucq, struct tof_utofu_mbpt 
 	//for(i = 0; i < mbpt->nsgents; i++){
 	//	tof_util_free_pages((unsigned long)sg_virt(&mbpt->sg[i]), 0);
 	//}
-	ihk_mc_free_pages(mbpt->sg->pages, mbpt->nsgents);
+#ifdef PROFILE_ENABLE
+	ts = rdtsc();
+#endif // PROFILE_ENABLE
+	if (0 && mbpt->nsgents == 1) {
+		ihk_mc_page_cache_free(
+				&tofu_mbpt_sg_pages_cache[ihk_mc_get_numa_id()],
+				mbpt->sg->pages);
+	}
+	else {
+		ihk_mc_free_pages(mbpt->sg->pages, mbpt->nsgents);
+	}
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_tofu_stag_free_stag_dealloc_free_pages, rdtsc() - ts);
+#endif // PROFILE_ENABLE
 
 	//tof_util_free(mbpt->sg);
-	kfree(mbpt->sg);
+	//kfree(mbpt->sg);
+	kmalloc_cache_free(mbpt->sg);
 
 	//tof_util_free(mbpt);
-	kfree(mbpt);
+	//kfree(mbpt);
+	kmalloc_cache_free(mbpt);
 	dkprintf("%s: mbpt %p freed\n", __func__, mbpt);
 }
 
@@ -859,6 +934,10 @@ static int tof_utofu_alloc_new_steering(struct tof_utofu_cq *ucq, int stag, uint
 	int ret;
 	struct tof_utofu_mbpt *mbpt;
 	uintptr_t mbva;
+#ifdef PROFILE_ENABLE
+	unsigned long ts = rdtsc();
+	unsigned long ts_rolling = ts;
+#endif // PROFILE_ENABLE
 
 	npages = (end - start) >> pgszbits;
 	mbpt_npages = roundup(npages, PAGE_SIZE / TOF_ICC_MBPT_SIZE);
@@ -875,6 +954,11 @@ static int tof_utofu_alloc_new_steering(struct tof_utofu_cq *ucq, int stag, uint
 	}
 	mbpt->mbptstart = mbptstart;
 	mbpt->pgsz = pgsz;
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_tofu_stag_alloc_new_steering_alloc_mbpt,
+			rdtsc() - ts_rolling);
+	ts_rolling = rdtsc();
+#endif // PROFILE_ENABLE
 
 	ix = (start - mbptstart) >> pgszbits;
 	ret = tof_utofu_update_mbpt_entries(ucq, mbpt, start, end, ix, pgsz, readonly);
@@ -900,6 +984,12 @@ static int tof_utofu_alloc_new_steering(struct tof_utofu_cq *ucq, int stag, uint
 	tof_utofu_enable_steering(ucq, stag, mbva, end - mbptstart - mbva, readonly);
 	tof_utofu_trans_enable(ucq, stag, start, end - start, mbptstart, mbpt_npages * TOF_ICC_MBPT_SIZE, pgszbits, mbpt);
 
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_tofu_stag_alloc_new_steering_update_mbpt,
+			rdtsc() - ts_rolling);
+	profile_event_add(PROFILE_tofu_stag_alloc_new_steering,
+			rdtsc() - ts);
+#endif // PROFILE_ENABLE
 	return 0;
 }
 
@@ -958,6 +1048,8 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 		__func__, req.va, req.len, start, end, pgsz);
 
 	//down(&ucq->ucq_sem);
+	ihk_mc_spinlock_lock_noirq(&tofu_tni_cq_lock[ucq->tni][ucq->cqid]);
+
 	if(req.stag < 0){
 #if 1
 		/* normal stag */
@@ -970,6 +1062,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 			stag = tof_utofu_reserve_stag(ucq, readonly);
 			if(stag < 0){
 				//up(&ucq->ucq_sem);
+				ihk_mc_spinlock_unlock_noirq(&tofu_tni_cq_lock[ucq->tni][ucq->cqid]);
 				ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 				return -ENOSPC;
 			}
@@ -1002,6 +1095,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 		if(ucq->steering[req.stag].enable){
 			kprintf("%s: ret: %d\n", __func__, -EBUSY);
 			//up(&ucq->ucq_sem);
+			ihk_mc_spinlock_unlock_noirq(&tofu_tni_cq_lock[ucq->tni][ucq->cqid]);
 			ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 			return -EBUSY;
 		}
@@ -1011,6 +1105,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 	}
 
 	//up(&ucq->ucq_sem);
+	ihk_mc_spinlock_unlock_noirq(&tofu_tni_cq_lock[ucq->tni][ucq->cqid]);
 	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 
 	if(ret == 0){
@@ -1057,6 +1152,10 @@ static inline void tof_writeq_relaxed(uint64_t val, void *reg, off_t offset){
 
 static inline uint64_t tof_readq(void *reg, off_t offset){
 	return readq((char *)reg + offset);
+}
+
+static inline void tof_writeq(uint64_t val, void *reg, off_t offset){
+	writeq(val, (char *)reg + offset);
 }
 
 static inline bool tof_core_readq_spin(void *reg, off_t offset, uint64_t mask,
@@ -1107,8 +1206,8 @@ static int   tof_core_cq_cache_flush_timeout_sec = 3;
 static int   tof_core_cq_cache_flush_2nd_timeout_sec = 3600;
 int tof_core_cq_cacheflush_timeout_dbg_msg_disabled = 1;
 
-// Assuming 2 GHz..
-#define TOF_CORE_TIMEOUT_SEC(n) ((n) * 2 * 1000000000)
+// Assuming 1 GHz..
+#define TOF_CORE_TIMEOUT_SEC(n) ((1UL) * (n) * 1000000000)
 
 int tof_core_cq_cacheflush(int tni, int cqid){
 	struct tof_core_cq *cq;
@@ -1154,6 +1253,14 @@ static int tof_utofu_cq_cacheflush(struct tof_utofu_cq *ucq){
 
 
 static int tof_utofu_free_stag(struct tof_utofu_cq *ucq, int stag){
+#ifdef PROFILE_ENABLE
+	unsigned long ts = 0;
+	unsigned long ts_rolling = 0;
+	if (cpu_local_var(current)->profile) {
+		ts = rdtsc();
+		ts_rolling = ts;
+	}
+#endif // PROFILE_ENABLE
 	if(stag < 0 || stag >= TOF_UTOFU_NUM_STAG(ucq->num_stag) ||
 	   ucq->steering == NULL){
 		return -EINVAL;
@@ -1172,10 +1279,22 @@ static int tof_utofu_free_stag(struct tof_utofu_cq *ucq, int stag){
 	ucq->mb[stag].enable = 0;
 	tof_utofu_trans_disable(ucq, stag);
 	dma_wmb();
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_tofu_stag_free_stag_pre, rdtsc() - ts_rolling);
+	ts_rolling = rdtsc();
+#endif // PROFILE_ENABLE
 	tof_utofu_cq_cacheflush(ucq);
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_tofu_stag_free_stag_cqflush, rdtsc() - ts_rolling);
+	ts_rolling = rdtsc();
+#endif // PROFILE_ENABLE
 	kref_put(&ucq->trans.mru[stag].mbpt->kref, tof_utofu_mbpt_release);
 	ucq->trans.mru[stag].mbpt = NULL;
 	dkprintf("%s: stag: %d deallocated\n", __func__, stag);
+#ifdef PROFILE_ENABLE
+	profile_event_add(PROFILE_tofu_stag_free_stag_dealloc, rdtsc() - ts_rolling);
+	profile_event_add(PROFILE_tofu_stag_free_stag, rdtsc() - ts);
+#endif // PROFILE_ENABLE
 	return 0;
 }
 
@@ -1184,6 +1303,7 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 	struct tof_utofu_cq *ucq;
 	struct tof_free_stags req;
 	int i, no_free_cnt = 0, ret;
+	int stags[1024];
 
 	ucq = container_of(dev, struct tof_utofu_cq, common);
 
@@ -1198,21 +1318,18 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 	if(req.num > 1024 || req.stags == NULL){
 		return -EINVAL;
 	}
+
+	if(copy_from_user(stags, req.stags, sizeof(int) * req.num) != 0){
+		raw_rc_output(-EFAULT);
+		return -EFAULT;
+	}
+
 	for(i = 0; i < req.num; i++){
-		int stag;
-		if(copy_from_user(&stag, &req.stags[i], sizeof(stag)) != 0){
-			raw_rc_output(-EFAULT);
-			return -EFAULT;
-		}
 		linux_spin_lock(&ucq->trans.mru_lock);
-		ret = tof_utofu_free_stag(ucq, stag);
+		ret = tof_utofu_free_stag(ucq, stags[i]);
 		linux_spin_unlock(&ucq->trans.mru_lock);
 		if(ret == 0){
-			int result = -1;
-			if(copy_to_user(&req.stags[i], &result, sizeof(result)) != 0){
-				raw_rc_output(-EFAULT);
-				return -EFAULT;
-			}
+			stags[i] = -1;
 		}
 		else if(ret == -ENOENT){
 			no_free_cnt++;
@@ -1220,6 +1337,12 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 		}
 		else{
 			req.num = i - no_free_cnt;
+
+			if(copy_to_user(req.stags, stags, sizeof(int) * req.num) != 0){
+				raw_rc_output(-EFAULT);
+				return -EFAULT;
+			}
+
 			if(copy_to_user((void *)arg, &req, sizeof(req)) != 0){
 				return -EFAULT;
 			}
@@ -1229,6 +1352,11 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 	}
 
 	req.num = i - no_free_cnt;
+	if(copy_to_user(req.stags, stags, sizeof(int) * req.num) != 0){
+		raw_rc_output(-EFAULT);
+		return -EFAULT;
+	}
+
 	if(copy_to_user((void *)arg, &req, sizeof(req)) != 0){
 		return -EFAULT;
 	}
@@ -1260,15 +1388,567 @@ void tof_utofu_release_cq(void *pde_data)
 		linux_spin_unlock(&ucq->trans.mru_lock);
 	}
 
-	kprintf("%s: UCQ (pde: %p) TNI %d, CQ %d\n",
+	dkprintf("%s: UCQ (pde: %p) TNI %d, CQ %d\n",
 		__func__, pde_data, ucq->tni, ucq->cqid);
 }
 
-long tof_utofu_unlocked_ioctl_cq(int fd,
+/*
+ *
+ * Tofu barrier gate related functions.
+ *
+ */
+
+#define TOF_CORE_TIMEOUT_BG_ENABLE TOF_CORE_TIMEOUT_SEC(3)
+#define TOF_CORE_TIMEOUT_BG_DISABLE TOF_CORE_TIMEOUT_SEC(3)
+#define TOF_CORE_TIMEOUT_BCH_ENABLE TOF_CORE_TIMEOUT_SEC(3)
+#define TOF_CORE_TIMEOUT_BCH_DISABLE TOF_CORE_TIMEOUT_SEC(3)
+
+//struct tof_core_bg tof_core_bg[TOF_ICC_NTNIS][TOF_ICC_NBGS];
+static struct tof_core_bg *tof_core_bg;
+
+struct tof_core_bg *tof_core_bg_get(int tni, int bgid){
+	if((unsigned int)tni >= TOF_ICC_NTNIS ||
+	   (unsigned int)bgid >= TOF_ICC_NBGS){
+		return NULL;
+	}
+	//return &tof_core_bg[tni][bgid];
+
+	// Convert [][] notion into pointer aritmethic
+	return tof_core_bg + (tni * TOF_ICC_NBGS) + bgid;
+}
+
+
+//static struct tof_utofu_bg tof_utofu_bg[TOF_ICC_NTNIS][TOF_ICC_NBGS];
+static struct tof_utofu_bg *tof_utofu_bg;
+
+static struct tof_utofu_bg *tof_utofu_bg_get(int tni, int bgid){
+	if((unsigned int)tni >= TOF_ICC_NTNIS ||
+	   (unsigned int)bgid >= TOF_ICC_NBGS){
+		return NULL;
+	}
+	//return &tof_utofu_bg[tni][bgid];
+
+	// Convert [][] notion into pointer aritmethic
+	return tof_utofu_bg + (tni * TOF_ICC_NBGS) + bgid;
+}
+
+
+int tof_core_enable_bch(int tni, int bgid, uint64_t dma_ipa){
+	struct tof_core_bg *bg;
+	bg = tof_core_bg_get(tni, bgid);
+	if(bg == NULL || bg->reg.bch == NULL ||  /* this BG is not associated with a BCH */
+	   (dma_ipa & (TOF_ICC_BCH_DMA_ALIGN - 1)) != 0){
+		return -EINVAL;
+	}
+
+	/* no need to lock, since they are permanent after initialization */
+	tof_writeq(dma_ipa, bg->reg.bgs, TOF_ICC_REG_BGS_BCH_NOTICE_IPA);
+	tof_writeq(0, bg->reg.bgs, TOF_ICC_REG_BGS_BCH_MASK);
+	if(!tof_core_readq_spin(bg->reg.bgs, TOF_ICC_REG_BGS_BCH_MASK_STATUS,
+				TOF_ICC_REG_BGS_BCH_MASK_STATUS_RUN,
+				0,
+				TOF_CORE_TIMEOUT_BCH_ENABLE)){
+		return -ETIMEDOUT;
+	}
+	return 0;
+}
+
+static inline bool tof_utofu_subnet_includes(struct tof_set_subnet *subnet, uint8_t px, uint8_t py, uint8_t pz){
+	return (subnet->lx == 0 ? px < subnet->nx : (px < subnet->sx ? px + subnet->nx : px) < subnet->sx + subnet->lx) &&
+	       (subnet->ly == 0 ? py < subnet->ny : (py < subnet->sy ? py + subnet->ny : py) < subnet->sy + subnet->ly) &&
+	       (subnet->lz == 0 ? pz < subnet->nz : (pz < subnet->sz ? pz + subnet->nz : pz) < subnet->sz + subnet->lz);
+}
+
+static inline uint64_t tof_utofu_pack_subnet(const struct tof_set_subnet *subnet){
+	union {
+		struct tof_icc_reg_subnet subnet;
+		uint64_t val;
+	} u;
+	u.subnet.nx = subnet->nx;
+	u.subnet.sx = subnet->sx;
+	u.subnet.lx = subnet->lx;
+	u.subnet.ny = subnet->ny;
+	u.subnet.sy = subnet->sy;
+	u.subnet.ly = subnet->ly;
+	u.subnet.nz = subnet->nz;
+	u.subnet.sz = subnet->sz;
+	u.subnet.lz = subnet->lz;
+	return u.val;
+}
+
+static inline void tof_utofu_unpack_subnet(uint64_t val, struct tof_set_subnet *subnet)
+{
+	union {
+		struct tof_icc_reg_subnet subnet;
+		uint64_t val;
+	} u;
+	u.val = val;
+	subnet->nx = u.subnet.nx;
+	subnet->sx = u.subnet.sx;
+	subnet->lx = u.subnet.lx;
+	subnet->ny = u.subnet.ny;
+	subnet->sy = u.subnet.sy;
+	subnet->ly = u.subnet.ly;
+	subnet->nz = u.subnet.nz;
+	subnet->sz = u.subnet.sz;
+	subnet->lz = u.subnet.lz;
+}
+
+static inline void tof_core_reset_irqmask_imc(struct tof_core_irq *dev){
+	tof_writeq_relaxed(dev->all_mask, dev->reg, TOF_ICC_IRQREG_IMC);
+}
+static inline void tof_core_reset_irqmask(struct tof_core_irq *dev){
+	tof_writeq_relaxed(GENMASK(63, 0), dev->reg, TOF_ICC_IRQREG_IMR);
+	tof_writeq_relaxed(GENMASK(63, 0), dev->reg, TOF_ICC_IRQREG_IRC);
+	wmb();
+}
+
+static __always_inline uint64_t tof_util_mask_set(uint64_t val, uint64_t mask){
+	uint64_t shift = mask & (~mask + 1);
+	return val * shift & mask;
+}
+
+static inline uint64_t tof_core_pack_remote_bg(const struct tof_addr *taddr,
+					       uint64_t tni, int64_t gate){
+	union {
+		struct tof_icc_reg_bg_address bgaddr;
+		uint32_t val;
+	} u;
+	u.bgaddr.pa = taddr->pa;
+	u.bgaddr.pb = taddr->pb;
+	u.bgaddr.pc = taddr->pc;
+	u.bgaddr.x = taddr->x;
+	u.bgaddr.y = taddr->y;
+	u.bgaddr.z = taddr->z;
+	u.bgaddr.a = taddr->a;
+	u.bgaddr.b = taddr->b;
+	u.bgaddr.c = taddr->c;
+	u.bgaddr.tni = tni;
+	u.bgaddr.bgid = gate;
+	return u.val;
+}
+
+int tof_core_set_bg(const struct tof_set_bg *setbg,
+		    uint64_t subnet,
+		    uint32_t bseq, uint32_t gpid){
+	int64_t slgate = setbg->source_lgate;
+	const struct tof_addr *sraddr = &setbg->source_raddr;
+	uint64_t srtni = setbg->source_rtni;
+	int64_t srgate = setbg->source_rgate;
+	int64_t dlgate = setbg->dest_lgate;
+	const struct tof_addr *draddr = &setbg->dest_raddr;
+	uint64_t drtni = setbg->dest_rtni;
+	int64_t drgate = setbg->dest_rgate;
+	struct tof_core_bg *bg;
+	uint64_t sigmask = 0;
+	uint64_t locallink = 0;
+	uint64_t remotelink = 0;
+	int ret = 0;
+	unsigned long flags;
+
+	bg = tof_core_bg_get(setbg->tni, setbg->gate);
+	if(bg == NULL){
+		return -EINVAL;
+	}
+	//spin_lock_irqsave(&bg->lock, flags);
+	linux_spin_lock_irqsave(&bg->lock, flags);
+
+	bg->subnet = subnet;
+	bg->gpid = gpid;
+	tof_core_reset_irqmask(&bg->irq);
+	tof_core_reset_irqmask_imc(&bg->irq);
+
+	if(slgate >= 0){
+		locallink |= tof_util_mask_set(slgate, TOF_ICC_REG_BGS_LOCAL_LINK_BGID_RECV);
+	}else{
+		sigmask |= TOF_ICC_REG_BGS_SIGNAL_MASK_SIG_RECV;
+	}
+	if(srgate >= 0){
+		uint64_t bgaddr;
+		bgaddr = tof_core_pack_remote_bg(sraddr, srtni, srgate);
+		remotelink |= tof_util_mask_set(bgaddr, TOF_ICC_REG_BGS_REMOTE_LINK_BG_ADDRESS_RECV);
+	}else{
+		sigmask |= TOF_ICC_REG_BGS_SIGNAL_MASK_TLP_RECV;
+	}
+	if(dlgate >= 0){
+		locallink |= tof_util_mask_set(dlgate, TOF_ICC_REG_BGS_LOCAL_LINK_BGID_SEND);
+	}else{
+		sigmask |= TOF_ICC_REG_BGS_SIGNAL_MASK_SIG_SEND;
+	}
+	if(drgate >= 0){
+		uint64_t bgaddr;
+		bgaddr = tof_core_pack_remote_bg(draddr, drtni, drgate);
+		remotelink |= tof_util_mask_set(bgaddr, TOF_ICC_REG_BGS_REMOTE_LINK_BG_ADDRESS_SEND);
+	}else{
+		sigmask |= TOF_ICC_REG_BGS_SIGNAL_MASK_TLP_SEND;
+	}
+	tof_writeq(sigmask, bg->reg.bgs, TOF_ICC_REG_BGS_SIGNAL_MASK);
+	tof_writeq(locallink, bg->reg.bgs, TOF_ICC_REG_BGS_LOCAL_LINK);
+	tof_writeq(remotelink, bg->reg.bgs, TOF_ICC_REG_BGS_REMOTE_LINK);
+	tof_writeq(subnet, bg->reg.bgs, TOF_ICC_REG_BGS_SUBNET_SIZE);
+	tof_writeq((uint64_t)gpid << 24 | bseq, bg->reg.bgs, TOF_ICC_REG_BGS_GPID_BSEQ);
+	wmb();
+	tof_writeq(1, bg->reg.bgs, TOF_ICC_REG_BGS_ENABLE);
+	if(!tof_core_readq_spin(bg->reg.bgs, TOF_ICC_REG_BGS_STATE,
+				TOF_ICC_REG_BGS_STATE_ENABLE,
+				TOF_ICC_REG_BGS_STATE_ENABLE,
+				TOF_CORE_TIMEOUT_BG_ENABLE)){
+		ret = -ETIMEDOUT;
+	}
+	//spin_unlock_irqrestore(&bg->lock, flags);
+	linux_spin_unlock_irqrestore(&bg->lock, flags);
+	return ret;
+}
+
+void tof_core_register_signal_bg(int tni, int bgid, tof_core_signal_handler handler)
+{
+	struct tof_core_bg *bg = tof_core_bg_get(tni, bgid);
+	unsigned long flags;
+	linux_spin_lock_irqsave(&bg->lock, flags);
+	bg->sighandler = handler;
+	linux_spin_unlock_irqrestore(&bg->lock, flags);
+}
+
+typedef void (tof_utofu_handler_bg_signal_t)(int tni, int bgid, uint64_t irr, uint64_t data);
+static tof_utofu_handler_bg_signal_t *tof_utofu_handler_bg_signal;
+
+typedef int kuid_t;
+static int tof_utofu_set_bg(struct tof_utofu_bg *ubch, struct tof_set_bg __user *bgs, kuid_t kuid, uint32_t bseq){
+	struct tof_set_bg req;
+	struct tof_utofu_bg *ubg;
+	struct tof_set_subnet subnet;
+	int ret;
+
+	if(copy_from_user(&req, bgs, sizeof(req)) != 0){
+		return -EFAULT;
+	}
+	//tof_log_if("ubch->tni=%d ubch->bgid=%d tni=%d gate=%d source_lgate=%d source_raddr=%x source_rtni=%d source_rgate=%d dest_lgate=%d dest_raddr=%x dest_rtni=%d dest_rgate=%d\n",
+	dkprintf("%s: ubch->tni=%d ubch->bgid=%d tni=%d gate=%d source_lgate=%d source_raddr=%x source_rtni=%d source_rgate=%d dest_lgate=%d dest_raddr=%x dest_rtni=%d dest_rgate=%d\n",
+			__func__, ubch->tni, ubch->bgid, req.tni, req.gate, req.source_lgate, req.source_raddr, req.source_rtni, req.source_rgate, req.dest_lgate, req.dest_raddr, req.dest_rtni, req.dest_rgate);
+
+	ubg = tof_utofu_bg_get(req.tni, req.gate);
+	if(ubg == NULL){
+		raw_rc_output(-EINVAL);
+		return -EINVAL;
+	}
+	tof_utofu_unpack_subnet(ubg->common.subnet, &subnet);
+	if(req.source_lgate >= TOF_ICC_NBGS ||
+	   (req.source_rgate >= 0 &&
+	    (!tof_utofu_subnet_includes(&subnet, req.source_raddr.x, req.source_raddr.y, req.source_raddr.z) ||
+	     (unsigned int)req.source_rtni >= TOF_ICC_NTNIS ||
+	     req.source_rgate >= TOF_ICC_NBGS)) ||
+	   req.dest_lgate >= TOF_ICC_NBGS ||
+	   (req.dest_rgate >= 0 &&
+	    (!tof_utofu_subnet_includes(&subnet, req.dest_raddr.x, req.dest_raddr.y, req.dest_raddr.z) ||
+	     (unsigned int)req.dest_rtni >= TOF_ICC_NTNIS ||
+	     req.dest_rgate >= TOF_ICC_NBGS))){
+		raw_rc_output(-EINVAL);
+		ret = -EINVAL;
+		goto end;
+	}
+	if(ubg->common.enabled){
+		ret = -EBUSY;
+		goto end;
+	}
+
+	// TODO: fix this
+	//if(!uid_eq(kuid, GLOBAL_ROOT_UID) &&
+	//   !uid_eq(kuid, ubg->common.kuid)){
+	//	ret = -EACCES;
+	//	goto end;
+	//}
+
+	ret = tof_core_set_bg(&req, ubg->common.subnet, bseq, ubg->common.gpid);
+	if(ret < 0){
+		raw_rc_output(ret);
+		goto end;
+	}
+
+	ubg->common.enabled = true;
+	/* something else? */
+
+	/* TODO: wrapping function */
+	ubch->bch.bgmask[req.tni] |= (uint64_t)1 << req.gate;
+
+	tof_core_register_signal_bg(req.tni, req.gate, tof_utofu_handler_bg_signal);
+end:
+	/* unlock? */
+	return ret;
+}
+
+/**
+ * tof_core_disable_bch - disable a BCH
+ *
+ * tries to disable the BCH gracefully, however, what if
+ * some remote nodes have hung up?  therefore, it does not
+ * wait for the BCH becoming ready.
+ */
+static int tof_core_bch_disable_locked(struct tof_core_bg *bg){
+	if(bg->reg.bch == NULL){  /* this BG is not associated with a BCH */
+		return -EINVAL;
+	}
+	tof_writeq(TOF_ICC_REG_BGS_BCH_MASK_MASK, bg->reg.bgs, TOF_ICC_REG_BGS_BCH_MASK);
+
+	/* XXX: tof_core_bch_skip_mask_check is 1 */
+	//if(tof_core_bch_skip_mask_check){
+		return 0;
+	//}
+
+#if 0
+	if(!tof_core_readq_spin(bg->reg.bgs, TOF_ICC_REG_BGS_BCH_MASK_STATUS,
+				TOF_ICC_REG_BGS_BCH_MASK_STATUS_RUN,
+				0,
+				TOF_CORE_TIMEOUT_BCH_DISABLE)){
+		tof_warn_limit(2012, "BCH disable timeout\n");
+	}
+	if(!tof_core_readq_spin(bg->reg.bch, TOF_ICC_REG_BCH_READY,
+				TOF_ICC_REG_BCH_READY_STATE,
+				TOF_ICC_REG_BCH_READY_STATE,
+				TOF_CORE_TIMEOUT_BCH_DISABLE)){
+		/* don't panic */
+		tof_warn_limit(2013, "BCH ready timeout\n");
+	}
+	return 0;
+#endif
+}
+
+int tof_core_disable_bch(int tni, int bgid){
+	struct tof_core_bg *bg;
+	int ret;
+	bg = tof_core_bg_get(tni, bgid);
+	if(bg == NULL || bg->reg.bch == NULL){
+		return -EINVAL;
+	}
+	ret = tof_core_bch_disable_locked(bg);
+	return ret;
+}
+
+static int tof_core_bg_disable(struct tof_core_bg *bg){
+	/* BCH->... should be masked */
+	tof_writeq(0, bg->reg.bgs, TOF_ICC_REG_BGS_ENABLE);
+
+	/* XXX: tof_core_bg_disable_timeout_check_enable is 0 */
+#if 0
+	if(unlikely(tof_core_bg_disable_timeout_check_enable)){
+		if(!tof_core_readq_spin(bg->reg.bgs, TOF_ICC_REG_BGS_STATE,
+					TOF_ICC_REG_BGS_STATE_ENABLE,
+					0,
+					TOF_CORE_TIMEOUT_SEC(tof_core_bg_disable_timeout_limit_sec))){
+			tof_warn_limit(2011, "BG disable timeout\n");
+			return -ETIMEDOUT;
+		}
+	}
+#endif
+	return 0;
+}
+
+int tof_core_unset_bg(int tni, int bgid){
+	struct tof_core_bg *bg;
+	bg = tof_core_bg_get(tni, bgid);
+	if(bg == NULL){
+		return -EINVAL;
+	}
+	return tof_core_bg_disable(bg);
+}
+
+static inline void tof_core_unregister_signal_bg(int tni, int bgid)
+{
+	return tof_core_register_signal_bg(tni, bgid, NULL);
+}
+
+static int __tof_utofu_unset_bg(struct tof_utofu_bg *ubg){
+	if(ubg->common.enabled){
+		tof_core_unset_bg(ubg->tni, ubg->bgid);
+		ubg->common.enabled = false;
+		tof_core_unregister_signal_bg(ubg->tni, ubg->bgid);
+	}
+	return 0;
+}
+
+static int tof_utofu_unset_bg(struct tof_set_bg __user *bgs){
+	struct tof_set_bg req;
+	struct tof_utofu_bg *ubg;
+	if(copy_from_user(&req, bgs, sizeof(req)) != 0){
+		return -EFAULT;
+	}
+	ubg = tof_utofu_bg_get(req.tni, req.gate);
+	return __tof_utofu_unset_bg(ubg);
+}
+
+static int tof_utofu_ioctl_enable_bch(struct tof_utofu_device *dev, unsigned long arg){
+	struct tof_utofu_bg *ubg;
+	struct tof_enable_bch req;
+	uintptr_t ipa;
+	kuid_t kuid;
+	unsigned long phys = 0;
+	struct process *proc = cpu_local_var(current)->proc;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	int ret;
+	int i = 0;
+
+	ubg = container_of(dev, struct tof_utofu_bg, common);
+	if(ubg->bgid >= TOF_ICC_NBCHS){
+		return -ENOTTY;
+	}
+
+	if(ubg->bch.enabled){
+		return -EBUSY;
+	}
+
+	if(copy_from_user(&req, (void *)arg, sizeof(req)) != 0){
+		return -EFAULT;
+	}
+	dkprintf("%s: tni=%d bgid=%d addr=%p bseq=%d num=%d bgs=%p\n",
+		__func__, ubg->tni, ubg->bgid, req.addr, req.bseq, req.num, req.bgs);
+
+	if(req.num < 0 || req.bgs == NULL || req.addr == NULL ||
+	   ((uintptr_t)req.addr & (TOF_ICC_BCH_DMA_ALIGN - 1)) != 0 ||
+	   (uint32_t)req.bseq >= TOF_ICC_BG_BSEQ_SIZE){
+		return -EINVAL;
+	}
+
+	//ret = get_user_pages_fast((uintptr_t)req.addr, 1, 0, &page);
+	//if(ret < 1){
+	//	raw_rc_output(ret);
+	//	return -ENOMEM;
+	//}
+
+	ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
+
+	/* Special case for straight mapping */
+	if (proc->straight_va && (void *)req.addr >= proc->straight_va &&
+			(void *)req.addr < proc->straight_va + proc->straight_len) {
+
+		phys = proc->straight_pa +
+			((void *)req.addr - proc->straight_va);
+	}
+
+	if (!phys) {
+		ret = ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
+				(void *)req.addr, &phys);
+
+		if (ret) {
+			raw_rc_output(ret);
+			ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
+			return -ENOMEM;
+		}
+	}
+
+	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
+
+	//ipa = tof_smmu_get_ipa_bg(ubg->tni, ubg->bgid,
+	//			  pfn_to_kaddr(page_to_pfn(page)) + ((uintptr_t)req.addr & (~PAGE_MASK)),
+	//			  TOF_ICC_BCH_DMA_ALIGN);
+	//if(ipa == 0){
+	//	raw_rc_output(-ENOMEM);
+	//	put_page(page);
+	//	return -ENOMEM;
+	//}
+	ipa = (uintptr_t)phys;
+
+	memset(ubg->bch.bgmask, 0, sizeof(ubg->bch.bgmask));
+
+	//kuid = current_euid();  /* real? effective? */
+	kuid = cpu_local_var(current)->proc->euid;
+
+	ret = tof_core_enable_bch(ubg->tni, ubg->bgid, ipa);
+	if(ret < 0){
+		raw_rc_output(ret);
+		goto revert;
+	}
+
+	for(i = 0; i < req.num; i++){
+		ret = tof_utofu_set_bg(ubg, &req.bgs[i], kuid, req.bseq);
+		if(ret < 0){
+			raw_rc_output(ret);
+			goto revert;
+		}
+	}
+
+	ubg->bch.enabled = true;
+	ubg->bch.iova = ipa;
+	//ubg->bch.page = page;
+end:
+	return ret;
+
+revert:
+	tof_core_disable_bch(ubg->tni, ubg->bgid);
+	for( ; i--; ){
+		tof_utofu_unset_bg(&req.bgs[i]);
+	}
+	//tof_smmu_release_ipa_bg(ubg->tni, ubg->bgid, ipa, TOF_ICC_BCH_DMA_ALIGN);
+	//put_page(page);
+	goto end;
+}
+
+static int tof_utofu_disable_bch(struct tof_utofu_bg *ubg){
+	int ret;
+	int tni, bgid;
+
+	if(!ubg->bch.enabled){
+		return -EPERM;
+	}
+
+	ret = tof_core_disable_bch(ubg->tni, ubg->bgid);
+	if(ret < 0){
+		raw_rc_output(ret);
+		return ret;
+	}
+
+	for(tni = 0; tni < TOF_ICC_NTNIS; tni++){
+		uint64_t mask = ubg->bch.bgmask[tni];
+		for(bgid = 0; bgid < TOF_ICC_NBGS; bgid++){
+			if((mask >> bgid) & 1){
+				ret = __tof_utofu_unset_bg(tof_utofu_bg_get(tni, bgid));
+				if(ret < 0){
+					/* OK? */
+					//BUG();
+					return ret;
+				}
+			}
+		}
+	}
+	//tof_smmu_release_ipa_bg(ubg->tni, ubg->bgid, ubg->bch.iova, TOF_ICC_BCH_DMA_ALIGN);
+	//put_page(ubg->bch.page);
+	ubg->bch.enabled = false;
+	return 0;
+}
+
+
+static int tof_utofu_ioctl_disable_bch(struct tof_utofu_device *dev, unsigned long arg){
+	struct tof_utofu_bg *ubg;
+
+	ubg = container_of(dev, struct tof_utofu_bg, common);
+	//tof_log_if("tni=%d bgid=%d\n", ubg->tni, ubg->bgid);
+	dkprintf("%s: tni=%d bgid=%d\n", __func__, ubg->tni, ubg->bgid);
+	return tof_utofu_disable_bch(ubg);
+}
+
+static int tof_utofu_release_bch(void *pde_data){
+	struct tof_utofu_bg *ubg;
+	struct tof_utofu_device *dev = (struct tof_utofu_device *)pde_data;
+
+	ubg = container_of(dev, struct tof_utofu_bg, common);
+	//tof_log_if("tni=%d bgid=%d\n", ubg->tni, ubg->bgid);
+	dkprintf("%s: tni=%d bgid=%d\n", __func__, ubg->tni, ubg->bgid);
+	return tof_utofu_disable_bch(ubg);
+}
+
+
+/*
+ * Main unified ioctl() call.
+ */
+long tof_utofu_unlocked_ioctl(int fd,
 		unsigned int cmd, unsigned long arg) {
 	int ret = -ENOTSUPP;
 	struct thread *thread = cpu_local_var(current);
 	struct tof_utofu_device *dev;
+#ifdef PROFILE_ENABLE
+	unsigned long ts = 0;
+	if (cpu_local_var(current)->profile) {
+		ts = rdtsc();
+	}
+#endif // PROFILE_ENABLE
 
 	/* ENOTSUPP inidicates proceed with offload */
 	if (fd >= MAX_FD_PDE || !thread->proc->fd_pde_data[fd]) {
@@ -1277,18 +1957,32 @@ long tof_utofu_unlocked_ioctl_cq(int fd,
 
 	dev = (struct tof_utofu_device *)thread->proc->fd_pde_data[fd];
 
-#if 0
 	switch (cmd) {
-		case TOF_IOCTL_INIT_CQ:
-			kprintf("%s: TOF_IOCTL_INIT_CQ @ %d\n", __func__, fd);
-			break;
-
 		case TOF_IOCTL_ALLOC_STAG:
-			kprintf("%s: TOF_IOCTL_ALLOC_STAG @ %d\n", __func__, fd);
+			ret = tof_utofu_ioctl_alloc_stag(dev, arg);
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_tofu_stag_alloc, rdtsc() - ts);
+#endif // PROFILE_ENABLE
 			break;
 
 		case TOF_IOCTL_FREE_STAGS:
-			kprintf("%s: TOF_IOCTL_FREE_STAGS @ %d\n", __func__, fd);
+			ret = tof_utofu_ioctl_free_stags(dev, arg);
+#ifdef PROFILE_ENABLE
+			profile_event_add(PROFILE_tofu_stag_free_stags, rdtsc() - ts);
+#endif // PROFILE_ENABLE
+			break;
+
+		case TOF_IOCTL_ENABLE_BCH:
+			ret = tof_utofu_ioctl_enable_bch(dev, arg);
+			break;
+
+		case TOF_IOCTL_DISABLE_BCH:
+			ret = tof_utofu_ioctl_disable_bch(dev, arg);
+			break;
+
+#if 0
+		case TOF_IOCTL_INIT_CQ:
+			kprintf("%s: TOF_IOCTL_INIT_CQ @ %d\n", __func__, fd);
 			break;
 
 		case TOF_IOCTL_SET_RT_SIGNAL:
@@ -1301,14 +1995,6 @@ long tof_utofu_unlocked_ioctl_cq(int fd,
 
 		case TOF_IOCTL_GET_CQ_STAT:
 			kprintf("%s: TOF_IOCTL_GET_CQ_STAT @ %d\n", __func__, fd);
-			break;
-
-		case TOF_IOCTL_ENABLE_BCH:
-			kprintf("%s: TOF_IOCTL_ENABLE_BCH @ %d\n", __func__, fd);
-			break;
-
-		case TOF_IOCTL_DISABLE_BCH:
-			kprintf("%s: TOF_IOCTL_DISABLE_BCH @ %d\n", __func__, fd);
 			break;
 
 		case TOF_IOCTL_SET_SUBNET:
@@ -1330,22 +2016,11 @@ long tof_utofu_unlocked_ioctl_cq(int fd,
 		case TOF_IOCTL_LOAD_RESOURCE:
 			kprintf("%s: TOF_IOCTL_LOAD_RESOURCE @ %d\n", __func__, fd);
 			break;
-
-		default:
-			kprintf("%s: unknown @ %d\n", __func__, fd);
-			break;
-	}
 #endif
-
-	switch (cmd) {
-		case TOF_IOCTL_ALLOC_STAG:
-			ret = tof_utofu_ioctl_alloc_stag(dev, arg);
-			break;
-		case TOF_IOCTL_FREE_STAGS:
-			ret = tof_utofu_ioctl_free_stags(dev, arg);
-			break;
 		default:
+			dkprintf("%s: unknown @ %d\n", __func__, fd);
 			ret = -ENOTSUPP;
+			break;
 	}
 
 	return ret;
@@ -1368,6 +2043,12 @@ void tof_utofu_init_globals(void)
 		(struct tof_icc_mb_entry *)tg->tof_ib_mb_addr;
 	tof_core_cq =
 		(struct tof_core_cq *)tg->tof_core_cq_addr;
+	tof_core_bg =
+		(struct tof_core_bg *)tg->tof_core_bg_addr;
+	tof_utofu_bg =
+		(struct tof_utofu_bg *)tg->tof_utofu_bg_addr;
+	tof_utofu_handler_bg_signal =
+		(tof_utofu_handler_bg_signal_t *)tg->tof_utofu_handler_bg_signal_addr;
 
 	dkprintf("%s: tof_ib_stag_lock: 0x%lx\n",
 		__func__, tg->tof_ib_stag_lock_addr);
@@ -1376,9 +2057,53 @@ void tof_utofu_init_globals(void)
 	dkprintf("%s: tof_ib_stag_list_Wp: %d\n",
 			__func__, *((int *)tg->tof_ib_stag_list_Wp_addr));
 	kprintf("%s: linux_vmalloc_start: %p\n", __func__, tg->linux_vmalloc_start);
+
+	memset(tofu_scatterlist_cache, 0, sizeof(tofu_scatterlist_cache));
+	memset(tofu_mbpt_cache, 0, sizeof(tofu_mbpt_cache));
+	memset(tofu_mbpt_sg_pages_cache, 0, sizeof(tofu_mbpt_sg_pages_cache));
+
+	{
+		int tni, cq;
+
+		for (tni = 0; tni < 6; ++tni) {
+			for (cq = 0; cq < 12; ++cq) {
+				ihk_mc_spinlock_init(&tofu_tni_cq_lock[tni][cq]);
+			}
+		}
+	}
+
 	kprintf("Tofu globals initialized.\n");
 }
 
+void tof_utofu_release_fd(struct process *proc, int fd)
+{
+	if (!proc->enable_tofu)
+		return;
+
+	if (!proc->fd_pde_data[fd] || !proc->fd_path[fd]) {
+		return;
+	}
+
+	if (strstr((const char *)proc->fd_path, "cq")) {
+		tof_utofu_release_cq(proc->fd_pde_data[fd]);
+	}
+
+	else if (strstr((const char *)proc->fd_path, "bch")) {
+		tof_utofu_release_bch(proc->fd_pde_data[fd]);
+	}
+}
+
+void tof_utofu_release_fds(struct process *proc)
+{
+	int fd;
+
+	if (!proc->enable_tofu)
+		return;
+
+	for (fd = 0; fd < MAX_FD_PDE; ++fd) {
+		tof_utofu_release_fd(proc, fd);
+	}
+}
 
 void tof_utofu_finalize(void)
 {
