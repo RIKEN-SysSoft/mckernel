@@ -44,6 +44,7 @@
 #include <limits.h>
 #include <sysfs.h>
 #include <ihk/debug.h>
+#include <llist.h>
 #include <bootparam.h>
 
 //#define DEBUG_PRINT_MEM
@@ -749,7 +750,6 @@ distance_based:
 						ihk_mc_get_numa_id(),
 						npages,
 						memory_nodes[node].nodes_by_distance[i].id);
-
 			}
 		}
 
@@ -1560,13 +1560,15 @@ static void numa_init(void)
 		INIT_LIST_HEAD(&memory_nodes[i].allocators);
 		memory_nodes[i].nodes_by_distance = 0;
 #ifdef IHK_RBTREE_ALLOCATOR
-		memory_nodes[i].zeroed_chunks.rb_node = 0;
+		ihk_atomic_set(&memory_nodes[i].zeroing_workers, 0);
+		ihk_atomic_set(&memory_nodes[i].nr_to_zero_pages, 0);
 		memory_nodes[i].free_chunks.rb_node = 0;
+		init_llist_head(&memory_nodes[i].zeroed_list);
+		init_llist_head(&memory_nodes[i].to_zero_list);
 		mcs_lock_init(&memory_nodes[i].lock);
 		memory_nodes[i].min_addr = 0xFFFFFFFFFFFFFFFF;
 		memory_nodes[i].max_addr = 0;
 		memory_nodes[i].nr_pages = 0;
-		memory_nodes[i].nr_zeroed_pages = 0;
 		memory_nodes[i].nr_free_pages = 0;
 #endif
 	}
