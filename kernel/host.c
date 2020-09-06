@@ -549,8 +549,11 @@ static int process_msg_prepare_process(unsigned long rphys)
 	proc->straight_map = pn->straight_map;
 	proc->straight_map_threshold = pn->straight_map_threshold;
 	proc->enable_tofu = pn->enable_tofu;
-	if (proc->enable_tofu)
+	if (proc->enable_tofu) {
+		extern void tof_utofu_finalize(void);
+
 		tof_utofu_finalize();
+	}
 
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
