@@ -513,6 +513,30 @@ static int __page_alloc_rbtree_mark_range_allocated(struct rb_root *root,
  *
  * NOTE: locking must be managed by the caller.
  */
+struct chunk_fits_arg {
+	unsigned long size;
+	unsigned long align_size;
+	unsigned long align_mask;
+};
+
+bool chunk_fits(struct rb_node *node, void *arg)
+{
+	struct free_chunk *chunk;
+	unsigned long aligned_addr = 0;
+	struct chunk_fits_arg *cfa = (struct chunk_fits_arg *)arg;
+
+	chunk = container_of(node, struct free_chunk, node);
+	aligned_addr = (chunk->addr + (cfa->align_size - 1)) & cfa->align_mask;
+
+	/* Is this a suitable chunk? */
+	if ((aligned_addr + cfa->size) <= (chunk->addr + chunk->size)) {
+		return true;
+	}
+
+	return false;
+}
+
+
 static unsigned long __page_alloc_rbtree_alloc_pages(struct rb_root *root,
 		int npages, int p2align)
 {
@@ -523,6 +547,19 @@ static unsigned long __page_alloc_rbtree_alloc_pages(struct rb_root *root,
 	unsigned long align_mask = ~(align_size - 1);
 	unsigned long aligned_addr = 0;
 
+#if 0
+	struct chunk_fits_arg cfa = {
+		.size = size,
+		.align_size = align_size,
+		.align_mask = align_mask
+	};
+
+	/* Find first maching chunk */
+	node = rb_preorder_dfs_search(root, chunk_fits, &cfa);
+
+	chunk = container_of(node, struct free_chunk, node);
+	aligned_addr = (chunk->addr + (align_size - 1)) & align_mask;
+#else
 	for (node = rb_first(root); node; node = rb_next(node)) {
 		chunk = container_of(node, struct free_chunk, node);
 		aligned_addr = (chunk->addr + (align_size - 1)) & align_mask;
@@ -537,6 +574,7 @@ static unsigned long __page_alloc_rbtree_alloc_pages(struct rb_root *root,
 	if (!node) {
 		return 0;
 	}
+#endif
 
 	dkprintf("%s: allocating: 0x%lx:%lu\n",
 			__FUNCTION__, aligned_addr, size);
@@ -619,20 +657,12 @@ int ihk_numa_add_free_pages(struct ihk_mc_numa_node *node,
 	if (zero_at_free) {
 		/* Zero chunk */
 		memset(phys_to_virt(addr), 0, size);
-
-		if (__page_alloc_rbtree_free_range(&node->zeroed_chunks, addr, size)) {
-			kprintf("%s: ERROR: adding 0x%lx:%lu\n",
-					__FUNCTION__, addr, size);
-			return EINVAL;
-		}
 	}
-	/* Default behavior */
-	else {
-		if (__page_alloc_rbtree_free_range(&node->free_chunks, addr, size)) {
-			kprintf("%s: ERROR: adding 0x%lx:%lu\n",
-					__FUNCTION__, addr, size);
-			return EINVAL;
-		}
+
+	if (__page_alloc_rbtree_free_range(&node->free_chunks, addr, size)) {
+		kprintf("%s: ERROR: adding 0x%lx:%lu\n",
+				__FUNCTION__, addr, size);
+		return EINVAL;
 	}
 
 	if (addr < node->min_addr)
@@ -642,80 +672,104 @@ int ihk_numa_add_free_pages(struct ihk_mc_numa_node *node,
 		node->max_addr = addr + size;
 
 	node->nr_pages += (size >> PAGE_SHIFT);
-	if (zero_at_free) {
-		node->nr_zeroed_pages += (size >> PAGE_SHIFT);
-	}
 	node->nr_free_pages += (size >> PAGE_SHIFT);
 	dkprintf("%s: added free pages 0x%lx:%lu\n",
 		__FUNCTION__, addr, size);
 	return 0;
 }
 
-void ihk_numa_zero_free_pages(struct ihk_mc_numa_node *__node)
+#define IHK_NUMA_ALL_PAGES	(0)
+
+int __ihk_numa_zero_free_pages(struct ihk_mc_numa_node *__node, int nr_pages)
 {
-	mcs_lock_node_t mcs_node;
-	unsigned long irqflags;
 	int i, max_i;
+	int nr_zeroed_pages = 0;
 
 	if (!zero_at_free)
-		return;
+		return 0;
 
 	/* If explicitly specified, zero only in __node */
 	max_i = __node ? 1 : ihk_mc_get_nr_numa_nodes();
 
-	irqflags = cpu_disable_interrupt_save();
-
 	/* Look at NUMA nodes in the order of distance */
 	for (i = 0; i < max_i; ++i) {
 		struct ihk_mc_numa_node *node;
+		struct llist_node *llnode;
 
+		/* Unless explicitly specified.. */
 		node = __node ? __node : ihk_mc_get_numa_node_by_distance(i);
 		if (!node) {
 			break;
 		}
 
-		/* Iterate free chunks */
-		for (;;) {
-			struct free_chunk *chunk;
-			unsigned long addr, size;
+		/*
+		 * If number of pages specified, look for a big enough chunk
+		 */
+		if (nr_pages) {
+			struct llist_head tmp;
 
-			mcs_lock_lock_noirq(&node->lock, &mcs_node);
-			chunk = __page_alloc_rbtree_get_root_chunk(&node->free_chunks);
-			/*
-			 * Release the lock to let other CPUs potentially proceed
-			 * in parallel with other chunks
-			 */
-			mcs_lock_unlock_noirq(&node->lock, &mcs_node);
+			init_llist_head(&tmp);
 
-			if (!chunk) {
+			/* Look for a suitable chunk */
+			while ((llnode = llist_del_first(&node->to_zero_list))) {
+				unsigned long addr;
+				unsigned long size;
+				struct free_chunk *chunk =
+					container_of(llnode, struct free_chunk, list);
+
+				addr = chunk->addr;
+				size = chunk->size;
+
+				if (size < (nr_pages << PAGE_SHIFT)) {
+					llist_add(llnode, &tmp);
+					continue;
+				}
+
+				memset(phys_to_virt(addr) + sizeof(*chunk), 0,
+						size - sizeof(*chunk));
+				llist_add(&chunk->list, &node->zeroed_list);
+				barrier();
+				ihk_atomic_sub((int)(size >> PAGE_SHIFT),
+						&node->nr_to_zero_pages);
+				nr_zeroed_pages += (chunk->size >> PAGE_SHIFT);
+				kprintf("%s: zeroed chunk 0x%lx:%lu in allocate path\n",
+						__func__, addr, size);
 				break;
 			}
 
-			/*
-			 * Zero chunk
-			 * NOTE: we cannot refer to chunk structure any more after zeroing
-			 */
-			addr = chunk->addr;
-			size = chunk->size;
-			memset(phys_to_virt(addr), 0, chunk->size);
-
-			mcs_lock_lock_noirq(&node->lock, &mcs_node);
-			if (__page_alloc_rbtree_free_range(&node->zeroed_chunks, addr, size)) {
-				kprintf("%s: ERROR: freeing 0x%lx:%lu\n",
-						__FUNCTION__, addr, size);
-				goto unlock;
+			/* Add back the ones that didn't match */
+			while ((llnode = llist_del_first(&tmp))) {
+				llist_add(llnode, &node->to_zero_list);
 			}
+		}
+		/* Otherwise iterate all to_zero chunks */
+		else {
+			while ((llnode = llist_del_first(&node->to_zero_list))) {
+				unsigned long addr;
+				unsigned long size;
+				struct free_chunk *chunk =
+					container_of(llnode, struct free_chunk, list);
 
-			node->nr_zeroed_pages += (size >> PAGE_SHIFT);
-if (cpu_local_var(current)->profile)
-			kprintf("%s: zeroed %lu pages @ NUMA %d\n",
-				__func__, size >> PAGE_SHIFT, node->id);
-unlock:
-			mcs_lock_unlock_noirq(&node->lock, &mcs_node);
+				addr = chunk->addr;
+				size = chunk->size;
+
+				memset(phys_to_virt(addr) + sizeof(*chunk), 0,
+						size - sizeof(*chunk));
+				llist_add(&chunk->list, &node->zeroed_list);
+				barrier();
+				ihk_atomic_sub((int)(size >> PAGE_SHIFT),
+						&node->nr_to_zero_pages);
+				nr_zeroed_pages += (chunk->size >> PAGE_SHIFT);
+			}
 		}
 	}
 
-	cpu_restore_interrupt(irqflags);
+	return nr_zeroed_pages;
+}
+
+void ihk_numa_zero_free_pages(struct ihk_mc_numa_node *__node)
+{
+	__ihk_numa_zero_free_pages(__node, IHK_NUMA_ALL_PAGES);
 }
 
 unsigned long ihk_numa_alloc_pages(struct ihk_mc_numa_node *node,
@@ -743,66 +797,66 @@ unsigned long ihk_numa_alloc_pages(struct ihk_mc_numa_node *node,
 #endif
 
 	mcs_lock_lock(&node->lock, &mcs_node);
+retry:
+	if (zero_at_free) {
+		struct llist_node *llnode;
 
+		/*
+		 * Process zeroed chunks that are not
+		 * on the free tree yet.
+		 */
+		while ((llnode = llist_del_first(&node->zeroed_list))) {
+			unsigned long addr;
+			unsigned long size;
+			struct free_chunk *chunk =
+				container_of(llnode, struct free_chunk, list);
+
+			addr = chunk->addr;
+			size = chunk->size;
+
+			if (__page_alloc_rbtree_free_range(&node->free_chunks,
+						addr, size)) {
+				kprintf("%s: ERROR: freeing zeroed chunk 0x%lx:%lu\n",
+						__FUNCTION__, addr, npages << PAGE_SHIFT);
+			}
+			else {
+				node->nr_free_pages += (size >> PAGE_SHIFT);
+				dkprintf("%s: freed zeroed chunk 0x%lx:%lu\n",
+						__FUNCTION__, addr, size);
+			}
+		}
+
+		/* Not enough? Check if we can zero pages now */
+		if (node->nr_free_pages < npages) {
+			if (__ihk_numa_zero_free_pages(node, npages) >= npages) {
+				goto retry;
+			}
+		}
+	}
+
+	/* Not enough pages? Give up.. */
 	if (node->nr_free_pages < npages) {
 		goto unlock_out;
 	}
 
-	if (zero_at_free) {
-		/* Do we need to zero pages? */
-		if (node->nr_zeroed_pages < npages) {
-			mcs_lock_unlock(&node->lock, &mcs_node);
-			ihk_numa_zero_free_pages(node);
-			mcs_lock_lock(&node->lock, &mcs_node);
-		}
+	addr = __page_alloc_rbtree_alloc_pages(&node->free_chunks,
+			npages, p2align);
 
-		/* Still not enough? Give up.. */
-		if (node->nr_zeroed_pages < npages) {
-			goto unlock_out;
-		}
-
-		addr = __page_alloc_rbtree_alloc_pages(&node->zeroed_chunks,
-				npages, p2align);
-
-		/* Does not necessarily succeed due to alignment */
-		if (addr) {
-			node->nr_free_pages -= npages;
-			node->nr_zeroed_pages -= npages;
+	/* Does not necessarily succeed due to alignment */
+	if (addr) {
+		node->nr_free_pages -= npages;
 #if 0
-			{
-				size_t free_bytes = __count_free_bytes(&node->free_chunks);
-				if (free_bytes != node->nr_free_pages * PAGE_SIZE) {
-					kprintf("%s: inconsistent free count? node: %lu vs. cnt: %lu\n",
-							__func__, node->nr_free_pages * PAGE_SIZE, free_bytes);
-					panic("");
-				}
+		{
+			size_t free_bytes = __count_free_bytes(&node->free_chunks);
+			if (free_bytes != node->nr_free_pages * PAGE_SIZE) {
+				kprintf("%s: inconsistent free count? node: %lu vs. cnt: %lu\n",
+						__func__, node->nr_free_pages * PAGE_SIZE, free_bytes);
+				panic("");
 			}
-#endif
-			dkprintf("%s: allocated pages 0x%lx:%lu\n",
-					__FUNCTION__, addr, npages << PAGE_SHIFT);
 		}
-	}
-	/* Default behavior */
-	else {
-		addr = __page_alloc_rbtree_alloc_pages(&node->free_chunks,
-				npages, p2align);
-
-		/* Does not necessarily succeed due to alignment */
-		if (addr) {
-			node->nr_free_pages -= npages;
-#if 0
-			{
-				size_t free_bytes = __count_free_bytes(&node->free_chunks);
-				if (free_bytes != node->nr_free_pages * PAGE_SIZE) {
-					kprintf("%s: inconsistent free count? node: %lu vs. cnt: %lu\n",
-							__func__, node->nr_free_pages * PAGE_SIZE, free_bytes);
-					panic("");
-				}
-			}
 #endif
-			dkprintf("%s: allocated pages 0x%lx:%lu\n",
-					__FUNCTION__, addr, npages << PAGE_SHIFT);
-		}
+		dkprintf("%s: allocated pages 0x%lx:%lu\n",
+				__FUNCTION__, addr, npages << PAGE_SHIFT);
 	}
 
 unlock_out:
@@ -815,6 +869,7 @@ void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
 	unsigned long addr, int npages)
 {
 	mcs_lock_node_t mcs_node;
+	int defer_zero_at_free = deferred_zero_at_free;
 
 #ifdef ENABLE_PER_CPU_ALLOC_CACHE
 	/* CPU local cache */
@@ -846,13 +901,30 @@ void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
 		return;
 	}
 
-	mcs_lock_lock(&node->lock, &mcs_node);
+#if 0
+	/* Do not defer zeroing when the number of free pages is low */
+	if (zero_at_free && defer_zero_at_free) {
+		mcs_lock_lock(&node->lock, &mcs_node);
+		if (node->nr_free_pages < (node->nr_pages * 3 / 100))
+			defer_zero_at_free = 0;
+		mcs_lock_unlock(&node->lock, &mcs_node);
+	}
+#endif
+
+
+	/* Zero chunk right here if needed */
+	if (zero_at_free && !defer_zero_at_free) {
+		memset(phys_to_virt(addr), 0, npages << PAGE_SHIFT);
+	}
+
+	/*
+	 * If we don't zero at free() or we zeroed the chunk
+	 * already, simply add it to the free tree.
+	 */
 	if (!zero_at_free ||
-			(zero_at_free && deferred_zero_at_free)) {
-		/*
-		 * Free to free_chunks first, will be moved to zeroed_chunks later
-		 * if zero at free or asynchronously
-		 */
+			(zero_at_free && !defer_zero_at_free)) {
+		mcs_lock_lock(&node->lock, &mcs_node);
+
 		if (__page_alloc_rbtree_free_range(&node->free_chunks, addr,
 					npages << PAGE_SHIFT)) {
 			kprintf("%s: ERROR: freeing 0x%lx:%lu\n",
@@ -870,39 +942,64 @@ void ihk_numa_free_pages(struct ihk_mc_numa_node *node,
 				}
 			}
 #endif
-			dkprintf("%s: freed pages 0x%lx:%lu\n",
-					__FUNCTION__, addr, npages << PAGE_SHIFT);
+			dkprintf("%s: freed%s chunk 0x%lx:%lu\n",
+					__FUNCTION__,
+					zero_at_free ? " and zeroed" : "",
+					addr, npages << PAGE_SHIFT);
 		}
+		mcs_lock_unlock(&node->lock, &mcs_node);
 	}
+	/*
+	 * Deferred zeroing.
+	 * Put the chunk to the to_zero list.
+	 */
 	else {
-		/*
-		 * Free and zero chunk right here
-		 */
-		memset(phys_to_virt(addr), 0, npages << PAGE_SHIFT);
+		struct free_chunk *chunk =
+			(struct free_chunk *)phys_to_virt(addr);
+		chunk->addr = addr;
+		chunk->size = npages << PAGE_SHIFT;
+		ihk_atomic_add(npages, &node->nr_to_zero_pages);
+		barrier();
+		llist_add(&chunk->list, &node->to_zero_list);
 
-		if (__page_alloc_rbtree_free_range(&node->zeroed_chunks, addr,
-					npages << PAGE_SHIFT)) {
-			kprintf("%s: ERROR: freeing 0x%lx:%lu\n",
-					__FUNCTION__, addr, npages << PAGE_SHIFT);
-		}
-		else {
-			node->nr_free_pages += npages;
-			node->nr_zeroed_pages += npages;
-#if 0
-			{
-				size_t free_bytes = __count_free_bytes(&node->free_chunks);
-				if (free_bytes != node->nr_free_pages * PAGE_SIZE) {
-					kprintf("%s: inconsistent free count? node: %lu vs. cnt: %lu\n",
-							__func__, node->nr_free_pages * PAGE_SIZE, free_bytes);
-					panic("");
-				}
+		/* Ask Linux to clear memory */
+		if (cpu_local_var_initialized &&
+				cpu_local_var(current) &&
+				cpu_local_var(current) != &cpu_local_var(idle) &&
+				!cpu_local_var(current)->proc->nohost) {
+			struct ihk_ikc_channel_desc *syscall_channel =
+				cpu_local_var(ikc2linux);
+			struct ikc_scd_packet packet IHK_DMA_ALIGN;
+
+			if (ihk_atomic_read(&node->zeroing_workers) > 0) {
+				dkprintf("%s: skipping Linux zero request..\n", __func__);
+				return;
 			}
-#endif
-			dkprintf("%s: freed+zeroed pages 0x%lx:%lu\n",
-					__FUNCTION__, addr, npages << PAGE_SHIFT);
+
+			ihk_atomic_inc(&node->zeroing_workers);
+
+			memset(&packet, 0, sizeof(packet));
+			packet.req.number = __NR_move_pages;
+			packet.req.args[0] = (unsigned long)node;
+
+			barrier();
+			smp_store_release(&packet.req.valid, 1);
+			packet.msg = SCD_MSG_SYSCALL_ONESIDE;
+			packet.ref = ihk_mc_get_processor_id();
+			packet.pid = cpu_local_var(current)->proc->pid;
+			packet.resp_pa = 0;
+
+			if (ihk_ikc_send(syscall_channel, &packet, 0) < 0) {
+				kprintf("%s: WARNING: failed to send memory clear"
+						" send IKC req..\n", __func__);
+			}
+			else {
+				dkprintf("%s: clear mem req for NUMA %d sent in req"
+						" for addr: 0x%lx\n",
+						__func__, node->id, addr);
+			}
 		}
 	}
-	mcs_lock_unlock(&node->lock, &mcs_node);
 }
 
 #endif // IHK_RBTREE_ALLOCATOR
