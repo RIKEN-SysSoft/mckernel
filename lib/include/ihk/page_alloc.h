@@ -17,6 +17,7 @@
 #define __HEADER_GENERIC_IHK_PAGE_ALLOC
 
 #include <list.h>
+#include <llist.h>
 #include <rbtree.h>
 
 /* XXX: Physical memory management shouldn't be part of IHK */
@@ -31,8 +32,10 @@ struct node_distance {
 struct free_chunk {
 	unsigned long addr, size;
 	struct rb_node node;
+	struct llist_node list;
 };
 #endif
+
 
 struct ihk_mc_numa_node {
 	int id;
@@ -41,17 +44,17 @@ struct ihk_mc_numa_node {
 	struct list_head allocators;
 	struct node_distance *nodes_by_distance;
 #ifdef IHK_RBTREE_ALLOCATOR
-	struct rb_root zeroed_chunks;
+	ihk_atomic_t zeroing_workers;
+	ihk_atomic_t nr_to_zero_pages;
+	struct llist_head zeroed_list;
+	struct llist_head to_zero_list;
 	struct rb_root free_chunks;
 	mcs_lock_node_t lock;
 
 	unsigned long nr_pages;
 	/*
-	 * nr_free_pages: all freed pages
-	 * nr_zeroed_pages: zeroed free pages
-	 * Invariant: nr_zeroed_pages <= nr_free_pages
+	 * nr_free_pages: all freed pages, zeroed if zero_at_free
 	 */
-	unsigned long nr_zeroed_pages;
 	unsigned long nr_free_pages;
 	unsigned long min_addr;
 	unsigned long max_addr;
