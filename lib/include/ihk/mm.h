@@ -269,4 +269,92 @@ void ihk_mc_query_mem_free_page(void *dump_page_set);
 int ihk_mc_chk_page_address(pte_t mem_addr);
 int ihk_mc_get_mem_user_page(void *arg0, page_table_t pt, pte_t *ptep, void *pgaddr, int pgshift);
 
+#ifndef unlikely
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
+
+extern int zero_at_free;
+
+/*
+ * Generic lockless page cache.
+ * TODO: Store nr of pages in header and double-check at alloc time..
+ */
+struct ihk_mc_page_cache_header;
+
+struct ihk_mc_page_cache_header {
+	struct ihk_mc_page_cache_header *next;
+};
+
+
+static inline void ihk_mc_page_cache_free(
+	struct ihk_mc_page_cache_header *cache, void *page)
+{
+	struct ihk_mc_page_cache_header *current = NULL;
+	struct ihk_mc_page_cache_header *new =
+		(struct ihk_mc_page_cache_header *)page;
+
+	if (unlikely(!page))
+		return;
+
+retry:
+	current = cache->next;
+	new->next = current;
+
+	if (!__sync_bool_compare_and_swap(&cache->next, current, new)) {
+		goto retry;
+	}
+}
+
+static inline void ihk_mc_page_cache_prealloc(
+	struct ihk_mc_page_cache_header *cache,
+	int nr_pages,
+	int nr_elem)
+{
+	int i;
+
+	if (unlikely(cache->next))
+		return;
+
+	for (i = 0; i < nr_elem; ++i) {
+		void *pages;
+
+		pages = ihk_mc_alloc_pages(nr_pages, IHK_MC_AP_NOWAIT);
+
+		if (!pages) {
+			kprintf("%s: ERROR: allocating pages..\n", __func__);
+			continue;
+		}
+
+		ihk_mc_page_cache_free(cache, pages);
+	}
+}
+
+static inline void *ihk_mc_page_cache_alloc(
+	struct ihk_mc_page_cache_header *cache,
+	int nr_pages)
+{
+	register struct ihk_mc_page_cache_header *first, *next;
+
+retry:
+	next = NULL;
+	first = cache->next;
+
+	if (first) {
+		next = first->next;
+
+		if (!__sync_bool_compare_and_swap(&cache->next,
+					first, next)) {
+			goto retry;
+		}
+	}
+	else {
+		kprintf("%s: calling pre-alloc for 0x%lx...\n", __func__, cache);
+
+		ihk_mc_page_cache_prealloc(cache, nr_pages, 256);
+		goto retry;
+	}
+
+	return (void *)first;
+}
+
 #endif
