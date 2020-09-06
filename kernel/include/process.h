@@ -750,6 +750,9 @@ struct thread {
 	void *coredump_regs;
 	struct waitq coredump_wq;
 	int coredump_status;
+
+	/* Path of file being opened */
+	char *fd_path_in_open;
 };
 
 #define VM_RANGE_CACHE_SIZE	4
