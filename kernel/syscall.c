@@ -381,28 +381,30 @@ long do_syscall(struct syscall_request *req, int cpu)
 
 	rc = res.ret;
 
-	if (req->number == __NR_ioctl && rc == 0) {
+	if ((req->number == __NR_ioctl && rc == 0) ||
+			(req->number == __NR_openat && rc > 0)) {
+		int fd = req->number == __NR_ioctl ? req->args[0] : rc;
+		char *path = req->number == __NR_ioctl ?
+			thread->proc->fd_path[fd] : thread->fd_path_in_open;
+
 		if (cpu_local_var(current)->proc->enable_tofu &&
 				res.pde_data &&
-				!thread->proc->fd_pde_data[req->args[0]] &&
-				!strncmp(thread->proc->fd_path[req->args[0]],
-					"/proc/tofu/dev/", 15)) {
+				fd < MAX_FD_PDE &&
+				!thread->proc->fd_pde_data[fd] &&
+				!strncmp(path, "/proc/tofu/dev/", 15)) {
+			unsigned long irqstate;
 
-			if (req->args[0] < MAX_FD_PDE) {
-				unsigned long irqstate;
+			irqstate = ihk_mc_spinlock_lock(&thread->proc->mckfd_lock);
+			thread->proc->fd_pde_data[fd] = res.pde_data;
+			ihk_mc_spinlock_unlock(&thread->proc->mckfd_lock, irqstate);
 
-				irqstate = ihk_mc_spinlock_lock(&thread->proc->mckfd_lock);
-				thread->proc->fd_pde_data[req->args[0]] = res.pde_data;
-				ihk_mc_spinlock_unlock(&thread->proc->mckfd_lock, irqstate);
-
-				kprintf("%s: PID: %d, ioctl fd: %d, filename: "
-						"%s, pde_data: 0x%lx\n",
-						__FUNCTION__,
-						thread->proc->pid,
-						req->args[0],
-						thread->proc->fd_path[req->args[0]],
-						res.pde_data);
-			}
+			dkprintf("%s: PID: %d, ioctl fd: %d, filename: "
+					"%s, pde_data: 0x%lx\n",
+					__FUNCTION__,
+					thread->proc->pid,
+					fd,
+					path,
+					res.pde_data);
 		}
 	}
 
@@ -1291,16 +1293,20 @@ void terminate(int rc, int sig)
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 	mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 
-	/* Tofu: clean up stags, must be done before mcexec is gone */
+	/* Tofu: cleanup, must be done before mcexec is gone */
 	if (proc->enable_tofu) {
 		int fd;
 
 		for (fd = 0; fd < MAX_FD_PDE; ++fd) {
 			/* Tofu? */
 			if (proc->enable_tofu && proc->fd_pde_data[fd]) {
-				extern void tof_utofu_release_cq(void *pde_data);
+				extern void tof_utofu_release_fd(struct process *proc, int fd);
 
-				tof_utofu_release_cq(proc->fd_pde_data[fd]);
+				if (proc->fd_path[fd]) {
+					dkprintf("%s: -> tof_utofu_release_fd() @ fd: %d (%s)\n",
+							__func__, fd, proc->fd_path[fd]);
+				}
+				tof_utofu_release_fd(proc, fd);
 				proc->fd_pde_data[fd] = NULL;
 			}
 
@@ -3865,10 +3871,10 @@ SYSCALL_DECLARE(ioctl)
 	/* Tofu? */
 	if (proc->enable_tofu &&
 			fd < MAX_FD_PDE && thread->proc->fd_pde_data[fd]) {
-		extern long tof_utofu_unlocked_ioctl_cq(int fd,
+		extern long tof_utofu_unlocked_ioctl(int fd,
 				unsigned int cmd, unsigned long arg);
 
-		rc = tof_utofu_unlocked_ioctl_cq(fd,
+		rc = tof_utofu_unlocked_ioctl(fd,
 			ihk_mc_syscall_arg1(ctx),
 			ihk_mc_syscall_arg2(ctx));
 
@@ -3912,12 +3918,16 @@ SYSCALL_DECLARE(open)
 		goto out;
 	}
 
+	cpu_local_var(current)->fd_path_in_open = pathname;
+
 	dkprintf("open(): pathname=%s\n", pathname);
 	if (!strncmp(pathname, XPMEM_DEV_PATH, len)) {
 		rc = xpmem_open(pathname, flags, ctx);
 	} else {
 		rc = syscall_generic_forwarding(__NR_open, ctx);
 	}
+
+	cpu_local_var(current)->fd_path_in_open = NULL;
 
  out:
 	if (rc > 0 && rc < MAX_FD_PDE) {
@@ -3953,12 +3963,16 @@ SYSCALL_DECLARE(openat)
 		goto out;
 	}
 
+	cpu_local_var(current)->fd_path_in_open = pathname;
+
 	dkprintf("openat(): pathname=%s\n", pathname);
 	if (!strncmp(pathname, XPMEM_DEV_PATH, len)) {
 		rc = xpmem_openat(pathname, flags, ctx);
 	} else {
 		rc = syscall_generic_forwarding(__NR_openat, ctx);
 	}
+
+	cpu_local_var(current)->fd_path_in_open = NULL;
 
 out:
 	if (rc > 0 && rc < MAX_FD_PDE) {
@@ -4019,9 +4033,13 @@ SYSCALL_DECLARE(close)
 	if (fd >= 0 && fd < MAX_FD_PDE) {
 		/* Tofu? */
 		if (thread->proc->fd_pde_data[fd]) {
-			extern void tof_utofu_release_cq(void *pde_data);
+			extern void tof_utofu_release_fd(struct process *proc, int fd);
 
-			tof_utofu_release_cq(thread->proc->fd_pde_data[fd]);
+			if (thread->proc->fd_path[fd]) {
+				dkprintf("%s: -> tof_utofu_release_fd() @ fd: %d (%s)\n",
+						__func__, fd, thread->proc->fd_path[fd]);
+			}
+			tof_utofu_release_fd(thread->proc, fd);
 			thread->proc->fd_pde_data[fd] = NULL;
 		}
 
