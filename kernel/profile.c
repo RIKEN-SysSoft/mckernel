@@ -68,7 +68,16 @@ char *profile_event_names[] =
 	"mmap_anon_no_contig_phys",
 	"mmap_regular_file",
 	"mmap_device_file",
-	""
+	"tofu_stag_alloc ",
+	"|--new_steering ",
+	"   |-alloc_mbpt ",
+	"   |-update_mbpt",
+	"tofu_stag_free_stags",
+	"tofu_stag_free_stag",
+	"   |--------pre",
+	"   |----cqflush",
+	"   |----dealloc",
+	"      |---free_pages",
 };
 
 mcs_lock_node_t job_profile_lock = { 0 };
