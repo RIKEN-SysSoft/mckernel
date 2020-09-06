@@ -108,4 +108,6 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
 			typeof(*pos), field); 1; }); \
 	     pos = n)
 
+struct rb_node *rb_preorder_dfs_search(const struct rb_root *root,
+	bool (*__cond)(struct rb_node *, void *arg), void *__cond_arg);
 #endif	/* _LINUX_RBTREE_H */
