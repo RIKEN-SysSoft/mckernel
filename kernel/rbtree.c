@@ -432,6 +432,43 @@ struct rb_node *rb_first(const struct rb_root *root)
 }
 EXPORT_SYMBOL(rb_first);
 
+/*
+ * Pre-order depth first search.
+ * Return a node where __cond is true.
+ */
+static struct rb_node *__rb_preorder_dfs(struct rb_node *n,
+	bool (*__cond)(struct rb_node *, void *arg), void *__cond_arg)
+{
+	struct rb_node *left_res = NULL;
+
+	if (__cond(n, __cond_arg))
+		return n;
+
+	if (n->rb_left) {
+		left_res = __rb_preorder_dfs(n->rb_left, __cond, __cond_arg);
+		if (left_res) {
+			return left_res;
+		}
+	}
+	if (n->rb_right)
+		return __rb_preorder_dfs(n->rb_right, __cond, __cond_arg);
+
+	return NULL;
+}
+
+struct rb_node *rb_preorder_dfs_search(const struct rb_root *root,
+	bool (*__cond)(struct rb_node *, void *arg), void *__cond_arg)
+{
+	struct rb_node *n;
+
+	n = root->rb_node;
+	if (!n)
+		return NULL;
+
+	return __rb_preorder_dfs(n, __cond, __cond_arg);
+}
+
+
 struct rb_node *rb_first_safe(const struct rb_root *root)
 {
 	struct rb_node	*n;
