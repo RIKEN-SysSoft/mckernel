@@ -15,9 +15,10 @@ if ! tar zxvf /lib/modules/`uname -r`+debug/extra/tof_module.tar.gz ${KMODULE} 2
 	exit 1
 fi
 
-${DWARF_TOOL} ${KMODULE} tof_utofu_device enabled > tofu_generated-tof_utofu_device.h
+${DWARF_TOOL} ${KMODULE} tof_utofu_device enabled subnet gpid > tofu_generated-tof_utofu_device.h
 ${DWARF_TOOL} ${KMODULE} tof_utofu_cq common tni cqid trans steering mb num_stag | sed "s/struct FILL_IN_MANUALLY trans;/#include \"tof_utofu_cq_trans.h\"/g" > tofu_generated-tof_utofu_cq.h
 ${DWARF_TOOL} ${KMODULE} tof_utofu_mbpt ucq iova sg nsgents mbptstart pgsz kref > tofu_generated-tof_utofu_mbpt.h
+${DWARF_TOOL} ${KMODULE} tof_utofu_bg common tni bgid bch | sed "s/struct FILL_IN_MANUALLY bch;/#include \"tof_utofu_bg_bch.h\"/g" > tofu_generated-tof_utofu_bg.h
 rm ${KMODULE}
 
 KMODULE=tof_core.ko 
@@ -28,6 +29,7 @@ if ! tar zxvf /lib/modules/`uname -r`+debug/extra/tof_module.tar.gz ${KMODULE} 2
 fi
 
 ${DWARF_TOOL} ${KMODULE} tof_core_cq reg | sed "s/struct FILL_IN_MANUALLY reg;/#include \"tof_core_cq_reg.h\"/g" > tofu_generated-tof_core_cq.h 
+${DWARF_TOOL} ${KMODULE} tof_core_bg lock reg irq subnet gpid sighandler | sed "s/struct FILL_IN_MANUALLY reg;/#include \"tof_core_bg_reg.h\"/g" > tofu_generated-tof_core_bg.h 
 rm ${KMODULE}
 
 #cat tofu_generated*.h

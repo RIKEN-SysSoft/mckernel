@@ -45,6 +45,16 @@ enum profile_event_type {
 	PROFILE_mmap_anon_no_contig_phys,
 	PROFILE_mmap_regular_file,
 	PROFILE_mmap_device_file,
+	PROFILE_tofu_stag_alloc,
+	PROFILE_tofu_stag_alloc_new_steering,
+	PROFILE_tofu_stag_alloc_new_steering_alloc_mbpt,
+	PROFILE_tofu_stag_alloc_new_steering_update_mbpt,
+	PROFILE_tofu_stag_free_stags,
+	PROFILE_tofu_stag_free_stag,
+	PROFILE_tofu_stag_free_stag_pre,
+	PROFILE_tofu_stag_free_stag_cqflush,
+	PROFILE_tofu_stag_free_stag_dealloc,
+	PROFILE_tofu_stag_free_stag_dealloc_free_pages,
 	PROFILE_EVENT_MAX	/* Should be the last event type */
 };
 
