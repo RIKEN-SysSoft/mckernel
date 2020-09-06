@@ -20,10 +20,17 @@
  * CPU Local Storage (cls)
  */
 
+struct kmalloc_cache_header {
+	struct kmalloc_cache_header *next;
+};
+
 struct kmalloc_header {
 	unsigned int front_magic;
 	int cpu_id;
-	struct list_head list;
+	union {
+		struct list_head list;
+		struct kmalloc_cache_header *cache;
+	};
 	int size; /* The size of this chunk without the header */
 	unsigned int end_magic;
 	/* 32 bytes */
