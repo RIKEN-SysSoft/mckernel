@@ -148,8 +148,29 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 	}
 
 	if (timeout) {
-		ret = wait_event_interruptible_timeout(desc->wq,
-			desc->status, timeout);
+		/*
+		 * Negative timeout indicates busy waiting, which can be used
+		 * in situations where wait_event_interruptible_XXX() would
+		 * fail, e.g., in a signal handler, at the time the process
+		 * is being killed, etc.
+		 */
+		if (timeout < 0) {
+			unsigned long timeout_jiffies =
+				jiffies + msecs_to_jiffies(timeout * -1);
+			ret = -ETIME;
+
+			while (time_before(jiffies, timeout_jiffies)) {
+				schedule();
+				if (READ_ONCE(desc->status)) {
+					ret = 0;
+					break;
+				}
+			}
+		}
+		else {
+			ret = wait_event_interruptible_timeout(desc->wq,
+					desc->status, msecs_to_jiffies(timeout));
+		}
 	} else {
 		ret = wait_event_interruptible(desc->wq, desc->status);
 	}
@@ -211,6 +232,8 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_PROCFS_ANSWER:
 	case SCD_MSG_REMOTE_PAGE_FAULT_ANSWER:
 	case SCD_MSG_CPU_RW_REG_RESP:
+	case SCD_MSG_CLEANUP_PROCESS_RESP:
+	case SCD_MSG_CLEANUP_FD_RESP:
 		mcctrl_wakeup_cb(__os, pisp);
 		break;
 
