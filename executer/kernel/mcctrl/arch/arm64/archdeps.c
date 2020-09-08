@@ -2,6 +2,7 @@
 #include <linux/version.h>
 #include <linux/mm_types.h>
 #include <linux/kallsyms.h>
+#include <linux/delay.h>
 #if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 #include <linux/sched/task_stack.h>
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) */
@@ -27,6 +28,14 @@ void *vdso_end;
 static struct vm_special_mapping (*vdso_spec)[2];
 #endif
 
+/* Tofu CQ and barrier gate release functions */
+struct file_operations *mcctrl_tof_utofu_procfs_ops_cq;
+int (*mcctrl_tof_utofu_release_cq)(struct inode *inode,
+		struct file *filp);
+struct file_operations *mcctrl_tof_utofu_procfs_ops_bch;
+int (*mcctrl_tof_utofu_release_bch)(struct inode *inode,
+		struct file *filp);
+
 int arch_symbols_init(void)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 0, 0)
@@ -42,6 +51,26 @@ int arch_symbols_init(void)
 	if (WARN_ON(!vdso_spec))
 		return -EFAULT;
 #endif
+
+	mcctrl_tof_utofu_procfs_ops_cq =
+		(void *)kallsyms_lookup_name("tof_utofu_procfs_ops_cq");
+	if (WARN_ON(!mcctrl_tof_utofu_procfs_ops_cq))
+		return -EFAULT;
+
+	mcctrl_tof_utofu_procfs_ops_bch =
+		(void *)kallsyms_lookup_name("tof_utofu_procfs_ops_bch");
+	if (WARN_ON(!mcctrl_tof_utofu_procfs_ops_bch))
+		return -EFAULT;
+
+	mcctrl_tof_utofu_release_cq =
+		(void *)kallsyms_lookup_name("tof_utofu_release_cq");
+	if (WARN_ON(!mcctrl_tof_utofu_release_cq))
+		return -EFAULT;
+
+	mcctrl_tof_utofu_release_bch =
+		(void *)kallsyms_lookup_name("tof_utofu_release_bch");
+	if (WARN_ON(!mcctrl_tof_utofu_release_bch))
+		return -EFAULT;
 
 	return 0;
 }
@@ -416,4 +445,107 @@ long arch_switch_ctx(struct uti_switch_ctx_desc *desc)
 
 out:
 	return rc;
+}
+
+
+/*
+ * Tofu CQ and BCH release handlers
+ */
+int __mcctrl_tof_utofu_release_cq(struct inode *inode, struct file *filp);
+int __mcctrl_tof_utofu_release_bch(struct inode *inode, struct file *filp);
+
+void mcctrl_tofu_hijack_release_handlers(void)
+{
+	mcctrl_tof_utofu_procfs_ops_cq->release =
+		__mcctrl_tof_utofu_release_cq;
+	mcctrl_tof_utofu_procfs_ops_bch->release =
+		__mcctrl_tof_utofu_release_bch;
+}
+
+void mcctrl_tofu_restore_release_handlers(void)
+{
+	mcctrl_tof_utofu_procfs_ops_cq->release =
+		mcctrl_tof_utofu_release_cq;
+	mcctrl_tof_utofu_procfs_ops_bch->release =
+		mcctrl_tof_utofu_release_bch;
+}
+
+int __mcctrl_tof_utofu_release_handler(struct inode *inode, struct file *filp,
+		int (*__release_func)(struct inode *inode, struct file *filp))
+{
+	struct mcctrl_usrdata *usrdata;
+	struct mcctrl_file_to_pidfd *f2pfd;
+	struct mcctrl_per_proc_data *ppd;
+	struct ikc_scd_packet isp;
+	int ret;
+
+	dprintk("%s: current PID: %d, comm: %s \n",
+			__func__, task_tgid_vnr(current), current->comm);
+
+	f2pfd = mcctrl_file_to_pidfd_hash_lookup(filp, current->group_leader);
+	if (!f2pfd) {
+		goto out;
+	}
+
+	dprintk("%s: current PID: %d, PID: %d, fd: %d ...\n",
+			__func__, task_tgid_vnr(current), f2pfd->pid, f2pfd->fd);
+	usrdata = ihk_host_os_get_usrdata(f2pfd->os);
+
+	/* Look up per-process structure */
+	ppd = mcctrl_get_per_proc_data(usrdata, f2pfd->pid);
+	if (!ppd) {
+		pr_err("%s: PID: %d, fd: %d no PPD\n",
+				__func__, f2pfd->pid, f2pfd->fd);
+		goto out;
+	}
+
+	dprintk("%s: PID: %d, fd: %d PPD OK\n",
+			__func__, f2pfd->pid, f2pfd->fd);
+
+	/*
+	 * We are in release() due to the process being killed,
+	 * or because the application didn't close the file properly.
+	 * Ask McKernel to clean up this fd.
+	 */
+	isp.msg = SCD_MSG_CLEANUP_FD;
+	isp.pid = f2pfd->pid;
+	isp.arg = f2pfd->fd;
+
+	ret = mcctrl_ikc_send_wait(f2pfd->os, ppd->ikc_target_cpu,
+			&isp, -20, NULL, NULL, 0);
+	if (ret != 0) {
+		dprintk("%s: WARNING: failed to send IKC msg: %d\n",
+				__func__, ret);
+	}
+
+	mcctrl_file_to_pidfd_hash_remove(filp, f2pfd->os,
+			current->group_leader, f2pfd->fd);
+
+	mcctrl_put_per_proc_data(ppd);
+
+	/* Do not call into Linux driver if timed out in SIGKILL.. */
+	if (ret == -ETIME && __fatal_signal_pending(current)) {
+		pr_err("%s: WARNING: failed to send IKC msg in SIGKILL: %d\n",
+				__func__, ret);
+		goto out_no_release;
+	}
+out:
+	dprintk("%s: current PID: %d, comm: %s -> calling release\n",
+			__func__, task_tgid_vnr(current), current->comm);
+	return __release_func(inode, filp);
+
+out_no_release:
+	return ret;
+}
+
+int __mcctrl_tof_utofu_release_cq(struct inode *inode, struct file *filp)
+{
+	return __mcctrl_tof_utofu_release_handler(inode, filp,
+			mcctrl_tof_utofu_release_cq);
+}
+
+int __mcctrl_tof_utofu_release_bch(struct inode *inode, struct file *filp)
+{
+	return __mcctrl_tof_utofu_release_handler(inode, filp,
+			mcctrl_tof_utofu_release_bch);
 }
