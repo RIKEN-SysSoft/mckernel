@@ -896,16 +896,18 @@ static void tof_utofu_trans_update(struct tof_utofu_cq *ucq, int stag, uintptr_t
 		struct tof_trans_table ent;
 		uint64_t atomic;
 	} tmp;
+	unsigned long flags;
+
 	tmp.ent.steering.bits.start = start >> PAGE_SHIFT;
 	tmp.ent.steering.bits.len = len >> PAGE_SHIFT;
 	tmp.ent.steering.bits.ps_code = (pgszbits == PAGE_SHIFT)? TOF_STAG_TRANS_PS_CODE_64KB:TOF_STAG_TRANS_PS_CODE_2MB;
 	//atomic64_set((atomic64_t *)&table[stag], tmp.atomic);
 	ihk_atomic64_set((ihk_atomic64_t *)&table[stag], tmp.atomic);
 
-	linux_spin_lock(&ucq->trans.mru_lock);
+	linux_spin_lock_irqsave(&ucq->trans.mru_lock, flags);
 	tof_utofu_trans_mru_delete(ucq, stag);
 	tof_utofu_trans_mru_insert(ucq, stag, pgszbits, mbpt);
-	linux_spin_unlock(&ucq->trans.mru_lock);
+	linux_spin_unlock_irqrestore(&ucq->trans.mru_lock, flags);
 }
 
 
@@ -1009,6 +1011,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 	uint8_t pgszbits;
 	size_t pgsz;
 	int ret = -ENOTSUPP;
+	unsigned long irqflags;
 
 	ucq = container_of(dev, struct tof_utofu_cq, common);
 	if(!ucq->common.enabled){
@@ -1054,9 +1057,9 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 #if 1
 		/* normal stag */
 		int stag;
-		linux_spin_lock(&ucq->trans.mru_lock);
+		linux_spin_lock_irqsave(&ucq->trans.mru_lock, irqflags);
 		stag = tof_utofu_trans_search(ucq, start, end, pgszbits, readonly);
-		linux_spin_unlock(&ucq->trans.mru_lock);
+		linux_spin_unlock_irqrestore(&ucq->trans.mru_lock, irqflags);
 		if(stag < 0){
 			struct tof_utofu_mbpt *mbpt = NULL;
 			stag = tof_utofu_reserve_stag(ucq, readonly);
@@ -1304,6 +1307,7 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 	struct tof_free_stags req;
 	int i, no_free_cnt = 0, ret;
 	int stags[1024];
+	unsigned long irqflags;
 
 	ucq = container_of(dev, struct tof_utofu_cq, common);
 
@@ -1325,9 +1329,9 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 	}
 
 	for(i = 0; i < req.num; i++){
-		linux_spin_lock(&ucq->trans.mru_lock);
+		linux_spin_lock_irqsave(&ucq->trans.mru_lock, irqflags);
 		ret = tof_utofu_free_stag(ucq, stags[i]);
-		linux_spin_unlock(&ucq->trans.mru_lock);
+		linux_spin_unlock_irqrestore(&ucq->trans.mru_lock, irqflags);
 		if(ret == 0){
 			stags[i] = -1;
 		}
@@ -1372,6 +1376,7 @@ void tof_utofu_release_cq(void *pde_data)
 	struct tof_utofu_cq *ucq;
 	int stag;
 	struct tof_utofu_device *dev;
+	unsigned long irqflags;
 
 	dev = (struct tof_utofu_device *)pde_data;
 	ucq = container_of(dev, struct tof_utofu_cq, common);
@@ -1383,9 +1388,9 @@ void tof_utofu_release_cq(void *pde_data)
 	}
 
 	for (stag = 0; stag < TOF_UTOFU_NUM_STAG(ucq->num_stag); stag++) {
-		linux_spin_lock(&ucq->trans.mru_lock);
+		linux_spin_lock_irqsave(&ucq->trans.mru_lock, irqflags);
 		tof_utofu_free_stag(ucq, stag);
-		linux_spin_unlock(&ucq->trans.mru_lock);
+		linux_spin_unlock_irqrestore(&ucq->trans.mru_lock, irqflags);
 	}
 
 	dkprintf("%s: UCQ (pde: %p) TNI %d, CQ %d\n",
@@ -1911,6 +1916,8 @@ static int tof_utofu_disable_bch(struct tof_utofu_bg *ubg){
 	//tof_smmu_release_ipa_bg(ubg->tni, ubg->bgid, ubg->bch.iova, TOF_ICC_BCH_DMA_ALIGN);
 	//put_page(ubg->bch.page);
 	ubg->bch.enabled = false;
+	smp_mb();
+	dkprintf("%s: tni=%d bgid=%d\n", __func__, ubg->tni, ubg->bgid);
 	return 0;
 }
 
@@ -2084,11 +2091,15 @@ void tof_utofu_release_fd(struct process *proc, int fd)
 		return;
 	}
 
-	if (strstr((const char *)proc->fd_path, "cq")) {
+	if (strstr((const char *)proc->fd_path[fd], "cq")) {
+		dkprintf("%s: PID: %d, fd: %d -> release CQ\n",
+			__func__, proc->pid, fd);
 		tof_utofu_release_cq(proc->fd_pde_data[fd]);
 	}
 
-	else if (strstr((const char *)proc->fd_path, "bch")) {
+	else if (strstr((const char *)proc->fd_path[fd], "bch")) {
+		dkprintf("%s: PID: %d, fd: %d -> release BCH\n",
+			__func__, proc->pid, fd);
 		tof_utofu_release_bch(proc->fd_pde_data[fd]);
 	}
 }
