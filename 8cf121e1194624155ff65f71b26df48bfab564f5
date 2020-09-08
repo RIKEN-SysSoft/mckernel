@@ -50,6 +50,29 @@
       "revId": "8cf121e1194624155ff65f71b26df48bfab564f5",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "386aa8f8_d12f1ac6",
+        "filename": "test/issues/1113/README",
+        "patchSetId": 9
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-08T02:22:01Z",
+      "side": 1,
+      "message": "なお、2.21では-mオプションが空のときは、/proc/meminfoのHugepagesizeを使う修正が入っているため、上記修正は不要。",
+      "range": {
+        "startLine": 79,
+        "startChar": 0,
+        "endLine": 79,
+        "endChar": 38
+      },
+      "revId": "8cf121e1194624155ff65f71b26df48bfab564f5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
     }
   ]
 }
