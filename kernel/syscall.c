@@ -204,6 +204,12 @@ long do_syscall(struct syscall_request *req, int cpu)
 		++thread->in_syscall_offload;
 	}
 
+#if 0
+	if (req->number == __NR_write && req->args[0] == 1) {
+		return req->args[2];
+	}
+#endif
+
 	/* The current thread is the requester */
 	req->rtid = cpu_local_var(current)->tid;
 
@@ -1930,6 +1936,9 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 				__FUNCTION__, proc->straight_va, range->pgshift);
 
 		ptattr = arch_vrflag_to_ptattr(range->flag, PF_POPULATE, NULL);
+
+
+#if 1 // Un-safe mapping of covering physical range
 		error = ihk_mc_pt_set_range(proc->vm->address_space->page_table,
 				proc->vm,
 				(void *)range->start,
@@ -1956,6 +1965,89 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 				proc->straight_pa,
 				psize,
 				proc->straight_map_threshold);
+
+#else // Safe mapping of only LWK memory ranges
+		{
+			size_t max_pgsize = 0;
+			size_t min_pgsize = 0xFFFFFFFFFFFFFFFF;
+
+			/*
+			 * Iterate LWK phsyical memory chunks and map them to their
+			 * corresponding offset in the straight range using the largest
+			 * suitable pages.
+			 */
+			for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+				unsigned long start, end, pa;
+				void *va, *va_end;
+				size_t pgsize;
+				int pg2align;
+
+				ihk_mc_get_memory_chunk(i, &start, &end, NULL);
+				va = proc->straight_va + (start - straight_pa_start);
+				va_end = va + (end - start);
+				pa = start;
+
+				while (va < va_end) {
+					pgsize = (va_end - va) + 1;
+retry:
+					error = arch_get_smaller_page_size(NULL, pgsize,
+							&pgsize, &pg2align);
+					if (error) {
+						ekprintf("%s: arch_get_smaller_page_size() failed"
+								" during straight mapping: %d\n",
+								__func__, error);
+						proc->straight_va = 0;
+						goto straight_out;
+					}
+
+					/* Are virtual or physical not page aligned for this size? */
+					if (((unsigned long)va & (pgsize - 1)) ||
+							(pa & (pgsize - 1))) {
+						goto retry;
+					}
+
+					error = ihk_mc_pt_set_range(
+							proc->vm->address_space->page_table,
+							proc->vm,
+							va,
+							va + pgsize,
+							pa,
+							ptattr,
+							pg2align + PAGE_SHIFT,
+							range,
+							0);
+
+					if (error) {
+						kprintf("%s: ihk_mc_pt_set_range() failed"
+								" during straight mapping: %d\n",
+								__func__, error);
+						proc->straight_va = 0;
+						goto straight_out;
+					}
+
+					if (pgsize > max_pgsize)
+						max_pgsize = pgsize;
+
+					if (pgsize < min_pgsize)
+						min_pgsize = pgsize;
+
+					va += pgsize;
+					pa += pgsize;
+				}
+			}
+
+			region->map_end = (unsigned long)proc->straight_va +
+				proc->straight_len;
+			proc->straight_pa = straight_pa_start;
+			kprintf("%s: straight mapping: 0x%lx:%lu @ "
+					"min_pgsize: %lu, max_pgsize: %lu\n",
+					__FUNCTION__,
+					proc->straight_va,
+					proc->straight_len,
+					min_pgsize,
+					max_pgsize);
+		}
+#endif
 	}
 straight_out:
 
@@ -2284,8 +2376,10 @@ straight_out:
 		range->straight_start =
 			(unsigned long)proc->straight_va +
 			(straight_phys - proc->straight_pa);
-		dkprintf("%s: range 0x%lx:%lu is straight starting at 0x%lx\n",
-				__FUNCTION__, addr, len, range->straight_start);
+		dkprintf("%s: range 0x%lx:%lu is straight starting at 0x%lx"
+				" (phys: 0x%lx)\n",
+				__FUNCTION__, addr, len, range->straight_start,
+				straight_phys);
 		if (!zero_at_free) {
 			memset((void *)phys_to_virt(straight_phys), 0, len);
 		}
@@ -2429,6 +2523,9 @@ SYSCALL_DECLARE(munmap)
 out:
 	dkprintf("[%d]sys_munmap(%lx,%lx): %d\n",
 			ihk_mc_get_processor_id(), addr, len0, error);
+	if (error) {
+		kprintf("%s: error: %d\n", __func__, error);
+	}
 	return error;
 }
 
