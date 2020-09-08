@@ -1302,10 +1302,8 @@ void terminate(int rc, int sig)
 			if (proc->enable_tofu && proc->fd_pde_data[fd]) {
 				extern void tof_utofu_release_fd(struct process *proc, int fd);
 
-				if (proc->fd_path[fd]) {
-					dkprintf("%s: -> tof_utofu_release_fd() @ fd: %d (%s)\n",
-							__func__, fd, proc->fd_path[fd]);
-				}
+				dkprintf("%s: -> tof_utofu_release_fd() @ fd: %d (%s)\n",
+						__func__, fd, proc->fd_path[fd]);
 				tof_utofu_release_fd(proc, fd);
 				proc->fd_pde_data[fd] = NULL;
 			}
@@ -1484,6 +1482,66 @@ void terminate(int rc, int sig)
 	kprintf("%s: ERROR: returned from terminate() -> schedule()\n", __FUNCTION__);
 	panic("panic");
 }
+
+int __process_cleanup_fd(struct process *proc, int fd)
+{
+	/* Tofu? */
+	if (proc->enable_tofu) {
+		extern void tof_utofu_release_fd(struct process *proc, int fd);
+
+		dkprintf("%s: -> tof_utofu_release_fd() @ fd: %d (%s)\n",
+				__func__, fd, proc->fd_path[fd]);
+		tof_utofu_release_fd(proc, fd);
+		proc->fd_pde_data[fd] = NULL;
+
+		if (proc->fd_path[fd]) {
+			kfree(proc->fd_path[fd]);
+			proc->fd_path[fd] = NULL;
+		}
+	}
+
+	return 0;
+}
+
+int process_cleanup_fd(int pid, int fd)
+{
+	struct process *proc;
+	struct mcs_rwlock_node_irqsave lock;
+
+	proc = find_process(pid, &lock);
+	if (!proc) {
+		/* This is normal behavior */
+		dkprintf("%s: PID %d couldn't be found\n", __func__, pid);
+		return 0;
+	}
+
+	__process_cleanup_fd(proc, fd);
+
+	process_unlock(proc, &lock);
+	return 0;
+}
+
+int process_cleanup_before_terminate(int pid)
+{
+	struct process *proc;
+	struct mcs_rwlock_node_irqsave lock;
+	int fd;
+
+	proc = find_process(pid, &lock);
+	if (!proc) {
+		/* This is normal behavior */
+		return 0;
+	}
+
+	/* Clean up PDE file descriptors */
+	for (fd = 2; fd < MAX_FD_PDE; ++fd) {
+		__process_cleanup_fd(proc, fd);
+	}
+
+	process_unlock(proc, &lock);
+	return 0;
+}
+
 
 void
 terminate_host(int pid, struct thread *thread)
@@ -4030,15 +4088,14 @@ SYSCALL_DECLARE(close)
 	irqstate = ihk_mc_spinlock_lock(&proc->mckfd_lock);
 
 	/* Clear path and PDE data */
-	if (fd >= 0 && fd < MAX_FD_PDE) {
+	if (thread->proc->enable_tofu &&
+			fd >= 0 && fd < MAX_FD_PDE) {
 		/* Tofu? */
 		if (thread->proc->fd_pde_data[fd]) {
 			extern void tof_utofu_release_fd(struct process *proc, int fd);
 
-			if (thread->proc->fd_path[fd]) {
-				dkprintf("%s: -> tof_utofu_release_fd() @ fd: %d (%s)\n",
-						__func__, fd, thread->proc->fd_path[fd]);
-			}
+			dkprintf("%s: -> tof_utofu_release_fd() @ fd: %d (%s)\n",
+					__func__, fd, thread->proc->fd_path[fd]);
 			tof_utofu_release_fd(thread->proc, fd);
 			thread->proc->fd_pde_data[fd] = NULL;
 		}
