@@ -36,6 +36,7 @@
 #include <linux/semaphore.h>
 #include <linux/interrupt.h>
 #include <linux/cpumask.h>
+#include <linux/delay.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -378,6 +379,7 @@ static void release_handler(ihk_os_t os, void *param)
 	int os_ind = ihk_host_os_get_index(os);
 	unsigned long flags;
 	struct host_thread *thread;
+	int ret;
 
 	/* Finalize FS switch for uti threads */ 
 	write_lock_irqsave(&host_thread_lock, flags);
@@ -399,7 +401,13 @@ static void release_handler(ihk_os_t os, void *param)
 
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
 			__FUNCTION__, info, info->cpu);
-	mcctrl_ikc_send(os, info->cpu, &isp);
+	ret = mcctrl_ikc_send_wait(os, info->cpu,
+			&isp, -20, NULL, NULL, 0);
+	if (ret != 0) {
+		printk("%s: WARNING: failed to send IKC msg: %d\n",
+				__func__, ret);
+	}
+
 	if (os_ind >= 0) {
 		delete_pid_entry(os_ind, info->pid);
 	}
