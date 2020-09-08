@@ -306,6 +306,7 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 				nr_pages,
 				obj->pgsize);
 
+#if 1
 		{
 			int pgind;
 			int npages;
@@ -331,6 +332,7 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 						__func__, obj, off, pgind, obj->pgsize);
 			}
 		}
+#endif
 	}
 
 	obj->memobj.size = len;
