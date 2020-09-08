@@ -2172,6 +2172,10 @@ static DECLARE_WAIT_QUEUE_HEAD(perfctrlq);
 
 long mcctrl_perf_num(ihk_os_t os, unsigned long arg)
 {
+  if (!os || ihk_host_validate_os(os)) {
+    return -EINVAL;
+  }
+
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	if (!usrdata) {
@@ -2197,21 +2201,32 @@ struct mcctrl_perf_ctrl_desc {
  */
 long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 {
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata *usrdata = NULL;
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
 	struct ihk_perf_event_attr attr;
-	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
+	struct ihk_cpu_info *info = NULL;
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
 	int num_registered = 0;
 	int err = 0;
 
+  if (!os || ihk_host_validate_os(os)) {
+    return -EINVAL;
+  }
+
+  usrdata = ihk_host_os_get_usrdata(os);
 	if (!usrdata) {
 		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
 		return -EINVAL;
 	}
+
+  info = ihk_os_get_cpu_info(os);
+  if (!info) {
+    pr_err("%s: error: cannot get cpu info\n", __func__);
+    return -EINVAL;
+  }
 
 	for (i = 0; i < usrdata->perf_event_num; i++) {
 		ret = copy_from_user(&attr, &arg[i],
@@ -2462,6 +2477,10 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 	int i;
 	unsigned long ut;
 	unsigned long st;
+
+  if (!ihk_os || ihk_host_validate_os(ihk_os)) {
+    return -EINVAL;
+  }
 
 	ret = copy_from_user(&desc, _desc, sizeof(struct mcctrl_ioctl_getrusage_desc));
 	if (ret != 0) {
