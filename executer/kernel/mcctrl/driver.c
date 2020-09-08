@@ -233,7 +233,6 @@ void (*mcctrl_zap_page_range)(struct vm_area_struct *vma,
 
 struct inode_operations *mcctrl_hugetlbfs_inode_operations;
 
-
 static int symbols_init(void)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0)
