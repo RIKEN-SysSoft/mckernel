@@ -1834,6 +1834,136 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 	return ret;
 }
 
+struct list_head mcctrl_file_to_pidfd_hash[MCCTRL_FILE_2_PIDFD_HASH_SIZE];
+spinlock_t mcctrl_file_to_pidfd_hash_lock;
+
+void mcctrl_file_to_pidfd_hash_init(void)
+{
+	int hash;
+	spin_lock_init(&mcctrl_file_to_pidfd_hash_lock);
+
+	for (hash = 0; hash < MCCTRL_FILE_2_PIDFD_HASH_SIZE; ++hash) {
+		INIT_LIST_HEAD(&mcctrl_file_to_pidfd_hash[hash]);
+	}
+}
+
+int mcctrl_file_to_pidfd_hash_insert(struct file *filp,
+	ihk_os_t os, int pid, struct task_struct *group_leader, int fd)
+{
+	unsigned long irqflags;
+	struct mcctrl_file_to_pidfd *file2pidfd_iter;
+	struct mcctrl_file_to_pidfd *file2pidfd;
+	int hash = (int)((unsigned long)filp &
+			(unsigned long)MCCTRL_FILE_2_PIDFD_HASH_MASK);
+	int ret = 0;
+
+	file2pidfd = kmalloc(sizeof(*file2pidfd), GFP_ATOMIC);
+	if (!file2pidfd)
+		return -ENOMEM;
+
+	file2pidfd->filp = filp;
+	file2pidfd->os = os;
+	file2pidfd->pid = pid;
+	file2pidfd->group_leader = group_leader;
+	file2pidfd->fd = fd;
+
+	spin_lock_irqsave(&mcctrl_file_to_pidfd_hash_lock, irqflags);
+	list_for_each_entry(file2pidfd_iter,
+			&mcctrl_file_to_pidfd_hash[hash], hash) {
+		if (file2pidfd_iter->filp == filp) {
+			printk("%s: WARNING: filp: %p, pid: %d, fd: %d exists\n",
+					__func__, filp, pid, fd);
+			ret = -EBUSY;
+			goto free_out;
+		}
+	}
+
+	list_add_tail(&file2pidfd->hash,
+			&mcctrl_file_to_pidfd_hash[hash]);
+	dprintk("%s: filp: %p, pid: %d, fd: %d added\n",
+			__func__, filp, pid, fd);
+
+	spin_unlock_irqrestore(&mcctrl_file_to_pidfd_hash_lock, irqflags);
+	return ret;
+
+free_out:
+	kfree(file2pidfd);
+	spin_unlock_irqrestore(&mcctrl_file_to_pidfd_hash_lock, irqflags);
+	return ret;
+}
+
+/*
+ * XXX: lookup relies on group_leader to identify the process
+ * because PIDs might be different across name spaces (e.g.,
+ * when using Docker)
+ */
+struct mcctrl_file_to_pidfd *mcctrl_file_to_pidfd_hash_lookup(
+	struct file *filp, struct task_struct *group_leader)
+{
+	unsigned long irqflags;
+	struct mcctrl_file_to_pidfd *file2pidfd_iter;
+	struct mcctrl_file_to_pidfd *file2pidfd = NULL;
+	int hash = (int)((unsigned long)filp &
+			(unsigned long)MCCTRL_FILE_2_PIDFD_HASH_MASK);
+
+	spin_lock_irqsave(&mcctrl_file_to_pidfd_hash_lock, irqflags);
+	list_for_each_entry(file2pidfd_iter,
+			&mcctrl_file_to_pidfd_hash[hash], hash) {
+		if (file2pidfd_iter->filp == filp && 
+				file2pidfd_iter->group_leader == group_leader) {
+			file2pidfd = file2pidfd_iter;
+			dprintk("%s: filp: %p, pid: %d, fd: %d found\n",
+					__func__, filp, file2pidfd->pid, file2pidfd->fd);
+			break;
+		}
+	}
+
+	spin_unlock_irqrestore(&mcctrl_file_to_pidfd_hash_lock, irqflags);
+
+	return file2pidfd;
+}
+
+int mcctrl_file_to_pidfd_hash_remove(struct file *filp,
+	ihk_os_t os, struct task_struct *group_leader, int fd)
+{
+	unsigned long irqflags;
+	struct mcctrl_file_to_pidfd *file2pidfd_iter;
+	int hash = (int)((unsigned long)filp &
+			(unsigned long)MCCTRL_FILE_2_PIDFD_HASH_MASK);
+	int ret = 0;
+
+	spin_lock_irqsave(&mcctrl_file_to_pidfd_hash_lock, irqflags);
+	list_for_each_entry(file2pidfd_iter,
+			&mcctrl_file_to_pidfd_hash[hash], hash) {
+		if (file2pidfd_iter->filp != filp)
+			continue;
+
+		if (file2pidfd_iter->os != os)
+			continue;
+
+		if (file2pidfd_iter->group_leader != group_leader)
+			continue;
+
+		if (file2pidfd_iter->fd != fd)
+			continue;
+
+		list_del(&file2pidfd_iter->hash);
+		dprintk("%s: filp: %p, pid: %d, fd: %d removed\n",
+				__func__, filp, file2pidfd_iter->pid, fd);
+		kfree(file2pidfd_iter);
+		goto unlock_out;
+	}
+
+	dprintk("%s: filp: %p, pid: %d, fd: %d couldn't be found\n",
+			__func__, filp, pid, fd);
+	ret = -ENOENT;
+
+unlock_out:
+	spin_unlock_irqrestore(&mcctrl_file_to_pidfd_hash_lock, irqflags);
+	return ret;
+}
+
+
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 		long ret, int stid)
 {
@@ -1855,18 +1985,14 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	res->ret = ret;
 	res->stid = stid;
 
-	/* Record PDE_DATA after open()/ioctl() calls for Tofu driver */
-	if ((packet->req.number == __NR_ioctl && ret == 0) ||
-			(packet->req.number == __NR_openat && ret > 1)) {
+	/* Record PDE_DATA after open() calls for Tofu driver */
+	if (packet->req.number == __NR_openat && ret > 1) {
 		char *pathbuf, *fullpath;
 		struct fd f;
+		int fd;
 
-		if (packet->req.number == __NR_ioctl) {
-			f = fdget(packet->req.args[0]);
-		}
-		else if (packet->req.number == __NR_openat) {
-			f = fdget(ret);
-		}
+		fd = ret;
+		f = fdget(fd);
 
 		if (!f.file) {
 			goto out_notify;
@@ -1884,12 +2010,11 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 
 		if (!strncmp("/proc/tofu/dev/", fullpath, 15)) {
 			res->pde_data = PDE_DATA(file_inode(f.file));
-			dprintk("%s: %s(): fd: %ld, path: %s, PDE_DATA: 0x%lx\n",
-				__func__,
-				packet->req.number == __NR_ioctl ? "ioctl" : "openat",
-				packet->req.args[0],
-				fullpath,
-				(unsigned long)res->pde_data);
+			dprintk("%s: fd: %d, path: %s, PDE_DATA: 0x%lx\n",
+					__func__,
+					fd,
+					fullpath,
+					(unsigned long)res->pde_data);
 			dprintk("%s: pgd_index: %ld, pmd_index: %ld, pte_index: %ld\n",
 				__func__,
 				pgd_index((unsigned long)res->pde_data),
@@ -1897,6 +2022,9 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 				pte_index((unsigned long)res->pde_data));
 			dprintk("MAX_USER_VA_BITS: %d, PGDIR_SHIFT: %d\n",
 				MAX_USER_VA_BITS, PGDIR_SHIFT);
+			mcctrl_file_to_pidfd_hash_insert(f.file, os,
+					task_tgid_vnr(current),
+					current->group_leader, fd);
 		}
 
 out_free:
@@ -2308,6 +2436,26 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 	dprintk("%s: system call: %lx\n", __FUNCTION__, sc->args[0]);
 	switch (sc->number) {
+	case __NR_close: {
+		struct fd f;
+		int fd;
+
+		fd = (int)sc->args[0];
+		if (fd > 2) {
+			f = fdget(fd);
+
+			if (f.file) {
+				mcctrl_file_to_pidfd_hash_remove(f.file, os,
+						current->group_leader, fd);
+				fdput(f);
+			}
+		}
+
+		error = -ENOSYS;
+		goto out;
+
+		break;
+	}
 	case __NR_mmap:
 		ret = pager_call(os, sc);
 		break;
