@@ -76,6 +76,7 @@ void preempt_enable(void)
 
 			//arch_cpu_stop();
 			//cpu_halt();
+		panic("panic: negative preemption??");
 		}
 	}
 }
