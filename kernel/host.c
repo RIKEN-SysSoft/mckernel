@@ -778,12 +778,36 @@ out_remote_pf:
 		ret = 0;
 		break;
 
-	case SCD_MSG_CLEANUP_PROCESS:
+	case SCD_MSG_CLEANUP_PROCESS: {
+		extern int process_cleanup_before_terminate(int pid);
 		dkprintf("SCD_MSG_CLEANUP_PROCESS pid=%d, thread=0x%llx\n",
 				packet->pid, packet->arg);
+
+		pckt.msg = SCD_MSG_CLEANUP_PROCESS_RESP;
+		pckt.err = process_cleanup_before_terminate(packet->pid);
+		pckt.ref = packet->ref;
+		pckt.arg = packet->arg;
+		pckt.reply = packet->reply;
+		syscall_channel_send(resp_channel, &pckt);
 		terminate_host(packet->pid, (struct thread *)packet->arg);
 		ret = 0;
 		break;
+	}
+
+	case SCD_MSG_CLEANUP_FD: {
+		extern int process_cleanup_fd(int pid, int fd);
+		pckt.msg = SCD_MSG_CLEANUP_FD_RESP;
+		pckt.err = process_cleanup_fd(packet->pid, packet->arg);
+		dkprintf("SCD_MSG_CLEANUP_FD pid=%d, fd=%d -> err: %d\n",
+				packet->pid, packet->arg, pckt.err);
+
+		pckt.ref = packet->ref;
+		pckt.arg = packet->arg;
+		pckt.reply = packet->reply;
+		syscall_channel_send(resp_channel, &pckt);
+		ret = 0;
+		break;
+	}
 
 	case SCD_MSG_DEBUG_LOG:
 		dkprintf("SCD_MSG_DEBUG_LOG code=%lx\n", packet->arg);

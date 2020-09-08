@@ -50,12 +50,18 @@ extern void procfs_exit(int);
 extern void uti_attr_finalize(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
+extern void mcctrl_file_to_pidfd_hash_init(void);
 
 extern int mcctrl_os_read_cpu_register(ihk_os_t os, int cpu,
 		struct ihk_os_cpu_register *desc);
 extern int mcctrl_os_write_cpu_register(ihk_os_t os, int cpu,
 		struct ihk_os_cpu_register *desc);
 extern int mcctrl_get_request_os_cpu(ihk_os_t os, int *cpu);
+
+#ifdef ENABLE_TOFU
+extern void mcctrl_tofu_hijack_release_handlers(void);
+extern void mcctrl_tofu_restore_release_handlers(void);
+#endif
 
 static long mcctrl_ioctl(ihk_os_t os, unsigned int request, void *priv,
                          unsigned long arg, struct file *file)
@@ -319,9 +325,14 @@ static int __init mcctrl_init(void)
 	}
 
 	binfmt_mcexec_init();
+	mcctrl_file_to_pidfd_hash_init();
 
 	if ((ret = symbols_init()))
 		goto error;
+
+#ifdef ENABLE_TOFU
+	mcctrl_tofu_hijack_release_handlers();
+#endif
 
 	if ((ret = ihk_host_register_os_notifier(&mcctrl_os_notifier)) != 0) {
 		printk("mcctrl: error: registering OS notifier\n");
@@ -345,6 +356,9 @@ static void __exit mcctrl_exit(void)
 
 	binfmt_mcexec_exit();
 	uti_attr_finalize();
+#ifdef ENABLE_TOFU
+	mcctrl_tofu_restore_release_handlers();
+#endif
 
 	printk("mcctrl: unregistered.\n");
 }

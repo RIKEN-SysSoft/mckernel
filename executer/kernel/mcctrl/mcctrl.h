@@ -58,7 +58,8 @@
 #define SCD_MSG_SEND_SIGNAL             0x7
 #define SCD_MSG_SEND_SIGNAL_ACK         0x8
 #define SCD_MSG_CLEANUP_PROCESS         0x9
-#define SCD_MSG_GET_VDSO_INFO           0xa
+#define SCD_MSG_CLEANUP_PROCESS_RESP    0xa
+#define SCD_MSG_GET_VDSO_INFO           0xb
 
 //#define SCD_MSG_GET_CPU_MAPPING         0xc
 //#define SCD_MSG_REPLY_GET_CPU_MAPPING   0xd
@@ -104,6 +105,8 @@
 
 #define SCD_MSG_CPU_RW_REG              0x52
 #define SCD_MSG_CPU_RW_REG_RESP         0x53
+#define SCD_MSG_CLEANUP_FD              0x54
+#define SCD_MSG_CLEANUP_FD_RESP         0x55
 
 #define SCD_MSG_FUTEX_WAKE              0x60
 
@@ -556,4 +559,29 @@ struct uti_futex_resp {
 	int done;
 	wait_queue_head_t wq;
 };
+
+/*
+ * Hash table to keep track of files and related processes
+ * and file descriptors.
+ * NOTE: Used for Tofu driver release handlers.
+ */
+#define MCCTRL_FILE_2_PIDFD_HASH_SHIFT 4
+#define MCCTRL_FILE_2_PIDFD_HASH_SIZE (1 << MCCTRL_FILE_2_PIDFD_HASH_SHIFT)
+#define MCCTRL_FILE_2_PIDFD_HASH_MASK (MCCTRL_FILE_2_PIDFD_HASH_SIZE - 1)
+
+struct mcctrl_file_to_pidfd {
+	struct file *filp;
+	ihk_os_t os;
+	struct task_struct *group_leader;
+	int pid;
+	int fd;
+	struct list_head hash;
+};
+
+int mcctrl_file_to_pidfd_hash_insert(struct file *filp,
+	ihk_os_t os, int pid, struct task_struct *group_leader, int fd);
+struct mcctrl_file_to_pidfd *mcctrl_file_to_pidfd_hash_lookup(
+	struct file *filp, struct task_struct *group_leader);
+int mcctrl_file_to_pidfd_hash_remove(struct file *filp,
+	ihk_os_t os, struct task_struct *group_leader, int fd);
 #endif
