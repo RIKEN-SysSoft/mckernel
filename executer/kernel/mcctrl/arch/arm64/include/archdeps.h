@@ -38,4 +38,26 @@ static const unsigned long arch_rus_vm_flags = VM_RESERVED | VM_MIXEDMAP | VM_EX
 #else
 static const unsigned long arch_rus_vm_flags = VM_DONTDUMP | VM_MIXEDMAP | VM_EXEC;
 #endif
+
+#define _xchg(ptr, x) \
+({ \
+	__typeof__(*(ptr)) __ret; \
+	__ret = (__typeof__(*(ptr))) \
+		__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))); \
+	__ret; \
+})
+
+#define xchg4(ptr, x) _xchg(ptr, x)
+#define xchg8(ptr, x) _xchg(ptr, x)
+
+enum arm64_pf_error_code {
+	PF_PROT		=	1 << 0,
+	PF_WRITE	=	1 << 1,
+	PF_USER		=	1 << 2,
+	PF_RSVD		=	1 << 3,
+	PF_INSTR	=	1 << 4,
+
+	PF_PATCH	=	1 << 29,
+	PF_POPULATE	=	1 << 30,
+};
 #endif /* __HEADER_MCCTRL_ARM64_ARCHDEPS_H */

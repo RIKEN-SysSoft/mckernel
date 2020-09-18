@@ -1,13 +1,14 @@
 .SUFFIXES:	# Disable implicit rules
 
-SYSCALLL_INTERCEPT_DIR=$(HOME)/usr
-UTI_DIR=$(HOME)/project/uti/install
+SYSCALLL_INTERCEPT_DIR=$(HOME)/install/syscall_intercept
+UTI_DIR=$(HOME)/ihk+mckernel
 
 CC = gcc
 
 CPPFLAGS = -I$(UTI_DIR)/include
 CCFLAGS = -g -O0
-LDFLAGS = -L$(UTI_DIR)/lib -Wl,-rpath,$(UTI_DIR)/lib -luti -lpthread -lrt 
+LDFLAGS = -L$(UTI_DIR)/lib -Wl,-rpath,$(UTI_DIR)/lib -luti -lpthread -lrt
+LDFLAGS2 = -lpthread -lrt
 
 SRCS = $(shell ls CT*.c)
 EXES = $(SRCS:.c=)
@@ -27,8 +28,20 @@ file::
 CT30.o:: CT30.c
 	icc $(CCFLAGS) -qopenmp $(CPPFLAGS) -c $<
 
-CT30: CT30.o
+CT30: CT30.o util.o
 	icc -o $@ $^ $(LDFLAGS) -qopenmp
+
+CT31: CT31.o util.o
+	$(CC) -o $@ $^ $(LDFLAGS2) $(CPPFLAGS)
+
+CT32: CT32.o util.o
+	$(CC) -o $@ $^ $(LDFLAGS2) $(CPPFLAGS)
+
+CT33: CT33.o util.o
+	$(CC) -o $@ $^ $(LDFLAGS2) $(CPPFLAGS)
+
+CT34: CT34.o util.o
+	$(CC) -o $@ $^ $(LDFLAGS2) $(CPPFLAGS)
 
 %.o:: %.c
 	$(CC) $(CCFLAGS) $(CPPFLAGS) -c $<
