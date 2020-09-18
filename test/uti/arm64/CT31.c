@@ -31,7 +31,8 @@ void *util_fn(void *arg)
 {
 	int i;
 	int ret;
-    long start, end;
+	long start, end;
+	unsigned long mem;
 
 	print_cpu_last_executed_on("Utility thread");
 
@@ -44,7 +45,7 @@ void *util_fn(void *arg)
 	for (i = 0; i < nloop; i++) {
 		start = rdtsc_light();
 
-		fwq(blocktime);
+		fwq(blocktime, &mem);
 
 		end = rdtsc_light();
 		t_fwq += end - start;
@@ -69,12 +70,13 @@ int main(int argc, char **argv)
 {
 	int i;
 	int ret;
-    long start, end;
+	long start, end;
 	cpu_set_t cpuset;
 	pthread_attr_t attr;
 	pthread_barrierattr_t bar_attr;
 	struct sched_param param = { .sched_priority = 99 };
 	int opt;
+	unsigned long mem;
 
 	while ((opt = getopt_long(argc, argv, "+b:l", options, NULL)) != -1) {
 		switch (opt) {
@@ -101,7 +103,7 @@ int main(int argc, char **argv)
 	}
 	print_cpu_last_executed_on("Master thread");
 
-	fwq_init();
+	fwq_init(&mem);
 
 	pthread_mutex_init(&mutex, NULL);
 	pthread_cond_init(&cond, NULL);
@@ -136,8 +138,8 @@ int main(int argc, char **argv)
 	}
 
 	if ((ret = sched_setscheduler(0, SCHED_FIFO, &param))) {
-		fprintf(stderr, "Error: sched_setscheduler failed (%d)\n", ret);
-		goto fn_fail;
+		fprintf(stderr, "Warning: sched_setscheduler: %s\n",
+			strerror(errno));
 	}
 
 	if (!linux_run) {
@@ -162,7 +164,7 @@ int main(int argc, char **argv)
 	}
 
 	pthread_join(thr, NULL);
-	printf("[INFO] waker: %ld cycles, waiter: %ld cycles, (waiter - waker) / nloop: %ld cycles\n", t_fwq, t_cond_wait, (t_cond_wait - t_fwq) / nloop);
+	printf("[INFO] waker: %ld nsec, waiter: %ld nsec, (waiter - waker) / nloop: %ld nsec\n", t_fwq * 10, t_cond_wait * 10, (t_cond_wait - t_fwq) * 10 / nloop);
 
 	ret = 0;
  fn_fail:

@@ -1,0 +1,32 @@
+【Issue#1428 動作確認】
+□ テスト内容
+1. McKernelのuti用テストプログラムのうち、futex機能を用いるテストを実行し、
+  utiスレッドを用いたfutex機能が正常に動作することを確認
+  実行するのは、test/utiの中のCT12～20、および、CT31～34
+  テスト内容の詳細は、test/uti/README を参照
+
+2. 以下のLTPを用いて既存のfutex機能に影響が無いことを確認
+  - futex_wait01
+  - futex_wait02
+  - futex_wait03
+  - futex_wait04
+  - futex_wake_bitset01
+  - futex_wake_bitset02
+  - futex_wake01
+  - futex_wake02
+  - futex_wake03
+
+□ 実行手順
+test/uti/Makefile または test/uti/arm64/Makefile 中の
+UTI_DIR の内容を環境に合わせて変更する。
+
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
