@@ -83,26 +83,6 @@ double nspw; /* nsec per work */
 
 #define N_INIT 10000000
 
-void fwq_init(unsigned long *mem) {
-	struct timespec start, end;
-	unsigned long nsec;
-	int i;
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-	BULK_FSW(N_INIT, mem);
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-	nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-	nspw = nsec / (double)N_INIT;
-	printf("nsec=%ld, nspw=%f\n", nsec, nspw);
-}
-
-void fwq(long delay_nsec, unsigned long* mem) {
-	if (delay_nsec < 0) {
-		printf("%s: delay_nsec<0\n", __FUNCTION__);
-	}
-	//printf("delay_nsec=%ld,count=%f\n", delay_nsec, delay_nsec / nspw);
-	BULK_FSW(delay_nsec / nspw, mem);
-}
-
 void mydelay(long delay_nsec, long *mem) {
 	struct timespec start, end;
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
@@ -154,11 +134,11 @@ void *progress_fn(void *_arg) {
 			break;
 		}
 
-		fwq(POLL_DELAY, &arg->mem);
+		fwq(POLL_DELAY);
 		
 		/* Event found */
 		if (nevents > 0) {
-			fwq(COMPL_DELAY, &arg->mem); /* Simulate MPI protocol response */
+			fwq(COMPL_DELAY); /* Simulate MPI protocol response */
 			nevents = 0;
 		}
 
@@ -190,7 +170,7 @@ int main(int argc, char **argv) {
 		fprintf(stdout, "CT09002 main running on McKernel INFO\n");
 	}
 
-	fwq_init(&mem);
+	fwq_init();
 	pthread_mutex_init(&ep_lock, NULL);
 
 	thr_args.bar_count = 0;
@@ -243,16 +223,16 @@ int main(int argc, char **argv) {
 
 			/* Acquire endpoint and send request-to-send packet */
 			pthread_mutex_lock(&ep_lock);
-			fwq(RTS_DELAY, &mem); 
+			fwq(RTS_DELAY);
 			pthread_mutex_unlock(&ep_lock);
 
 			/* Start calculation */
 
 			/* Generate event on behaf of responder */
-			fwq(NIC_DELAY, &mem); 
+			fwq(NIC_DELAY);
 			nevents++;
 
-			fwq(CALC_DELAY - NIC_DELAY, &mem); /* Overlap remainder */
+			fwq(CALC_DELAY - NIC_DELAY); /* Overlap remainder */
 
 			/* Wait until async thread consumes the event */
 			while (nevents > 0) {
@@ -260,7 +240,7 @@ int main(int argc, char **argv) {
 			}
 		} else {
 			/* No overlap case */
-			fwq(RTS_DELAY + CALC_DELAY + POLL_DELAY + COMPL_DELAY, &mem);
+			fwq(RTS_DELAY + CALC_DELAY + POLL_DELAY + COMPL_DELAY);
 		}
 	}
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);

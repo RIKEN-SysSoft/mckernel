@@ -5,6 +5,7 @@
 #include <syscall.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/types.h> /* for pid_t in uprotocol.h */
 #include "../include/uprotocol.h"
 #include "../include/uti.h"
 #include "./archdep_uti.h"
@@ -76,7 +77,7 @@ hook(long syscall_number,
 		uti_desc.syscall_stack[stack_top].args[3] = arg3;
 		uti_desc.syscall_stack[stack_top].args[4] = arg4;
 		uti_desc.syscall_stack[stack_top].args[5] = arg5;
-		uti_desc.syscall_stack[stack_top].uti_clv = uti_desc.uti_clv;
+		uti_desc.syscall_stack[stack_top].uti_info = uti_desc.uti_info;
 		uti_desc.syscall_stack[stack_top].ret = -EINVAL;
 
 		ret = uti_syscall3(__NR_ioctl, uti_desc.fd,

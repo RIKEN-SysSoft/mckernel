@@ -152,25 +152,6 @@ static int print_cpu_last_executed_on() {
     goto fn_exit;
 }
 
-void fwq_init() {
-	struct timespec start, end;
-	unsigned long nsec;
-	int i;
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-	bulk_fsw(N_INIT);
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-	nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-	nspw = nsec / (double)N_INIT;
-	printf("nsec=%ld, nspw=%f\n", nsec, nspw);
-}
-
-void fwq(long delay_nsec) {
-	if (delay_nsec < 0) {
-		printf("%s: delay_nsec<0\n", __FUNCTION__);
-	}
-	bulk_fsw(delay_nsec / nspw);
-}
-
 void init_bar(struct thr_arg* thr_arg) {
 	pthread_mutex_lock(&thr_arg->bar_lock);
 	thr_arg->bar_count= 0;

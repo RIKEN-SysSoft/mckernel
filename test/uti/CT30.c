@@ -53,23 +53,6 @@ double nspw; /* nsec per work */
 
 #define N_INIT 10000000
 
-void fwq_init(unsigned long *mem) {
-	struct timespec start, end;
-	unsigned long nsec;
-	int i;
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-	BULK_FSW(N_INIT, mem);
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-	nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-	nspw = nsec / (double)N_INIT;
-	printf("[INFO] nsec=%ld, nspw=%f\n", nsec, nspw);
-}
-
-void fwq(unsigned long delay_nsec, unsigned long* mem) {
-	//printf("delay_nsec=%ld,count=%f\n", delay_nsec, delay_nsec / nspw);
-	BULK_FSW(delay_nsec / nspw, mem);
-}
-
 void fwq_omp(unsigned long delay_nsec, unsigned long* mem) {
 #pragma omp parallel
 	{
@@ -110,7 +93,7 @@ void *util_fn(void *_arg) {
 
 		if (nevents > 0) {
 			nevents--;
-			fwq(random() % 100000000, &mem); /* 0 - 0.1 sec */
+			fwq(random() % 100000000); /* 0 - 0.1 sec */
 		}
 		pthread_mutex_unlock(&ep_lock);
 	}
@@ -127,7 +110,7 @@ int main(int argc, char **argv) {
 	ret = syscall(732);
 	OKNGNOJUMP(ret != -1, "Master is running on McKernel\n");
 
-	fwq_init(&mem);
+	fwq_init();
 	pthread_mutex_init(&ep_lock, NULL);
 
 	pthread_barrier_init(&bar, NULL, NTHR + 1);

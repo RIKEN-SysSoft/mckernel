@@ -1,0 +1,131 @@
+[m-takagi@wallaby14 1428]$ make test
+./C1428.sh
+mcstop+release.sh ... done
+mcreboot.sh -k 0 -f LOG_LOCAL6  -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O ... done
+~/project/os/mckernel/test/uti ~/project/os/mckernel/test/issues/1428
+make[1]: Entering directory `/home/m-takagi/project/os/mckernel/test/uti'
+dd bs=4096 count=1000 if=/dev/zero of=./file
+1000+0 records in
+1000+0 records out
+4096000 bytes (4.1 MB) copied, 0.0398667 s, 103 MB/s
+make[1]: Leaving directory `/home/m-takagi/project/os/mckernel/test/uti'
+~/project/os/mckernel/test/issues/1428
+*** Stop mckernel to exec CT31-34 on Linux
+mcstop+release.sh ... done
+*** Boot mckernel
+mcreboot.sh -k 0 -f LOG_LOCAL6  -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O ... done
+
+*** C1428T01 start *******************************
+[INFO] nloop=1000,blocktime=10000000
+[INFO] Master thread (tid: 1518) is running on 00,00
+[ OK ] Master thread is running on McKernel
+[ OK ] util_indicate_clone
+[INFO] Utility thread (tid: 1551) is running on 00,00
+[ OK ] Utility thread is running on Linux
+[INFO] waker: 26037705112 cycles, waiter: 26042430924 cycles, (waiter - waker) / nloop: 4725 cycles
+** Result on Linux **
+[INFO] waker: 19797701232 cycles, waiter: 19799301694 cycles, (waiter - waker) / nloop: 1600 cycles
+*** C1428T01 PASSED ******************************
+
+*** C1428T02 start *******************************
+[INFO] nloop=1000,blocktime=10000000
+[INFO] Master thread (tid: 1568) is running on 00,00
+[ OK ] Master thread is running on McKernel
+[ OK ] util_indicate_clone
+[INFO] Utility thread (tid: 1600) is running on 00,00
+[ OK ] Utility thread is running on Linux
+[INFO] waker: 26064839352 cycles, waiter: 26070575240 cycles, (waiter - waker) / nloop: 5735 cycles
+** Result on Linux **
+[INFO] waker: 24762320086 cycles, waiter: 24764268665 cycles, (waiter - waker) / nloop: 1948 cycles
+*** C1428T02 PASSED ******************************
+
+*** C1428T03 start *******************************
+[INFO] nloop=1000,blocktime=10000000
+[INFO] Master thread (tid: 1609) is running on 00,00
+[ OK ] Master thread is running on McKernel
+[ OK ] util_indicate_clone
+[INFO] Utility thread (tid: 1641) is running on 00,00
+[ OK ] Utility thread is running on Linux
+[INFO] waiter: 26042752992 cycles, waker: 26037367808 cycles, (waiter - waker) / nloop: 5385 cycles
+** Result on Linux **
+[INFO] waiter: 25124067612 cycles, waker: 25122513727 cycles, (waiter - waker) / nloop: 1553 cycles
+*** C1428T03 PASSED ******************************
+
+*** C1428T04 start *******************************
+[INFO] nloop=1000,blocktime=10000000
+[INFO] Master thread (tid: 1651) is running on 01,01
+[ OK ] Master thread is running on McKernel
+[ OK ] util_indicate_clone
+[INFO] Utility thread (tid: 1684) is running on 00,00
+[ OK ] Utility thread is running on Linux
+[INFO] waiter: 26004096360 cycles, waker: 25998796808 cycles, (waiter - waker) / nloop: 5299 cycles
+** Result on Linux **
+[INFO] waiter: 26289569877 cycles, waker: 26287829592 cycles, (waiter - waker) / nloop: 1740 cycles
+*** C1428T04 PASSED ******************************
+
+*** C1428T05 start *******************************
+futex_wait01    1  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+futex_wait01    2  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+futex_wait01    3  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+futex_wait01    4  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+*** C1428T05 PASSED (4)
+
+*** C1428T06 start *******************************
+futex_wait02    1  TPASS  :  futex_wait() woken up
+*** C1428T06 PASSED (1)
+
+*** C1428T07 start *******************************
+futex_wait03    1  TPASS  :  futex_wait() woken up
+*** C1428T07 PASSED (1)
+
+*** C1428T08 start *******************************
+futex_wait04    1  TPASS  :  futex_wait() returned -1: errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+*** C1428T08 PASSED (1)
+
+*** C1428T09 start *******************************
+futex_wait_bitset01    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_MONOTONIC
+futex_wait_bitset01    1  TPASS  :  futex_wait_bitset() waited 146706us, expected 100010us
+*** C1428T09 PASSED (1)
+
+*** C1428T10 start *******************************
+futex_wait_bitset02    0  TINFO  :  testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset02    1  TPASS  :  futex_wait_bitset() waited 146709us, expected 100010us
+*** C1428T10 PASSED (1)
+
+*** C1428T11 start *******************************
+futex_wake01    1  TPASS  :  futex_wake() returned 0
+futex_wake01    2  TPASS  :  futex_wake() returned 0
+futex_wake01    3  TPASS  :  futex_wake() returned 0
+futex_wake01    4  TPASS  :  futex_wake() returned 0
+futex_wake01    5  TPASS  :  futex_wake() returned 0
+futex_wake01    6  TPASS  :  futex_wake() returned 0
+*** C1428T11 PASSED (6)
+
+*** C1428T12 start *******************************
+futex_wake02    1  TPASS  :  futex_wake() woken up 1 threads
+futex_wake02    2  TPASS  :  futex_wake() woken up 2 threads
+futex_wake02    3  TPASS  :  futex_wake() woken up 3 threads
+futex_wake02    4  TPASS  :  futex_wake() woken up 4 threads
+futex_wake02    5  TPASS  :  futex_wake() woken up 5 threads
+futex_wake02    6  TPASS  :  futex_wake() woken up 6 threads
+futex_wake02    7  TPASS  :  futex_wake() woken up 7 threads
+futex_wake02    8  TPASS  :  futex_wake() woken up 8 threads
+futex_wake02    9  TPASS  :  futex_wake() woken up 9 threads
+futex_wake02   10  TPASS  :  futex_wake() woken up 10 threads
+futex_wake02   11  TPASS  :  futex_wake() woken up 0 threads
+futex_wake02    0  TINFO  :  Child process returned TPASS
+*** C1428T12 PASSED (12)
+
+*** C1428T13 start *******************************
+futex_wake03    1  TPASS  :  futex_wake() woken up 1 childs
+futex_wake03    2  TPASS  :  futex_wake() woken up 2 childs
+futex_wake03    3  TPASS  :  futex_wake() woken up 3 childs
+futex_wake03    4  TPASS  :  futex_wake() woken up 4 childs
+futex_wake03    5  TPASS  :  futex_wake() woken up 5 childs
+futex_wake03    6  TPASS  :  futex_wake() woken up 6 childs
+futex_wake03    7  TPASS  :  futex_wake() woken up 7 childs
+futex_wake03    8  TPASS  :  futex_wake() woken up 8 childs
+futex_wake03    9  TPASS  :  futex_wake() woken up 9 childs
+futex_wake03   10  TPASS  :  futex_wake() woken up 10 childs
+futex_wake03   11  TPASS  :  futex_wake() woken up 0 children
+*** C1428T13 PASSED (11)

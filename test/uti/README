@@ -338,14 +338,46 @@ CT29 no reverse offload
 CT30 CT21にopenmpスレッドを追加したテスト
 
 CT31 pthread_cond_waitオーバーヘッド測定
-* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+* Linuxがwaker、McKernelがwaiter
 
-CT32 futex waitオーバーヘッド測定
-* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+CT32 pthread_cond_waitオーバーヘッド測定
+* Linuxがwaiter、McKernelがwaker
 
-CT33 futex wakeオーバーヘッド測定
-* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+CT33 Main threadでfutex_wait, UTI threadでfutex_wakeをした場合のオーバーヘッド測定
+* Linuxがwaker、McKernelがwaiter
 
-CT34 繰り返しpthread_create
+CT34 UTI threadでfutex_wait, Main threadでfutex_wakeをした場合のオーバーヘッド測定
+* Linuxがwaiter、McKernelがwaker
 
-CT35 LD_PRELOADでsyscall_interceptを用いたsoをつけた場合のテスト
+CT35 繰り返しpthread_create
+
+CT36 LD_PRELOADでsyscall_interceptを用いたsoをつけた場合のテスト
+
+
+==========
+How to run
+==========
+
+Prepare $HOME/.mck_test_config. Example:
+
+# Config file for McKernel tests
+MCK_DIR=/home/m-takagi/project/os/install
+BIN=/home/m-takagi/project/os/install/bin
+SBIN=/home/m-takagi/project/os/install/sbin
+: ${OSTEST:=/home/m-takagi/project/src/ostest}
+: ${LTP:=/home/m-takagi/project/src/ltp/install}
+BOOTPARAM="-k 0 -f LOG_LOCAL6  -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O"
+: ${MCKERNEL_VERSION:=1.5.0}
+
+Prepare $HOME/.mck_test_config.mk. Example:
+
+# Config file for McKernel tests
+BIN ?= /home/m-takagi/project/os/install/bin
+SBIN ?= /home/m-takagi/project/os/install/sbin
+OSTEST ?=
+LTP ?=
+BOOTPARAM ?= -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24
+MCK_DIR ?= /home/m-takagi/project/os/install
+ARCH ?= x86_64
+TARGET ?= smp-x86
+UTI_DIR ?= /home/m-takagi/project/uti/install_mckernel

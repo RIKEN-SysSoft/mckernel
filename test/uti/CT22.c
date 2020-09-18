@@ -74,23 +74,6 @@ double nspw; /* nsec per work */
 
 #define N_INIT 10000000
 
-void fwq_init(unsigned long *mem) {
-	struct timespec start, end;
-	unsigned long nsec;
-	int i;
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-	BULK_FSW(N_INIT, mem);
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-	nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-	nspw = nsec / (double)N_INIT;
-	printf("nsec=%ld, nspw=%f\n", nsec, nspw);
-}
-
-void fwq(unsigned long delay_nsec, unsigned long* mem) {
-	//printf("delay_nsec=%ld,count=%f\n", delay_nsec, delay_nsec / nspw);
-	BULK_FSW(delay_nsec / nspw, mem);
-}
-
 void mydelay(long delay_nsec, long *mem) {
 	struct timespec start, end;
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
@@ -126,7 +109,7 @@ void *progress_fn(void *_arg) {
 	for (i = 0; i < 100; i++) {
 		pthread_mutex_lock(&ep_lock);
 		nevents++;
-		fwq(random() % 100000000, &mem); /* 0 - 0.1 sec */
+		fwq(random() % 100000000); /* 0 - 0.1 sec */
 		pthread_mutex_unlock(&ep_lock);
 		while (nevents > 0) {
 			FIXED_SIZE_WORK(&mem);
@@ -150,7 +133,7 @@ int main(int argc, char **argv) {
 		fprintf(stdout, "CT09002 main running on McKernel INFO\n");
 	}
 
-	fwq_init(&mem);
+	fwq_init();
 	pthread_mutex_init(&ep_lock, NULL);
 
 	for(i = 0; i < NTHR; i++) {
@@ -193,7 +176,7 @@ int main(int argc, char **argv) {
 		}
 
 		pthread_mutex_unlock(&ep_lock);
-		fwq(random() % 100000000, &mem); /* 0 - 0.1 sec */
+		fwq(random() % 100000000); /* 0 - 0.1 sec */
 		pthread_mutex_lock(&ep_lock);
 	}
 	pthread_mutex_unlock(&ep_lock);
