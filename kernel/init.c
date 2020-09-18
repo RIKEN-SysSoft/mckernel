@@ -252,7 +252,6 @@ static void nmi_init()
 
 static void uti_init()
 {
-	ihk_set_mckernel_do_futex((unsigned long)do_futex);
 }
 
 static void rest_init(void)

@@ -7,7 +7,8 @@
  * @ref.impl 
  * 	linux-linaro/arch/arm64/include/asm/futex.h:__futex_atomic_op
  */
-#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
+#define ___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
+do {								\
 	asm volatile(							\
 "1:	ldxr	%w1, %2\n"						\
 	insn "\n"							\
@@ -26,7 +27,24 @@
 "	.popsection\n"							\
 	: "=&r" (ret), "=&r" (oldval), "+Q" (*uaddr), "=&r" (tmp)	\
 	: "r" (oparg), "Ir" (-EFAULT)					\
-	: "memory")
+	: "memory");						\
+} while (0)
+
+#ifndef IHK_OS_MANYCORE
+#include <linux/uaccess.h>
+
+#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
+do {								\
+	uaccess_enable();					\
+	___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
+	uaccess_disable();					\
+} while (0)
+
+#else
+#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
+	___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
+
+#endif
 
 /*
  * @ref.impl 
@@ -133,14 +151,6 @@ futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
 	: "memory");
 
 	return ret;
-}
-
-static inline int get_futex_value_locked(uint32_t *dest, uint32_t *from)
-{
-
-	*dest = *(volatile uint32_t *)from;
-
-	return 0;
 }
 
 #endif /* !__HEADER_ARM64_COMMON_ARCH_FUTEX_H */
