@@ -74,13 +74,6 @@
 #define DDEBUG_DEFAULT DDEBUG_PRINT
 #endif
 
-//#define DEBUG_UTI
-#ifdef DEBUG_UTI
-#define uti_dkprintf(...) do { ((uti_clv && linux_printk) ? (*linux_printk) : kprintf)(__VA_ARGS__); } while (0)
-#else
-#define uti_dkprintf(...) do { } while (0)
-#endif
-
 //static ihk_atomic_t pid_cnt = IHK_ATOMIC_INIT(1024);
 
 /* generate system call handler's prototypes */
@@ -6873,7 +6866,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	}
 	op = (op & FUTEX_CMD_MASK);
 	
-	uti_dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n", 
+	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d\n",
 			flags,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -6885,7 +6878,8 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared);
 
 	if ((op == FUTEX_WAIT || op == FUTEX_WAIT_BITSET) && utime) {
-		uti_dkprintf("%s: utime=%ld.%09ld\n", __FUNCTION__, utime->tv_sec, utime->tv_nsec);
+		dkprintf("%s: utime=%ld.%09ld\n",
+				__func__, utime->tv_sec, utime->tv_nsec);
 	}
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		unsigned long nsec_timeout;
@@ -6943,7 +6937,8 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 				if (ret) {
 					return ret;
 				}
-				uti_dkprintf("%s: ats=%ld.%09ld\n", __FUNCTION__, ats.tv_sec, ats.tv_nsec);
+				dkprintf("%s: ats=%ld.%09ld\n",
+						__func__, ats.tv_sec, ats.tv_nsec);
 				/* Use nsec for UTI case */
 				timeout = (utime->tv_sec * NS_PER_SEC + utime->tv_nsec) -
 					(ats.tv_sec * NS_PER_SEC + ats.tv_nsec);
@@ -6959,9 +6954,9 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	if (op == FUTEX_CMP_REQUEUE || op == FUTEX_WAKE_OP)
 		val2 = (uint32_t) (unsigned long) arg3;
 
-	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared, uti_clv);
+	ret = futex(uaddr, op, val, timeout, uaddr2, val2, val3, fshared);
 
-	uti_dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d, ret: %d\n", 
+	dkprintf("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%lx, uaddr2=%lx, val3=%x, []=%x, shared: %d, ret: %d\n",
 			op,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -7009,7 +7004,7 @@ do_exit(int code)
 		setint_user((int*)thread->clear_child_tid, 0);
 		barrier();
 		futex((uint32_t *)thread->clear_child_tid,
-		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1, NULL);
+		      FUTEX_WAKE, 1, 0, NULL, 0, 0, 1);
 		thread->clear_child_tid = NULL;
 	}
 
@@ -10524,7 +10519,7 @@ int util_thread(struct uti_attr *arg)
 {
 	struct uti_ctx *rctx = NULL;
 	unsigned long rp_rctx;
-	struct cpu_local_var *uti_clv = NULL;
+	struct uti_info *uti_info = NULL;
 	struct syscall_request request IHK_DMA_ALIGN;
 	long rc;
 	struct thread *thread = cpu_local_var(current);
@@ -10543,13 +10538,29 @@ int util_thread(struct uti_attr *arg)
 	rp_rctx = virt_to_phys((void *)rctx);
 	save_uctx((void *)rctx->ctx, NULL);
 
-	/* Create a copy of clv and replace clv with it when the Linux thread calls in a McKernel function */
-	uti_clv = kmalloc(sizeof(struct cpu_local_var), IHK_MC_AP_NOWAIT);
-	if (!uti_clv) {
+	/* Create a information for Linux thread */
+	uti_info = kmalloc(sizeof(struct uti_info), IHK_MC_AP_NOWAIT);
+	if (!uti_info) {
 		rc = -ENOMEM;
 		goto out;
 	}
-	memcpy(uti_clv, get_this_cpu_local_var(), sizeof(struct cpu_local_var));
+	/* clv info */
+	uti_info->thread_va = (unsigned long)cpu_local_var(current);
+	uti_info->uti_futex_resp_pa = virt_to_phys((void *)cpu_local_var(uti_futex_resp));
+	uti_info->ikc2linux_pa = virt_to_phys((void *)cpu_local_var(ikc2linux));
+
+	/* thread info */
+	uti_info->tid = thread->tid;
+	uti_info->cpu = ihk_mc_get_processor_id();
+	uti_info->status_pa = virt_to_phys((void *)&thread->status);
+	uti_info->spin_sleep_lock_pa = virt_to_phys((void *)&thread->spin_sleep_lock);
+	uti_info->spin_sleep_pa = virt_to_phys((void *)&thread->spin_sleep);
+	uti_info->vm_pa = virt_to_phys((void *)thread->vm);
+	uti_info->futex_q_pa = virt_to_phys((void *)&thread->futex_q);
+
+	/* global info */
+	uti_info->mc_idle_halt = idle_halt;
+	uti_info->futex_queue_pa = virt_to_phys((void *)get_futex_queues());
 
 	request.number = __NR_sched_setaffinity;
 	request.args[0] = 0;
@@ -10560,7 +10571,7 @@ int util_thread(struct uti_attr *arg)
 		kattr.parent_cpuid = thread->parent_cpuid;
 		request.args[2] = virt_to_phys(&kattr);
 	}
-	request.args[3] = (unsigned long)uti_clv;
+	request.args[3] = (unsigned long)uti_info;
 	request.args[4] = uti_desc;
 	thread->uti_state = UTI_STATE_RUNNING_IN_LINUX;
 	rc = do_syscall(&request, ihk_mc_get_processor_id());
@@ -10577,8 +10588,8 @@ int util_thread(struct uti_attr *arg)
 	kfree(rctx);
 	rctx = NULL;
 
-	kfree(uti_clv);
-	uti_clv = NULL;
+	kfree(uti_info);
+	uti_info = NULL;
 
 	if (rc >= 0) {
 		if (rc & 0x100000000) { /* exit_group */
@@ -10601,7 +10612,7 @@ int util_thread(struct uti_attr *arg)
 
  out:
 	kfree(rctx);
-	kfree(uti_clv);
+	kfree(uti_info);
 
 	return rc;
 }
