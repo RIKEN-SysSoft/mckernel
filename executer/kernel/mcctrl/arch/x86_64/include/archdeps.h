@@ -23,4 +23,26 @@ static const unsigned long arch_rus_vm_flags = VM_RESERVED | VM_MIXEDMAP;
 #else
 static const unsigned long arch_rus_vm_flags = VM_DONTDUMP | VM_MIXEDMAP;
 #endif
+
+#define xchg4(ptr, x)						\
+({									\
+	int __x = (x);					\
+	asm volatile("xchgl %k0,%1"				\
+			 : "=r" (__x)				\
+			 : "m" (*ptr), "0" (__x)		\
+			 : "memory");				\
+	__x;								\
+})
+
+enum x86_pf_error_code {
+	PF_PROT     =       1 << 0,
+	PF_WRITE    =       1 << 1,
+	PF_USER     =       1 << 2,
+	PF_RSVD     =       1 << 3,
+	PF_INSTR    =       1 << 4,
+
+	PF_PATCH    =       1 << 29,
+	PF_POPULATE =       1 << 30,
+};
+
 #endif /* __HEADER_MCCTRL_X86_64_ARCHDEPS_H */

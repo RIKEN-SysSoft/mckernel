@@ -33,6 +33,7 @@ void *util_fn(void *arg)
 	int ret;
     long start, end;
 	int testid = 32101;
+	unsigned long mem;
 
 	print_cpu_last_executed_on("Utility thread");
 
@@ -40,22 +41,17 @@ void *util_fn(void *arg)
 	OKNGNOJUMP(ret == -1, "Utility thread is running on Linux\n");
 
 	pthread_barrier_wait(&bar);
-
+	start = rdtsc_light();
 	for (i = 0; i < nloop; i++) {
-		start = rdtsc_light();
-
-		fwq(blocktime);
-
-		end = rdtsc_light();
-		t_fwq += end - start;
-
-		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAKE, 1, NULL, NULL, 0)) == -1) {
-			printf("Error: futex wake: %s\n", strerror(errno));
+		
+		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAIT, 0, NULL, NULL, 0))) {
+			printf("Error: futex wait failed (%s)\n", strerror(errno));
 		}
 
-		//pthread_barrier_wait(&bar);
-
+		//pthread_barrier_wait(&bar); /* 2nd futex */
 	}
+	end = rdtsc_light();
+	t_futex_wait += end - start;
 
 	ret = 0;
  fn_fail:
@@ -77,6 +73,7 @@ int main(int argc, char **argv)
 	pthread_barrierattr_t bar_attr;
 	struct sched_param param = { .sched_priority = 99 };
 	int opt;
+	unsigned long mem;
 
 	while ((opt = getopt_long(argc, argv, "+b:", options, NULL)) != -1) {
 		switch (opt) {
@@ -93,14 +90,14 @@ int main(int argc, char **argv)
 
 	
  	CPU_ZERO(&cpuset);
-	CPU_SET(WAITER_CPU, &cpuset);
+	CPU_SET(WAKER_CPU, &cpuset);
 	if ((ret = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset))) {
  		printf("Error: sched_setaffinity: %s\n", strerror(errno));
 		goto fn_fail;
 	}
 	print_cpu_last_executed_on("Master thread");
 
-	fwq_init();
+	fwq_init(&mem);
 
 	pthread_barrierattr_init(&bar_attr);
 	pthread_barrier_init(&bar, &bar_attr, 2);
@@ -111,7 +108,7 @@ int main(int argc, char **argv)
 	}
 
  	CPU_ZERO(&cpuset);
-	CPU_SET(WAKER_CPU, &cpuset);
+	CPU_SET(WAITER_CPU, &cpuset);
 
 	if ((ret = pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset))) {
  		printf("Error: pthread_attr_setaffinity_np: %s\n", strerror(errno));
@@ -137,21 +134,25 @@ int main(int argc, char **argv)
 
 	syscall(701, 1 | 2);
 	pthread_barrier_wait(&bar);
-	start = rdtsc_light();
 	for (i = 0; i < nloop; i++) {
-		
-		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAIT, 0, NULL, NULL, 0))) {
-			printf("Error: futex wait failed (%s)\n", strerror(errno));
+		start = rdtsc_light();
+
+		fwq(blocktime, &mem);
+
+		end = rdtsc_light();
+		t_fwq += end - start;
+
+		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAKE, 1, NULL, NULL, 0)) == -1) {
+			printf("Error: futex wake: %s\n", strerror(errno));
 		}
 
-		//pthread_barrier_wait(&bar); /* 2nd futex */
+		//pthread_barrier_wait(&bar);
+
 	}
-	end = rdtsc_light();
-	t_futex_wait += end - start;
 	syscall(701, 4 | 8);
 
 	pthread_join(thr, NULL);
-	printf("[INFO] waiter: %ld cycles, waker: %ld cycles, (waiter - waker) / nloop: %ld cycles\n", t_futex_wait, t_fwq, (t_futex_wait - t_fwq) / nloop);
+	printf("[INFO] waiter: %ld nsec, waker: %ld nsec, (waiter - waker) / nloop: %ld nsec\n", t_futex_wait * 10, t_fwq * 10, (t_futex_wait - t_fwq) * 10 / nloop);
 
 	ret = 0;
  fn_fail:

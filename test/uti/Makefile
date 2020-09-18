@@ -1,7 +1,7 @@
 .SUFFIXES:	# Disable implicit rules
 
-SYSCALLL_INTERCEPT_DIR=$(HOME)/usr
-UTI_DIR=$(HOME)/project/uti/install
+SYSCALLL_INTERCEPT_DIR=$(HOME)/install/syscall_intercept
+UTI_DIR=$(HOME)/ihk+mckernel
 
 CC = gcc
 
@@ -27,7 +27,7 @@ file::
 CT30.o:: CT30.c
 	icc $(CCFLAGS) -qopenmp $(CPPFLAGS) -c $<
 
-CT30: CT30.o
+CT30: CT30.o util.o
 	icc -o $@ $^ $(LDFLAGS) -qopenmp
 
 %.o:: %.c
