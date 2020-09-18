@@ -49,6 +49,8 @@
 #include <uapi/linux/sched/types.h>
 #endif
 #include <archdeps.h>
+#include <uti.h>
+#include <futex.h>
 
 //#define DEBUG
 
@@ -2792,57 +2794,28 @@ static long mcexec_release_user_space(struct release_user_space_desc *__user arg
 #endif
 }
 
- static long (*mckernel_do_futex)(int n, unsigned long arg0, unsigned long arg1,
-			  unsigned long arg2, unsigned long arg3,
-			  unsigned long arg4, unsigned long arg5,
-				   unsigned long _uti_clv,
-				   void *uti_futex_resp,
-				   void *_linux_wait_event,
-							  void *_linux_printk,
-							  void *_linux_clock_gettime);
+/* Convert phys_addr to virt_addr on Linux */
+static void
+uti_info_p2v(struct uti_info *info)
+{
+	info->uti_futex_resp =
+		(void *)phys_to_virt(info->uti_futex_resp_pa);
+	info->ikc2linux =
+		(void *)phys_to_virt(info->ikc2linux_pa);
 
- long uti_wait_event(void *_resp, unsigned long nsec_timeout) {
-	 struct uti_futex_resp *resp = _resp;
-	 if (nsec_timeout) {
-		 return wait_event_interruptible_timeout(resp->wq, resp->done, nsecs_to_jiffies(nsec_timeout));
-	 } else {
-		 return wait_event_interruptible(resp->wq, resp->done);
-	 }
- }
+	info->status =
+		(void *)phys_to_virt(info->status_pa);
+	info->spin_sleep_lock =
+		(void *)phys_to_virt(info->spin_sleep_lock_pa);
+	info->spin_sleep =
+		(void *)phys_to_virt(info->spin_sleep_pa);
+	info->vm =
+		(void *)phys_to_virt(info->vm_pa);
+	info->futex_q =
+		(void *)phys_to_virt(info->futex_q_pa);
 
- int uti_printk(const char *fmt, ...) {
-	 int sum = 0, nwritten;
-	 va_list args;
-	 va_start(args, fmt);
-	 nwritten = vprintk(fmt, args);
-	 sum += nwritten;
-	 va_end(args);
-	 return sum;
- }
-
-int uti_clock_gettime(clockid_t clk_id, struct timespec *tp) {
-	int ret = 0;
-	struct timespec64 ts64;
-	dprintk("%s: clk_id=%x,REALTIME=%x,MONOTONIC=%x\n", __FUNCTION__, clk_id, CLOCK_REALTIME, CLOCK_MONOTONIC);
-	switch(clk_id) {
-	case CLOCK_REALTIME:
-		getnstimeofday64(&ts64);
-		tp->tv_sec = ts64.tv_sec;
-		tp->tv_nsec = ts64.tv_nsec;
-		dprintk("%s: CLOCK_REALTIME,%ld.%09ld\n", __FUNCTION__, tp->tv_sec, tp->tv_nsec);
-		break;
-	case CLOCK_MONOTONIC: {
-		/* Do not use getrawmonotonic() because it returns different value than clock_gettime() */
-		ktime_get_ts64(&ts64);
-		tp->tv_sec = ts64.tv_sec;
-		tp->tv_nsec = ts64.tv_nsec;
-		dprintk("%s: CLOCK_MONOTONIC,%ld.%09ld\n", __FUNCTION__, tp->tv_sec, tp->tv_nsec);
-		break; }
-	default:
-		ret = -EINVAL;
-		break;
-	}
-	return ret;
+	info->futex_queue =
+		(void *)phys_to_virt(info->futex_queue_pa);
 }
 
 long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
@@ -2851,36 +2824,38 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 		int number;
 		unsigned long args[6];
 		unsigned long ret;
-		unsigned long uti_clv; /* copy of a clv in McKernel */
+		unsigned long uti_info; /* reference to data in McKernel */
 	};
 	struct syscall_struct param;
 	struct syscall_struct __user *uparam =
 	                              (struct syscall_struct __user *)arg;
 	long rc;
 
-
 	if (copy_from_user(&param, uparam, sizeof param)) {
 		return -EFAULT;
 	}
+
 
 	if (param.number == __NR_futex) {
 		struct uti_futex_resp resp = {
 			.done = 0
 		};
-		init_waitqueue_head(&resp.wq);
-		
- 		if (!mckernel_do_futex) {
-			if (ihk_os_get_special_address(os, IHK_SPADDR_MCKERNEL_DO_FUTEX,
-										   (unsigned long *)&mckernel_do_futex,
-										   NULL)) {
-				kprintf("%s: ihk_os_get_special_address failed\n", __FUNCTION__);
-				return -EINVAL;
-			}
-			dprintk("%s: mckernel_do_futex=%p\n", __FUNCTION__, mckernel_do_futex);
-		}
+		struct uti_info *_uti_info = NULL;
 
-		rc = (*mckernel_do_futex)(param.number, param.args[0], param.args[1], param.args[2],
-							  param.args[3], param.args[4], param.args[5], param.uti_clv, (void *)&resp, (void *)uti_wait_event, (void *)uti_printk, (void *)uti_clock_gettime);
+		init_waitqueue_head(&resp.wq);
+		_uti_info = (struct uti_info *)param.uti_info;
+
+		/* Convert phys_addr to virt_addr on Linux */
+		uti_info_p2v(_uti_info);
+
+		_uti_info->os = (void *)os;
+		
+		rc = do_futex(param.number, param.args[0],
+				param.args[1], param.args[2],
+				param.args[3], param.args[4], param.args[5],
+				(struct uti_info *)param.uti_info,
+				(void *)&resp);
+
 		param.ret = rc;
 	} else {
 		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);

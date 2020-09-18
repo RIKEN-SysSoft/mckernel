@@ -34,23 +34,6 @@ double nspw; /* nsec per work */
 
 #define N_INIT 10000000
 
-void fwq_init(unsigned long *mem) {
-	struct timespec start, end;
-	unsigned long nsec;
-	int i;
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-	BULK_FSW(N_INIT, mem);
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-	nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-	nspw = nsec / (double)N_INIT;
-	printf("nsec=%ld, nspw=%f\n", nsec, nspw);
-}
-
-void fwq(unsigned long delay_nsec, unsigned long* mem) {
-	//printf("delay_nsec=%ld,count=%f\n", delay_nsec, delay_nsec / nspw);
-	BULK_FSW(delay_nsec / nspw, mem);
-}
-
 void *
 util_thread(void *arg)
 {
@@ -72,7 +55,7 @@ util_thread(void *arg)
 		fprintf(stderr, "CT14101 lock first NG\n");
 	}
 	owned = 1;
-	fwq(2000 * 1000 * 1000UL, &mem); /* Need 2 sec to make parent sleep */
+	fwq(2000 * 1000 * 1000UL); /* Need 2 sec to make parent sleep */
 	pthread_mutex_unlock(&mutex);
 
 	return NULL;
@@ -83,7 +66,7 @@ int main(int argc, char **argv) {
 	unsigned long mem;
 
 	pthread_mutex_init(&mutex, NULL);
-	fwq_init(&mem);
+	fwq_init();
 
 	fprintf(stderr, "CT14001 futex START\n");
 
@@ -102,7 +85,7 @@ int main(int argc, char **argv) {
 	}
 	fprintf(stderr, "CT14003 pthread_create OK\n");
 
-	fwq(500 * 1000 * 1000UL, &mem); /* Sending debug messages through serial takes 0.05 sec */
+	fwq(500 * 1000 * 1000UL); /* Sending debug messages through serial takes 0.05 sec */
 
 	pthread_mutex_lock(&mutex);
 	if (owned) {
