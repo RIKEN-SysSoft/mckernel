@@ -1,20 +1,10 @@
-/* futex.h COPYRIGHT FUJITSU LIMITED 2015-2016 */
-/**
- * \file futex.h
- * Licence details are found in the file LICENSE.
- *  
- * \brief
- * Futex adaptation to McKernel
- *
- * \author Balazs Gerofi  <bgerofi@riken.jp> \par
- * Copyright (C) 2012  RIKEN AICS
- *
- *
- * HISTORY:
- *
- */
+/* This is copy of the necessary part from McKernel, for uti-futex */
+
 #ifndef _FUTEX_H
 #define _FUTEX_H
+
+#include <mc_plist.h>
+#include <arch-lock.h>
 
 /** \name Futex Commands
  * @{
@@ -73,72 +63,17 @@
 #define FUTEX_OP_CMP_GE		5	/* if (oldval >= CMPARG) wake */
 // @}
 
-/* FUTEX_WAKE_OP will perform atomically
-   int oldval = *(int *)UADDR2;
-   *(int *)UADDR2 = oldval OP OPARG;
-   if (oldval CMP CMPARG)
-     wake UADDR2;  */
-#define FUTEX_OP(op, oparg, cmp, cmparg) \
-  (((op & 0xf) << 28) | ((cmp & 0xf) << 24)		\
-   | ((oparg & 0xfff) << 12) | (cmparg & 0xfff))
-
-/*
- * bitset with all bits set for the FUTEX_xxx_BITSET OPs to request a
- * match of any bit.
- */
-#define FUTEX_BITSET_MATCH_ANY	0xffffffff
-
-#ifdef __KERNEL__
-
-#include <ihk/lock.h>
-#include <list.h>
-#include <process.h>
-#include <waitq.h>
-#include <plist.h>
-
-#ifndef _ASM_X86_FUTEX_H
-#define _ASM_X86_FUTEX_H
-
-#ifdef __KERNEL__
-
-#define __user 
-
-/* We don't deal with uaccess at the moment, because x86 can access
- * userspace directly, we rely on glibc and the app developers.
- */
-#ifdef __UACCESS__
-#include <arch/uaccess.h>
-#endif
-
-#include <errno.h>
-#include <arch-futex.h>
-
-#if 0
-#include <arch/processor.h>
-#include <arch/system.h>
-#endif
-
-#endif // __KERNEL__
-#endif // _ASM_X86_FUTEX_H
-
-#define FUTEX_HASHBITS		8	/* 256 entries in each futex hash tbl */
-
 #define FUT_OFF_INODE    1 /* We set bit 0 if key has a reference on inode */
 #define FUT_OFF_MMSHARED 2 /* We set bit 1 if key has a reference on mm */
 
-struct process_vm;
+#define FUTEX_HASHBITS		8	/* 256 entries in each futex hash tbl */
 
-/*
- * Hash buckets are shared by all the futex_keys that hash to the same
- * location.  Each key may have multiple futex_q structures, one for each task
- * waiting on a futex.
- */
-struct futex_hash_bucket {
-	ihk_spinlock_t lock;
-	struct plist_head chain;
-};
-
-struct futex_hash_bucket *get_futex_queues(void);
+#define PS_RUNNING           0x1
+#define PS_INTERRUPTIBLE     0x2
+#define PS_UNINTERRUPTIBLE   0x4
+#define PS_ZOMBIE            0x8
+#define PS_EXITED            0x10
+#define PS_STOPPED           0x20
 
 union futex_key {
 	struct {
@@ -148,7 +83,7 @@ union futex_key {
 	} shared;
 	struct {
 		unsigned long address;
-		struct process_vm *mm;
+		void *mm;    // Acctually, process_vm
 		int offset;
 	} private;
 	struct {
@@ -158,24 +93,9 @@ union futex_key {
 	} both;
 };
 
-#define FUTEX_KEY_INIT (union futex_key) { .both = { .ptr = NULL } }
-#define FUT_OFF_MMSHARED 2
+#define FUTEX_KEY_INIT ((union futex_key) { .both = { .ptr = NULL } })
 
-extern int futex_init(void);
-
-struct cpu_local_var;
-extern int
-futex(
-	uint32_t __user *		uaddr,
-	int						op,
-	uint32_t				val,
-	uint64_t				timeout,
-	uint32_t __user *		uaddr2,
-	uint32_t				val2,
-	uint32_t				val3,
-	int                     fshared
-);
-
+#define FUTEX_BITSET_MATCH_ANY	0xffffffff
 
 /**
  * struct futex_q - The hashed futex queue entry, one per waiting task
@@ -197,10 +117,10 @@ futex(
  * the rt_mutex code. See unqueue_me_pi().
  */
 struct futex_q {
-	struct plist_node list;
+	struct mc_plist_node list;
 
-	struct thread *task;
-	ihk_spinlock_t *lock_ptr;
+	void *task;    // Actually, struct thread
+	_ihk_spinlock_t *lock_ptr;
 	union futex_key key;
 	union futex_key *requeue_pi_key;
 	uint32_t bitset;
@@ -220,5 +140,10 @@ struct futex_q {
 	int intr_vector;
 };
 
-#endif
+long do_futex(int n, unsigned long arg0, unsigned long arg1,
+		unsigned long arg2, unsigned long arg3,
+		unsigned long arg4, unsigned long arg5,
+		struct uti_info *uti_info,
+		void *uti_futex_resp);
+
 #endif
