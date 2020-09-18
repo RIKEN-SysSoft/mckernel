@@ -109,6 +109,7 @@ static inline int is_sampling_event(struct mc_perf_event *event)
 void *ihk_mc_switch_context(ihk_mc_kernel_context_t *old_ctx,
                            ihk_mc_kernel_context_t *new_ctx,
 			   void *prev);
+int ihk_mc_get_interrupt_id(int cpu);
 int ihk_mc_interrupt_cpu(int cpu, int vector);
 
 void ihk_mc_init_user_process(ihk_mc_kernel_context_t *ctx,

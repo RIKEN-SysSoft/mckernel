@@ -1673,6 +1673,11 @@ int ihk_mc_arch_get_special_register(enum ihk_asr_type type,
 	}
 }
 
+int ihk_mc_get_interrupt_id(int cpu)
+{
+	return get_x86_cpu_local_variable(cpu)->apic_id;
+}
+
 /*@
   @ requires \valid_cpuid(cpu);     // valid CPU logical ID
   @ ensures \result == 0
