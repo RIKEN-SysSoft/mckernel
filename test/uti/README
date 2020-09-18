@@ -340,10 +340,10 @@ CT30 CT21にopenmpスレッドを追加したテスト
 CT31 pthread_cond_waitオーバーヘッド測定
 * waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
 
-CT32 futex waitオーバーヘッド測定
+CT32 Main threadでfutex_wait, UTI threadでfutex_wakeをした場合のオーバーヘッド測定
 * waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
 
-CT33 futex wakeオーバーヘッド測定
+CT33 UTI threadでfutex_wait, Main threadでfutex_wakeをした場合のオーバーヘッド測定
 * waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
 
 CT34 繰り返しpthread_create

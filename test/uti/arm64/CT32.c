@@ -33,6 +33,7 @@ void *util_fn(void *arg)
 	int ret;
     long start, end;
 	int testid = 32101;
+	unsigned long mem;
 
 	print_cpu_last_executed_on("Utility thread");
 
@@ -44,7 +45,7 @@ void *util_fn(void *arg)
 	for (i = 0; i < nloop; i++) {
 		start = rdtsc_light();
 
-		fwq(blocktime);
+		fwq(blocktime, &mem);
 
 		end = rdtsc_light();
 		t_fwq += end - start;
@@ -77,6 +78,7 @@ int main(int argc, char **argv)
 	pthread_barrierattr_t bar_attr;
 	struct sched_param param = { .sched_priority = 99 };
 	int opt;
+	unsigned long mem;
 
 	while ((opt = getopt_long(argc, argv, "+b:", options, NULL)) != -1) {
 		switch (opt) {
@@ -100,7 +102,7 @@ int main(int argc, char **argv)
 	}
 	print_cpu_last_executed_on("Master thread");
 
-	fwq_init();
+	fwq_init(&mem);
 
 	pthread_barrierattr_init(&bar_attr);
 	pthread_barrier_init(&bar, &bar_attr, 2);
@@ -151,7 +153,7 @@ int main(int argc, char **argv)
 	syscall(701, 4 | 8);
 
 	pthread_join(thr, NULL);
-	printf("[INFO] waiter: %ld cycles, waker: %ld cycles, (waiter - waker) / nloop: %ld cycles\n", t_futex_wait, t_fwq, (t_futex_wait - t_fwq) / nloop);
+	printf("[INFO] waiter: %ld nsec, waker: %ld nsec, (waiter - waker) / nloop: %ld nsec\n", t_futex_wait * 10, t_fwq * 10, (t_futex_wait - t_fwq) * 10 / nloop);
 
 	ret = 0;
  fn_fail:
