@@ -338,14 +338,17 @@ CT29 no reverse offload
 CT30 CT21にopenmpスレッドを追加したテスト
 
 CT31 pthread_cond_waitオーバーヘッド測定
-* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+* Linuxがwaker、McKernelがwaiter
 
-CT32 futex waitオーバーヘッド測定
-* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+CT32 pthread_cond_waitオーバーヘッド測定
+* Linuxがwaiter、McKernelがwaker
 
-CT33 futex wakeオーバーヘッド測定
-* waiterとwakerのCPUは、それぞれ、WAITER_CPU、WAKER_CPUで設定
+CT33 Main threadでfutex_wait, UTI threadでfutex_wakeをした場合のオーバーヘッド測定
+* Linuxがwaker、McKernelがwaiter
 
-CT34 繰り返しpthread_create
+CT34 UTI threadでfutex_wait, Main threadでfutex_wakeをした場合のオーバーヘッド測定
+* Linuxがwaiter、McKernelがwaker
 
-CT35 LD_PRELOADでsyscall_interceptを用いたsoをつけた場合のテスト
+CT35 繰り返しpthread_create
+
+CT36 LD_PRELOADでsyscall_interceptを用いたsoをつけた場合のテスト

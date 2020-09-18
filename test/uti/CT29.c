@@ -44,26 +44,6 @@ static inline void bulk_fsw(unsigned long n) {
 
 #define N_INIT 1000000
 
-void fwq_init() {
-	struct timespec start, end;
-	unsigned long nsec;
-	int i;
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-	bulk_fsw(N_INIT);
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-	nsec = (TS2NS(end.tv_sec, end.tv_nsec) - TS2NS(start.tv_sec, start.tv_nsec));
-	nspw = nsec / (double)N_INIT;
-	printf("nsec=%ld, nspw=%f\n", nsec, nspw);
-}
-
-void fwq(long delay_nsec) {
-	if (delay_nsec < 0) {
-		printf("%s: delay_nsec<0\n", __FUNCTION__);
-	}
-	//printf("delay_nsec=%ld,count=%f\n", delay_nsec, delay_nsec / nspw);
-	bulk_fsw(delay_nsec / nspw);
-}
-
 void *util_thread(void *arg) {
 	int rc;
 
