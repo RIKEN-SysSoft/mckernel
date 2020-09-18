@@ -1,0 +1,295 @@
+./C1428.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O ... done
+~/src/mckernel/test/uti ~/src/mckernel/test/issues/1428
+make[1]: Entering directory `/home/satoken/mck_srcs/kyokaV/mckernel/test/uti'
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT01.c
+gcc -o CT01 CT01.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT02.c
+gcc -o CT02 CT02.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT03.c
+gcc -o CT03 CT03.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT04.c
+gcc -o CT04 CT04.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT05.c
+gcc -o CT05 CT05.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT06.c
+gcc -o CT06 CT06.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT07.c
+gcc -o CT07 CT07.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT08.c
+gcc -o CT08 CT08.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT09.c
+gcc -o CT09 CT09.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT10.c
+gcc -o CT10 CT10.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT11.c
+gcc -o CT11 CT11.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT12.c
+gcc -o CT12 CT12.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT13.c
+gcc -o CT13 CT13.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT14.c
+gcc -o CT14 CT14.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT15.c
+gcc -o CT15 CT15.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT16.c
+gcc -o CT16 CT16.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT17.c
+gcc -o CT17 CT17.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT18.c
+gcc -o CT18 CT18.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT19.c
+gcc -o CT19 CT19.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT20.c
+gcc -o CT20 CT20.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT21.c
+gcc -o CT21 CT21.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT22.c
+gcc -o CT22 CT22.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT23.c
+gcc -o CT23 CT23.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT24.c
+gcc -o CT24 CT24.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT25.c
+gcc -o CT25 CT25.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT26.c
+gcc -o CT26 CT26.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT27.c
+gcc -o CT27 CT27.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT28.c
+gcc -o CT28 CT28.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT29.c
+gcc -o CT29 CT29.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+icc -g -O0 -qopenmp -I/home/satoken/ihk+mckernel/include -c CT30.c
+icc -o CT30 CT30.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt  -qopenmp
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT31.c
+gcc -o CT31 CT31.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT32.c
+gcc -o CT32 CT32.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT33.c
+gcc -o CT33 CT33.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+gcc -g -O0 -I/home/satoken/ihk+mckernel/include -c CT34.c
+gcc -o CT34 CT34.o util.o -L/home/satoken/ihk+mckernel/lib -Wl,-rpath,/home/satoken/ihk+mckernel/lib -luti -lpthread -lrt
+dd bs=4096 count=1000 if=/dev/zero of=./file
+1000+0 records in
+1000+0 records out
+4096000 bytes (4.1 MB) copied, 0.0399488 s, 103 MB/s
+rm CT32.o CT02.o CT25.o CT14.o CT33.o CT22.o CT06.o CT24.o CT01.o CT13.o CT10.o CT16.o CT17.o CT29.o CT12.o CT20.o CT18.o CT21.o CT26.o CT03.o CT11.o CT07.o CT27.o CT05.o CT15.o CT28.o CT08.o CT19.o CT34.o CT23.o CT09.o CT31.o CT04.o
+make[1]: Leaving directory `/home/satoken/mck_srcs/kyokaV/mckernel/test/uti'
+~/src/mckernel/test/issues/1428
+*** C1428T01 start *******************************
+CT12001 futex START
+CT12002 pthread_create OK
+CT12100 running on Linux CPU OK
+CT12003 FUTEX_WAKE OK
+CT12101 FUTEX_WAIT OK
+CT12004 pthread_join OK
+CT12005 END
+*** C1428T01 PASSED ******************************
+
+*** C1428T02 start *******************************
+CT13001 futex START
+CT13002 pthread_create OK
+CT13100 running on Linux CPU OK
+CT13101 FUTEX_WAKE OK
+CT13003 FUTEX_WAIT OK
+CT13004 pthread_join OK
+CT13005 END
+*** C1428T02 PASSED ******************************
+
+*** C1428T03 start *******************************
+CT14001 futex START
+CT14002 util_indicate_clone OK
+CT14003 pthread_create OK
+CT14004 lock first OK
+CT14100 running on Linux OK
+CT14101 lock second OK
+CT14005 pthread_join OK
+CT14006 END
+*** C1428T03 PASSED ******************************
+
+*** C1428T04 start *******************************
+CT14001 futex START
+CT14002 util_indicate_clone OK
+CT14003 pthread_create OK
+CT14100 running on Linux OK
+CT14101 lock first OK
+CT14004 lock second OK
+CT14005 pthread_join OK
+CT14006 END
+*** C1428T04 PASSED ******************************
+
+*** C1428T05 start *******************************
+CT16001 futex START
+CT16002 util_indicate_clone OK
+CT16003 pthread_create OK
+CT16101 running on Linux OK
+CT16102 return from pthread_cond_wait() OK
+CT16004 pthread_join OK
+CT16005 END
+*** C1428T05 PASSED ******************************
+
+*** C1428T06 start *******************************
+CT17001 futex START
+CT17002 util_indicate_clone OK
+CT17003 pthread_create OK
+CT17004 lock on 0x602140 OK
+CT17100 running on Linux OK
+CT17005 wake on 0x602180 OK
+CT17006 pthread_join OK
+CT17007 END
+*** C1428T06 PASSED ******************************
+
+*** C1428T07 start *******************************
+CT18001 futex START
+CT18002 pthread_create OK
+CT18101 running on Linux CPU OK
+start=1600664391.916082301
+op=109
+end=1600664392.714828798
+CT18102 FUTEX_WAIT OK
+CT18103 timeout OK
+CT18003 FUTEX_WAKE missing the waiter OK
+CT18004 pthread_join OK
+CT18005 END
+*** C1428T07 PASSED ******************************
+
+*** C1428T08 start *******************************
+CT19001 futex START
+CT19002 pthread_create OK
+CT19100 running on Linux CPU OK
+start=340182.949985101
+op=9
+end=340183.749027237
+CT19101 FUTEX_WAIT OK
+CT19102 timeout OK
+CT19003 FUTEX_WAKE missing the waiter OK
+CT19004 pthread_join OK
+CT19005 END
+*** C1428T08 PASSED ******************************
+
+*** C1428T09 start *******************************
+CT20001 futex START
+CT20002 pthread_create OK
+CT20100 running on Linux CPU OK
+start=1600664402.553296506
+end=1600664403.352831081
+CT20101 FUTEX_WAIT OK
+CT20102 timeout OK
+CT20003 FUTEX_WAKE missing the waiter OK
+CT20004 pthread_join OK
+CT20005 END
+*** C1428T09 PASSED ******************************
+
+*** C1428T10 start *******************************
+[INFO] nloop=1000,blocktime=10000000
+[INFO] Master thread (tid: 18998) is running on 00,00
+[ OK ] Master thread is running on McKernel
+[ OK ] util_indicate_clone
+[INFO] Utility thread (tid: 19030) is running on 00,00
+[ OK ] Utility thread is running on Linux
+[INFO] waker: 26032080152 cycles, waiter: 26036311624 cycles, (waiter - waker) / nloop: 4231 cycles
+*** C1428T10 PASSED ******************************
+
+*** C1428T11 start *******************************
+[INFO] nloop=1000,blocktime=10000000
+[INFO] Master thread (tid: 19038) is running on 00,00
+[ OK ] Master thread is running on McKernel
+[ OK ] util_indicate_clone
+[INFO] Utility thread (tid: 19070) is running on 00,00
+[ OK ] Utility thread is running on Linux
+[INFO] waiter: 26031780588 cycles, waker: 26036508180 cycles, (waiter - waker) / nloop: 4727 cycles
+*** C1428T11 PASSED ******************************
+
+*** C1428T12 start *******************************
+[INFO] nloop=1000,blocktime=10000000
+[INFO] Master thread (tid: 19078) is running on 00,00
+[ OK ] Master thread is running on McKernel
+[ OK ] util_indicate_clone
+[INFO] Utility thread (tid: 19110) is running on 00,00
+[ OK ] Utility thread is running on Linux
+[INFO] compute: 26031465944, wake: 26036198560, wait: 26036197988, wake - compute: 4732, wait - compute: 4732 (cycles)
+*** C1428T12 PASSED ******************************
+
+*** C1428T13 start *******************************
+futex_wait01    1  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+futex_wait01    2  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+futex_wait01    3  TPASS  :  futex_wait(): errno=ETIMEDOUT(110): Connection timed out
+futex_wait01    4  TPASS  :  futex_wait(): errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+*** C1428T13 PASSED (4)
+
+*** C1428T14 start *******************************
+/home/satoken/ltp/testcases/bin/futex_wait_02: could not load program: No such file or directory
+*** C1428T14 PASSED (0)
+
+*** C1428T15 start *******************************
+futex_wait03    1  TPASS  :  futex_wait() woken up
+*** C1428T15 PASSED (1)
+
+*** C1428T16 start *******************************
+futex_wait04    1  TPASS  :  futex_wait() returned -1: errno=EAGAIN/EWOULDBLOCK(11): Resource temporarily unavailable
+*** C1428T16 PASSED (1)
+
+*** C1428T17 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+futex_wait_bitset.h:17: INFO: testing futex_wait_bitset() timeout with CLOCK_MONOTONIC
+futex_wait_bitset.h:59: PASS: futex_wait_bitset() waited 144432us, expected 100010us
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1428T17 PASSED (1)
+
+*** C1428T18 start *******************************
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+futex_wait_bitset.h:17: INFO: testing futex_wait_bitset() timeout with CLOCK_REALTIME
+futex_wait_bitset.h:59: PASS: futex_wait_bitset() waited 144222us, expected 100010us
+
+Summary:
+passed   1
+failed   0
+skipped  0
+warnings 0
+*** C1428T18 PASSED (1)
+
+*** C1428T19 start *******************************
+futex_wake01    1  TPASS  :  futex_wake() returned 0
+futex_wake01    2  TPASS  :  futex_wake() returned 0
+futex_wake01    3  TPASS  :  futex_wake() returned 0
+futex_wake01    4  TPASS  :  futex_wake() returned 0
+futex_wake01    5  TPASS  :  futex_wake() returned 0
+futex_wake01    6  TPASS  :  futex_wake() returned 0
+*** C1428T19 PASSED (6)
+
+*** C1428T20 start *******************************
+futex_wake02    1  TPASS  :  futex_wake() woken up 1 threads
+futex_wake02    2  TPASS  :  futex_wake() woken up 2 threads
+futex_wake02    3  TPASS  :  futex_wake() woken up 3 threads
+futex_wake02    4  TPASS  :  futex_wake() woken up 4 threads
+futex_wake02    5  TPASS  :  futex_wake() woken up 5 threads
+futex_wake02    6  TPASS  :  futex_wake() woken up 6 threads
+futex_wake02    7  TPASS  :  futex_wake() woken up 7 threads
+futex_wake02    8  TPASS  :  futex_wake() woken up 8 threads
+futex_wake02    9  TPASS  :  futex_wake() woken up 9 threads
+futex_wake02   10  TPASS  :  futex_wake() woken up 10 threads
+futex_wake02   11  TPASS  :  futex_wake() woken up 0 threads
+futex_wake02    0  TINFO  :  Child process returned TPASS
+*** C1428T20 PASSED (12)
+
+*** C1428T21 start *******************************
+futex_wake03    1  TPASS  :  futex_wake() woken up 1 childs
+futex_wake03    2  TPASS  :  futex_wake() woken up 2 childs
+futex_wake03    3  TPASS  :  futex_wake() woken up 3 childs
+futex_wake03    4  TPASS  :  futex_wake() woken up 4 childs
+futex_wake03    5  TPASS  :  futex_wake() woken up 5 childs
+futex_wake03    6  TPASS  :  futex_wake() woken up 6 childs
+futex_wake03    7  TPASS  :  futex_wake() woken up 7 childs
+futex_wake03    8  TPASS  :  futex_wake() woken up 8 childs
+futex_wake03    9  TPASS  :  futex_wake() woken up 9 childs
+futex_wake03   10  TPASS  :  futex_wake() woken up 10 childs
+futex_wake03   11  TPASS  :  futex_wake() woken up 0 children
+*** C1428T21 PASSED (11)
+

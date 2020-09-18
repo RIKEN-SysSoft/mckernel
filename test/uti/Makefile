@@ -27,7 +27,7 @@ file::
 CT30.o:: CT30.c
 	icc $(CCFLAGS) -qopenmp $(CPPFLAGS) -c $<
 
-CT30: CT30.o
+CT30: CT30.o util.o
 	icc -o $@ $^ $(LDFLAGS) -qopenmp
 
 %.o:: %.c
