@@ -2813,7 +2813,9 @@ static void kill_thread(unsigned long tid, int sig,
 	}
 }
 
-static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, int remote_tid, unsigned long pattr, unsigned long uti_clv, unsigned long _uti_desc)
+static long util_thread(struct thread_data_s *my_thread,
+		unsigned long rp_rctx, int remote_tid, unsigned long pattr,
+		unsigned long uti_info, unsigned long _uti_desc)
 {
 	struct uti_get_ctx_desc get_ctx_desc;
 	struct uti_switch_ctx_desc switch_ctx_desc;
@@ -2865,7 +2867,7 @@ static long util_thread(struct thread_data_s *my_thread, unsigned long rp_rctx, 
 	uti_desc->key = get_ctx_desc.key;
 	uti_desc->pid = getpid();
 	uti_desc->tid = gettid();
-	uti_desc->uti_clv = uti_clv;
+	uti_desc->uti_info = uti_info;
 	
 	/* Initialize list of syscall arguments for syscall_intercept */
 	if (sizeof(struct syscall_struct) * 11 > page_size) {
@@ -4671,7 +4673,8 @@ return_execve2:
 		case __NR_sched_setaffinity:
 			if (w.sr.args[0] == 0) {
 				ret = util_thread(my_thread, w.sr.args[1], w.sr.rtid,
-				                  w.sr.args[2], w.sr.args[3], w.sr.args[4]);
+						w.sr.args[2], w.sr.args[3],
+						w.sr.args[4]);
 			}
 			else {
 				__eprintf("__NR_sched_setaffinity: invalid argument (%lx)\n", w.sr.args[0]);
