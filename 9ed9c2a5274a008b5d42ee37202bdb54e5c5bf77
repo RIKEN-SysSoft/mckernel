@@ -1,0 +1,96 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "17762a9c_23979737",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-25T07:46:48Z",
+      "side": 1,
+      "message": "uti: futex: call function in mcctrl",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 7,
+        "endChar": 52
+      },
+      "revId": "9ed9c2a5274a008b5d42ee37202bdb54e5c5bf77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fd059bac_1c360a32",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-25T07:46:48Z",
+      "side": 1,
+      "message": "Call futex code in mcctrl instead of the one in McKernel image,\ngiving the following benefits:\n1. Not relying on shared kernel virtual address space with Linux any more\n2. The cpu id store / retrieve is not needed and resulting in the code\n   getting more architecture-independent",
+      "range": {
+        "startLine": 11,
+        "startChar": 0,
+        "endLine": 11,
+        "endChar": 46
+      },
+      "revId": "9ed9c2a5274a008b5d42ee37202bdb54e5c5bf77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "403690eb_050e89a2",
+        "filename": "kernel/include/futex.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 138,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-25T07:46:48Z",
+      "side": 1,
+      "message": "mc_plist_headでないのはなぜでしょうか。",
+      "range": {
+        "startLine": 138,
+        "startChar": 0,
+        "endLine": 138,
+        "endChar": 25
+      },
+      "revId": "9ed9c2a5274a008b5d42ee37202bdb54e5c5bf77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cbd2caaf_89fcedc7",
+        "filename": "test/issues/1428/README",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-25T07:46:48Z",
+      "side": 1,
+      "message": "arm64にCT31-33を移植してテストして下さい。",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 7,
+        "endChar": 33
+      },
+      "revId": "9ed9c2a5274a008b5d42ee37202bdb54e5c5bf77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    }
+  ]
+}
