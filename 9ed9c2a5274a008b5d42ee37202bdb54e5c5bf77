@@ -48,6 +48,75 @@
     },
     {
       "key": {
+        "uuid": "eba15375_7c86f867",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 585,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-25T08:09:36Z",
+      "side": 1,
+      "message": "このブロックはは取って大丈夫です。理由は上のコメントを参照して下さい。",
+      "range": {
+        "startLine": 585,
+        "startChar": 0,
+        "endLine": 585,
+        "endChar": 42
+      },
+      "revId": "9ed9c2a5274a008b5d42ee37202bdb54e5c5bf77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d2e87b94_56038f13",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 729,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-25T08:09:36Z",
+      "side": 1,
+      "message": "このケースもテストして下さい。",
+      "range": {
+        "startLine": 729,
+        "startChar": 0,
+        "endLine": 729,
+        "endChar": 35
+      },
+      "revId": "9ed9c2a5274a008b5d42ee37202bdb54e5c5bf77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "697386fe_ff9eb284",
+        "filename": "kernel/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-09-25T08:09:36Z",
+      "side": 1,
+      "message": "このブロックはとっても大丈夫です。理由はmcctrlのfutex.cのfutex_wait_queue_meのあたりを参照して下さい。",
+      "range": {
+        "startLine": 243,
+        "startChar": 0,
+        "endLine": 243,
+        "endChar": 27
+      },
+      "revId": "9ed9c2a5274a008b5d42ee37202bdb54e5c5bf77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "403690eb_050e89a2",
         "filename": "kernel/include/futex.h",
         "patchSetId": 2
