@@ -2230,7 +2230,6 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_SET;
-		perf_desc->err = 0;
 		perf_desc->target_cntr = i + ARCH_PERF_COUNTER_START;
 		perf_desc->config = attr.config;
 		perf_desc->exclude_kernel = attr.exclude_kernel;
@@ -2253,7 +2252,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 				return ret;
 			}
 
-			err = perf_desc->err;
+			err = isp.err;
 			if (err != 0) {
 				break;
 			}
@@ -2295,7 +2294,6 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 		perf_desc->ctrl_type = PERF_CTRL_GET;
-		perf_desc->err = 0;
 		perf_desc->target_cntr = i + ARCH_PERF_COUNTER_START;
 
 		memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2315,7 +2313,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 				return ret;
 			}
 
-			if (perf_desc->err == 0) {
+			if (isp.err == 0) {
 				value_sum += perf_desc->read_value;
 			}
 		}
@@ -2357,7 +2355,6 @@ long mcctrl_perf_enable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_ENABLE;
-	perf_desc->err = 0;
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2377,8 +2374,8 @@ long mcctrl_perf_enable(ihk_os_t os)
 			return -EINVAL;
 		}
 
-		if (perf_desc->err < 0) {
-			ret = perf_desc->err;
+		if (isp.err < 0) {
+			ret = isp.err;
 			kfree(perf_desc);
 			return ret;
 		}
@@ -2415,7 +2412,6 @@ long mcctrl_perf_disable(ihk_os_t os)
 	memset(perf_desc, '\0', sizeof(struct perf_ctrl_desc));
 
 	perf_desc->ctrl_type = PERF_CTRL_DISABLE;
-	perf_desc->err = 0;
 	perf_desc->target_cntr_mask = cntr_mask;
 
 	memset(&isp, '\0', sizeof(struct ikc_scd_packet));
@@ -2434,8 +2430,8 @@ long mcctrl_perf_disable(ihk_os_t os)
 			return -EINVAL;
 		}
 
-		if (perf_desc->err < 0) {
-			ret = perf_desc->err;
+		if (isp.err < 0) {
+			ret = isp.err;
 			kfree(perf_desc);
 			return ret;
 		}

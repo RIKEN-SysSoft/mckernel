@@ -825,6 +825,7 @@ out_remote_pf:
 
 		case PERF_CTRL_GET:
 			pcd->read_value = ihk_mc_perfctr_read(pcd->target_cntr);
+			ret = 0;
 			break;
 			
 		default:
