@@ -280,7 +280,11 @@ int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp)
 {
 	struct mcctrl_usrdata *usrdata;
 
-	if (!os || cpu < 0) {
+	if (!os || ihk_host_validate_os(os) || !pisp) {
+		return -EINVAL;
+	}
+
+	if (cpu < 0) {
 		return -EINVAL;
 	}
 
