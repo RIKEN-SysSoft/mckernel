@@ -2481,6 +2481,10 @@ long mcctrl_getrusage(ihk_os_t ihk_os, struct mcctrl_ioctl_getrusage_desc *__use
 	unsigned long ut;
 	unsigned long st;
 
+	if (!ihk_os || ihk_host_validate_os(ihk_os)) {
+		return -EINVAL;
+	}
+
 	ret = copy_from_user(&desc, _desc, sizeof(struct mcctrl_ioctl_getrusage_desc));
 	if (ret != 0) {
 		printk("%s: copy_from_user failed\n", __FUNCTION__);
