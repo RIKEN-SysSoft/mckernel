@@ -141,8 +141,9 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 
 	ret = mcctrl_ikc_send(os, cpu, pisp);
 	if (ret < 0) {
-		pr_err("%s: mcctrl_ikc_send failed: %d\n", __func__, ret);
-		kfree(desc);
+		pr_warn("%s: mcctrl_ikc_send failed: %d\n", __func__, ret);
+		if (alloc_desc)
+			kfree(desc);
 		return ret;
 	}
 
