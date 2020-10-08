@@ -1979,14 +1979,23 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	unsigned long phys;
 	struct syscall_response *res;
 
+	if (!os || ihk_host_validate_os(os) || !packet) {
+		return;
+	}
+
 	phys = ihk_device_map_memory(ihk_os_to_dev(os),
 			packet->resp_pa, sizeof(*res));
+	if (!phys) {
+		return;
+	}
+
 	res = ihk_device_map_virtual(ihk_os_to_dev(os),
 			phys, sizeof(*res), NULL, 0);
 
 	if (!res) {
 		printk("%s: ERROR: invalid response structure address\n",
 			__FUNCTION__);
+		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, sizeof(*res));
 		return;
 	}
 
