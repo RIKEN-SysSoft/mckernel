@@ -280,13 +280,9 @@ int mcctrl_ikc_send(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp)
 {
 	struct mcctrl_usrdata *usrdata;
 
-	if (!os || ihk_host_validate_os(os) || !pisp) {
+	if (!os || cpu < 0) {
 		return -EINVAL;
 	}
-
-  if (cpu < 0) {
-    return -EINVAL;
-  }
 
 	usrdata = ihk_host_os_get_usrdata(os);
 	if (!usrdata || cpu >= usrdata->num_channels ||

@@ -126,7 +126,7 @@ find_procfs_entry(struct procfs_list_entry *parent, const char *name)
 static void
 delete_procfs_entries(struct procfs_list_entry *top)
 {
-	struct procfs_list_entry *e = NULL;
+	struct procfs_list_entry *e;
 	struct procfs_list_entry *n;
 
 	list_del(&top->list);
@@ -136,10 +136,8 @@ delete_procfs_entries(struct procfs_list_entry *top)
 	}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-  if (e) {
-    e->entry->read_proc = NULL;
-    e->entry->data = NULL;
-  }
+	e->entry->read_proc = NULL;
+	e->entry->data = NULL;
 #endif
 	remove_proc_entry(top->name, top->parent? top->parent->entry: NULL);
 	if(top->data)
