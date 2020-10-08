@@ -2172,7 +2172,13 @@ static DECLARE_WAIT_QUEUE_HEAD(perfctrlq);
 
 long mcctrl_perf_num(ihk_os_t os, unsigned long arg)
 {
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata *usrdata;
+
+	if (!os || ihk_host_validate_os(os)) {
+		return -EINVAL;
+	}
+
+	usrdata = ihk_host_os_get_usrdata(os);
 
 	if (!usrdata) {
 		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
