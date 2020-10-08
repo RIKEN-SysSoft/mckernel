@@ -2351,15 +2351,20 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 
 long mcctrl_perf_enable(ihk_os_t os)
 {
-	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+	struct mcctrl_usrdata *usrdata = NULL;
 	struct ikc_scd_packet isp;
 	struct perf_ctrl_desc *perf_desc;
-	struct ihk_cpu_info *info = ihk_os_get_cpu_info(os);
+	struct ihk_cpu_info *info = NULL;
 	unsigned long cntr_mask = 0;
 	int ret = 0;
 	int i = 0, j = 0;
 	int need_free;
 
+	if (!os || ihk_host_validate_os(os)) {
+		return -EINVAL;
+	}
+
+	usrdata = ihk_host_os_get_usrdata(os);
 	if (!usrdata) {
 		pr_err("%s: error: mcctrl_usrdata not found\n", __func__);
 		return -EINVAL;
@@ -2382,6 +2387,11 @@ long mcctrl_perf_enable(ihk_os_t os)
 	isp.msg = SCD_MSG_PERF_CTRL;
 	isp.arg = virt_to_phys(perf_desc);
 
+	info = ihk_os_get_cpu_info(os);
+	if (!info || info->n_cpus < 1) {
+		kfree(perf_desc);
+		return -EINVAL;
+	}
 	for (j = 0; j < info->n_cpus; j++) {
 		ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
 					   wakeup_desc_of_perf_desc(perf_desc),
