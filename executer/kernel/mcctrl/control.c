@@ -3501,7 +3501,7 @@ int mcctrl_get_request_os_cpu(ihk_os_t os, int *ret_cpu)
 	struct ihk_ikc_channel_desc *ch;
 	int ret = 0;
 
-	if (!os) {
+	if (!os || ihk_host_validate_os(os) || !ret_cpu) {
 		return -EINVAL;
 	}
 
