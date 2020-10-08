@@ -2172,6 +2172,10 @@ static DECLARE_WAIT_QUEUE_HEAD(perfctrlq);
 
 long mcctrl_perf_num(ihk_os_t os, unsigned long arg)
 {
+	if (!os || ihk_host_validate_os(os)) {
+		return -EINVAL;
+	}
+
 	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
 	if (!usrdata) {
