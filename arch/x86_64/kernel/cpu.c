@@ -876,9 +876,11 @@ void interrupt_exit(struct x86_user_context *regs)
 		check_need_resched();
 		check_signal(0, regs, -1);
 	}
+/*
 	else {
 		check_sig_pending();
 	}
+*/
 }
 
 void handle_interrupt(int vector, struct x86_user_context *regs)

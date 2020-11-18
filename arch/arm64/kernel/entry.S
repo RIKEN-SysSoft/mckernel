@@ -89,9 +89,9 @@
 	mov	x2, #0
 	bl	check_signal_irq_disabled	// check whether the signal is delivered(for kernel_exit)
 	.endif
-	.if	\el == 1
-	bl	check_sig_pending
-	.endif
+//	.if	\el == 1
+//	bl	check_sig_pending
+//	.endif
 	disable_irq x1				// disable interrupts
 	.if	\need_enable_step == 1
 	ldr	x1, [tsk, #TI_FLAGS]
