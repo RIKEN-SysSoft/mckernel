@@ -241,6 +241,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long flags;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
+			check_sig_pending();
 			cpu_pause();
 
 			/* Spin if not preemptable */
@@ -10505,8 +10506,8 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	return l;
 }
 
-static int
-check_sig_pending_thread(struct thread *thread)
+void
+check_sig_pending()
 {
 	int found = 0;
 	struct list_head *head;
@@ -10518,9 +10519,22 @@ check_sig_pending_thread(struct thread *thread)
 	__sigset_t x;
 	int sig = 0;
 	struct k_sigaction *k;
-	struct cpu_local_var *v;
+	struct thread *thread;
 
-	v = get_this_cpu_local_var();
+	if (clv == NULL)
+		return;
+
+	thread = cpu_local_var(current);
+	if (thread == NULL || thread == &cpu_local_var(idle)) {
+		return;
+	}
+	if (thread->in_syscall_offload == 0) {
+		return;
+	}
+	if (thread->proc->group_exit_status & 0x0000000100000000L) {
+		return;
+	}
+
 	w = thread->sigmask.__val[0];
 
 	lock = &thread->sigcommon->lock;
@@ -10569,16 +10583,14 @@ check_sig_pending_thread(struct thread *thread)
 	}
 
 	if (found == 2) {
-		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
 		terminate_mcexec(0, sig);
-		return 1;
+		return;
 	}
 	else if (found == 1) {
-		ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
 		interrupt_syscall(thread, 0);
-		return 1;
+		return;
 	}
-	return 0;
+	return;
 }
 
 struct sig_pending *
@@ -10663,38 +10675,6 @@ hassigpending(struct thread *thread)
 	}
 
 	return getsigpending(thread, 0);
-}
-
-void
-check_sig_pending(void)
-{
-	struct thread *thread;
-	struct cpu_local_var *v;
-
-	if (clv == NULL)
-		return;
-
-	v = get_this_cpu_local_var();
-repeat:
-	v->runq_irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
-	list_for_each_entry(thread, &(v->runq), sched_list) {
-
-		if (thread == NULL || thread == &cpu_local_var(idle)) {
-			continue;
-		}
-
-		if (thread->in_syscall_offload == 0) {
-			continue;
-		}
-
-		if (thread->proc->group_exit_status & 0x0000000100000000L) {
-			continue;
-		}
-
-		if (check_sig_pending_thread(thread))
-			goto repeat;
-	}
-	ihk_mc_spinlock_unlock(&v->runq_lock, v->runq_irqstate);
 }
 
 static void
