@@ -1,0 +1,1602 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a0862b49_7fb7cf62",
+        "filename": "arch/arm64/kernel/include/arch-futex.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define ___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a20f441c_051b515c",
+        "filename": "arch/arm64/kernel/include/arch-futex.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c43ccdbd_348f194f",
+        "filename": "arch/arm64/kernel/include/arch-futex.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75b104ab_c8fe07bf",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct {",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cbc2f749_01e9c957",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+} __attribute__((aligned(4))) _ihk_spinlock_t;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cf510d4f_fc8b0e7c",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct mcs_rwlock_lock {",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13efcb2c_906d3350",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+/*@\n+  @ assigns \\nothing;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "574b85ce_7f224256",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+  @*/",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64e0b95a_6f3066c2",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+/*@\n+  @ assigns \\nothing;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d790ecf_1c283dd7",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+  @*/",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8ab9af2_cf417334",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef unsigned short __ticket_t;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "764f8b92_c0968ab1",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef unsigned int __ticketpair_t;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "761e817f_4d5cd42c",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct ihk_spinlock {",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "86b09abd_3f180d68",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t\tif (*((volatile __ticket_t *)\u0026lock-\u003etickets.head) \u003d\u003d inc.tail)",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec7fe959_354ced0d",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct mcs_rwlock_lock {",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e38bff91_24f66ecb",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 11, 0)",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ba9c382_76b12418",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* Do not use getrawmonotonic() because it returns different value than clock_gettime() */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "83f561b4_aa5b6dbe",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8513eda6_14123687",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0a772b90_13576099",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 198,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Possible unnecessary \u0027out of memory\u0027 message\n+\tif (!desc) {\n+\t\tpr_warn(\"WARNING: coudln\u0027t alloc remote page fault wait desc, retrying..\\n\");",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "75130d19_14c54e76",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 430,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define PS_TRACED            0x40 /* Set to \"not running\" by a ptrace related event */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8c877905_433a886f",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 465,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tmcs_rwlock_writer_unlock_noirq((mcs_rwlock_lock_t *)q-\u003eproc_update_lock);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f574b29_4856ce73",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 506,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* TODO: Add the case when a Linux thread waking up another Linux thread */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ad6389b_50781157",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 507,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tpr_err(\"%s: ERROR: A Linux thread is waking up migrated-to-Linux thread\\n\", __func__);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e5d2f42_8e49393b",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 580,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "832cda21_8b18a8a3",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 614,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* Note that time_remain \u003d\u003d 0 indicates contidion evaluated to false after the timeout elapsed */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6941f8ce_d9dd8364",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 616,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (time_remain \u003d\u003d -ERESTARTSYS) { /* Interrupted by signal */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cc971f10_81a05f2a",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 617,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdprintk(\"%s: DEBUG: wait_event returned -ERESTARTSYS\\n\", __func__);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5b5f3d3e_a90d5d70",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 619,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tpr_err(\"%s: ERROR: wait_event returned %lld\\n\", __func__, time_remain);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c50a6c0c_66553bd3",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 740,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* RIKEN: futex_wait_queue_me() returns -ERESTARTSYS when waiting on Linux CPU and woken up by signal */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fdb8943a_5ab5cb7f",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 794,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ * ^I^Ipi futex (pi to pi requeue is not supported)$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb06d910_b1637d53",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 916,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* RIKEN: set ret to 0 as if fault_in_user_writeable() returned it */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "96fb89bd_743380c7",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 964,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\tint clockrt, ret \u003d -ENOSYS;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9f2e796_5d5284a0",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 970,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\treturn -ENOSYS;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9122da12_891badfe",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 997,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t/* RIKEN: these calls are not supported for now.\n+\tcase FUTEX_LOCK_PI:",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "45bedd5b_d77f4cea",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1021,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\tret \u003d -ENOSYS;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4a6330df_3b3cd53c",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1055,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, []\u003d%x, shared: %d\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c6cb11a_02e25d98",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1063,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(op \u003d\u003d FUTEX_REQUEUE) ? \"FUTEX_REQUEUE (NOT IMPL!)\" : \"unknown\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0482d51a_472806bd",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1064,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c0d0a05_6e7db386",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1071,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: utime\u003d%ld.%09ld\\n\", __func__, ts.tv_sec, ts.tv_nsec);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "864c5817_22fbd605",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1084,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdprintk(\"%s: ats\u003d%ld.%09ld\\n\", __func__, ats.tv_sec, ats.tv_nsec);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ea7c71d_71c66ff8",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1095,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t * number of waiters to wake in \u0027utime\u0027 if op \u003d\u003d FUTEX_WAKE_OP. */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab139ea2_0ed179e3",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, []\u003d%x, shared: %d, ret: %d\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bf0eb6ef_09955374",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1111,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(op \u003d\u003d FUTEX_REQUEUE) ? \"FUTEX_REQUEUE (NOT IMPL!)\" : \"unknown\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0a22bfd_93495c1a",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1112,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared, ret);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c6065b12_0711e9a8",
+        "filename": "kernel/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 241,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp\u003d%p\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c27bf278_3ff26323",
+        "filename": "kernel/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 245,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tstruct ihk_ikc_channel_desc *resp_channel \u003d cpu_local_var(ikc2linux);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "19bbe69c_793fdcf9",
+        "filename": "kernel/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 251,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: ERROR: ihk_ikc_send returned %d, resp_channel\u003d%p\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a83503b4_71db3e9f",
+        "filename": "kernel/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 590,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tq-\u003eth_spin_sleep_lock_pa \u003d virt_to_phys((void *)\u0026thread-\u003espin_sleep_lock);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8933f1d0_6d3f819d",
+        "filename": "kernel/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 592,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tq-\u003eproc_update_lock_pa \u003d virt_to_phys((void *)\u0026thread-\u003eproc-\u003eupdate_lock);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "eeb0172e_b5fd9ade",
+        "filename": "kernel/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 801,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: tid\u003d%d futex_wait_setup returns zero, no need to sleep\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5223e5e3_a96db26c",
+        "filename": "kernel/futex.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 855,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"%s: uaddr\u003d%p, op\u003d%x, val\u003d%x, timeout\u003d%ld, uaddr2\u003d%p, val2\u003d%x, val3\u003d%x, fshared\u003d%d\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "15574c14_cf27bab1",
+        "filename": "kernel/include/futex.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t*dest \u003d *(volatile uint32_t *)from;",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b6e7bddb_d640fd9a",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  a -\u003d b; a -\u003d c; a ^\u003d (c\u003e\u003e13); \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "64dc0314_da00372e",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  b -\u003d c; b -\u003d a; b ^\u003d (a\u003c\u003c8); \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f15c80cb_f28e15a9",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  c -\u003d a; c -\u003d b; c ^\u003d (b\u003e\u003e13); \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98a3bd8b_48a7c338",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  a -\u003d b; a -\u003d c; a ^\u003d (c\u003e\u003e12);  \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5e3d234_9a81aa64",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  b -\u003d c; b -\u003d a; b ^\u003d (a\u003c\u003c16); \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5868e974_6e44f308",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  c -\u003d a; c -\u003d b; c ^\u003d (b\u003e\u003e5); \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1823516e_3aeebd7b",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  a -\u003d b; a -\u003d c; a ^\u003d (c\u003e\u003e3);  \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07932716_c5da89bf",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  b -\u003d c; b -\u003d a; b ^\u003d (a\u003c\u003c10); \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5802ec05_bb33df3f",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  c -\u003d a; c -\u003d b; c ^\u003d (b\u003e\u003e15); \\$",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "062c9f72_d52f223d",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 3
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline uint32_t mc_jhash2(const uint32_t *k, uint32_t length, uint32_t initval)",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3db9627f_5575e76b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 6349,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%lx, uaddr2\u003d%lx, val3\u003d%x, []\u003d%x, shared: %d\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ee193456_5e454397",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 6421,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__func__, ats.tv_sec, ats.tv_nsec);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e8d4f013_17a67749",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 6439,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%lx, uaddr2\u003d%lx, val3\u003d%x, []\u003d%x, shared: %d, ret: %d\\n\",",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3c6b925_2df72f81",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 10015,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tuti_info-\u003euti_futex_resp_pa \u003d virt_to_phys((void *)cpu_local_var(uti_futex_resp));",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "095e2536_8205f9a5",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 10022,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tuti_info-\u003espin_sleep_lock_pa \u003d virt_to_phys((void *)\u0026thread-\u003espin_sleep_lock);",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00c06529_713fe2c2",
+        "filename": "test/issues/1428/C1428.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsudo ${MCEXEC} --enable-uti ${UTI_TEST_DIR}/CT${tno} 2\u003e\u00261 | tee ./${tname}.txt",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a442cc04_1142f329",
+        "filename": "test/issues/1428/C1428.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"*** ${tname} SKIP on ${arch} *******************************\"",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c1b933d_f1890f52",
+        "filename": "test/issues/1428/C1428.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsudo ${MCEXEC} --enable-uti ${UTI_TEST_DIR}/CT${tno} 2\u003e\u00261 | tee ./${tname}.txt",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f7cad35_4bc05d94",
+        "filename": "test/issues/1428/C1428.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in futex_wait01 futex_wait02 futex_wait03 futex_wait04 futex_wait_bitset01 futex_wait_bitset02 futex_wake01 futex_wake02 futex_wake03",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e281f4b_277117ad",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 194,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    1  TPASS  :  futex_wake() woken up 1 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8fd32e9_00a94bea",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 195,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    2  TPASS  :  futex_wake() woken up 2 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f76722a_b2304663",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 196,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    3  TPASS  :  futex_wake() woken up 3 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00c9fbb2_b3859bc8",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 197,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    4  TPASS  :  futex_wake() woken up 4 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "85400f42_3238268c",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 198,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    5  TPASS  :  futex_wake() woken up 5 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c667e1ab_4b2bc0e7",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 199,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    6  TPASS  :  futex_wake() woken up 6 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7339ba18_54ee079d",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 200,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    7  TPASS  :  futex_wake() woken up 7 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd31fd25_34dba662",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 201,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    8  TPASS  :  futex_wake() woken up 8 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c166a38_48faae02",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 202,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    9  TPASS  :  futex_wake() woken up 9 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a08968a9_d5b32e73",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 203,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03   10  TPASS  :  futex_wake() woken up 10 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7660d7e8_3aee557d",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    1  TPASS  :  futex_wake() woken up 1 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "17697158_f05def23",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 215,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    2  TPASS  :  futex_wake() woken up 2 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "76d8f9b7_888f58de",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 216,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    3  TPASS  :  futex_wake() woken up 3 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "14dbc525_84f907e6",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    4  TPASS  :  futex_wake() woken up 4 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "039882c9_1769e067",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    5  TPASS  :  futex_wake() woken up 5 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b02ae0eb_5812d0f2",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 219,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    6  TPASS  :  futex_wake() woken up 6 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2aef6643_9e4f5a22",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 220,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    7  TPASS  :  futex_wake() woken up 7 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5d9238f9_83521600",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    8  TPASS  :  futex_wake() woken up 8 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8fe78043_2cc078cf",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 222,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    9  TPASS  :  futex_wake() woken up 9 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9ff14d38_57941608",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 3
+      },
+      "lineNbr": 223,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03   10  TPASS  :  futex_wake() woken up 10 childs",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7602f00a_893072a1",
+        "filename": "test/uti/CT14.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfwq(500 * 1000 * 1000UL); /* Sending debug messages through serial takes 0.05 sec */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ebb758d9_973270f5",
+        "filename": "test/uti/CT15.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-11-18T05:37:06Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfwq(500 * 1000 * 1000UL); /* Sending debug messages through serial takes 0.05 sec */",
+      "revId": "1f919606a4419df66d8eba8324a4dfcf5091803f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
