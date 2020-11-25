@@ -1,11 +1,12 @@
 =============================================
-Version 1.7.0-0.93 (Aug 1, 2020)
+Version 1.7.0 (Nov 25, 2020)
 =============================================
 
 ----------------------
 IHK major updates
 ----------------------
 #. ihklib: add ihk_create_os_str
+#. ihklib: ihk_reserve_mem: add capped best effort to balanced
 
 ------------------------
 IHK major bug fixes
