@@ -20,6 +20,8 @@ struct process_vm;
 
 unsigned long virt_to_phys(void *v);
 void *phys_to_virt(unsigned long p);
+int phys_to_nid(unsigned long p);
+int lookup_node(struct process_vm *vm, void *addr);
 int copy_from_user(void *dst, const void *src, size_t siz);
 int strlen_user(const char *s);
 int strcpy_from_user(char *dst, const char *src);
