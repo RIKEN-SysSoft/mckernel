@@ -10153,6 +10153,20 @@ SYSCALL_DECLARE(get_mempolicy)
 		}
 	}
 
+	/* case of MPOL_F_NODE and MPOL_F_ADDR are specified */
+	if (flags & MPOL_F_NODE && flags & MPOL_F_ADDR) {
+		/* return the node ID which addr is allocated by mode */
+		int nid;
+
+		nid = lookup_node(vm, (void *)addr);
+		error = copy_to_user(mode, &nid, sizeof(int));
+		if (error) {
+			error = -EFAULT;
+			goto out;
+		}
+		goto out;
+	}
+
 	/* Special case of MPOL_F_MEMS_ALLOWED */
 	if (flags == MPOL_F_MEMS_ALLOWED) {
 		if (nodemask) {

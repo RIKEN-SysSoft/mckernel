@@ -2931,3 +2931,44 @@ retry:
 
 	return ptep;
 }
+
+int phys_to_nid(unsigned long p)
+{
+   int i, numa_id = -1, _numa_id;
+   unsigned long _start, _end;
+
+   for (i = 0; i < ihk_mc_get_nr_memory_chunks(); i++) {
+	   ihk_mc_get_memory_chunk(i, &_start, &_end, &_numa_id);
+
+	   if (p >= _start && p < _end) {
+		   numa_id = _numa_id;
+		   goto out;
+	   }
+   }
+
+out:
+   return numa_id;
+}
+
+int lookup_node(struct process_vm *vm, void *addr)
+{
+	int node, err, reason = PF_POPULATE | PF_USER;
+	pte_t *ptep;
+
+	err = page_fault_process_vm(vm, (void *)addr, reason);
+	if (err) {
+		node = err;
+		goto out;
+	}
+
+	ptep = ihk_mc_pt_lookup_pte(vm->address_space->page_table,
+			(void *)addr, 0, NULL, NULL, NULL); 
+	if (!ptep || !pte_is_present(ptep)) {
+		node = -ENOENT;
+		goto out;
+	}
+	
+	node = phys_to_nid(pte_get_phys(ptep));
+out:
+	return node;
+}
