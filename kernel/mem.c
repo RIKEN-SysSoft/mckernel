@@ -645,9 +645,8 @@ static void *mckernel_allocate_aligned_pages_node(int npages, int p2align,
 			 * only the ones requested in user policy */
 			for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
 
-				/* Not part of user requested policy? */
 				if (!test_bit(memory_nodes[node].nodes_by_distance[i].id,
-						cpu_local_var(current)->proc->vm->numa_mask)) {
+						numa_mask)) {
 					continue;
 				}
 
