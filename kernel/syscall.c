@@ -1943,7 +1943,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		if (add_process_memory_range(proc->vm, (unsigned long)proc->straight_va,
 					(unsigned long)proc->straight_va + proc->straight_len,
 					NOPHYS, vrflags, NULL, 0,
-					PAGE_SHIFT + p2align, &range) != 0) {
+					PAGE_SHIFT + p2align, private_data, &range) != 0) {
 			kprintf("%s: error: adding straight memory range \n",
 					__FUNCTION__);
 			proc->straight_va = 0;
