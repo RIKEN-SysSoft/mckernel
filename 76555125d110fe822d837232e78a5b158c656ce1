@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "154b6b4b_f7669b1f",
+        "filename": "kernel/include/kmalloc.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:19:01Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct kmalloc_header *header;\n+\tregister struct kmalloc_cache_header *cache;",
+      "revId": "76555125d110fe822d837232e78a5b158c656ce1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cba3f184_2e5bdedb",
+        "filename": "kernel/include/kmalloc.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:19:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: ERROR: allocating cache element\\n\", __func__);",
+      "revId": "76555125d110fe822d837232e78a5b158c656ce1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48688396_97da207b",
+        "filename": "kernel/include/kmalloc.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:19:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: calling pre-alloc for 0x%lx...\\n\", __func__, cache);",
+      "revId": "76555125d110fe822d837232e78a5b158c656ce1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f99eb03_3ad692ea",
+        "filename": "lib/include/ihk/mm.h",
+        "patchSetId": 4
+      },
+      "lineNbr": 351,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:19:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: calling pre-alloc for 0x%lx...\\n\", __func__, cache);",
+      "revId": "76555125d110fe822d837232e78a5b158c656ce1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
