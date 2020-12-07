@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "895c5ad8_0756af4b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1308,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:05:24Z",
+      "side": 1,
+      "message": "WARNING: kfree(NULL) is safe and this check is probably not required\n+\t\t\tif (proc-\u003efd_path[fd]) {\n+\t\t\t\tkfree(proc-\u003efd_path[fd]);",
+      "revId": "7691e2a91e508aca9ee8989c660e8d5a56454ff6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
