@@ -16,6 +16,7 @@
 #include <uio.h>
 #include <syscall.h>
 #include <rusage_private.h>
+#include <memory.h>
 #include <ihk/debug.h>
 
 void terminate_mcexec(int, int);
@@ -2250,8 +2251,10 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 		case 0:
 			memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
 			       sizeof(void *) * count);
-			memcpy(mpsr->nodes, mpsr->user_nodes,
-			       sizeof(int) * count);
+			if (mpsr->user_nodes) {
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+			}
 			memset(mpsr->ptep, 0, sizeof(pte_t) * count);
 			memset(mpsr->status, 0, sizeof(int) * count);
 			memset(mpsr->nr_pages, 0, sizeof(int) * count);
@@ -2269,8 +2272,10 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 		case 0:
 			memcpy(mpsr->virt_addr, mpsr->user_virt_addr,
 			       sizeof(void *) * count);
-			memcpy(mpsr->nodes, mpsr->user_nodes,
-			       sizeof(int) * count);
+			if (mpsr->user_nodes) {
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+			}
 			mpsr->nodes_ready = 1;
 			break;
 		case 1:
@@ -2292,8 +2297,10 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 			       sizeof(void *) * count);
 			break;
 		case 1:
-			memcpy(mpsr->nodes, mpsr->user_nodes,
-			       sizeof(int) * count);
+			if (mpsr->user_nodes) {
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+			}
 			mpsr->nodes_ready = 1;
 			break;
 		case 2:
@@ -2322,8 +2329,10 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 			       sizeof(void *) * (count / 2));
 			break;
 		case 2:
-			memcpy(mpsr->nodes, mpsr->user_nodes,
-			       sizeof(int) * count);
+			if (mpsr->user_nodes) {
+				memcpy(mpsr->nodes, mpsr->user_nodes,
+						sizeof(int) * count);
+			}
 			mpsr->nodes_ready = 1;
 			break;
 		case 3:
@@ -2349,13 +2358,15 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 	}
 
 	/* NUMA verification in parallel */
-	for (i = i_s; i < i_e; i++) {
-		if (mpsr->nodes[i] < 0 ||
-				mpsr->nodes[i] >= ihk_mc_get_nr_numa_nodes() ||
-				!test_bit(mpsr->nodes[i],
-					mpsr->proc->vm->numa_mask)) {
-			mpsr->phase_ret = -EINVAL;
-			break;
+	if (mpsr->user_nodes) {
+		for (i = i_s; i < i_e; i++) {
+			if (mpsr->nodes[i] < 0 ||
+					mpsr->nodes[i] >= ihk_mc_get_nr_numa_nodes() ||
+					!test_bit(mpsr->nodes[i],
+						mpsr->proc->vm->numa_mask)) {
+				mpsr->phase_ret = -EINVAL;
+				break;
+			}
 		}
 	}
 
@@ -2387,7 +2398,7 @@ int move_pages_smp_handler(int cpu_index, int nr_cpus, void *arg)
 
 		/* PTE valid? */
 		if (!mpsr->ptep[i] || !pte_is_present(mpsr->ptep[i])) {
-			mpsr->status[i] = -ENOENT;
+			mpsr->status[i] = -EFAULT;
 			mpsr->ptep[i] = NULL;
 			continue;
 		}
@@ -2450,6 +2461,26 @@ pte_out:
 
 	dkprintf("%s: phase %d done\n", __FUNCTION__, phase);
 	++phase;
+
+	/*
+	 * When nodes array is NULL, move_pages doesn't move any pages,
+	 * instead will return the node where each page
+	 * currently resides by status array.
+	 */
+	if (!mpsr->user_nodes) {
+		/* get nid in parallel */
+		for (i = i_s; i < i_e; i++) {
+			if (mpsr->status[i] < 0) {
+				continue;
+			}
+			mpsr->status[i] = phys_to_nid(
+					pte_get_phys(mpsr->ptep[i]));
+		}
+		mpsr->phase_ret = 0;
+		goto out;  // return node information
+	}
+
+	/* Processing of move pages */
 
 	if (cpu_index == 0) {
 		/* Allocate new pages on target NUMA nodes */
