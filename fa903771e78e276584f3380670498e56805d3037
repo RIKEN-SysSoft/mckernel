@@ -1,0 +1,3523 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6203f148_7d1eb1f8",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1905,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdprintk(\"%s: %s(): fd: %ld, path: %s, PDE_DATA: 0x%lx\\n\",",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a14d34da_38f74588",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1907,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tpacket-\u003ereq.number \u003d\u003d __NR_ioctl ? \"ioctl\" : \"openat\",",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6793259b_6fc310d0",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1911,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdprintk(\"%s: pgd_index: %ld, pmd_index: %ld, pte_index: %ld\\n\",",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d8583662_f65e4284",
+        "filename": "kernel/include/tofu/generate_headers.sh",
+        "patchSetId": 7
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${DWARF_TOOL} ${KMODULE} tof_utofu_device enabled subnet gpid \u003e tofu_generated-tof_utofu_device.h",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07576fab_a5f4acec",
+        "filename": "kernel/include/tofu/generate_headers.sh",
+        "patchSetId": 7
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${DWARF_TOOL} ${KMODULE} tof_utofu_bg common tni bgid bch | sed \"s/struct FILL_IN_MANUALLY bch;/#include \\\"tof_utofu_bg_bch.h\\\"/g\" \u003e tofu_generated-tof_utofu_bg.h",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "666cfda8_74f0e480",
+        "filename": "kernel/include/tofu/generate_headers.sh",
+        "patchSetId": 7
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+${DWARF_TOOL} ${KMODULE} tof_core_bg lock reg irq subnet gpid sighandler | sed \"s/struct FILL_IN_MANUALLY reg;/#include \\\"tof_core_bg_reg.h\\\"/g\" \u003e tofu_generated-tof_core_bg.h $",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "94361a88_1cebd0d8",
+        "filename": "kernel/include/tofu/generate_headers.sh",
+        "patchSetId": 7
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+${DWARF_TOOL} ${KMODULE} tof_core_bg lock reg irq subnet gpid sighandler | sed \"s/struct FILL_IN_MANUALLY reg;/#include \\\"tof_core_bg_reg.h\\\"/g\" \u003e tofu_generated-tof_core_bg.h",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e78f6d0_438e05bc",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 397,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tirqstate \u003d ihk_mc_spinlock_lock(\u0026thread-\u003eproc-\u003emckfd_lock);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c45e7b5_905b92e6",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 399,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_mc_spinlock_unlock(\u0026thread-\u003eproc-\u003emckfd_lock, irqstate);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "33cfc2fd_e2596578",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 403,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t__FUNCTION__,",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "821c6bb9_e9008240",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1303,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\t\t\textern void tof_utofu_release_fd(struct process *proc, int fd);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0b9e1b0c_88355a46",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1303,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\textern void tof_utofu_release_fd(struct process *proc, int fd);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24038af5_f1cc3184",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1306,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%s: -\u003e tof_utofu_release_fd() @ fd: %d (%s)\\n\",",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aaa05778_1a73c4fa",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1307,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t__func__, fd, proc-\u003efd_path[fd]);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e663fcbf_3626fe1f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 3874,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\textern long tof_utofu_unlocked_ioctl(int fd,",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "baa27303_108cef1d",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4036,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\textern void tof_utofu_release_fd(struct process *proc, int fd);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b4638cfb_ed0a8738",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4036,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\t\textern void tof_utofu_release_fd(struct process *proc, int fd);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27ce9974_e4f26d71",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4039,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: -\u003e tof_utofu_release_fd() @ fd: %d (%s)\\n\",",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca9481e1_3e2c645b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 4040,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__func__, fd, thread-\u003eproc-\u003efd_path[fd]);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49099b32_4b169bef",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef ihk_spinlock_t spinlock_t;",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7e427b1a_c0f65eb1",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027void*\u0027 should also have an identifier name\n+\tuint64_t (*handler)(struct tof_core_irq *, uint64_t, void*);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d1447ffb_3f7de233",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027uint64_t\u0027 should also have an identifier name\n+\tuint64_t (*handler)(struct tof_core_irq *, uint64_t, void*);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b1b3adf2_e8f19fc0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: function definition argument \u0027struct tof_core_irq *\u0027 should also have an identifier name\n+\tuint64_t (*handler)(struct tof_core_irq *, uint64_t, void*);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a6d4345_346e4842",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 504,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\u0026tofu_mbpt_sg_pages_cache[ihk_mc_get_numa_id()], 1);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "57bde324_c417817c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 583,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\u0026tofu_mbpt_sg_pages_cache[ihk_mc_get_numa_id()], sg-\u003epages);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d252fef9_a13a33e5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 788,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tuintptr_t iova \u003d tof_utofu_disable_mbpt(mbpt, i);\n+\t\tif (iova) {",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a59fe4d_8ae60edb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 821,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprofile_event_add(PROFILE_tofu_stag_free_stag_dealloc_free_pages, rdtsc() - ts);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e1bdb1aa_41464c7c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1065,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_mc_spinlock_unlock_noirq(\u0026tofu_tni_cq_lock[ucq-\u003etni][ucq-\u003ecqid]);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "42b46725_52554c38",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1098,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_mc_spinlock_unlock_noirq(\u0026tofu_tni_cq_lock[ucq-\u003etni][ucq-\u003ecqid]);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0074b77c_40afef85",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1157,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static inline void tof_writeq(uint64_t val, void *reg, off_t offset){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8159da45_fc6fcaba",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1157,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static inline void tof_writeq(uint64_t val, void *reg, off_t offset){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a8fbaea1_0111696c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1259,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tunsigned long ts_rolling \u003d 0;\n+\tif (cpu_local_var(current)-\u003eprofile) {",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ab6847b9_5245669b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1283,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprofile_event_add(PROFILE_tofu_stag_free_stag_pre, rdtsc() - ts_rolling);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c04f898a_33cc3965",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1288,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprofile_event_add(PROFILE_tofu_stag_free_stag_cqflush, rdtsc() - ts_rolling);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8cf67bc8_733dd64b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1295,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprofile_event_add(PROFILE_tofu_stag_free_stag_dealloc, rdtsc() - ts_rolling);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13cc028a_2046da08",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1322,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(copy_from_user(stags, req.stags, sizeof(int) * req.num) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a4edd8b_9352cdf5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1322,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(copy_from_user(stags, req.stags, sizeof(int) * req.num) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7411c860_bdb1b4b2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1341,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif(copy_to_user(req.stags, stags, sizeof(int) * req.num) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99d2285f_ace394e1",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1341,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\tif(copy_to_user(req.stags, stags, sizeof(int) * req.num) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e721fcd_66a546af",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1341,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\tif(copy_to_user(req.stags, stags, sizeof(int) * req.num) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c44c0fb_b14dd5fe",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1355,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(copy_to_user(req.stags, stags, sizeof(int) * req.num) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fe128f7a_ca3bbe83",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1355,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(copy_to_user(req.stags, stags, sizeof(int) * req.num) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6effaf5_d8fe2ae7",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1409,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+struct tof_core_bg *tof_core_bg_get(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d900b10_7ab92521",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1409,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+struct tof_core_bg *tof_core_bg_get(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27b6bb2e_328f9f72",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1410,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif((unsigned int)tni \u003e\u003d TOF_ICC_NTNIS ||",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "945d44b7_ad042fd2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1411,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t   (unsigned int)bgid \u003e\u003d TOF_ICC_NBGS){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d99b9637_96069b3b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1424,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static struct tof_utofu_bg *tof_utofu_bg_get(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89f06d1e_0f40c375",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1424,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static struct tof_utofu_bg *tof_utofu_bg_get(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "94e18361_1e2d5790",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1425,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif((unsigned int)tni \u003e\u003d TOF_ICC_NTNIS ||",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "40e02cd4_44f1204b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1426,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t   (unsigned int)bgid \u003e\u003d TOF_ICC_NBGS){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65016c45_b82eae5c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1436,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+int tof_core_enable_bch(int tni, int bgid, uint64_t dma_ipa){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6d09e4ee_24c84014",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1436,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int tof_core_enable_bch(int tni, int bgid, uint64_t dma_ipa){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "745155ca_e386e556",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1438,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct tof_core_bg *bg;\n+\tbg \u003d tof_core_bg_get(tni, bgid);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c0d283e_b0a19164",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1439,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(bg \u003d\u003d NULL || bg-\u003ereg.bch \u003d\u003d NULL ||  /* this BG is not associated with a BCH */",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5115a471_7924c09f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1439,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif(bg \u003d\u003d NULL || bg-\u003ereg.bch \u003d\u003d NULL ||  /* this BG is not associated with a BCH */",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b288b421_803271a0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1440,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t   (dma_ipa \u0026 (TOF_ICC_BCH_DMA_ALIGN - 1)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c44b35e_2147bc6d",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1447,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(!tof_core_readq_spin(bg-\u003ereg.bgs, TOF_ICC_REG_BGS_BCH_MASK_STATUS,",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cde05a31_f77d94a6",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1456,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static inline bool tof_utofu_subnet_includes(struct tof_set_subnet *subnet, uint8_t px, uint8_t py, uint8_t pz){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "707db135_a7950ed4",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1456,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static inline bool tof_utofu_subnet_includes(struct tof_set_subnet *subnet, uint8_t px, uint8_t py, uint8_t pz){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c965e2d_2e0cd1b9",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1456,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline bool tof_utofu_subnet_includes(struct tof_set_subnet *subnet, uint8_t px, uint8_t py, uint8_t pz){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b06ab83_9a84bb21",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1457,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\treturn (subnet-\u003elx \u003d\u003d 0 ? px \u003c subnet-\u003enx : (px \u003c subnet-\u003esx ? px + subnet-\u003enx : px) \u003c subnet-\u003esx + subnet-\u003elx) \u0026\u0026",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2e3a4778_789fcd2a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1458,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t       (subnet-\u003ely \u003d\u003d 0 ? py \u003c subnet-\u003eny : (py \u003c subnet-\u003esy ? py + subnet-\u003eny : py) \u003c subnet-\u003esy + subnet-\u003ely) \u0026\u0026",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ad92cd3b_e7153cfb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1459,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t       (subnet-\u003elz \u003d\u003d 0 ? pz \u003c subnet-\u003enz : (pz \u003c subnet-\u003esz ? pz + subnet-\u003enz : pz) \u003c subnet-\u003esz + subnet-\u003elz);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e057e976_6c12763b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1462,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static inline uint64_t tof_utofu_pack_subnet(const struct tof_set_subnet *subnet){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1df3ef57_a8b2808a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1462,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static inline uint64_t tof_utofu_pack_subnet(const struct tof_set_subnet *subnet){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fed1c523_cfd1b230",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1462,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline uint64_t tof_utofu_pack_subnet(const struct tof_set_subnet *subnet){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "993b0091_0add4857",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1479,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline void tof_utofu_unpack_subnet(uint64_t val, struct tof_set_subnet *subnet)",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2000c70e_d77ade7c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1497,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static inline void tof_core_reset_irqmask_imc(struct tof_core_irq *dev){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5330d7e1_9ec3646d",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1497,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static inline void tof_core_reset_irqmask_imc(struct tof_core_irq *dev){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50c5ec9a_04e9c308",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1500,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static inline void tof_core_reset_irqmask(struct tof_core_irq *dev){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "354e6173_f0ce7b37",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1500,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static inline void tof_core_reset_irqmask(struct tof_core_irq *dev){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1ccdff1d_5776c239",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1503,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\twmb();",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6b023f31_8c910111",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1506,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static __always_inline uint64_t tof_util_mask_set(uint64_t val, uint64_t mask){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "508dfc58_ef24085a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1506,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static __always_inline uint64_t tof_util_mask_set(uint64_t val, uint64_t mask){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ee27bc0_e01fc8a9",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1508,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tuint64_t shift \u003d mask \u0026 (~mask + 1);\n+\treturn val * shift \u0026 mask;",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "473d909a_94297055",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1531,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int tof_core_set_bg(const struct tof_set_bg *setbg,\n+\t\t    uint64_t subnet,\n+\t\t    uint32_t bseq, uint32_t gpid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ed8818d1_52906e5c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1550,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(bg \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "150dccd5_bce10af1",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1550,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(bg \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "acf1d77a_8e6f13d0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1561,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(slgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "82684a59_0115dc1e",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1561,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(slgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3c7856c0_e0f2d79c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1562,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tlocallink |\u003d tof_util_mask_set(slgate, TOF_ICC_REG_BGS_LOCAL_LINK_BGID_RECV);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e7cf0d6_f02fd9b2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1563,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required after that close brace \u0027}\u0027\n+\t}else{",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bbdd5680_359277fc",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1566,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(srgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "99b2ad98_18b537d2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1566,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(srgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3dbf7843_de5b9ada",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1568,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tuint64_t bgaddr;\n+\t\tbgaddr \u003d tof_core_pack_remote_bg(sraddr, srtni, srgate);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a53b8ec1_73948a3b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1569,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tremotelink |\u003d tof_util_mask_set(bgaddr, TOF_ICC_REG_BGS_REMOTE_LINK_BG_ADDRESS_RECV);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "df5f6b78_13c2484d",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1570,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required after that close brace \u0027}\u0027\n+\t}else{",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "66a94a1f_1029fdef",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1573,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(dlgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "856e5273_c29003d1",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1573,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(dlgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b59ccb8e_10140122",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1574,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tlocallink |\u003d tof_util_mask_set(dlgate, TOF_ICC_REG_BGS_LOCAL_LINK_BGID_SEND);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da3903c7_a99c3bcb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1575,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required after that close brace \u0027}\u0027\n+\t}else{",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a6c7c1b_164ebdb0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1578,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(drgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4334f047_99180f24",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1578,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(drgate \u003e\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7df82115_bfcca5f5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1580,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tuint64_t bgaddr;\n+\t\tbgaddr \u003d tof_core_pack_remote_bg(draddr, drtni, drgate);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "47931632_b79209fb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1581,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tremotelink |\u003d tof_util_mask_set(bgaddr, TOF_ICC_REG_BGS_REMOTE_LINK_BG_ADDRESS_SEND);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "95f8a08a_6081211f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1582,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required after that close brace \u0027}\u0027\n+\t}else{",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c0ec0f2d_e23d2ad6",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1589,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttof_writeq((uint64_t)gpid \u003c\u003c 24 | bseq, bg-\u003ereg.bgs, TOF_ICC_REG_BGS_GPID_BSEQ);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d31e1987_a3de10e2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1590,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\twmb();",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5d93a14_4712a72b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1592,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(!tof_core_readq_spin(bg-\u003ereg.bgs, TOF_ICC_REG_BGS_STATE,",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a2f7d6d_edf579e9",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1603,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+void tof_core_register_signal_bg(int tni, int bgid, tof_core_signal_handler handler)",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f1f7bab_0240942b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1607,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tunsigned long flags;\n+\tlinux_spin_lock_irqsave(\u0026bg-\u003elock, flags);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3d05fecf_f4e7aea5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1612,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+typedef void (tof_utofu_handler_bg_signal_t)(int tni, int bgid, uint64_t irr, uint64_t data);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b1a127e1_8d69464f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1615,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef int kuid_t;",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b19c3650_a2bfb470",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1616,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_utofu_set_bg(struct tof_utofu_bg *ubch, struct tof_set_bg __user *bgs, kuid_t kuid, uint32_t bseq){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "138e4084_6e3dfab3",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1616,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static int tof_utofu_set_bg(struct tof_utofu_bg *ubch, struct tof_set_bg __user *bgs, kuid_t kuid, uint32_t bseq){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69eba499_25dcd91f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1616,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_utofu_set_bg(struct tof_utofu_bg *ubch, struct tof_set_bg __user *bgs, kuid_t kuid, uint32_t bseq){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4b456b35_39e78337",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1622,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(copy_from_user(\u0026req, bgs, sizeof(req)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f9e565bd_6eef5478",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1622,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(copy_from_user(\u0026req, bgs, sizeof(req)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d9b59b15_c4c7731a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1625,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t//tof_log_if(\"ubch-\u003etni\u003d%d ubch-\u003ebgid\u003d%d tni\u003d%d gate\u003d%d source_lgate\u003d%d source_raddr\u003d%x source_rtni\u003d%d source_rgate\u003d%d dest_lgate\u003d%d dest_raddr\u003d%x dest_rtni\u003d%d dest_rgate\u003d%d\\n\",",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8010752e_fbe67507",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1626,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"%s: ubch-\u003etni\u003d%d ubch-\u003ebgid\u003d%d tni\u003d%d gate\u003d%d source_lgate\u003d%d source_raddr\u003d%x source_rtni\u003d%d source_rgate\u003d%d dest_lgate\u003d%d dest_raddr\u003d%x dest_rtni\u003d%d dest_rgate\u003d%d\\n\",",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a51e97cb_da403ce2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1627,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__func__, ubch-\u003etni, ubch-\u003ebgid, req.tni, req.gate, req.source_lgate, req.source_raddr, req.source_rtni, req.source_rgate, req.dest_lgate, req.dest_raddr, req.dest_rtni, req.dest_rgate);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f114ed75_4ac0411f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1630,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ubg \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "33cc5467_dcd02ad3",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1630,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ubg \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0ca96ba8_499571b0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1635,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(req.source_lgate \u003e\u003d TOF_ICC_NBGS ||",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09ea0a7a_3a48d9a6",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1637,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t    (!tof_utofu_subnet_includes(\u0026subnet, req.source_raddr.x, req.source_raddr.y, req.source_raddr.z) ||",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a323ab44_cd7bd92f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1642,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t    (!tof_utofu_subnet_includes(\u0026subnet, req.dest_raddr.x, req.dest_raddr.y, req.dest_raddr.z) ||",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9033e1c2_1e30b86b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ubg-\u003ecommon.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "799b2b56_21f69aa0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ubg-\u003ecommon.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b04d9ea0_161dd7f2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1662,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fb16e800_a6f38094",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1662,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "022aa06c_2a615acb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1673,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttof_core_register_signal_bg(req.tni, req.gate, tof_utofu_handler_bg_signal);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8f39797a_7ff28d83",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1686,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_core_bch_disable_locked(struct tof_core_bg *bg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d70b30b_373b902d",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1686,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_core_bch_disable_locked(struct tof_core_bg *bg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d451174_17d25cd5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1687,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(bg-\u003ereg.bch \u003d\u003d NULL){  /* this BG is not associated with a BCH */",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "20da8b2a_1e02bc7c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1687,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(bg-\u003ereg.bch \u003d\u003d NULL){  /* this BG is not associated with a BCH */",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b52c2c0b_07a5dbcb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1690,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\ttof_writeq(TOF_ICC_REG_BGS_BCH_MASK_MASK, bg-\u003ereg.bgs, TOF_ICC_REG_BGS_BCH_MASK);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc23af11_40fb642b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1698,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(!tof_core_readq_spin(bg-\u003ereg.bgs, TOF_ICC_REG_BGS_BCH_MASK_STATUS,",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "44b83801_c0f1193a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1704,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(!tof_core_readq_spin(bg-\u003ereg.bch, TOF_ICC_REG_BCH_READY,",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1afdef58_c06a705c",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1715,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+int tof_core_disable_bch(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cfa8ed94_de799cb5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1715,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int tof_core_disable_bch(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd5eb717_6761d070",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1718,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret;\n+\tbg \u003d tof_core_bg_get(tni, bgid);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9314fd0a_be733882",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1719,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(bg \u003d\u003d NULL || bg-\u003ereg.bch \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b253073_db645872",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1719,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(bg \u003d\u003d NULL || bg-\u003ereg.bch \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ed30d10_98cd9eff",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1726,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_core_bg_disable(struct tof_core_bg *bg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6eba2ac5_3674bcc5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1726,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_core_bg_disable(struct tof_core_bg *bg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "208b6e49_fed55915",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1732,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(unlikely(tof_core_bg_disable_timeout_check_enable)){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08d1f76c_b7f79b14",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1732,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(unlikely(tof_core_bg_disable_timeout_check_enable)){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "955c4375_26f5c1a5",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1733,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tif(!tof_core_readq_spin(bg-\u003ereg.bgs, TOF_ICC_REG_BGS_STATE,",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d738675_2e33d17d",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1736,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\t\t\tTOF_CORE_TIMEOUT_SEC(tof_core_bg_disable_timeout_limit_sec))){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c613641_2472b057",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1736,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tTOF_CORE_TIMEOUT_SEC(tof_core_bg_disable_timeout_limit_sec))){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0249348_f60ef4fb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1745,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int tof_core_unset_bg(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ad7aa79_1596c50d",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1745,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+int tof_core_unset_bg(int tni, int bgid){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "60ad69fa_e61fd46f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1747,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct tof_core_bg *bg;\n+\tbg \u003d tof_core_bg_get(tni, bgid);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "56ca2926_9db44006",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(bg \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cda06d5d_197dfb81",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(bg \u003d\u003d NULL){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "06327410_ca1a56d9",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1759,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int __tof_utofu_unset_bg(struct tof_utofu_bg *ubg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "85ed1f12_a0d939ad",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1759,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int __tof_utofu_unset_bg(struct tof_utofu_bg *ubg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8af4821_88f6d189",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1760,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ubg-\u003ecommon.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7475d0f8_7eed4523",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1760,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ubg-\u003ecommon.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a2ddde82_84b50ffc",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1768,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_utofu_unset_bg(struct tof_set_bg __user *bgs){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1ed256c3_39cba247",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1768,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_utofu_unset_bg(struct tof_set_bg __user *bgs){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ea26bddf_0f367ce7",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1771,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(copy_from_user(\u0026req, bgs, sizeof(req)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2c1ff415_9337a15f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1771,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct tof_utofu_bg *ubg;\n+\tif(copy_from_user(\u0026req, bgs, sizeof(req)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "63dfed5e_0ec92102",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1771,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(copy_from_user(\u0026req, bgs, sizeof(req)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a6737dfa_6c390796",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1778,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_utofu_ioctl_enable_bch(struct tof_utofu_device *dev, unsigned long arg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72e0724b_a5e9a6e0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1778,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_utofu_ioctl_enable_bch(struct tof_utofu_device *dev, unsigned long arg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50cd411a_2b1c2fbe",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1778,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static int tof_utofu_ioctl_enable_bch(struct tof_utofu_device *dev, unsigned long arg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "067562fd_2d6be089",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1790,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ubg-\u003ebgid \u003e\u003d TOF_ICC_NBCHS){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0cd3bc56_bd6d4f29",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1790,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ubg-\u003ebgid \u003e\u003d TOF_ICC_NBCHS){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e4599a6a_43f83385",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1794,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ubg-\u003ebch.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "84d1b066_638873bb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1794,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ubg-\u003ebch.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "516e7560_4547f664",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1798,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(copy_from_user(\u0026req, (void *)arg, sizeof(req)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e4146ee_26ef67d2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1798,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(copy_from_user(\u0026req, (void *)arg, sizeof(req)) !\u003d 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "63195aa8_d5e82cd4",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1802,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t__func__, ubg-\u003etni, ubg-\u003ebgid, req.addr, req.bseq, req.num, req.bgs);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3baf2660_b2f0d1ff",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1804,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(req.num \u003c 0 || req.bgs \u003d\u003d NULL || req.addr \u003d\u003d NULL ||",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13a645ed_46db9730",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1806,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t   (uint32_t)req.bseq \u003e\u003d TOF_ICC_BG_BSEQ_SIZE){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3cfb22d2_3aebd43a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1820,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(void *)req.addr \u003c proc-\u003estraight_va + proc-\u003estraight_len) {",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "54fc6ebe_4edbd77e",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1832,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026vm-\u003ememory_range_lock);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "575b7dcf_cd4255df",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1840,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t//\t\t\t  pfn_to_kaddr(page_to_pfn(page)) + ((uintptr_t)req.addr \u0026 (~PAGE_MASK)),",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "09cbb767_950aa9a3",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1855,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "151434bc_a2401bdb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1855,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "363d0b85_e655a7dc",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1860,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tfor(i \u003d 0; i \u003c req.num; i++){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "137de112_58c0a7a1",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1860,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tfor(i \u003d 0; i \u003c req.num; i++){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "803d3c02_ee38c6e8",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1862,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3fa4a46c_e9defe67",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1862,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4fdd2d31_4e08ffd0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1876,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tfor( ; i--; ){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9afb0cc8_bf753486",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1876,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tfor( ; i--; ){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "48ca1232_9127977e",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1879,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t//tof_smmu_release_ipa_bg(ubg-\u003etni, ubg-\u003ebgid, ipa, TOF_ICC_BCH_DMA_ALIGN);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8c103149_06b57f89",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1884,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_utofu_disable_bch(struct tof_utofu_bg *ubg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69dc11eb_2119b56a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1884,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_utofu_disable_bch(struct tof_utofu_bg *ubg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f688844b_43f615f7",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1888,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(!ubg-\u003ebch.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "599de8d4_01876e6e",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1888,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(!ubg-\u003ebch.enabled){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd7c9f45_80e3fb1a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1893,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1b61ae0f_fab20f7f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1893,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a05a36fc_d2fc3f6f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1898,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tfor(tni \u003d 0; tni \u003c TOF_ICC_NTNIS; tni++){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1ef7927b_f7f40875",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1898,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\tfor(tni \u003d 0; tni \u003c TOF_ICC_NTNIS; tni++){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "abc38f29_3398922a",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1900,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tfor(bgid \u003d 0; bgid \u003c TOF_ICC_NBGS; bgid++){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8ed1f760_e195274f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1900,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\tfor(bgid \u003d 0; bgid \u003c TOF_ICC_NBGS; bgid++){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bede16a0_5dc15274",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1900,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tuint64_t mask \u003d ubg-\u003ebch.bgmask[tni];\n+\t\tfor(bgid \u003d 0; bgid \u003c TOF_ICC_NBGS; bgid++){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "822f32ec_00c60992",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1901,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\tif((mask \u003e\u003e bgid) \u0026 1){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8c295434_e6b40e79",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1901,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\tif((mask \u003e\u003e bgid) \u0026 1){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "423bd951_470913d6",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1902,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tret \u003d __tof_utofu_unset_bg(tof_utofu_bg_get(tni, bgid));",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b468e27b_6d7e6127",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1903,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+\t\t\t\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "772f6d1d_4eccfcb9",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1903,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\t\t\tif(ret \u003c 0){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87b2e085_a13215f1",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1911,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t//tof_smmu_release_ipa_bg(ubg-\u003etni, ubg-\u003ebgid, ubg-\u003ebch.iova, TOF_ICC_BCH_DMA_ALIGN);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "27f4c353_f3b93ba2",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1918,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_utofu_ioctl_disable_bch(struct tof_utofu_device *dev, unsigned long arg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "aaa98b07_f7f17a5b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1918,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_utofu_ioctl_disable_bch(struct tof_utofu_device *dev, unsigned long arg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f1be9f88_e10748b0",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1918,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static int tof_utofu_ioctl_disable_bch(struct tof_utofu_device *dev, unsigned long arg){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "22ec1897_aadb1aca",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1927,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: space required before the open brace \u0027{\u0027\n+static int tof_utofu_release_bch(void *pde_data){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5f2f2e7_8551c797",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1927,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+static int tof_utofu_release_bch(void *pde_data){",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e1ca99dd_23625adb",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1941,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+long tof_utofu_unlocked_ioctl(int fd,\n \t\tunsigned int cmd, unsigned long arg) {",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d31d7a56_bcf95edc",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1948,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tunsigned long ts \u003d 0;\n+\tif (cpu_local_var(current)-\u003eprofile) {",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c6ff5d3e_051ede96",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1960,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "ERROR: switch and case should be at the same indent\n \tswitch (cmd) {\n[...]\n+\t\tcase TOF_IOCTL_ENABLE_BCH:\n[...]\n+\t\tcase TOF_IOCTL_DISABLE_BCH:\n[...]\n+\t\tcase TOF_IOCTL_INIT_CQ:",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2810c46c_ad1fc43e",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1964,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprofile_event_add(PROFILE_tofu_stag_alloc, rdtsc() - ts);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "400844aa_5e1ae590",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 1971,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprofile_event_add(PROFILE_tofu_stag_free_stags, rdtsc() - ts);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b5a3af42_cb49aaf9",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2051,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t(tof_utofu_handler_bg_signal_t *)tg-\u003etof_utofu_handler_bg_signal_addr;",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "19d3372c_e5b5b251",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 2070,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:13:59Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_mc_spinlock_init(\u0026tofu_tni_cq_lock[tni][cq]);",
+      "revId": "fa903771e78e276584f3380670498e56805d3037",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
