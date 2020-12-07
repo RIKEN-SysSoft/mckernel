@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a3134ad5_62697886",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:05:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: straight range 0x%lx @ straight 0x%lx (phys: 0x%lx)\"",
+      "revId": "2b69a35c785aac92cd0a805561e257efe1562eb2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ca95f401_c9109b16",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1154,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:05:07Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t__FUNCTION__, range-\u003estart, range-\u003estraight_start,",
+      "revId": "2b69a35c785aac92cd0a805561e257efe1562eb2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "107ef808_574bbc55",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1154,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:05:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t__FUNCTION__, range-\u003estart, range-\u003estraight_start,",
+      "revId": "2b69a35c785aac92cd0a805561e257efe1562eb2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0d08a7cf_7534fa0f",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1156,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T07:05:07Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t(range-\u003estraight_start - (unsigned long)vm-\u003eproc-\u003estraight_va));",
+      "revId": "2b69a35c785aac92cd0a805561e257efe1562eb2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
