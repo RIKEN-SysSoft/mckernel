@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f295af32_902e9c51",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2347,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:43:11Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmpsr-\u003enodes[i] \u003e\u003d ihk_mc_get_nr_numa_nodes() ||",
+      "revId": "d7c23b28f07be4c3dd7366499107a9569e9e041b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3e25d28e_a876bebe",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2408,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:43:11Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmpsr-\u003enodes[i] \u003e\u003d ihk_mc_get_nr_numa_nodes() ||",
+      "revId": "d7c23b28f07be4c3dd7366499107a9569e9e041b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ceb37407_3005a6e6",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 9802,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:43:11Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (nodes[i] \u003c 0 || nodes[i] \u003e\u003d ihk_mc_get_nr_numa_nodes()) {",
+      "revId": "d7c23b28f07be4c3dd7366499107a9569e9e041b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce6c37b7_8183f2ca",
+        "filename": "test/issues/1523/C1523.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:43:11Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in move_pages01 move_pages02 move_pages04 move_pages06 move_pages09 move_pages10",
+      "revId": "d7c23b28f07be4c3dd7366499107a9569e9e041b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
