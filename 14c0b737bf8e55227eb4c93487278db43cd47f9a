@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "17ac71e9_2dd0b5d9",
+        "filename": "arch/arm64/kernel/include/arch-string.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:54:23Z",
+      "side": 1,
+      "message": "ERROR: inline keyword should sit between storage class and type\n+inline static void memclear(void *addr, unsigned long len)",
+      "revId": "14c0b737bf8e55227eb4c93487278db43cd47f9a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c5185761_61ff11c7",
+        "filename": "arch/arm64/kernel/include/arch-string.h",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:54:23Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tuint64_t q0q1[4];\n+\t__memclear(addr, len, (void *)\u0026q0q1);",
+      "revId": "14c0b737bf8e55227eb4c93487278db43cd47f9a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
