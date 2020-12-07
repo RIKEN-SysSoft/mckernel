@@ -1,0 +1,25 @@
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O -e anon_on_demand ... done
+*** C1523T01 start *******************************
+move_pages01    1  TPASS  :  pages are present in expected nodes
+*** C1523T01 PASSED (1)
+
+*** C1523T02 start *******************************
+move_pages02    1  TPASS  :  pages are present in expected nodes
+*** C1523T02 PASSED (1)
+
+*** C1523T03 start *******************************
+move_pages04    1  TPASS  :  status[1] has expected value
+*** C1523T03 PASSED (1)
+
+*** C1523T04 start *******************************
+move_pages06    1  TPASS  :  move_pages failed with ENODEV as expected
+*** C1523T04 PASSED (1)
+
+*** C1523T05 start *******************************
+move_pages09    1  TPASS  :  move_pages succeeded
+*** C1523T05 PASSED (1)
+
+*** C1523T06 start *******************************
+move_pages10    1  TPASS  :  move_pages failed with EINVAL as expected
+*** C1523T06 PASSED (1)
