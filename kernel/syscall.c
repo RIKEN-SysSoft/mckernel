@@ -9716,7 +9716,7 @@ SYSCALL_DECLARE(move_pages)
 	struct move_pages_smp_req mpsr;
 
 	struct process_vm *vm = cpu_local_var(current)->vm;
-	int ret = 0;
+	int i, ret = 0;
 
 	unsigned long t_s, t_e;
 
@@ -9726,18 +9726,20 @@ SYSCALL_DECLARE(move_pages)
 	if (pid) {
 		kprintf("%s: ERROR: only self (pid == 0)"
 				" is supported\n", __FUNCTION__);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto out;
 	}
 
-	switch (flags) {
-	case MPOL_MF_MOVE_ALL:
+    /* Check flags */
+	if (flags & ~(MPOL_MF_MOVE|MPOL_MF_MOVE_ALL)) {
+		ret = -EINVAL;
+		goto out;
+	}
+	if (flags & MPOL_MF_MOVE_ALL) {
 		kprintf("%s: ERROR: MPOL_MF_MOVE_ALL"
 			" not supported\n", __func__);
-		return -EINVAL;
-	case MPOL_MF_MOVE:
-		break;
-	default:
-		return -EINVAL;
+		ret = -EINVAL;
+		goto out;
 	}
 
 	/* Allocate kernel arrays */
@@ -9785,7 +9787,7 @@ t_e = rdtsc(); kprintf("%s: init malloc: %lu \n", __FUNCTION__, t_e - t_s); t_s 
 		goto dealloc_out;
 	}
 
-	if (verify_process_vm(cpu_local_var(current)->vm,
+	if (user_nodes && verify_process_vm(cpu_local_var(current)->vm,
 				user_nodes, sizeof(int) * count)) {
 		ret = -EFAULT;
 		goto dealloc_out;
@@ -9796,6 +9798,18 @@ t_e = rdtsc(); kprintf("%s: init malloc: %lu \n", __FUNCTION__, t_e - t_s); t_s 
 		ret = -EFAULT;
 		goto dealloc_out;
 	}
+
+	/* Check node ID */
+	if (user_nodes) {
+		copy_from_user(nodes, user_nodes, sizeof(int) * count);
+		for (i = 0; i < count; i++) {
+			if (nodes[i] < 0 || nodes[i] >= ihk_mc_get_nr_numa_nodes()) {
+				ret = -ENODEV;
+				goto dealloc_out;
+			}
+		}
+	}
+
 t_e = rdtsc(); kprintf("%s: init verify: %lu \n", __FUNCTION__, t_e - t_s); t_s = t_e;
 
 #if 0
@@ -9888,6 +9902,7 @@ dealloc_out:
 	kfree(ptep);
 	kfree(dst_phys);
 
+out:
 	return ret;
 }
 
