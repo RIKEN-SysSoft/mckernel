@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "771c6165_5e6ae8ba",
+        "filename": "arch/arm64/kernel/include/arch-lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:36:46Z",
+      "side": 1,
+      "message": "WARNING: Avoid unnecessary line continuations\n+\t\t\tkprintf(\"%s: WARNING: runq lock held without IRQs disabled?\\n\", __func__); \\",
+      "revId": "16e4a27cb524cb61d5e968a76c4f347488e9baa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0c9e9536_e571bd0c",
+        "filename": "arch/arm64/kernel/include/arch-lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:36:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: WARNING: runq lock held without IRQs disabled?\\n\", __func__); \\",
+      "revId": "16e4a27cb524cb61d5e968a76c4f347488e9baa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d4bf5d9_8f81eb7d",
+        "filename": "arch/arm64/kernel/include/arch-lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 202,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:36:46Z",
+      "side": 1,
+      "message": "WARNING: Avoid unnecessary line continuations\n+\t\tkprintf(\"%s: WARNING: runq lock held without IRQs disabled?\\n\", __func__); \\",
+      "revId": "16e4a27cb524cb61d5e968a76c4f347488e9baa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "218992c8_741a210e",
+        "filename": "arch/arm64/kernel/include/arch-lock.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 202,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T06:36:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: WARNING: runq lock held without IRQs disabled?\\n\", __func__); \\",
+      "revId": "16e4a27cb524cb61d5e968a76c4f347488e9baa3",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
