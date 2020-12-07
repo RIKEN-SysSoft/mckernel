@@ -1,0 +1,378 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ab265d83_cbc02c57",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 455,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+int __mcctrl_tof_utofu_release_bch(struct inode *inode, struct file *filp);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "65138fbf_faed659d",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 482,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: unnecessary whitespace before a quoted newline\n+\tdprintk(\"%s: current PID: %d, comm: %s \\n\",",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "08a60f47_6ccc3af5",
+        "filename": "executer/kernel/mcctrl/arch/arm64/archdeps.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 491,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__func__, task_tgid_vnr(current), f2pfd-\u003epid, f2pfd-\u003efd);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "439896e0_2ab05903",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 407,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\tprintk(\"%s: WARNING: failed to send IKC msg: %d\\n\",",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "37077538_1286353b",
+        "filename": "executer/kernel/mcctrl/driver.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void mcctrl_file_to_pidfd_hash_init(void);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa403efe_47004a18",
+        "filename": "executer/kernel/mcctrl/driver.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void mcctrl_tofu_hijack_release_handlers(void);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a6f7862_c126fcd2",
+        "filename": "executer/kernel/mcctrl/driver.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern void mcctrl_tofu_restore_release_handlers(void);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c0224207_9f4e0cd8",
+        "filename": "executer/kernel/mcctrl/ikc.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 172,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdesc-\u003estatus, msecs_to_jiffies(timeout));",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f0b08160_36a06b2e",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1852,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint hash;\n+\tspin_lock_init(\u0026mcctrl_file_to_pidfd_hash_lock);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9c0d3866_919dfb7a",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1883,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\t\t\tprintk(\"%s: WARNING: filp: %p, pid: %d, fd: %d exists\\n\",",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cb158ac8_badfed8d",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1921,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^Iif (file2pidfd_iter-\u003efilp \u003d\u003d filp \u0026\u0026 $",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f59b819_5dffe167",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1925,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t__func__, filp, file2pidfd-\u003epid, file2pidfd-\u003efd);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "72493548_4856f3e0",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 2474,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\terror \u003d -ENOSYS;",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db4cd6f7_dce38146",
+        "filename": "kernel/host.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 782,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\textern int process_cleanup_before_terminate(int pid);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d6499fe8_8eb8a56b",
+        "filename": "kernel/host.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 798,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\textern int process_cleanup_fd(int pid, int fd);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "43d6e060_d31406ae",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1306,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: -\u003e tof_utofu_release_fd() @ fd: %d (%s)\\n\",",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "38073958_0b4cc7d4",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1307,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__func__, fd, proc-\u003efd_path[fd]);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ac8f842e_386e5cf9",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1492,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\textern void tof_utofu_release_fd(struct process *proc, int fd);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7f0f30f1_35cfe7bc",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1500,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: kfree(NULL) is safe and this check is probably not required\n+\t\tif (proc-\u003efd_path[fd]) {\n+\t\t\tkfree(proc-\u003efd_path[fd]);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8e002a79_5e6c357c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 4102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: -\u003e tof_utofu_release_fd() @ fd: %d (%s)\\n\",",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07866518_8e1a3652",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 4103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t__func__, fd, thread-\u003eproc-\u003efd_path[fd]);",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3252a2da_2fbc5241",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1919,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-07T08:41:32Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tsmp_mb();",
+      "revId": "2212a40709588ed73ff48073e3e8e75f1829d492",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
