@@ -1,0 +1,21 @@
+【Issue#1523 動作確認】
+□ テスト内容
+1. 以下のLTPがPASSすることを確認する
+  - move_pages01
+  - move_pages02
+  - move_pages04
+  - move_pages06
+  - move_pages09
+  - move_pages10
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
