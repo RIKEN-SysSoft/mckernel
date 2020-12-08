@@ -1,0 +1,2010 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "94b622db_1da5e425",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 734,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        unsigned long pc, uintptr_t sp, int kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "41b595ff_bfb47042",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 734,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        unsigned long pc, uintptr_t sp, int kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "704e46dc_05671b97",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 736,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    uintptr_t stack_top;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ebbba32e_abb8e434",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 737,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    unsigned long irqflags \u003d 0;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ca70f4f_5daa8a93",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 739,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    stack_top \u003d ALIGN_UP(sp, (uintptr_t)KERNEL_STACK_SIZE);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b8b8046d_bfc24cf3",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 741,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    if (!kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "34e59f69_c3491f34",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 742,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        irqflags \u003d kprintf_lock();$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d9c83ad_f3686c61",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 742,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        irqflags \u003d kprintf_lock();$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e906a5aa_b9525d78",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 744,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    __kprintf(\"TID: %d, call stack (most recent first):\\n\",$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c5bb1f12_dba47165",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 745,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        thread-\u003etid);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a24fc15f_2eb4e7cb",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 745,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        thread-\u003etid);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4447ae35_684df4bf",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 746,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    __kprintf(\"PC: %016lx, SP: %016lx\\n\", pc, sp);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d5c6aa18_e0ac729b",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 747,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    for (;;) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97840053_d5876f57",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        extern char _head[], _end[];$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e51348f8_f65be871",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+        extern char _head[], _end[];",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5231179c_9456e81d",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        extern char _head[], _end[];$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e0df0fc1_f6edc3f4",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 749,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        uintptr_t *fp, *lr;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e875c27_caa05a16",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 749,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        uintptr_t *fp, *lr;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7ecb0880_ee3b6a89",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 750,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        fp \u003d (uintptr_t *)sp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a0473e8_03de790a",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 750,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        fp \u003d (uintptr_t *)sp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5e344c41_90d936ef",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 750,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+        uintptr_t *fp, *lr;\n+        fp \u003d (uintptr_t *)sp;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0f1f4838_53ede99d",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 751,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        lr \u003d (uintptr_t *)(sp + 8);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8cffd27a_24c9ae78",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 751,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        lr \u003d (uintptr_t *)(sp + 8);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ed181d86_9fb1c0c3",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 753,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (8, 12)\n+        if ((*fp \u003c\u003d sp)) {\n+            break;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00875245_2077eed6",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 753,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        if ((*fp \u003c\u003d sp)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1fa3cfaa_7daaa3ae",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 753,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary parentheses\n+        if ((*fp \u003c\u003d sp)) {",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "728cb937_45ac0797",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 753,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        if ((*fp \u003c\u003d sp)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1001ce03_73516da6",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 754,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c491c9fb_6bf4a24e",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 754,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c8e1bdb_bd5eda8f",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 755,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f7981bb_2f4e529b",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 755,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "18ac814a_7af10ae9",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 757,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        if ((*fp \u003e stack_top)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9614e7e2_d97db4e7",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 757,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary parentheses\n+        if ((*fp \u003e stack_top)) {",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "89248703_f2531fd3",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 757,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        if ((*fp \u003e stack_top)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b0516b1d_b3b5372f",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 757,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (8, 12)\n+        if ((*fp \u003e stack_top)) {\n+            break;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db7b8367_86ce4132",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 758,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a0fcbec7_498f71fe",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 758,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fc1e9d4d_c68b72c8",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 759,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "872624a5_443d1cc3",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 759,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff686679_7e509bd0",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 761,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        if ((*lr \u003c (unsigned long)_head) ||$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "135fb6a7_53fbdac4",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 761,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        if ((*lr \u003c (unsigned long)_head) ||$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "51840d65_5c15cf5e",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 761,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (8, 12)\n+        if ((*lr \u003c (unsigned long)_head) ||\n[...]\n+            break;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0b3db98e_f3e31516",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 762,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            (*lr \u003e (unsigned long)_end)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b5aef4e2_4ed44621",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 762,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            (*lr \u003e (unsigned long)_end)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fcc337f9_e6cdadd9",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 763,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d838845a_886896c2",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 763,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ee4bb0d_eab59bfc",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 764,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "74847319_06266556",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 764,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04290392_0199f2e0",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 766,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        __kprintf(\"PC: %016lx, SP: %016lx, FP: %016lx\\n\", *lr - 4, sp, *fp);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9fe4d14a_150fa742",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 766,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        __kprintf(\"PC: %016lx, SP: %016lx, FP: %016lx\\n\", *lr - 4, sp, *fp);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c8fed1cd_5212b53a",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 767,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        sp \u003d *fp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f983b215_13a2ff46",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 767,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        sp \u003d *fp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "57484f9b_7fef58a2",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 768,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8de24c34_3dd8922a",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 770,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    if (!kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3ab0ab8d_4783b11f",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 771,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        kprintf_unlock(irqflags);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1e432797_f12a9f87",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 771,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        kprintf_unlock(irqflags);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "97784cbc_b462044b",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 872,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        unsigned long pc, uintptr_t sp, int kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6c2eb3ba_851da108",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 872,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        unsigned long pc, uintptr_t sp, int kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6ccdaeae_3917f0ba",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 874,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    uintptr_t stack_top;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a9261138_5ffd4dc6",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 875,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    unsigned long irqflags \u003d 0;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bd0f0f2b_f3990717",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 877,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    stack_top \u003d ALIGN_UP(sp, (uintptr_t)KERNEL_STACK_SIZE);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "836e64eb_2fabdbe2",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 879,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    if (!kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9148d65d_aeb7ca2e",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 880,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        irqflags \u003d kprintf_lock();$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ee9db7bb_2d21dab4",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 880,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        irqflags \u003d kprintf_lock();$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ba18d5e_9da8b88a",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 882,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    __kprintf(\"TID: %d, call stack (most recent first):\\n\",$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "04420cdd_4049fd4c",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 883,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        thread-\u003etid);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5169fc6_200b227b",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 883,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        thread-\u003etid);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2140a00c_1ba705f4",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 884,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    __kprintf(\"PC: %016lx, SP: %016lx\\n\", pc, sp);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "984b19ee_b9883ee7",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 885,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    for (;;) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a456c87e_1ad2e019",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 886,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        extern char _head[], _end[];$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50d23f3d_c74eb1d2",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 886,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        extern char _head[], _end[];$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b0d32d2d_15c6721d",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 886,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+        extern char _head[], _end[];",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2d20ec8a_0dd2ce90",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 887,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        uintptr_t *fp, *lr;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a09a573_d8e6dbfe",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 887,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        uintptr_t *fp, *lr;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c69f4d9b_b080164f",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 888,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        fp \u003d (uintptr_t *)sp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c7bcabff_80edfe18",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 888,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        fp \u003d (uintptr_t *)sp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce15347d_698f2d0d",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 888,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+        uintptr_t *fp, *lr;\n+        fp \u003d (uintptr_t *)sp;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4afb0876_71c77e9f",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 889,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        lr \u003d (uintptr_t *)(sp + 8);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "851ee548_c7947b8a",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 889,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        lr \u003d (uintptr_t *)(sp + 8);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "23976d0b_92b591f5",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 891,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (8, 12)\n+        if ((*fp \u003c\u003d sp)) {\n+            break;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3564187d_213b1ffa",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 891,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        if ((*fp \u003c\u003d sp)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "70286a56_b34a8f2b",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 891,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        if ((*fp \u003c\u003d sp)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55a53429_8c672e1e",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 891,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary parentheses\n+        if ((*fp \u003c\u003d sp)) {",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "22a7444f_7a547cff",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 892,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f8b96090_4f93de17",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 892,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "01c71e07_76214148",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 893,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5f417f7c_69d21c7e",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 893,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d7b465d_136ed926",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 895,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: Unnecessary parentheses\n+        if ((*fp \u003e stack_top)) {",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "07406430_cce72ebe",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 895,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        if ((*fp \u003e stack_top)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "228f9815_f195bf6b",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 895,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        if ((*fp \u003e stack_top)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d4fc297a_1a9b4bf7",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 895,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (8, 12)\n+        if ((*fp \u003e stack_top)) {\n+            break;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3706064f_fd55d427",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 896,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8bfdffb9_478eebec",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 896,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f0c460f_7e7a8c83",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 897,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b3380745_a6e67e16",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 897,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c0d1291b_331dbe78",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 899,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        if ((*lr \u003c (unsigned long)_head) ||$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c2f0b32a_1471dbf9",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 899,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        if ((*lr \u003c (unsigned long)_head) ||$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4ddfe8b5_8cdfe72d",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 899,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (8, 12)\n+        if ((*lr \u003c (unsigned long)_head) ||\n[...]\n+            break;",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4f5d4fc4_5c397b10",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 900,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            (*lr \u003e (unsigned long)_end)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ce9d87ec_e778acf3",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 900,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            (*lr \u003e (unsigned long)_end)) {$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ee843dbc_86a3be4c",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 901,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e9fcca1_b903cb64",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 901,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+            break;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d68e7c1d_5871cfee",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 902,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "36442082_559c93a4",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 902,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "67b49746_f4bc3ef6",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 904,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        __kprintf(\"PC: %016lx, SP: %016lx, FP: %016lx\\n\", *lr - 4, sp, *fp);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "87c0412a_daf371d9",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 904,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        __kprintf(\"PC: %016lx, SP: %016lx, FP: %016lx\\n\", *lr - 4, sp, *fp);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0e5d632f_ef9abd4a",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 905,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        sp \u003d *fp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f5807ec0_04739af2",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 905,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        sp \u003d *fp;$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3eaa8383_01c7abb7",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 906,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    }$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "355ccde6_c4d81fc7",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 908,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    if (!kprintf_locked)$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8239e878_2e552f87",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 909,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        kprintf_unlock(irqflags);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5cb5c606_292a6ff9",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 909,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        kprintf_unlock(irqflags);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d6b4582_c79aa191",
+        "filename": "kernel/cls.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        unsigned long pc, uintptr_t sp, int kprintf_locked);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4c835e41_54a5adde",
+        "filename": "kernel/cls.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        unsigned long pc, uintptr_t sp, int kprintf_locked);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6f237623_0afbc109",
+        "filename": "kernel/cls.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (16, 8)\n+\t\tif (cpu_local_var(no_preempt) \u003c 0) {\n[...]\n+\t__kprintf(\"%s: %d\\n\", __func__, cpu_local_var(no_preempt));",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1bd4d933_ddbf6d2d",
+        "filename": "kernel/cls.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    __kprintf(\"TID: %d, call stack from builtin frame (most recent first):\\n\",$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a54bea4_e74d0911",
+        "filename": "kernel/cls.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+        cpu_local_var(current)-\u003etid);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "635301f4_e8427880",
+        "filename": "kernel/cls.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-08T03:43:56Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+        cpu_local_var(current)-\u003etid);$",
+      "revId": "c07ddd5603f6471d7ce2bdbce5da5a8c8913b9e1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
