@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9161ba68_f46c8bb3",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 295,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:15:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tobj-\u003epages[pgind] \u003d ihk_mc_alloc_aligned_pages_user(npages,",
+      "revId": "2c4c582afb18e0ff7dceaf659c0c6b2a01b79cc8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8b67632d_b58077d7",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 297,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:15:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tIHK_MC_AP_NOWAIT | IHK_MC_AP_USER, 0);",
+      "revId": "2c4c582afb18e0ff7dceaf659c0c6b2a01b79cc8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8fb3e11d_9deb859a",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 299,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:15:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tkprintf(\"%s: error: could not allocate page for off: %lu\"",
+      "revId": "2c4c582afb18e0ff7dceaf659c0c6b2a01b79cc8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b647f931_4a71ca7c",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 300,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:15:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\", page size: %lu\\n\", __func__, off, obj-\u003epgsize);",
+      "revId": "2c4c582afb18e0ff7dceaf659c0c6b2a01b79cc8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "24a6db6e_877a44c8",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 305,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:15:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: obj: 0x%lx, pre-allocated page for off: %lu\"",
+      "revId": "2c4c582afb18e0ff7dceaf659c0c6b2a01b79cc8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "479166da_dfcb6557",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 307,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:15:33Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__func__, obj, off, pgind, obj-\u003epgsize);",
+      "revId": "2c4c582afb18e0ff7dceaf659c0c6b2a01b79cc8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
