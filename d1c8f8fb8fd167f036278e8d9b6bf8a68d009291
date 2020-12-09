@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0dc2a722_4f3d2564",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 795,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:13:38Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+/*@\n+  @ assigns \\nothing;",
+      "revId": "d1c8f8fb8fd167f036278e8d9b6bf8a68d009291",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "55f3866d_0c816764",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 797,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:13:38Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+  @*/",
+      "revId": "d1c8f8fb8fd167f036278e8d9b6bf8a68d009291",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dd1578d6_76d678b1",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 800,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:13:38Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\textern void __cpu_do_idle(void);",
+      "revId": "d1c8f8fb8fd167f036278e8d9b6bf8a68d009291",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5c38a130_1fd6166e",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1141,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:13:38Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+/*@\n+  @ assigns \\nothing;",
+      "revId": "d1c8f8fb8fd167f036278e8d9b6bf8a68d009291",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "20ddd67a_45625b97",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1143,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:13:38Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+  @*/",
+      "revId": "d1c8f8fb8fd167f036278e8d9b6bf8a68d009291",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3f22d77a_64c96366",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1146,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T04:13:38Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    cpu_halt();$",
+      "revId": "d1c8f8fb8fd167f036278e8d9b6bf8a68d009291",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
