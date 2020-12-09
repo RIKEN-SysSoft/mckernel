@@ -1,0 +1,429 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2832ae8d_499c97e0",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 2244,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct mcs_lock_node {",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2ffc0edd_e09be7c7",
+        "filename": "executer/kernel/mcctrl/syscall.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 2303,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: zeroed %lu pages @ McKernel NUMA %d (chunk: 0x%lx:%lu)\\n\",",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "98f841ab_fe444baa",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 664,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t__FUNCTION__, addr, size);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3945cd43_c30ef6af",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 665,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: return of an errno should typically be negative (ie: return -EINVAL)\n+\t\treturn EINVAL;",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd78c8ed_885cac98",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 714,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\twhile ((llnode \u003d llist_del_first(\u0026node-\u003eto_zero_list))) {",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "69e62021_7258d1da",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 718,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tcontainer_of(llnode, struct free_chunk, list);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8bcb41c5_8b46bb59",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 735,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: zeroed chunk 0x%lx:%lu in allocate path\\n\",",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "49998f9e_c0dc8734",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 747,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\twhile ((llnode \u003d llist_del_first(\u0026node-\u003eto_zero_list))) {",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5da7b743_89210c7f",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 751,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tcontainer_of(llnode, struct free_chunk, list);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1d0a253c_2ac89380",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 819,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: ERROR: freeing zeroed chunk 0x%lx:%lu\\n\",",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1c561368_e460424a",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 820,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__FUNCTION__, addr, npages \u003c\u003c PAGE_SHIFT);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "50a74fc5_ded425ea",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 820,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t\t__FUNCTION__, addr, npages \u003c\u003c PAGE_SHIFT);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "dc1b32af_1404b7b0",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 825,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t\t__FUNCTION__, addr, size);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fd19c8db_6f411b42",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 831,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (__ihk_numa_zero_free_pages(node, npages) \u003e\u003d npages) {",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "13362805_20b21985",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 850,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsize_t free_bytes \u003d __count_free_bytes(\u0026node-\u003efree_chunks);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1172235f_6ba94189",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 851,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\t\tsize_t free_bytes \u003d __count_free_bytes(\u0026node-\u003efree_chunks);\n+\t\t\tif (free_bytes !\u003d node-\u003enr_free_pages * PAGE_SIZE) {",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "341d537e_e9239da1",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 852,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: inconsistent free count? node: %lu vs. cnt: %lu\\n\",",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a04ca258_f9ac026c",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 853,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__func__, node-\u003enr_free_pages * PAGE_SIZE, free_bytes);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9e5fe068_d1babfa6",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 859,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t__FUNCTION__, addr, npages \u003c\u003c PAGE_SHIFT);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "db9531cf_3f7b0a33",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 946,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t__FUNCTION__,",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "c3f13188_3a19abcd",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 968,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tcpu_local_var(current) !\u003d \u0026cpu_local_var(idle) \u0026\u0026",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "a56193b6_eac2d438",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 975,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: skipping Linux zero request..\\n\", __func__);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "01eaffc8_2974e543",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 986,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\t\t\tsmp_store_release(\u0026packet.req.valid, 1);",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e26dc248_eba66d4d",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 993,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: WARNING: failed to send memory clear\"",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "365cc2db_5d926428",
+        "filename": "lib/page_alloc.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 997,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:14:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: clear mem req for NUMA %d sent in req\"",
+      "revId": "097dcf3cebd3e09028b51034120979f0e449df68",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
