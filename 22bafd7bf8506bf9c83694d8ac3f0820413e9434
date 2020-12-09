@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa2865e3_cddc4acc",
+        "filename": "scripts/mcreboot-lwk.sh.in",
+        "patchSetId": 6
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-09T01:16:56Z",
+      "side": 1,
+      "message": "WARNING: \u0027priviledge\u0027 may be misspelled - perhaps \u0027privilege\u0027?\n+# IHK/McKernel user priviledge reboot script.",
+      "revId": "22bafd7bf8506bf9c83694d8ac3f0820413e9434",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
