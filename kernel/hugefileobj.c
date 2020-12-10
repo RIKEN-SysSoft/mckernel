@@ -283,7 +283,7 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 				obj->pgsize);
 
 #ifdef ENABLE_FUGAKU_HACKS
-		{
+		if (!hugetlbfs_on_demand) {
 			int pgind;
 			int npages;
 
