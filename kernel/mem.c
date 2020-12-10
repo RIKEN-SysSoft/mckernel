@@ -63,6 +63,9 @@ extern int interrupt_from_user(void *);
 struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
 int anon_on_demand = 0;
+#ifdef ENABLE_FUGAKU_HACKS
+int hugetlbfs_on_demand;
+#endif
 int sysctl_overcommit_memory = OVERCOMMIT_ALWAYS;
 
 static struct ihk_mc_pa_ops *pa_ops;
@@ -2041,6 +2044,13 @@ void mem_init(void)
 		anon_on_demand = 1;
 	}
 	
+#ifdef ENABLE_FUGAKU_HACKS
+	if (find_command_line("hugetlbfs_on_demand")) {
+		kprintf("Demand paging on hugetlbfs mappings enabled.\n");
+		hugetlbfs_on_demand = 1;
+	}
+#endif
+
 	/* Init distance vectors */
 	numa_distances_init();
 }
