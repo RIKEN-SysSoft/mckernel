@@ -282,7 +282,7 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 				nr_pages,
 				obj->pgsize);
 
-		{
+		if (!hugetlbfs_on_demand) {
 			int pgind;
 			int npages;
 
