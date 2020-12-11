@@ -1,0 +1,38 @@
+【Issue#1555 動作確認】
+□ テスト内容
+Issueにて報告された症状はmigrate指示のタイミングによって発生の有無が
+変化するため、下記のテストを6時間連続実行して、症状が発生しないことを確認する。
+
+1. 下記のテストプログラムを実行し、症状が発生しないことを確認する
+C1555T01: (Issue#1400 のテストプログラム 1400_arm64.c を流用)
+  親プロセスが子プロセスと自身を同一CPUにバインドしてsched_yield()した場合、
+  子プロセス、親プロセスの順序で実行されることを確認する。
+
+C1555T02:
+  C1555T01 のテストケースにおいて、子プロセスがmigrate指示を受ける際に
+  システムコールのオフロードの中であり、その最中にRemote page faultが発生した場合にも
+  子プロセス、親プロセスの順序で実行されることを確認する。
+
+2. 以下のLTPを用いて既存機能に影響が無いことを確認
+    - sched_yield01
+    - signal01,02,03,04,05
+    - rt_sigaction01,02,03
+    - rt_sigprocmask01,02
+    - rt_sigsuspend01
+    - rt_tgsigqueueinfo01
+    - futex_wait01,02,03,04
+    - futex_wake01
+    - futex_wait_bitset01
+    - execveat02
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。

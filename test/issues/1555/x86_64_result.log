@@ -1,0 +1,8 @@
+sh ./C1555.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O -e anon_on_demand ... done
+start-time: Wed Jan 27 14:48:14 JST 2021
+execveat02 failed.
+end-time: Thu Jan 28 02:48:18 JST 2021
+Issue#1555 test NG.
+Test cases run 4855 times.

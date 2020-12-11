@@ -1,0 +1,74 @@
+diff --git a/arch/arm64/kernel/include/syscall_list.h b/arch/arm64/kernel/include/syscall_list.h
+index 28e99eb..1d9f052 100644
+--- a/arch/arm64/kernel/include/syscall_list.h
++++ b/arch/arm64/kernel/include/syscall_list.h
+@@ -137,6 +137,7 @@ SYSCALL_HANDLED(802, linux_mlock)
+ SYSCALL_HANDLED(803, suspend_threads)
+ SYSCALL_HANDLED(804, resume_threads)
+ SYSCALL_HANDLED(811, linux_spawn)
++SYSCALL_DELEGATED(888, dbg_sleep)
+ 
+ SYSCALL_DELEGATED(1024, open)
+ SYSCALL_DELEGATED(1035, readlink)
+diff --git a/arch/x86_64/kernel/include/syscall_list.h b/arch/x86_64/kernel/include/syscall_list.h
+index 17a1d65..8010d3e 100644
+--- a/arch/x86_64/kernel/include/syscall_list.h
++++ b/arch/x86_64/kernel/include/syscall_list.h
+@@ -181,6 +181,7 @@ SYSCALL_HANDLED(802, linux_mlock)
+ SYSCALL_HANDLED(803, suspend_threads)
+ SYSCALL_HANDLED(804, resume_threads)
+ SYSCALL_HANDLED(811, linux_spawn)
++SYSCALL_DELEGATED(888, dbg_sleep)
+ 
+ /* Do not edit the lines including this comment and
+  * EOF just after it because those are used as a
+diff --git a/executer/user/mcexec.c b/executer/user/mcexec.c
+index c48e245..118de75 100644
+--- a/executer/user/mcexec.c
++++ b/executer/user/mcexec.c
+@@ -5039,6 +5039,15 @@ return_linux_spawn:
+ 			break;
+ #endif
+ 
++		case 888: { // dbg_sleep
++			int sec = (int)w.sr.args[0];
++			int *resp = (int *)w.sr.args[1];
++			sleep(sec);
++			*resp = sec;
++			do_syscall_return(fd, cpu, sec, 0, 0, 0, 0);
++			break;
++		}
++
+ 		default:
+ 			ret = do_generic_syscall(&w);
+ 			do_syscall_return(fd, cpu, ret, 0, 0, 0, 0);
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index 8a919e1..0b0fbc3 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -181,6 +181,7 @@ long do_syscall(struct syscall_request *req, int cpu)
+ 	struct thread *thread = cpu_local_var(current);
+ 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
+ 	int mstatus = 0;
++	int orig_cpu;
+ 
+ #ifdef PROFILE_ENABLE
+ 	/* We cannot use thread->profile_start_ts here because the
+@@ -231,6 +232,7 @@ long do_syscall(struct syscall_request *req, int cpu)
+ #ifdef ENABLE_TOFU
+ 	res.pde_data = NULL;
+ #endif
++	orig_cpu = ihk_mc_get_processor_id();
+ 	send_syscall(req, cpu, &res);
+ 
+ 	if (req->rtid == -1) {
+@@ -386,6 +388,9 @@ long do_syscall(struct syscall_request *req, int cpu)
+ 		preempt_enable();
+ 	}
+ 
++	if (orig_cpu != ihk_mc_get_processor_id()) {
++		kprintf("ISSUE_1555 migrated during syscall_offload\n");
++	}
+ 	dkprintf("%s: syscall num: %d got host reply: %d \n",
+ 		__FUNCTION__, req->number, res.ret);
+ 
