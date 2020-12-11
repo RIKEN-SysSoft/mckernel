@@ -1,0 +1,7 @@
+sh ./C1555.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 37-43,49-55 -m 2G@2,2G@3 -r 37-43:36+49-55:48 -O -e anon_on_demand ... done
+start-time: 2021年  1月 27日 水曜日 14:41:56 JST
+end-time: 2021年  1月 28日 木曜日 02:42:01 JST
+Issue#1555 test OK.
+Test cases run 4426 times.

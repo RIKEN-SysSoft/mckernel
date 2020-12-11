@@ -928,11 +928,12 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 {
 	struct ihk_mc_interrupt_handler *h;
 	struct cpu_local_var *v = get_this_cpu_local_var();
+	int from_user = interrupt_from_user(regs);
 
 	lapic_ack();
 	++v->in_interrupt;
 
-	set_cputime(interrupt_from_user(regs) ?
+	set_cputime(from_user ?
 		CPUTIME_MODE_U2K : CPUTIME_MODE_K2K_IN);
 
 	dkprintf("CPU[%d] got interrupt, vector: %d, RIP: 0x%lX\n", 
@@ -1050,15 +1051,18 @@ void handle_interrupt(int vector, struct x86_user_context *regs)
 	}
 
 	interrupt_exit(regs);
-	set_cputime(interrupt_from_user(regs) ?
+	set_cputime(from_user ?
 		CPUTIME_MODE_K2U : CPUTIME_MODE_K2K_OUT);
 
 	--v->in_interrupt;
 
 	/* for migration by IPI */
 	if (v->flags & CPU_FLAG_NEED_MIGRATE) {
-		schedule();
-		check_signal(0, regs, 0);
+		// Don't migrate on K2K schedule
+		if (from_user) {
+			schedule();
+			check_signal(0, regs, 0);
+		}
 	}
 }
 
