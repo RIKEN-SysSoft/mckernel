@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "09c510d8_14c8640c",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 10
+      },
+      "lineNbr": 3649,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-11T08:58:35Z",
+      "side": 1,
+      "message": "WARNING: printk() should include KERN_\u003cLEVEL\u003e facility level\n+\tprintk(\"%s: MCCTRL_OS_CPU_%s_REGISTER: CPU: %d, addr_ext: 0x%lx, val: 0x%lx\\n\",",
+      "revId": "dd9c1a5579e8e868469a2a270a88ddee803c23e2",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
