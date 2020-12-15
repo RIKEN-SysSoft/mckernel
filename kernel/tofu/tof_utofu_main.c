@@ -146,6 +146,7 @@ static int tof_utofu_get_pagesize_locked(uintptr_t addr, size_t len,
 		}
 		else {
 			*_pgszbits = PTL2_SHIFT;
+			*_pgszbits = PTL1_CONT_SHIFT;
 		}
 		return 0;
 	}
@@ -171,7 +172,7 @@ static int tof_utofu_get_pagesize_locked(uintptr_t addr, size_t len,
 		}
 	}
 
-#if 0
+#if 1
 	/* Tofu only support 64kB and 2MB pages */
 	if (min_shift > PTL1_CONT_SHIFT)
 		min_shift = PTL1_CONT_SHIFT;
@@ -647,7 +648,6 @@ static int tof_utofu_update_mbpt_entries(struct tof_utofu_cq *ucq,
 	//struct page *page;
 	struct process *proc = cpu_local_var(current)->proc;
 	uintptr_t iova = 0, va;
-	int ret;
 	unsigned long phys = 0;
 
 	/* Special case for straight mapping */
@@ -697,6 +697,8 @@ static int tof_utofu_update_mbpt_entries(struct tof_utofu_cq *ucq,
 	}
 
 	for(va = start; va < end; va += pgsz, ix++){
+		size_t psize;
+		pte_t *ptep;
 
 		if (tof_utofu_mbpt_is_enabled(mbpt, ix)) {
 			/* this page is already mapped to mbpt */
@@ -715,14 +717,16 @@ static int tof_utofu_update_mbpt_entries(struct tof_utofu_cq *ucq,
 		//	return -ENOMEM;
 		//}
 
-		ret = ihk_mc_pt_virt_to_phys(
-				cpu_local_var(current)->vm->address_space->page_table,
-				(void *)va, &phys);
+		ptep = ihk_mc_pt_lookup_fault_pte(cpu_local_var(current)->vm,
+				(void *)va, 0, NULL, &psize, NULL);
 
-		if (ret) {
-			raw_rc_output(ret);
+		if (unlikely(!ptep || !pte_is_present(ptep))) {
+			kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
+					__func__, va);
 			return -ENOMEM;
 		}
+
+		phys = pte_get_phys(ptep) + (va & (psize - 1));
 
 		//iova = tof_smmu_get_ipa_cq(ucq->tni, ucq->cqid,
 		//			   pfn_to_kaddr(page_to_pfn(page)), pgsz);
@@ -1829,14 +1833,21 @@ static int tof_utofu_ioctl_enable_bch(struct tof_utofu_device *dev, unsigned lon
 	}
 
 	if (!phys) {
-		ret = ihk_mc_pt_virt_to_phys(vm->address_space->page_table,
-				(void *)req.addr, &phys);
+		size_t psize;
+		pte_t *ptep;
 
-		if (ret) {
-			raw_rc_output(ret);
+		ptep = ihk_mc_pt_lookup_fault_pte(cpu_local_var(current)->vm,
+				(void *)req.addr, 0, NULL, &psize, NULL);
+
+		if (unlikely(!ptep || !pte_is_present(ptep))) {
+			kprintf("%s: ERROR: no valid PTE for 0x%lx\n",
+					__func__, req.addr);
+			raw_rc_output(-ENOMEM);
 			ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 			return -ENOMEM;
 		}
+
+		phys = pte_get_phys(ptep) + ((uint64_t)req.addr & (psize - 1));
 	}
 
 	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
