@@ -1364,6 +1364,12 @@ void terminate(int rc, int sig)
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 
 	vm = proc->vm;
+	if (proc->enable_tofu) {
+		extern void tof_utofu_finalize();
+
+		tof_utofu_finalize();
+	}
+
 	free_all_process_memory_range(vm);
 
 	if (proc->saved_cmdline) {
