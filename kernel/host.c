@@ -542,6 +542,23 @@ static int process_msg_prepare_process(unsigned long rphys)
 		}
 		vm->numa_mem_policy = MPOL_BIND;
 	}
+	else if (pn->mpol_bind_mask != MPOL_MAX) {
+		int bit;
+
+		vm->numa_mem_policy = pn->mpol_mode;
+
+		memset(&vm->numa_mask, 0, sizeof(vm->numa_mask));
+
+		for_each_set_bit(bit, pn->mpol_nodemask,
+				PLD_PROCESS_NUMA_MASK_BITS) {
+			if (bit >= ihk_mc_get_nr_numa_nodes()) {
+				kprintf("%s: error: NUMA id %d is larger than mask size!\n",
+						__func__, bit);
+				return -EINVAL;
+			}
+			set_bit(bit, &vm->numa_mask[0]);
+		}
+	}
 
 	proc->uti_thread_rank = pn->uti_thread_rank;
 	proc->uti_use_last_cpu = pn->uti_use_last_cpu;
