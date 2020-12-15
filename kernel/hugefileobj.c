@@ -311,7 +311,9 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 			int pgind;
 			int npages;
 
-			for (pgind = 0; pgind < obj->nr_pages; ++pgind) {
+			/* Map in only the last 8 pages */
+			for (pgind = ((obj->nr_pages > 8) ? (obj->nr_pages - 8) : 0);
+					pgind < obj->nr_pages; ++pgind) {
 				if (obj->pages[pgind]) {
 					continue;
 				}

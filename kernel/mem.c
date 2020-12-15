@@ -743,7 +743,7 @@ distance_based:
 			}
 			else {
 			if (i == 0)
-				kprintf("%s: distance: CPU @ node %d failed to allocate "
+				dkprintf("%s: distance: CPU @ node %d failed to allocate "
 						"%d pages from node %d\n",
 						__FUNCTION__,
 						ihk_mc_get_numa_id(),

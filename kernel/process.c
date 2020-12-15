@@ -2567,6 +2567,12 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 			__FUNCTION__, size, minsz,
 			ap_flag ? "(IHK_MC_AP_USER)" : "");
 
+	/*
+	 * XXX: Fugaku: Fujitsu's runtime remaps the stack
+	 * using hugetlbfs so don't bother allocating too much here..
+	 */
+	minsz = 8*1024*1024;
+
 	stack = ihk_mc_alloc_aligned_pages_user(minsz >> PAGE_SHIFT,
 						USER_STACK_PAGE_P2ALIGN,
 						IHK_MC_AP_NOWAIT | ap_flag,
