@@ -27,11 +27,7 @@ unsigned long find_first_bit(const unsigned long *addr,
 unsigned long find_first_zero_bit(const unsigned long *addr, 
 				  unsigned long size);
 
-static inline int test_bit(int nr, const void *addr)
-{
-	const uint32_t *p = (const uint32_t *)addr;
-	return ((1UL << (nr & 31)) & (p[nr >> 5])) != 0;
-}
+#include <bitops-test_bit.h>
 
 extern unsigned int __sw_hweight32(unsigned int w);
 extern unsigned int __sw_hweight16(unsigned int w);
