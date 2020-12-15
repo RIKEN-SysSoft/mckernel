@@ -113,6 +113,18 @@ typedef unsigned long __cpu_set_unit;
 #define MPOL_NO_BSS               0x04
 #define MPOL_SHM_PREMAP           0x08
 
+/* should be the same as process.h */
+#define PLD_PROCESS_NUMA_MASK_BITS 256
+
+enum {
+	PLD_MPOL_DEFAULT,
+	PLD_MPOL_PREFERRED,
+	PLD_MPOL_BIND,
+	PLD_MPOL_INTERLEAVE,
+	PLD_MPOL_LOCAL,
+	PLD_MPOL_MAX,	/* always last member of enum */
+};
+
 #define PLD_MAGIC 0xcafecafe44332211UL
 
 struct program_load_desc {
@@ -147,6 +159,10 @@ struct program_load_desc {
 	unsigned long heap_extension;
 	long stack_premap;
 	unsigned long mpol_bind_mask;
+	int mpol_mode;
+	unsigned long mpol_nodemask[PLD_PROCESS_NUMA_MASK_BITS /
+				    (sizeof(unsigned long) * 8)];
+
 	int thp_disable;
 	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */

@@ -1056,6 +1056,75 @@ static inline cpu_set_t *numa_node_set(int n)
 	return (cpu_set_t *)(numa_nodes + n * cpu_set_size);
 }
 
+static inline void _numa_local(__cpu_set_unit *localset,
+			       unsigned long *nodemask, int nonlocal)
+{
+	int i;
+
+	memset(nodemask, 0, PLD_PROCESS_NUMA_MASK_BITS / 8);
+
+	for (i = 0; i < nnodes; i++) {
+		cpu_set_t *nodeset = numa_node_set(i);
+		int j;
+		int indx = i / (sizeof(unsigned long) * 8);
+		int ipos = i % (sizeof(unsigned long) * 8);
+
+		if (nonlocal) {
+			nodemask[indx] |= (1UL << ipos);
+		}
+
+		for (j = 0; j < ncpu; j++) {
+			int jndx = j / (sizeof(__cpu_set_unit) * 8);
+			int jpos = j % (sizeof(__cpu_set_unit) * 8);
+			__cpu_set_unit cpu_isset_local = localset[jndx] &
+				(1UL << jpos);
+
+			if (cpu_isset_local) {
+				__dprintf("%d belongs to local set\n", j);
+			}
+
+			if (CPU_ISSET_S(j, cpu_set_size, nodeset)) {
+				__dprintf("%d belongs to node %d\n", j, i);
+			}
+
+
+			if (cpu_isset_local &&
+			    CPU_ISSET_S(j, cpu_set_size, nodeset)) {
+				if (nonlocal) {
+					nodemask[indx] &= ~(1UL << ipos);
+				} else {
+					nodemask[indx] |= (1UL << ipos);
+				}
+			}
+		}
+	}
+}
+
+static inline void numa_local(__cpu_set_unit *localset, unsigned long *nodemask)
+{
+	_numa_local(localset, nodemask, 0);
+}
+
+static inline void numa_nonlocal(__cpu_set_unit *localset,
+				 unsigned long *nodemask)
+{
+	_numa_local(localset, nodemask, 1);
+}
+
+static inline void numa_all(unsigned long *nodemask)
+{
+	int i;
+
+	memset(nodemask, 0, PLD_PROCESS_NUMA_MASK_BITS / 8);
+
+	for (i = 0; i < nnodes; i++) {
+		int indx = i / (sizeof(unsigned long) * 8);
+		int ipos = i % (sizeof(unsigned long) * 8);
+
+		nodemask[indx] |= (1UL << ipos);
+	}
+}
+
 pid_t master_tid;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -2685,6 +2754,7 @@ int main(int argc, char **argv)
 	desc->heap_extension = heap_extension;
 
 	desc->mpol_bind_mask = 0;
+	desc->mpol_mode = PLD_MPOL_MAX; /* not specified */
 	if (mpol_bind_nodes) {
 		struct bitmask *bind_mask;
 		bind_mask = numa_parse_nodestring_all(mpol_bind_nodes);
@@ -2697,6 +2767,54 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+	}
+	/* Fujitsu TCS specific: mempolicy */
+	else if (getenv("OMPI_MCA_plm_ple_memory_allocation_policy")) {
+		char *mpol =
+			getenv("OMPI_MCA_plm_ple_memory_allocation_policy");
+
+		__dprintf("OMPI_MCA_plm_ple_memory_allocation_policy: %s\n",
+			  mpol);
+
+		if (!strncmp(mpol, "localalloc", 10)) {
+			/* MPOL_DEFAULT has the same effect as MPOL_LOCAL */
+			desc->mpol_mode = MPOL_DEFAULT;
+		}
+		else if (!strncmp(mpol, "interleave_local", 16)) {
+			desc->mpol_mode = MPOL_INTERLEAVE;
+			numa_local(desc->cpu_set, desc->mpol_nodemask);
+		}
+		else if (!strncmp(mpol, "interleave_nonlocal", 19)) {
+			desc->mpol_mode = MPOL_INTERLEAVE;
+			numa_nonlocal(desc->cpu_set, desc->mpol_nodemask);
+		}
+		else if (!strncmp(mpol, "interleave_all", 14)) {
+			desc->mpol_mode = MPOL_INTERLEAVE;
+			numa_all(desc->mpol_nodemask);
+		}
+		else if (!strncmp(mpol, "bind_local", 10)) {
+			desc->mpol_mode = MPOL_BIND;
+			numa_local(desc->cpu_set, desc->mpol_nodemask);
+		}
+		else if (!strncmp(mpol, "bind_nonlocal", 13)) {
+			desc->mpol_mode = MPOL_BIND;
+			numa_nonlocal(desc->cpu_set, desc->mpol_nodemask);
+		}
+		else if (!strncmp(mpol, "bind_all", 8)) {
+			desc->mpol_mode = MPOL_BIND;
+			numa_all(desc->mpol_nodemask);
+		}
+		else if (!strncmp(mpol, "prefer_local", 12)) {
+			desc->mpol_mode = MPOL_PREFERRED;
+			numa_local(desc->cpu_set, desc->mpol_nodemask);
+		}
+		else if (!strncmp(mpol, "prefer_nonlocal", 15)) {
+			desc->mpol_mode = MPOL_PREFERRED;
+			numa_nonlocal(desc->cpu_set, desc->mpol_nodemask);
+		}
+
+		__dprintf("mpol_mode: %d, mpol_nodemask: %ld\n",
+			  desc->mpol_mode, desc->mpol_nodemask[0]);
 	}
 
 	desc->uti_thread_rank = uti_thread_rank;
