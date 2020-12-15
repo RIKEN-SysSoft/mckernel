@@ -1,0 +1,32 @@
+============
+What to test
+============
+Check if the mode and nodemask obtained by get_mempolicy() are set to the expected values, with different reserved cpus, cpumask and policy requests.
+The following settings are used.
+
+	Memory reserved: "1G@4,1G@5,1G@6,1G@7"
+
+	CPUs reserved: "12-59", "24-59"
+	FLIB_AFFINITY_ON_PROCESS:
+		"12-23", "24-35", "36-47", "48-59",
+		"12-35", "24-47", "36-59",
+		"12-47", "24-59",
+		"12-59"
+	OMPI_MCA_plm_ple_memory_allocation_policy:
+		{interleave,bind,prefer}_{local,nonlocal},
+		{interleave,bind}_all,
+		localalloc
+
+============
+How to build
+============
+cd <mckernel>/test/issues
+mkdir build
+cd build
+cmake ../1470/ -DCMAKE_INSTALL_PREFIX=<mckernel>/test/issues/install -DWITH_MCK=<mckernel-install> -DWITH_MCK_SRC=<mckernel>
+
+===========
+How to test
+===========
+for i in {1..7}; do <mckernel>/test/issues/install/scripts/ihklib-OMPI_MCA_plm_ple_memory_allocation_policy0$i; done
+check if no "[  NG  ]" is shown.
