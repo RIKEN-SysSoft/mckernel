@@ -1,0 +1,44 @@
+#!/usr/bin/bash
+
+# define WORKDIR
+SCRIPT_PATH=$(readlink -m "${BASH_SOURCE[0]}")
+SCRIPT_NAME="${SCRIPT_PATH##*/}"
+TEST_NAME="${SCRIPT_NAME%.sh}"
+AUTOTEST_HOME="${SCRIPT_PATH%/*/*/*}"
+if [ -f ${AUTOTEST_HOME}/bin/config.sh ]; then
+    . ${AUTOTEST_HOME}/bin/config.sh
+else
+    WORKDIR=$(pwd)
+fi
+
+declare -A mode
+mode[interleave_nonlocal]="3"
+mode[bind_nonlocal]="2"
+mode[prefer_nonlocal]="1"
+
+declare -A nodemask
+
+nodemask[$(seq -s, 12 23)]="13"
+nodemask[$(seq -s, 24 35)]="11"
+nodemask[$(seq -s, 36 47)]="7"
+nodemask[$(seq -s, 12 35)]="9"
+nodemask[$(seq -s, 24 47)]="3"
+nodemask[$(seq -s, 12 47)]="1"
+
+# reserve the last 36 cpus
+@WITH_MCK@/sbin/mcreboot.sh -c 24-59 -m 1G@4,1G@5,1G@6,1G@7
+
+for policy in interleave_nonlocal bind_nonlocal prefer_nonlocal; do
+    for cpuset in \
+	$(seq -s, 12 23) $(seq -s, 24 35) $(seq -s, 36 47) \
+	$(seq -s, 12 35) $(seq -s, 24 47) \
+	$(seq -s, 12 47); do
+
+	# check nodemask when last 36 cpus are reserved
+	FLIB_NUM_PROCESS_ON_NODE=1 FLIB_AFFINITY_ON_PROCESS=$cpuset OMPI_MCA_plm_ple_memory_allocation_policy=$policy @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/check_mempolicy -m ${mode[$policy]} -n ${nodemask[$cpuset]} || exit $?
+    done
+done
+
+@WITH_MCK@/sbin/mcstop+release.sh
+
+exit 0
