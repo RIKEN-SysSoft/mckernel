@@ -36,6 +36,9 @@
 #include <rusage_private.h>
 #include <ihk/monitor.h>
 #include <ihk/debug.h>
+#ifdef ENABLE_TOFU
+#include <tofu/tofu_stag_range.h>
+#endif
 
 //#define DEBUG_PRINT_PROCESS
 
@@ -269,6 +272,12 @@ init_process_vm(struct process *owner, struct address_space *asp, struct process
 	}
 	vm->range_cache_ind = 0;
 
+#ifdef ENABLE_TOFU
+	ihk_mc_spinlock_init(&vm->tofu_stag_lock);
+	for (i = 0; i < TOFU_STAG_HASH_SIZE; ++i) {
+		INIT_LIST_HEAD(&vm->tofu_stag_hash[i]);
+	}
+#endif
 	return 0;
 }
 
@@ -955,6 +964,11 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	newrange->pgshift = range->pgshift;
 	newrange->private_data = range->private_data;
 
+#ifdef ENABLE_TOFU
+	/* TODO: figure out which entries to put on which list! */
+	INIT_LIST_HEAD(&newrange->tofu_stag_list);
+#endif
+
 	if (range->memobj) {
 		memobj_ref(range->memobj);
 		newrange->memobj = range->memobj;
@@ -1023,6 +1037,28 @@ int join_process_memory_range(struct process_vm *vm,
 		if (vm->range_cache[i] == merging)
 			vm->range_cache[i] = surviving;
 	}
+
+#ifdef ENABLE_TOFU
+	/* Move Tofu stag range entries */
+	if (vm->proc->enable_tofu) {
+		struct tofu_stag_range *tsr, *next;
+
+		ihk_mc_spinlock_lock_noirq(&vm->tofu_stag_lock);
+		list_for_each_entry_safe(tsr, next,
+				&merging->tofu_stag_list, list) {
+
+			list_del(&tsr->list);
+			list_add_tail(&tsr->list, &surviving->tofu_stag_list);
+			dkprintf("%s: stag: %d @ %p:%lu moved in VM range merge\n",
+					__func__,
+					tsr->stag,
+					tsr->start,
+					(unsigned long)(tsr->end - tsr->start));
+		}
+		ihk_mc_spinlock_unlock_noirq(&vm->tofu_stag_lock);
+	}
+#endif
+
 	kfree(merging);
 
 	error = 0;
@@ -1137,6 +1173,24 @@ static int free_process_memory_range(struct process_vm *vm,
 	}
 
 straight_out:
+
+#ifdef ENABLE_TOFU
+	if (vm->proc->enable_tofu) {
+		int entries;
+		extern int tofu_stag_range_remove_overlapping(struct process_vm *vm,
+				struct vm_range *range);
+
+		entries = tofu_stag_range_remove_overlapping(vm, range);
+		if (entries > 0) {
+			kprintf("%s: removed %d Tofu stag entries for range 0x%lx:%lu\n",
+				__func__,
+				entries,
+				range->start,
+				range->end - range->start);
+		}
+	}
+#endif
+
 	rb_erase(&range->vm_rb_node, &vm->vm_range_tree);
 	for (i = 0; i < VM_RANGE_CACHE_SIZE; ++i) {
 		if (vm->range_cache[i] == range)
@@ -1428,6 +1482,9 @@ int add_process_memory_range(struct process_vm *vm,
 	range->pgshift = pgshift;
 	range->private_data = NULL;
 	range->straight_start = 0;
+#ifdef ENABLE_TOFU
+	INIT_LIST_HEAD(&range->tofu_stag_list);
+#endif
 
 	rc = 0;
 	if (phys == NOPHYS) {
