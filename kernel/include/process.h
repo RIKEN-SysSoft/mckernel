@@ -395,6 +395,7 @@ struct vm_range {
 	off_t objoff;
 	int pgshift;	/* page size. 0 means THP */
 	int padding;
+	struct list_head tofu_stag_list;
 	void *private_data;
 };
 
@@ -764,6 +765,7 @@ struct thread {
 };
 
 #define VM_RANGE_CACHE_SIZE	4
+#define TOFU_STAG_HASH_SIZE 4
 
 struct process_vm {
 	struct address_space *address_space;
@@ -796,6 +798,10 @@ struct process_vm {
 	struct vm_range *range_cache[VM_RANGE_CACHE_SIZE];
 	int range_cache_ind;
 	struct swapinfo *swapinfo;
+
+	/* Tofu STAG hash */
+	ihk_spinlock_t tofu_stag_lock;
+	struct list_head tofu_stag_hash[TOFU_STAG_HASH_SIZE];
 };
 
 static inline int has_cap_ipc_lock(struct thread *th)
