@@ -364,6 +364,13 @@ int translate_rva_to_rpa(ihk_os_t os, unsigned long rpt, unsigned long rva,
 
 	// page table to translation_table.
 	phys = ihk_device_map_memory(ihk_os_to_dev(os), rpt, PAGE_SIZE);
+	if (!phys) {
+		pr_err("%s(): ERROR: VA: 0x%lx, rpt is NULL for PID %d\n",
+			__func__, rva, task_tgid_vnr(current));
+		error = -EFAULT;
+		goto out;
+	}
+
 	tbl = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
 	rpa = (unsigned long)tbl->tt_pa;
 
