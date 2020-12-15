@@ -293,7 +293,13 @@ int hugefileobj_create(struct memobj *memobj, size_t len, off_t off,
 			int pgind;
 			int npages;
 
+#ifndef ENABLE_FUGAKU_HACKS
 			for (pgind = 0; pgind < obj->nr_pages; ++pgind) {
+#else
+			/* Map in only the last 8 pages */
+			for (pgind = ((obj->nr_pages > 8) ? (obj->nr_pages - 8) : 0);
+					pgind < obj->nr_pages; ++pgind) {
+#endif
 				if (obj->pages[pgind]) {
 					continue;
 				}
