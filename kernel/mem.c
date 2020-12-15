@@ -747,7 +747,11 @@ distance_based:
 			}
 			else {
 			if (i == 0)
+#ifndef ENABLE_FUGAKU_HACKS
 				kprintf("%s: distance: CPU @ node %d failed to allocate "
+#else
+				dkprintf("%s: distance: CPU @ node %d failed to allocate "
+#endif
 						"%d pages from node %d\n",
 						__FUNCTION__,
 						ihk_mc_get_numa_id(),
