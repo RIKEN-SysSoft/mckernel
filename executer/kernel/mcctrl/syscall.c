@@ -1843,6 +1843,7 @@ static long pager_call(ihk_os_t os, struct syscall_request *req)
 	return ret;
 }
 
+#ifdef ENABLE_TOFU
 struct list_head mcctrl_file_to_pidfd_hash[MCCTRL_FILE_2_PIDFD_HASH_SIZE];
 spinlock_t mcctrl_file_to_pidfd_hash_lock;
 
@@ -1971,7 +1972,7 @@ unlock_out:
 	spin_unlock_irqrestore(&mcctrl_file_to_pidfd_hash_lock, irqflags);
 	return ret;
 }
-
+#endif
 
 void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 		long ret, int stid)
@@ -2458,6 +2459,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 	dprintk("%s: system call: %lx\n", __FUNCTION__, sc->args[0]);
 	switch (sc->number) {
+#ifdef ENABLE_TOFU
 	case __NR_close: {
 		struct fd f;
 		int fd;
@@ -2478,6 +2480,7 @@ int __do_in_kernel_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 
 		break;
 	}
+#endif
 	case __NR_mmap:
 		ret = pager_call(os, sc);
 		break;

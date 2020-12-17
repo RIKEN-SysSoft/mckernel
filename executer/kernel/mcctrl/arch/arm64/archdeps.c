@@ -28,6 +28,7 @@ void *vdso_end;
 static struct vm_special_mapping (*vdso_spec)[2];
 #endif
 
+#ifdef ENABLE_TOFU
 /* Tofu CQ and barrier gate release functions */
 struct file_operations *mcctrl_tof_utofu_procfs_ops_cq;
 int (*mcctrl_tof_utofu_release_cq)(struct inode *inode,
@@ -35,6 +36,7 @@ int (*mcctrl_tof_utofu_release_cq)(struct inode *inode,
 struct file_operations *mcctrl_tof_utofu_procfs_ops_bch;
 int (*mcctrl_tof_utofu_release_bch)(struct inode *inode,
 		struct file *filp);
+#endif
 
 int arch_symbols_init(void)
 {
@@ -52,6 +54,7 @@ int arch_symbols_init(void)
 		return -EFAULT;
 #endif
 
+#ifdef ENABLE_TOFU
 	mcctrl_tof_utofu_procfs_ops_cq =
 		(void *)kallsyms_lookup_name("tof_utofu_procfs_ops_cq");
 	if (WARN_ON(!mcctrl_tof_utofu_procfs_ops_cq))
@@ -71,6 +74,7 @@ int arch_symbols_init(void)
 		(void *)kallsyms_lookup_name("tof_utofu_release_bch");
 	if (WARN_ON(!mcctrl_tof_utofu_release_bch))
 		return -EFAULT;
+#endif
 
 	return 0;
 }
@@ -448,6 +452,7 @@ out:
 }
 
 
+#ifdef ENABLE_TOFU
 /*
  * Tofu CQ and BCH release handlers
  */
@@ -549,3 +554,4 @@ int __mcctrl_tof_utofu_release_bch(struct inode *inode, struct file *filp)
 	return __mcctrl_tof_utofu_release_handler(inode, filp,
 			mcctrl_tof_utofu_release_bch);
 }
+#endif

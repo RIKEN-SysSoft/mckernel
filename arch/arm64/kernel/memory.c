@@ -217,11 +217,13 @@ static inline int ptl4_index(unsigned long addr)
 	int idx = (addr >> PTL4_SHIFT) & PTL4_INDEX_MASK;
 	return idx;
 }
+#ifdef ENABLE_TOFU
 static inline int ptl3_index_linux(unsigned long addr)
 {
 	int idx = (addr >> PTL3_SHIFT) & PTL3_INDEX_MASK_LINUX;
 	return idx;
 }
+#endif
 static inline int ptl3_index(unsigned long addr)
 {
 	int idx = (addr >> PTL3_SHIFT) & PTL3_INDEX_MASK;
@@ -281,6 +283,7 @@ static inline pte_t* ptl4_offset(const translation_table_t* ptl4, unsigned long 
 	return ptep;
 }
 
+#ifdef ENABLE_TOFU
 static inline pte_t* ptl3_offset_linux(const pte_t* l4p, unsigned long addr)
 {
 	pte_t* ptep = NULL;
@@ -311,6 +314,7 @@ static inline pte_t* ptl3_offset_linux(const pte_t* l4p, unsigned long addr)
 	}
 	return ptep;
 }
+#endif
 
 static inline pte_t* ptl3_offset(const pte_t* l4p, unsigned long addr)
 {
@@ -991,10 +995,12 @@ static void init_normal_area(struct page_table *pt)
 	
 	tt = get_translation_table(pt);
 
+#ifdef ENABLE_TOFU
 	setup(tt,
 			arm64_st_phys_base,
 			arm64_st_phys_base  + (1UL << 40));
 	return;
+#endif
 
 	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); i++) {
 		unsigned long map_start, map_end;
@@ -1323,6 +1329,7 @@ out:
 	return ret;
 }
 
+#ifdef ENABLE_TOFU
 int ihk_mc_linux_pt_virt_to_phys_size(struct page_table *pt,
                            const void *virt,
 						   unsigned long *phys,
@@ -1373,7 +1380,7 @@ out:
 	if(size) *size = lsize;
 	return 0;
 }
-
+#endif
 
 int ihk_mc_pt_virt_to_phys_size(struct page_table *pt,
                            const void *virt,
