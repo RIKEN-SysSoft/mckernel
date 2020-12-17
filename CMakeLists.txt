@@ -26,10 +26,17 @@ endif()
 
 if (BUILD_TARGET STREQUAL "smp-x86")
 	set(ARCH "x86_64")
-	option(ENABLE_TOFU "Built-in tofu driver support" OFF)
 elseif (BUILD_TARGET STREQUAL "smp-arm64")
 	set(ARCH "arm64")
+endif()
+
+execute_process(COMMAND bash -c "ls -ld ls /proc/tofu/ 2>/dev/null | wc -l"
+  OUTPUT_VARIABLE PROC_TOFU OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(PROC_TOFU STREQUAL "1")
 	option(ENABLE_TOFU "Built-in tofu driver support" ON)
+else()
+	option(ENABLE_TOFU "Built-in tofu driver support" OFF)
 endif()
 
 include(GNUInstallDirs)
@@ -245,6 +252,7 @@ message("Option summary")
 message("-------------------------------")
 message("Build type: ${CMAKE_BUILD_TYPE}")
 message("Build target: ${BUILD_TARGET}")
+message("CPU_MODEL: ${CPU_MODEL}")
 message("IHK_SOURCE_DIR: ${IHK_SOURCE_DIR} (relative to mckernel source tree)")
 message("UNAME_R: ${UNAME_R}")
 message("KERNEL_DIR: ${KERNEL_DIR}")

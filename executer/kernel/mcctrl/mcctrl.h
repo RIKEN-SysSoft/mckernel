@@ -560,6 +560,7 @@ struct uti_futex_resp {
 	wait_queue_head_t wq;
 };
 
+#ifdef ENABLE_TOFU
 /*
  * Hash table to keep track of files and related processes
  * and file descriptors.
@@ -584,4 +585,5 @@ struct mcctrl_file_to_pidfd *mcctrl_file_to_pidfd_hash_lookup(
 	struct file *filp, struct task_struct *group_leader);
 int mcctrl_file_to_pidfd_hash_remove(struct file *filp,
 	ihk_os_t os, struct task_struct *group_leader, int fd);
+#endif
 #endif

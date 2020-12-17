@@ -220,7 +220,9 @@ long do_syscall(struct syscall_request *req, int cpu)
 		req->ttid = 0;
 	}
 	res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
+#ifdef ENABLE_TOFU
 	res.pde_data = NULL;
+#endif
 	send_syscall(req, cpu, &res);
 
 	if (req->rtid == -1) {
@@ -381,6 +383,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 
 	rc = res.ret;
 
+#ifdef ENABLE_TOFU
 	if ((req->number == __NR_ioctl && rc == 0) ||
 			(req->number == __NR_openat && rc > 0)) {
 		int fd = req->number == __NR_ioctl ? req->args[0] : rc;
@@ -407,6 +410,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 					res.pde_data);
 		}
 	}
+#endif
 
 	if(req->number != __NR_exit_group){
 		--thread->in_syscall_offload;
@@ -3978,7 +3982,9 @@ SYSCALL_DECLARE(open)
 		goto out;
 	}
 
+#ifdef ENABLE_TOFU
 	cpu_local_var(current)->fd_path_in_open = pathname;
+#endif
 
 	dkprintf("open(): pathname=%s\n", pathname);
 	if (!strncmp(pathname, XPMEM_DEV_PATH, len)) {
@@ -3987,15 +3993,21 @@ SYSCALL_DECLARE(open)
 		rc = syscall_generic_forwarding(__NR_open, ctx);
 	}
 
+#ifdef ENABLE_TOFU
 	cpu_local_var(current)->fd_path_in_open = NULL;
+#endif
 
  out:
+#ifdef ENABLE_TOFU
 	if (rc > 0 && rc < MAX_FD_PDE) {
 		cpu_local_var(current)->proc->fd_path[rc] = pathname;
 	}
 	else {
 		kfree(pathname);
 	}
+#else
+	kfree(pathname);
+#endif
 	return rc;
 }
 
@@ -4023,7 +4035,9 @@ SYSCALL_DECLARE(openat)
 		goto out;
 	}
 
+#ifdef ENABLE_TOFU
 	cpu_local_var(current)->fd_path_in_open = pathname;
+#endif
 
 	dkprintf("openat(): pathname=%s\n", pathname);
 	if (!strncmp(pathname, XPMEM_DEV_PATH, len)) {
@@ -4032,15 +4046,21 @@ SYSCALL_DECLARE(openat)
 		rc = syscall_generic_forwarding(__NR_openat, ctx);
 	}
 
+#ifdef ENABLE_TOFU
 	cpu_local_var(current)->fd_path_in_open = NULL;
+#endif
 
 out:
+#ifdef ENABLE_TOFU
 	if (rc > 0 && rc < MAX_FD_PDE) {
 		cpu_local_var(current)->proc->fd_path[rc] = pathname;
 	}
 	else {
 		kfree(pathname);
 	}
+#else
+	kfree(pathname);
+#endif
 	return rc;
 }
 
