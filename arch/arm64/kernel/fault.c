@@ -223,8 +223,12 @@ static int do_translation_fault(unsigned long addr,
 					  unsigned int esr,
 					  struct pt_regs *regs)
 {
+#ifdef ENABLE_TOFU
 	// XXX: Handle kernel space page faults for Tofu driver
 	//if (addr < USER_END)
+#else
+	if (addr < USER_END)
+#endif
 		return do_page_fault(addr, esr, regs);
 
 	do_bad_area(addr, esr, regs);
