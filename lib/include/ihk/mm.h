@@ -227,9 +227,11 @@ int ihk_mc_get_memory_chunk(int id,
 	unsigned long *start,
 	unsigned long *end,
 	int *numa_id);
+#ifdef ENABLE_TOFU
 int ihk_mc_get_memory_chunk_dma_addr(int id,
 		int tni, int cqid,
 		uintptr_t *dma_addr);
+#endif
 
 void remote_flush_tlb_cpumask(struct process_vm *vm, 
 		unsigned long addr, int cpu_id);

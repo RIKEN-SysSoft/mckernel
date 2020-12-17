@@ -26,10 +26,8 @@ endif()
 
 if (BUILD_TARGET STREQUAL "smp-x86")
 	set(ARCH "x86_64")
-	option(ENABLE_TOFU "Built-in tofu driver support" OFF)
 elseif (BUILD_TARGET STREQUAL "smp-arm64")
 	set(ARCH "arm64")
-	option(ENABLE_TOFU "Built-in tofu driver support" ON)
 endif()
 
 include(GNUInstallDirs)
@@ -51,6 +49,20 @@ option(ENABLE_WERROR "Enable -Werror" OFF)
 if (ENABLE_WERROR)
 	add_compile_options("-Werror")
 endif(ENABLE_WERROR)
+
+execute_process(COMMAND bash -c "ls -ld /proc/tofu/ 2>/dev/null | wc -l"
+  OUTPUT_VARIABLE PROC_TOFU OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(PROC_TOFU STREQUAL "1")
+	option(ENABLE_TOFU "Built-in tofu driver support" ON)
+else()
+	option(ENABLE_TOFU "Built-in tofu driver support" OFF)
+endif()
+
+if(ENABLE_TOFU)
+	add_definitions(-DENABLE_TOFU)
+	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_TOFU")
+endif()
 
 option(ENABLE_LINUX_WORK_IRQ_FOR_IKC "Use Linux work IRQ for IKC IPI" ON)
 if (ENABLE_LINUX_WORK_IRQ_FOR_IKC)
