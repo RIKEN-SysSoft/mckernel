@@ -52,6 +52,7 @@ int arch_symbols_init(void)
 		return -EFAULT;
 #endif
 
+#ifdef ENABLE_TOFU
 	mcctrl_tof_utofu_procfs_ops_cq =
 		(void *)kallsyms_lookup_name("tof_utofu_procfs_ops_cq");
 	if (WARN_ON(!mcctrl_tof_utofu_procfs_ops_cq))
@@ -71,6 +72,7 @@ int arch_symbols_init(void)
 		(void *)kallsyms_lookup_name("tof_utofu_release_bch");
 	if (WARN_ON(!mcctrl_tof_utofu_release_bch))
 		return -EFAULT;
+#endif
 
 	return 0;
 }
