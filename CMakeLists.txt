@@ -26,10 +26,32 @@ endif()
 
 if (BUILD_TARGET STREQUAL "smp-x86")
 	set(ARCH "x86_64")
-	option(ENABLE_TOFU "Built-in tofu driver support" OFF)
 elseif (BUILD_TARGET STREQUAL "smp-arm64")
 	set(ARCH "arm64")
+endif()
+
+execute_process(COMMAND bash -c "gawk '/CPU implementer/ { print \$4; exit; }' /proc/cpuinfo"
+  OUTPUT_VARIABLE CPU_IMPLEMENTER OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND bash -c "gawk '/CPU architecture/ { print \$3; exit; }' /proc/cpuinfo"
+  OUTPUT_VARIABLE CPU_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND bash -c "gawk '/CPU variant/ { print \$4; exit; }' /proc/cpuinfo"
+  OUTPUT_VARIABLE CPU_VARIANT OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND bash -c "gawk '/CPU part/ { print \$4; exit; }' /proc/cpuinfo"
+  OUTPUT_VARIABLE CPU_PART OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(CPU_IMPLEMENTER STREQUAL "0x46" AND CPU_ARCH STREQUAL "8" AND
+    CPU_VARIANT STREQUAL "0x1" AND CPU_PART STREQUAL "0x001")
+  message("A64FX detected")
+  set(CPU_MODEL "a64fx")
+endif()
+
+execute_process(COMMAND bash -c "ls -ld ls /proc/tofu/ 2>/dev/null | wc -l"
+  OUTPUT_VARIABLE PROC_TOFU OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(CPU_MODEL STREQUAL "a64fx" AND PROC_TOFU STREQUAL "1")
 	option(ENABLE_TOFU "Built-in tofu driver support" ON)
+else()
+	option(ENABLE_TOFU "Built-in tofu driver support" OFF)
 endif()
 
 include(GNUInstallDirs)
@@ -245,6 +267,8 @@ message("Option summary")
 message("-------------------------------")
 message("Build type: ${CMAKE_BUILD_TYPE}")
 message("Build target: ${BUILD_TARGET}")
+message("CPU_MODEL: ${CPU_MODEL}")
+message("PROC_TOFU: ${PROC_TOFU}")
 message("IHK_SOURCE_DIR: ${IHK_SOURCE_DIR} (relative to mckernel source tree)")
 message("UNAME_R: ${UNAME_R}")
 message("KERNEL_DIR: ${KERNEL_DIR}")
