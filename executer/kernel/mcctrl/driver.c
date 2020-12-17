@@ -50,7 +50,9 @@ extern void procfs_exit(int);
 extern void uti_attr_finalize(void);
 extern void binfmt_mcexec_init(void);
 extern void binfmt_mcexec_exit(void);
+#ifdef ENABLE_TOFU
 extern void mcctrl_file_to_pidfd_hash_init(void);
+#endif
 
 extern int mcctrl_os_read_cpu_register(ihk_os_t os, int cpu,
 		struct ihk_os_cpu_register *desc);
@@ -325,7 +327,9 @@ static int __init mcctrl_init(void)
 	}
 
 	binfmt_mcexec_init();
+#ifdef ENABLE_TOFU
 	mcctrl_file_to_pidfd_hash_init();
+#endif
 
 	if ((ret = symbols_init()))
 		goto error;
