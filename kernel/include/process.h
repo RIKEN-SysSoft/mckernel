@@ -567,7 +567,9 @@ struct process {
 	int thp_disable;
 
 	int straight_map;
+#ifdef ENABLE_TOFU
 	int enable_tofu;
+#endif
 	size_t straight_map_threshold;
 
 	// perf_event
@@ -592,9 +594,11 @@ struct process {
 
 	int coredump_barrier_count, coredump_barrier_count2;
 	mcs_rwlock_lock_t coredump_lock; // lock for coredump
+#ifdef ENABLE_TOFU
 #define MAX_FD_PDE 1024
 	void *fd_pde_data[MAX_FD_PDE];
 	char *fd_path[MAX_FD_PDE];
+#endif
 };
 
 /*
@@ -753,8 +757,10 @@ struct thread {
 	struct waitq coredump_wq;
 	int coredump_status;
 
+#ifdef ENABLE_TOFU
 	/* Path of file being opened */
 	char *fd_path_in_open;
+#endif
 };
 
 #define VM_RANGE_CACHE_SIZE	4
