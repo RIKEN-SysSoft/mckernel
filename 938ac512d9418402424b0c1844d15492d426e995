@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f46026da_452a6cd9",
+        "filename": "arch/arm64/kernel/cpu.c",
+        "patchSetId": 11
+      },
+      "lineNbr": 1448,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-18T05:48:04Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tconst struct pt_regs *regs \u003d (struct pt_regs *)reg;\n+\treturn regs-\u003epc;",
+      "revId": "938ac512d9418402424b0c1844d15492d426e995",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ee60470a_a526b6e1",
+        "filename": "kernel/mem.c",
+        "patchSetId": 11
+      },
+      "lineNbr": 1324,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-18T05:48:04Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tunsigned long pc \u003d arch_get_instruction_address(regs);\n+\t\trange \u003d lookup_process_memory_range(vm, pc, pc + 1);",
+      "revId": "938ac512d9418402424b0c1844d15492d426e995",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "cf6bce1a_11cc0dea",
+        "filename": "kernel/mem.c",
+        "patchSetId": 11
+      },
+      "lineNbr": 1328,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-18T05:48:04Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t(range-\u003ememobj \u0026\u0026 range-\u003ememobj-\u003eflags \u0026 MF_REG_FILE) ?",
+      "revId": "938ac512d9418402424b0c1844d15492d426e995",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "bbb94a21_26348276",
+        "filename": "kernel/mem.c",
+        "patchSetId": 11
+      },
+      "lineNbr": 1332,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-18T05:48:04Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\trange-\u003ememobj-\u003epath : \"(unknown)\");",
+      "revId": "938ac512d9418402424b0c1844d15492d426e995",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
