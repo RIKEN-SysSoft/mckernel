@@ -845,7 +845,8 @@ static int tof_utofu_update_mbpt_entries(struct tof_utofu_cq *ucq,
 			return -ENOMEM;
 		}
 
-		phys = pte_get_phys(ptep) + (va & (psize - 1));
+		phys = (pte_get_phys(ptep) & ~(psize - 1)) +
+			(va & (psize - 1));
 
 		//iova = tof_smmu_get_ipa_cq(ucq->tni, ucq->cqid,
 		//			   pfn_to_kaddr(page_to_pfn(page)), pgsz);
@@ -2059,7 +2060,8 @@ static int tof_utofu_ioctl_enable_bch(struct tof_utofu_device *dev, unsigned lon
 			return -ENOMEM;
 		}
 
-		phys = pte_get_phys(ptep) + ((uint64_t)req.addr & (psize - 1));
+		phys = (pte_get_phys(ptep) & ~(psize - 1)) +
+			((uint64_t)req.addr & (psize - 1));
 	}
 
 	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
