@@ -1478,9 +1478,9 @@ out_linux:
 		preempt_enable();
 
 #ifdef ENABLE_FUGAKU_DEBUG
-		//kprintf("%s: sending SIGSTOP to TID: %d\n", __func__, thread->tid);
-		//do_kill(thread, thread->proc->pid, thread->tid, SIGSTOP, NULL, 0);
-		//goto out;
+		kprintf("%s: sending SIGSTOP to TID: %d\n", __func__, thread->tid);
+		do_kill(thread, thread->proc->pid, thread->tid, SIGSTOP, NULL, 0);
+		goto out;
 #endif
 
 		memset(&info, '\0', sizeof info);
