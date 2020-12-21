@@ -24,6 +24,7 @@
 struct kmalloc_cache_header tofu_scatterlist_cache[8];
 struct kmalloc_cache_header tofu_mbpt_cache[8];
 struct ihk_mc_page_cache_header tofu_mbpt_sg_pages_cache[8];
+struct kmalloc_cache_header tofu_stag_range_cache[8];
 
 
 typedef ihk_spinlock_t spinlock_t;
@@ -54,7 +55,9 @@ int tof_utofu_stag_range_insert(struct process_vm *vm,
 		uintptr_t start, uintptr_t end,
 		struct tof_utofu_cq *ucq, int stag)
 {
-	struct tofu_stag_range *tsr = kmalloc(sizeof(*tsr), IHK_MC_AP_NOWAIT);
+	struct tofu_stag_range *tsr; // = kmalloc(sizeof(*tsr), IHK_MC_AP_NOWAIT);
+	tsr = kmalloc_cache_alloc(&tofu_stag_range_cache[ihk_mc_get_numa_id()],
+			sizeof(*tsr));
 
 	if (!tsr) {
 		kprintf("%s: error: allocating tofu_stag_range\n", __func__);
@@ -114,7 +117,8 @@ void __tofu_stag_range_remove(struct process_vm *vm, struct tofu_stag_range *tsr
 
 	list_del(&tsr->list);
 	list_del(&tsr->hash);
-	kfree(tsr);
+	//kfree(tsr);
+	kmalloc_cache_free(tsr);
 }
 
 void tofu_stag_range_remove(struct process_vm *vm, struct tofu_stag_range *tsr)
@@ -2287,6 +2291,7 @@ void tof_utofu_init_globals(void)
 	memset(tofu_scatterlist_cache, 0, sizeof(tofu_scatterlist_cache));
 	memset(tofu_mbpt_cache, 0, sizeof(tofu_mbpt_cache));
 	memset(tofu_mbpt_sg_pages_cache, 0, sizeof(tofu_mbpt_sg_pages_cache));
+	memset(tofu_stag_range_cache, 0, sizeof(tofu_stag_range_cache));
 
 	{
 		int tni, cq;
