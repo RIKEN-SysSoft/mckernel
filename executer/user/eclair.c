@@ -1179,7 +1179,7 @@ static int start_gdb(void) {
 
 		sprintf(buf, "target remote :%d", ntohs(sin.sin_port));
 		execlp("gdb", "eclair", "-q", "-ex", "set prompt (eclair) ",
-				"-ex", buf, opt.kernel_path, NULL);
+				"-ex", buf, opt.kernel_path, "-ex", "set pagination off", NULL);
 		perror("execlp");
 		return 3;
 	}
