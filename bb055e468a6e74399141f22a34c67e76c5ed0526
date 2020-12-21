@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a6ae8fd3_d59eca78",
+        "filename": "kernel/host.c",
+        "patchSetId": 11
+      },
+      "lineNbr": 555,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-21T06:33:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: error: NUMA id %d is larger than mask size!\\n\",",
+      "revId": "bb055e468a6e74399141f22a34c67e76c5ed0526",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "6a3637f1_91a7d6e7",
+        "filename": "test/issues/1470/include/okng.h",
+        "patchSetId": 11
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-21T06:33:44Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\t\\\n+\tif (cond) {\t\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\t\\\n+\t\t\tprintf(\"[  OK  ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\t\\\n+\t\tprintf(\"[  NG  ] \" fmt, ##args);\t\t\\\n+\t\tif (jump) {\t\t\t\t\t\\\n+\t\t\tret \u003d 1;\t\t\t\t\\\n+\t\t\tgoto out;\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\\\n+\t}\t\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "bb055e468a6e74399141f22a34c67e76c5ed0526",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5448ffe9_a02c970f",
+        "filename": "test/issues/1470/include/okng.h",
+        "patchSetId": 11
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-21T06:33:44Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define INTERR(cond, fmt, args...) do {\t \\\n+\tif (cond) {\t\t\t \\\n+\t\tchar msg[4096];\t\t\t \\\n+\t\tsprintf(msg, fmt, ##args);\t\t \\\n+\t\tprintf(\"[INTERR] %s:%d %s\", __FILE__, __LINE__, msg);\t\\\n+\t\tret \u003d 1;\t\t\t\t\t\\\n+\t\tgoto out;\t\t\t\t\t\\\n+\t} \\\n+} while (0)",
+      "revId": "bb055e468a6e74399141f22a34c67e76c5ed0526",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "4fb29642_e0b908de",
+        "filename": "test/issues/1470/include/okng.h",
+        "patchSetId": 11
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-21T06:33:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define ARRAY_SIZE_CHECK(array, size) INTERR(sizeof(array)/sizeof(array[0]) !\u003d size, \"size of array \\\"%s\\\" isn\u0027t %d\\n\", #array, size)",
+      "revId": "bb055e468a6e74399141f22a34c67e76c5ed0526",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "f48a5300_93860e50",
+        "filename": "test/issues/1470/include/okng.h",
+        "patchSetId": 11
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-21T06:33:44Z",
+      "side": 1,
+      "message": "WARNING: Prefer ARRAY_SIZE(array)\n+#define ARRAY_SIZE_CHECK(array, size) INTERR(sizeof(array)/sizeof(array[0]) !\u003d size, \"size of array \\\"%s\\\" isn\u0027t %d\\n\", #array, size)",
+      "revId": "bb055e468a6e74399141f22a34c67e76c5ed0526",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
