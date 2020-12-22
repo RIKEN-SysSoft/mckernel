@@ -692,15 +692,26 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 					vma->vm_start, vma->vm_end, pgsize, pix);
 			}
 		}
-		else
+		else {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
 			error = vmf_insert_pfn(vma, rva+(pix*PAGE_SIZE),
 					       pfn+pix);
+			if (error == VM_FAULT_NOPAGE) {
+				dprintk("%s: vmf_insert_pfn returned %d\n",
+					__func__, error);
+				error = 0;
+			}
 #else
 			error = vm_insert_pfn(vma, rva+(pix*PAGE_SIZE),
 					      pfn+pix);
 #endif
+		}
 		if (error) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
+			pr_err("%s: vmf_insert_pfn returned %d\n",
+			       __func__, error);
+			break;
+#else
 			pr_err("%s: vm_insert_pfn returned %d\n",
 			       __func__, error);
 			if (error == -EBUSY) {
@@ -708,6 +719,7 @@ static int rus_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			} else {
 				break;
 			}
+#endif
 		}
 	}
 #else
