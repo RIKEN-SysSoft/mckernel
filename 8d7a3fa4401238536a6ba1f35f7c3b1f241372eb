@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8accb199_a8940e17",
+        "filename": "kernel/hugefileobj.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 290,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-22T02:38:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfor (pgind \u003d ((obj-\u003enr_pages \u003e 8) ? (obj-\u003enr_pages - 8) : 0);",
+      "revId": "8d7a3fa4401238536a6ba1f35f7c3b1f241372eb",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "77c34944_e9900a5d",
+        "filename": "kernel/mem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 748,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-22T02:38:52Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: distance: CPU @ node %d failed to allocate \"",
+      "revId": "8d7a3fa4401238536a6ba1f35f7c3b1f241372eb",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
