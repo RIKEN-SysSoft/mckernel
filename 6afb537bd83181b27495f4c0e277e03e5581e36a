@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6905a6be_d43a2a52",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-22T02:39:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tstruct tofu_stag_range *tsr; // \u003d kmalloc(sizeof(*tsr), IHK_MC_AP_NOWAIT);",
+      "revId": "6afb537bd83181b27495f4c0e277e03e5581e36a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "0b0ac79b_22b2c93b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-22T02:39:43Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tstruct tofu_stag_range *tsr; // \u003d kmalloc(sizeof(*tsr), IHK_MC_AP_NOWAIT);\n+\ttsr \u003d kmalloc_cache_alloc(\u0026tofu_stag_range_cache[ihk_mc_get_numa_id()],",
+      "revId": "6afb537bd83181b27495f4c0e277e03e5581e36a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
