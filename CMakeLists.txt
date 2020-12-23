@@ -7,10 +7,10 @@ endif (NOT CMAKE_BUILD_TYPE)
 enable_language(C ASM)
 
 project(mckernel C ASM)
-set(MCKERNEL_VERSION "1.7.0")
+set(MCKERNEL_VERSION "1.7.1")
 
 # See "Fedora Packaging Guidelines -- Versioning"
-set(MCKERNEL_RELEASE "1")
+set(MCKERNEL_RELEASE "0.1")
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 # for rpmbuild
