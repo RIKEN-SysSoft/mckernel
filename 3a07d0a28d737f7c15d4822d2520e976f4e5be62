@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c11351bd_cc233d13",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 13
+      },
+      "lineNbr": 2390,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:27:14Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, \"",
+      "revId": "3a07d0a28d737f7c15d4822d2520e976f4e5be62",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
