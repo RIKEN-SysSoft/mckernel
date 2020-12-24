@@ -1,0 +1,293 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ffd42bca_30d64dd6",
+        "filename": "kernel/host.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 791,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"SCD_MSG_SEND_SIGNAL: do_kill(pid\u003d%d, tid\u003d%d, sig\u003d%d)\u003d%d\\n\", info.pid, info.tid, info.sig, rc);",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7daad0fd_61dc8a52",
+        "filename": "kernel/mem.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1345,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "ERROR: trailing statements should be on next line\n+\t\tfor (;;) cpu_pause();",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2e59861e_7abb37d1",
+        "filename": "kernel/mem.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1462,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t//kprintf(\"%s: sending SIGSTOP to TID: %d\\n\", __func__, thread-\u003etid);",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1709dc67_19ae9d41",
+        "filename": "kernel/mem.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1463,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t//do_kill(thread, thread-\u003eproc-\u003epid, thread-\u003etid, SIGSTOP, NULL, 0);",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bb78997a_fb7e7a10",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1975,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t * Iterate LWK phsyical memory chunks and map them to their",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4303b381_c73954bb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1976,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t * corresponding offset in the straight range using the largest",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a93902a8_f55c919a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1986,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tva \u003d proc-\u003estraight_va + (start - straight_pa_start);",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cc3a3331_ab90e0dc",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1993,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\terror \u003d arch_get_smaller_page_size(NULL, pgsize,",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cb32d7a0_eadb9c04",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1996,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tekprintf(\"%s: arch_get_smaller_page_size() failed\"",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "68ae0797_ae3be9fb",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 1998,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t__func__, error);",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "25bcd836_aaf8e96e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 2003,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t/* Are virtual or physical not page aligned for this size? */",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c796c13c_35abd84e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 2004,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tif (((unsigned long)va \u0026 (pgsize - 1)) ||",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f0333530_2cc8fa2f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 2010,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\tproc-\u003evm-\u003eaddress_space-\u003epage_table,",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3a632102_298dca84",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 2021,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tkprintf(\"%s: ihk_mc_pt_set_range() failed\"",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f43536a0_75b3d9c1",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 2023,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t\t__func__, error);",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "224d0a74_f0528759",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 2044,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t\t__FUNCTION__,",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "426dfe72_e694cb3e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 21
+      },
+      "lineNbr": 2381,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:26:29Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t\t__FUNCTION__, addr, len, range-\u003estraight_start,",
+      "revId": "bfeabeab3962f8809e21b8c977ee55de66d4e2c5",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
