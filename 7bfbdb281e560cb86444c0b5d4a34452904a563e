@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "53f08375_cb17cdd5",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1462,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:21:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: sending SIGSTOP to TID: %d\\n\", __func__, thread-\u003etid);",
+      "revId": "7bfbdb281e560cb86444c0b5d4a34452904a563e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "363915de_b556cdd4",
+        "filename": "kernel/mem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1463,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-24T06:21:43Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdo_kill(thread, thread-\u003eproc-\u003epid, thread-\u003etid, SIGSTOP, NULL, 0);",
+      "revId": "7bfbdb281e560cb86444c0b5d4a34452904a563e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
