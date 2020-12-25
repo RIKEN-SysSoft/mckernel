@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e0a9eadb_d0fad79a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-12-25T05:16:02Z",
+      "side": 1,
+      "message": "rebuild wallaby\n",
+      "revId": "2fa1c053d790a9057122b44ccc5c7f91ead2e2a0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
