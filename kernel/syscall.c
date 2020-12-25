@@ -2385,11 +2385,20 @@ out:
 	if (memobj) {
 		memobj_unref(memobj);
 	}
+
+#ifndef ENABLE_FUGAKU_HACKS
 	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+#else
+	if (cpu_local_var(current)->profile) {
+		kprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+#endif
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
 			__FUNCTION__,
 			addr, len, addr0, len0, prot, flags,
 			fd, off0, error, addr);
+#ifdef ENABLE_FUGAKU_HACKS
+	}
+#endif
 
 	return !error ?
 		(range->straight_start ? range->straight_start : addr) :
