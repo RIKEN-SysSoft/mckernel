@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2a3c79b8_cb5ebba0",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-28T07:18:25Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nhttps://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id\u003d1c8f422059ae5da07db7406ab916203f9417e396",
+      "revId": "eebeeea5e00420b299399b866bb7517b5d301e70",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
