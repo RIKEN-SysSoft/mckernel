@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "455d8b5a_e628a0b6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 10
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2020-12-28T08:31:50Z",
+      "side": 1,
+      "message": "20201224002059 refs-changes-19-507119-9 submodule development\n[  +0.005386] IHK-SMP: CPU HWID 110 may not have shut down cleanly (AFFINITY_INFO reports 0)\nと表示されMcKernelがブートできない。",
+      "revId": "8f2c8791bf71bfc6c3d6e925ab6e09e69a70ee4a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "012cbfc2_38f11843",
         "filename": "arch/arm64/kernel/cpu.c",
         "patchSetId": 10
