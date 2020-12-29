@@ -1,0 +1,378 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f81e2d46_84473ebb",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1052,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: stag: %d @ %p:%lu moved in VM range merge\\n\",",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a4ee9cb4_7416a28d",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1180,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\textern int tofu_stag_range_remove_overlapping(struct process_vm *vm,",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "baa7a802_22718c16",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1180,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tint entries;\n+\t\textern int tofu_stag_range_remove_overlapping(struct process_vm *vm,",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9d44c72c_2d90ea53",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1180,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\textern int tofu_stag_range_remove_overlapping(struct process_vm *vm,",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "34aba11a_42a25d49",
+        "filename": "kernel/process.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1185,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: removed %d Tofu stag entries for range 0x%lx:%lu\\n\",",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "70f80ae8_47aaa5da",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1396,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "ERROR: Bad function definition - void tof_utofu_finalize() should probably be void tof_utofu_finalize(void)\n+\t\textern void tof_utofu_finalize();",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5bd7b8d7_4f6aa514",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1396,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+\t\textern void tof_utofu_finalize();",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "75e6380a_7729bd0f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tlist_add_tail(\u0026tsr-\u003ehash, \u0026vm-\u003etofu_stag_hash[stag % TOFU_STAG_HASH_SIZE]);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "53f97f08_606b7925",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+void __tofu_stag_range_remove(struct process_vm *vm, struct tofu_stag_range *tsr)",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bc421c0f_acf27fff",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1179,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t(range_iter-\u003eend - range_iter-\u003estart))) {",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cf6a4dd4_31a9f5a8",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1273,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\ttof_utofu_stag_range_insert(vm, range, start, end, ucq, req.stag);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "034d2d31_fb4d1b52",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1508,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\ttofu_stag_range_remove(cpu_local_var(current)-\u003evm, tsr);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ae4451b3_7d402d5b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1511,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: no stag range object for %d??\\n\", __func__, stags[i]);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "13805da5_c933590f",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1590,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%s: removing stag %d for TNI %d CQ %d\\n\",",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0246babc_060d1da3",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1591,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t__func__, tsr-\u003estag, ucq-\u003etni, ucq-\u003ecqid);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "aa099592_7002671b",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1593,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tlinux_spin_lock_irqsave(\u0026ucq-\u003etrans.mru_lock, irqflags);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1ce89f1e_a61520c1",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1594,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\ttof_utofu_free_stag(tsr-\u003eucq, tsr-\u003estag);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7ace2aa4_2411e1d9",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1595,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tlinux_spin_unlock_irqrestore(\u0026ucq-\u003etrans.mru_lock, irqflags);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7d80c30c_7cd86911",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1598,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tkprintf(\"%s: WARNING: could not free stag %d for TNI %d CQ %d (UCQ is disabled)\\n\",",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "88d2ac6c_a2edc939",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 1599,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\t__func__, tsr-\u003estag, ucq-\u003etni, ucq-\u003ecqid);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e2e87a02_bbbf43d6",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 2352,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdkprintf(\"%s: WARNING: stray stag %d for TNI %d CQ %d?\\n\",",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "19da777b_b8ac9ae7",
+        "filename": "kernel/tofu/tof_utofu_main.c",
+        "patchSetId": 6
+      },
+      "lineNbr": 2353,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2020-12-29T07:41:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__func__, tsr-\u003estag, tsr-\u003eucq-\u003etni, tsr-\u003eucq-\u003ecqid);",
+      "revId": "0b82c8942b6e56adb9717329876f2f84af1e8ae9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
