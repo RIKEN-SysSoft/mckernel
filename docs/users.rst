@@ -183,3 +183,5 @@ Limitations
 
 26. mmap() allows unlimited overcommit. Note that it corresponds to
     setting sysctl ``vm.overcommit_memory`` to 1.
+
+27. mlockall() is not supported and returns -EPERM.
