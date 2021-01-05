@@ -20,6 +20,7 @@
 #include <ihk/ikc.h>
 #include <rlimit.h>
 #include <time.h>
+#include <profile.h>
 
 #define NUM_SYSCALLS 255
 
