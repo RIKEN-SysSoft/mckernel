@@ -54,6 +54,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "9ce54e02_22ae6605",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-01-05T02:27:47Z",
+      "side": 1,
+      "message": "armでは100MHzカウンタで、サイクルカウンタではないので、CT32.cのメッセージをprintf(\"%ld ns\", count * 10)のように変えておいてください。",
+      "revId": "0b0d3e7a5f866c97936a85daa76dfd8931294e77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "4f520b6d_37be4e3c",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 5
