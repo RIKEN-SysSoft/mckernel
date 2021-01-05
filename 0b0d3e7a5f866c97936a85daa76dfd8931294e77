@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "9b7bffea_af9e8597",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2021-01-05T00:09:17Z",
+      "side": 1,
+      "message": "\u003e Patch Set 4:\n\u003e \n\u003e AI\n\u003e (追記）arm64にCT31-33を移植してテストする\n\narm64にCT31-33 を移植し、テストが動作することを確認しました。",
+      "revId": "0b0d3e7a5f866c97936a85daa76dfd8931294e77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "4f520b6d_37be4e3c",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 5
