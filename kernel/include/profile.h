@@ -1,9 +1,6 @@
 #ifndef __PROCESS_PROFILE_H_
 #define __PROCESS_PROFILE_H_
 
-/* Uncomment this to enable profiling */
-#define PROFILE_ENABLE
-
 #ifdef PROFILE_ENABLE
 #define PROFILE_SYSCALL_MAX                          2000
 #define PROFILE_OFFLOAD_MAX   (PROFILE_SYSCALL_MAX << 1)
@@ -58,8 +55,6 @@ enum profile_event_type {
 	PROFILE_EVENT_MAX	/* Should be the last event type */
 };
 
-#define __NR_profile                   PROFILE_EVENT_MAX
-
 #ifdef __KERNEL__
 struct thread;
 struct process;
@@ -78,6 +73,8 @@ void profile_dealloc_proc_events(struct process *proc);
 #else // User space interface
 #include <unistd.h>
 #include <sys/syscall.h>
+
+#define __NR_profile                   PROFILE_EVENT_MAX
 
 /* Per-thread */
 static inline void mckernel_profile_thread_on(void)
