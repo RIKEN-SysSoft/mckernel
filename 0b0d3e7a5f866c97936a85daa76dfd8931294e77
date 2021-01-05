@@ -20,6 +20,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "047ca350_c31531cc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-01-05T02:02:18Z",
+      "side": 1,
+      "message": "CT31-33について、Linuxで実行するオプションを追加して、Linuxで実行した結果も付け加えてください。",
+      "revId": "0b0d3e7a5f866c97936a85daa76dfd8931294e77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "4f520b6d_37be4e3c",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 5
