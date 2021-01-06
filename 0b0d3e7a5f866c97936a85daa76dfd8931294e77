@@ -71,6 +71,24 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "f7add6dc_dd012cc7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2021-01-06T04:38:03Z",
+      "side": 1,
+      "message": "以下の対応を実施しました。\n・CT33を、UTI threadでwait, Main threadでwakeするテストに変更\n・CT31-33 について、Linuxの結果も表示するように変更\n・aarch64は100MHzカウンタなので、表示内容をcycleからnsecに変更\n・wallaby, jupiter にてテストを再実行",
+      "parentUuid": "9ce54e02_22ae6605",
+      "revId": "0b0d3e7a5f866c97936a85daa76dfd8931294e77",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "4f520b6d_37be4e3c",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 5
