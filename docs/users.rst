@@ -187,3 +187,5 @@ Limitations
 27. mlockall() is not supported and returns -EPERM.
 
 28. munlockall() is not supported and returns zero.
+
+29. scheduling behavior is not Linux compatible. For example, sometimes one of the two processes on the same CPU continues to run after yielding.
