@@ -2735,7 +2735,7 @@ SYSCALL_DECLARE(brk)
 	}
 
 	/* If already allocated, just expand and return */
-	if (address < region->brk_end_allocated) {
+	if (address <= region->brk_end_allocated) {
 		region->brk_end = address;
 		r = region->brk_end;
 		goto out;
