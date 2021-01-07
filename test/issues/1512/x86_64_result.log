@@ -1,0 +1,50 @@
+./C1512.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O ... done
+*** C1512T01 start *******************************
+shmt09 rep 1 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 2 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 3 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 4 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 5 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 6 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 7 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 8 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 9 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+shmt09 rep 10 done. (ok=3 ng=1)
+OK: Expected fail on x86_64
+*** C1512T01 PASSED
+
+*** C1512T02 start *******************************
+sbrk01      1  TPASS  :  sbrk - Increase by 8192 bytes returned 0x821000
+sbrk01      2  TPASS  :  sbrk - Increase by -8192 bytes returned 0x823000
+*** C1512T02 PASSED (2)
+
+*** C1512T03 start *******************************
+sbrk02      0  TINFO  :  setup() bailing inc: 28068282368, ret: 0xffffffffffffffff, sbrk: 0x1550dc821000: errno=ENOMEM(12): Cannot allocate memory
+sbrk02      1  TPASS  :  sbrk(28068282368) failed as expected: TEST_ERRNO=ENOMEM(12): Cannot allocate memory
+*** C1512T03 PASSED (1)
+
+*** C1512T04 start *******************************
+mmapstress02    1  TPASS  :  Test passed
+
+*** C1512T04 PASSED (1)
+
+*** C1512T05 start *******************************
+mmapstress05    1  TPASS  :  Test passed
+
+*** C1512T05 PASSED (1)
+
+*** C1512T06 start *******************************
+mmapstress06    1  TPASS  :  Test passed
+
+*** C1512T06 PASSED (1)
