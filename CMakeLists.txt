@@ -64,20 +64,22 @@ if(ENABLE_TOFU)
 	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_TOFU")
 endif()
 
+# when compiling on a compute-node
 execute_process(COMMAND bash -c "grep $(hostname) /etc/opt/FJSVfefs/config/fefs_node1.csv 2>/dev/null | cut -d, -f2"
   OUTPUT_VARIABLE FUGAKU_NODE_TYPE OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(FUGAKU_NODE_TYPE STREQUAL "CN")
 	option(ENABLE_FUGAKU_HACKS "Fugaku hacks" ON)
-	option(ENABLE_FUGAKU_DEBUG "Fugaku debug instrumentation" ON)
 else()
 	option(ENABLE_FUGAKU_HACKS "Fugaku hacks" OFF)
-	option(ENABLE_FUGAKU_DEBUG "Fugaku debug instrumentation" OFF)
 endif()
 
 if(ENABLE_FUGAKU_HACKS)
 	add_definitions(-DENABLE_FUGAKU_HACKS)
 	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_FUGAKU_HACKS")
 endif()
+
+# SIGSTOP instead of SIGSEGV, additional IHK Linux kmsg
+option(ENABLE_FUGAKU_DEBUG "Fugaku debug instrumentation" OFF)
 
 if(ENABLE_FUGAKU_DEBUG)
 	add_definitions(-DENABLE_FUGAKU_DEBUG)
