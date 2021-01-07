@@ -1498,6 +1498,14 @@ int add_process_memory_range(struct process_vm *vm,
 	INIT_LIST_HEAD(&range->tofu_stag_list);
 #endif
 
+	rc = vm_range_insert(vm, range);
+	if (rc) {
+		kprintf("%s: ERROR: could not insert range: %d\n",
+			__func__, rc);
+		kfree(range);
+		return rc;
+	}
+
 	rc = 0;
 	if (phys == NOPHYS) {
 		/* Nothing to map */
@@ -1523,14 +1531,9 @@ int add_process_memory_range(struct process_vm *vm,
 
 	if (rc != 0) {
 		kprintf("%s: ERROR: preparing page tables\n", __FUNCTION__);
+		remove_process_memory_range(vm,
+				range->start, range->end, NULL);
 		kfree(range);
-		return rc;
-	}
-
-	rc = vm_range_insert(vm, range);
-	if (rc) {
-		kprintf("%s: ERROR: could not insert range: %d\n",
-			__FUNCTION__, rc);
 		return rc;
 	}
 
@@ -2739,6 +2742,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	int rc;
 	size_t len;
 	int npages;
+	struct vm_range *range;
 
 	size_t align_size = vm->proc->heap_extension > PAGE_SIZE ?
 		LARGE_PAGE_SIZE : PAGE_SIZE;
@@ -2753,6 +2757,15 @@ unsigned long extend_process_region(struct process_vm *vm,
 	if ((new_end_allocated - end_allocated) < vm->proc->heap_extension) {
 		new_end_allocated = (end_allocated + vm->proc->heap_extension +
 				(align_size - 1)) & align_mask;
+	}
+
+	/* Check if the range to be extended already exists */
+	range = lookup_process_memory_range(vm,
+			end_allocated, new_end_allocated);
+	if (range) {
+		dkprintf("%s: warning: vm_range for extention already exists\n",
+				__func__);
+		return end_allocated;
 	}
 
 	len = new_end_allocated - end_allocated;
@@ -2782,7 +2795,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
 					align_shift, NULL)) != 0) {
-		ihk_mc_free_pages_user(p, (new_end_allocated - end_allocated) >> PAGE_SHIFT);
+		ihk_mc_free_pages_user(p, npages);
 		return end_allocated;
 	}
 	// memory_stat_rss_add() is called in add_process_memory_range()
