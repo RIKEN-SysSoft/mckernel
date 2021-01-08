@@ -84,7 +84,8 @@ if(ENABLE_FUGAKU_HACKS)
 endif()
 
 # Fujitsu MPI tries to xpmem-attach segment with size of range size + 1?
-execute_process(COMMAND bash -c "module list | grep lang | cut -f2 | grep -o '[0-9]*\\.[0-9]*\\.[0-9]*[^(]*'"
+set(FJMPI_VERSION_COMMAND "a=\$(which mpifcc); b=\${a%/*/*}; c=\${b##*/}; d=\${c#*-}; echo \$d")
+execute_process(COMMAND bash -c "${FJMPI_VERSION_COMMAND}"
   OUTPUT_VARIABLE FJMPI_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
 message("FJMPI_VERSION: ${FJMPI_VERSION}")
 
