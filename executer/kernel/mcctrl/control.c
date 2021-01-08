@@ -230,6 +230,7 @@ static long mcexec_prepare_image(ihk_os_t os,
 
 	dprintk("%s: pid %d, rpgtable: 0x%lx added\n",
 		__FUNCTION__, ppd->pid, ppd->rpgtable);
+	ppd->enable_tofu = pdesc->enable_tofu;
 
 	ret = 0;
 
@@ -1258,7 +1259,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 			   process is gone and the application should be terminated. */
 			packet = (struct ikc_scd_packet *)ptd->data;
 			dprintk("%s: calling __return_syscall (hash),target pid=%d,tid=%d\n", __FUNCTION__, ppd->pid, packet->req.rtid);
-			__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
+			__return_syscall(ppd->ud->os, ppd, packet, -ERESTARTSYS,
 					 packet->req.rtid);
 			ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
@@ -1282,7 +1283,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
-		__return_syscall(ppd->ud->os, packet, -ERESTARTSYS,
+		__return_syscall(ppd->ud->os, ppd, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 	}
@@ -1323,7 +1324,7 @@ int mcexec_syscall(struct mcctrl_usrdata *ud, struct ikc_scd_packet *packet)
 
 		/* We use ERESTARTSYS to tell the LWK that the proxy
 		 * process is gone and the application should be terminated */
-		__return_syscall(ud->os, packet, -ERESTARTSYS,
+		__return_syscall(ud->os, NULL, packet, -ERESTARTSYS,
 				packet->req.rtid);
 		ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
@@ -1766,7 +1767,7 @@ long mcexec_ret_syscall(ihk_os_t os, struct syscall_ret_desc *__user arg)
 		ihk_device_unmap_memory(ihk_os_to_dev(os), phys, ret.size);
 	} 
 
-	__return_syscall(os, packet, ret.ret, task_pid_vnr(current));
+	__return_syscall(os, ppd, packet, ret.ret, task_pid_vnr(current));
 
 	error = 0;
 out:
@@ -2794,7 +2795,7 @@ static long mcexec_terminate_thread_unsafe(ihk_os_t os, int pid, int tid, long c
 				__FUNCTION__, tid);
 		goto no_ptd;
 	}
-	__return_syscall(usrdata->os, packet, code, tid);
+	__return_syscall(usrdata->os, ppd, packet, code, tid);
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
 
 	/* Drop reference for this function */
