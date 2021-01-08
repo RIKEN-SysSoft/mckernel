@@ -1864,7 +1864,8 @@ void mcctrl_file_to_pidfd_hash_init(void)
 }
 
 int mcctrl_file_to_pidfd_hash_insert(struct file *filp,
-	ihk_os_t os, int pid, struct task_struct *group_leader, int fd)
+	ihk_os_t os, int pid, struct task_struct *group_leader, int fd,
+	char *path, void *pde_data)
 {
 	unsigned long irqflags;
 	struct mcctrl_file_to_pidfd *file2pidfd_iter;
@@ -1882,6 +1883,9 @@ int mcctrl_file_to_pidfd_hash_insert(struct file *filp,
 	file2pidfd->pid = pid;
 	file2pidfd->group_leader = group_leader;
 	file2pidfd->fd = fd;
+	/* Only copy the name under /proc/tofu/dev/ */
+	strncpy(file2pidfd->tofu_dev_path, path + 15, 128);
+	file2pidfd->pde_data = pde_data;
 
 	spin_lock_irqsave(&mcctrl_file_to_pidfd_hash_lock, irqflags);
 	list_for_each_entry(file2pidfd_iter,
@@ -1980,7 +1984,8 @@ unlock_out:
 }
 #endif
 
-void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
+void __return_syscall(ihk_os_t os, struct mcctrl_per_proc_data *ppd,
+		struct ikc_scd_packet *packet,
 		long ret, int stid)
 {
 	unsigned long phys;
@@ -2011,54 +2016,104 @@ void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet,
 	res->stid = stid;
 
 #ifdef ENABLE_TOFU
-	/* Record PDE_DATA after open() calls for Tofu driver */
-	if (packet->req.number == __NR_openat && ret > 1) {
+	/* Tofu enabled process? */
+	if (ppd && ppd->enable_tofu) {
 		char *pathbuf, *fullpath;
-		struct fd f;
-		int fd;
 
-		fd = ret;
-		f = fdget(fd);
+		/* Record PDE_DATA after open() calls for Tofu driver */
+		if (packet->req.number == __NR_openat && ret > 1) {
+			struct fd f;
+			int fd;
 
-		if (!f.file) {
-			goto out_notify;
+			fd = ret;
+			f = fdget(fd);
+
+			if (!f.file) {
+				goto out_notify;
+			}
+
+			pathbuf = (char *)__get_free_page(GFP_ATOMIC);
+			if (!pathbuf) {
+				goto out_fdput_open;
+			}
+
+			fullpath = d_path(&f.file->f_path, pathbuf, PAGE_SIZE);
+			if (IS_ERR(fullpath)) {
+				goto out_free_open;
+			}
+
+			if (!strncmp("/proc/tofu/dev/", fullpath, 15)) {
+				res->pde_data = PDE_DATA(file_inode(f.file));
+				dprintk("%s: fd: %d, path: %s, PDE_DATA: 0x%lx\n",
+						__func__,
+						fd,
+						fullpath,
+						(unsigned long)res->pde_data);
+				dprintk("%s: pgd_index: %ld, pmd_index: %ld, pte_index: %ld\n",
+						__func__,
+						pgd_index((unsigned long)res->pde_data),
+						pmd_index((unsigned long)res->pde_data),
+						pte_index((unsigned long)res->pde_data));
+				dprintk("MAX_USER_VA_BITS: %d, PGDIR_SHIFT: %d\n",
+						MAX_USER_VA_BITS, PGDIR_SHIFT);
+				mcctrl_file_to_pidfd_hash_insert(f.file, os,
+						task_tgid_vnr(current),
+						current->group_leader, fd,
+						fullpath, res->pde_data);
+			}
+
+out_free_open:
+			free_page((unsigned long)pathbuf);
+out_fdput_open:
+			fdput(f);
 		}
 
-		pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
-		if (!pathbuf) {
-			goto out_fdput;
-		}
+		/* Ioctl on Tofu CQ? */
+		else if (packet->req.number == __NR_ioctl &&
+				packet->req.args[0] > 0 && ret == 0) {
+			struct fd f;
+			int fd;
+			int tni, cq;
+			long __ret;
 
-		fullpath = d_path(&f.file->f_path, pathbuf, PATH_MAX);
-		if (IS_ERR(fullpath)) {
-			goto out_free;
-		}
+			fd = packet->req.args[0];
+			f = fdget(fd);
 
-		if (!strncmp("/proc/tofu/dev/", fullpath, 15)) {
-			res->pde_data = PDE_DATA(file_inode(f.file));
-			dprintk("%s: fd: %d, path: %s, PDE_DATA: 0x%lx\n",
-					__func__,
-					fd,
-					fullpath,
-					(unsigned long)res->pde_data);
-			dprintk("%s: pgd_index: %ld, pmd_index: %ld, pte_index: %ld\n",
-				__func__,
-				pgd_index((unsigned long)res->pde_data),
-				pmd_index((unsigned long)res->pde_data),
-				pte_index((unsigned long)res->pde_data));
-#ifdef CONFIG_ARM64
-			dprintk("CONFIG_ARM64_VA_BITS: %d, PGDIR_SHIFT: %d\n",
-				CONFIG_ARM64_VA_BITS, PGDIR_SHIFT);
-#endif
-			mcctrl_file_to_pidfd_hash_insert(f.file, os,
-					task_tgid_vnr(current),
-					current->group_leader, fd);
-		}
+			if (!f.file) {
+				goto out_notify;
+			}
 
-out_free:
-		kfree(pathbuf);
-out_fdput:
-		fdput(f);
+			pathbuf = (char *)__get_free_page(GFP_ATOMIC);
+			if (!pathbuf) {
+				goto out_fdput_ioctl;
+			}
+
+			fullpath = d_path(&f.file->f_path, pathbuf, PAGE_SIZE);
+			if (IS_ERR(fullpath)) {
+				goto out_free_ioctl;
+			}
+
+			/* Looking for /proc/tofu/dev/tniXcqY pattern */
+			__ret = sscanf(fullpath, "/proc/tofu/dev/tni%dcq%d", &tni, &cq);
+			if (__ret == 2) {
+				extern long __mcctrl_tof_utofu_unlocked_ioctl_cq(void *pde_data,
+						unsigned int cmd, unsigned long arg);
+
+				dprintk("%s: ioctl(): fd: %d, path: %s\n",
+						__func__,
+						fd,
+						fullpath);
+
+				__ret = __mcctrl_tof_utofu_unlocked_ioctl_cq(
+						PDE_DATA(file_inode(f.file)),
+						packet->req.args[1], packet->req.args[2]);
+			}
+
+out_free_ioctl:
+			free_page((unsigned long)pathbuf);
+out_fdput_ioctl:
+			fdput(f);
+		}
 	}
 
 out_notify:
@@ -2365,7 +2420,7 @@ int __do_in_kernel_irq_syscall(ihk_os_t os, struct ikc_scd_packet *packet)
 	if (ret == -ENOSYS)
 		return -ENOSYS;
 
-	__return_syscall(os, packet, ret, 0);
+	__return_syscall(os, NULL, packet, ret, 0);
 
 	return 0;
 }
@@ -2590,7 +2645,7 @@ sched_setparam_out:
 		break;
 	}
 
-	__return_syscall(os, packet, ret, 0);
+	__return_syscall(os, NULL, packet, ret, 0);
 
 out_no_syscall_return:
 	ihk_ikc_release_packet((struct ihk_ikc_free_packet *)packet);
