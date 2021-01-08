@@ -1,0 +1,151 @@
+*** XPMEM_TESTSUITE start *******************************
+XPMEM version = 26003
+
+==== test_base STARTS ====
+xpmem_proc1: mypid = 3962
+xpmem_proc1: sharing 262144 bytes
+xpmem_proc1: segid = 200000f7a at 0x100000210000
+
+xpmem_proc2: mypid = 4161
+xpmem_proc2: segid = 200000f7a
+xpmem_proc2: attached at 0x100000210000
+xpmem_proc2: adding 1 to all elems
+
+xpmem_proc1: verifying data...done
+==== test_base PASSED ====
+
+==== test_two_attach STARTS ====
+xpmem_proc1: mypid = 4472
+xpmem_proc1: sharing 262144 bytes
+xpmem_proc1: segid = 200001178 at 0x100000210000
+
+xpmem_proc2: mypid = 4670
+xpmem_proc2: segid = 200001178
+xpmem_proc2: attached at 0x100000210000
+xpmem_proc2: attached at 0x100000250000
+xpmem_proc2: adding 1 to all elems using 0x100000210000
+xpmem_proc2: adding 1 to all elems using 0x100000250000
+
+xpmem_proc1: verifying data...done
+==== test_two_attach PASSED ====
+
+==== test_two_shares STARTS ====
+xpmem_proc1: mypid = 4871
+xpmem_proc1: sharing 2 segments, 262144 bytes each
+xpmem_proc1: segid[0] = 200001307 at 0x100000210000
+xpmem_proc1: segid[1] = 400001307 at 0x100000250000
+
+xpmem_proc2: mypid = 5068
+xpmem_proc2: segid[0] = 200001307
+xpmem_proc2: segid[1] = 400001307
+xpmem_proc2: data[0] attached at 0x100000210000
+xpmem_proc2: data[1] attached at 0x100000250000
+xpmem_proc2: adding 1 to all elems using 0x100000210000
+xpmem_proc2: adding 1 to all elems using 0x100000250000
+
+xpmem_proc1: verifying data...done
+==== test_two_shares PASSED ====
+
+==== test_fork STARTS ====
+xpmem_proc1: mypid = 5271
+xpmem_proc1: sharing 262144 bytes
+xpmem_proc1: segid = 200001497 at 0x100000210000
+
+xpmem_proc2: mypid = 5468
+xpmem_proc2: segid = 200001497
+xpmem_proc2: attached at 0x100000220000
+xpmem_proc2: reading to pin pages
+xpmem_proc2: waiting for COW...
+
+xpmem_proc1: forking a child
+xpmem_proc1: adding 1 to all elems to induce COW
+
+xpmem_child: hello from pid 5789
+
+xpmem_proc1: give control back to xpmem_proc2
+
+xpmem_proc2: adding 1 to all elems
+
+xpmem_proc1: verifying data...done
+==== test_fork PASSED ====
+
+*** XTP_001 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get
+ [OK] xpmem_attach
+ [OK] xpmem_detach
+ [OK] xpmem_remove
+*** XTP_001 PASSED
+
+*** XTP_002 start ***
+ [OK] xpmem_make in child
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] xpmem_remove in child
+*** XTP_002 PASSED
+
+*** XTP_003 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** XTP_003 PASSED
+
+*** XTP_004 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] xpmem_detach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** XTP_004 PASSED
+
+*** XTP_005 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** XTP_005 PASSED
+
+*** XTP_006 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child failed (parent process exited already
+*** XTP_006 PASSED
+
+*** XTP_007 start ***
+ [OK] xpmem_make
+ [OK] xpmem_get in child
+ [OK] xpmem_attach in child
+ [OK] validate TEST_VAL
+ [OK] xpmem_remove
+*** XTP_007 PASSED
+
+*** XTP_901 start ***
+ [OK] xpmem_make failed (invalid address)
+ [OK] xpmem_make succeed(do twice to same address)
+*** XTP_901 PASSED
+
+*** XTP_902 start ***
+ [OK] xpmem_get in child failed (invalid segid)
+ [OK] xpmem_get in child (do twice to same segid
+*** XTP_902 PASSED
+
+*** XTP_903 start ***
+ [OK] xpmem_attach in childi failed (invalid apid)
+ [OK] xpmem_attach in child succeed (do twice to same apid)
+*** XTP_903 PASSED
+
+*** XTP_904 start ***
+ [OK] xpmem_detach in child succeed (invalid address)
+ [OK] xpmem_detach in child succeed (do twice to same address)
+*** XTP_904 PASSED
+
+*** XTP_905 start ***
+ [OK] xpmem_remove failed (invalid segid)
+ [OK] xpmem_remove failed (do twice to same segid)
+*** XTP_905 PASSED
+
