@@ -66,7 +66,7 @@ int anon_on_demand = 0;
 #ifdef ENABLE_FUGAKU_HACKS
 int hugetlbfs_on_demand;
 #endif
-int xpmem_remote_on_demand;
+int xpmem_remote_on_demand = 1;
 int sysctl_overcommit_memory = OVERCOMMIT_ALWAYS;
 
 static struct ihk_mc_pa_ops *pa_ops;
