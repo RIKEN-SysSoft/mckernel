@@ -8,6 +8,10 @@
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) */
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
+#include <linux/mmu_notifier.h>
+#include <linux/kref.h>
+#include <linux/file.h>
+#include <linux/proc_fs.h>
 #include <asm/vdso.h>
 #include "config.h"
 #include "../../mcctrl.h"
@@ -35,6 +39,30 @@ int (*mcctrl_tof_utofu_release_cq)(struct inode *inode,
 struct file_operations *mcctrl_tof_utofu_procfs_ops_bch;
 int (*mcctrl_tof_utofu_release_bch)(struct inode *inode,
 		struct file *filp);
+int (*mcctrl_tof_core_cq_cacheflush)(int tni, int cqid);
+int (*mcctrl_tof_core_disable_bch)(int tni, int bgid);
+int (*mcctrl_tof_core_unset_bg)(int tni, int bgid);
+typedef void (*tof_core_signal_handler)(int, int, uint64_t, uint64_t);
+void (*mcctrl_tof_core_register_signal_bg)(int tni, int bgid,
+			tof_core_signal_handler handler);
+struct tof_utofu_bg;
+struct tof_utofu_bg *mcctrl_tof_utofu_bg;
+
+
+/* Tofu MMU notifier */
+struct mmu_notifier_ops *mcctrl_tof_utofu_mn_ops;
+struct mmu_notifier_ops __mcctrl_tof_utofu_mn_ops;
+static void (*mcctrl_tof_utofu_mn_invalidate_range_end)(
+	struct mmu_notifier *mn,
+	struct mm_struct *mm,
+	unsigned long start,
+	unsigned long end);
+void __mcctrl_tof_utofu_mn_invalidate_range_end(
+	struct mmu_notifier *mn,
+	struct mm_struct *mm,
+	unsigned long start,
+	unsigned long end);
+
 
 int arch_symbols_init(void)
 {
@@ -70,6 +98,49 @@ int arch_symbols_init(void)
 	mcctrl_tof_utofu_release_bch =
 		(void *)kallsyms_lookup_name("tof_utofu_release_bch");
 	if (WARN_ON(!mcctrl_tof_utofu_release_bch))
+		return -EFAULT;
+
+	mcctrl_tof_core_cq_cacheflush =
+		(void *)kallsyms_lookup_name("tof_core_cq_cacheflush");
+	if (WARN_ON(!mcctrl_tof_core_cq_cacheflush))
+		return -EFAULT;
+
+	mcctrl_tof_core_disable_bch =
+		(void *)kallsyms_lookup_name("tof_core_disable_bch");
+	if (WARN_ON(!mcctrl_tof_core_disable_bch))
+		return -EFAULT;
+
+	mcctrl_tof_core_unset_bg =
+		(void *)kallsyms_lookup_name("tof_core_unset_bg");
+	if (WARN_ON(!mcctrl_tof_core_unset_bg))
+		return -EFAULT;
+
+	mcctrl_tof_core_register_signal_bg =
+		(void *)kallsyms_lookup_name("tof_core_register_signal_bg");
+	if (WARN_ON(!mcctrl_tof_core_register_signal_bg))
+		return -EFAULT;
+
+	mcctrl_tof_utofu_bg =
+		(void *)kallsyms_lookup_name("tof_utofu_bg");
+	if (WARN_ON(!mcctrl_tof_utofu_bg))
+		return -EFAULT;
+
+	mcctrl_tof_utofu_mn_ops =
+		(void *)kallsyms_lookup_name("tof_utofu_mn_ops");
+	if (WARN_ON(!mcctrl_tof_utofu_mn_ops))
+		return -EFAULT;
+	/*
+	 * Copy original content and update redirected function,
+	 * CQ will be pointed to this structure after init ioctl()
+	 */
+	memcpy(&__mcctrl_tof_utofu_mn_ops, mcctrl_tof_utofu_mn_ops,
+			sizeof(*mcctrl_tof_utofu_mn_ops));
+	__mcctrl_tof_utofu_mn_ops.invalidate_range =
+		__mcctrl_tof_utofu_mn_invalidate_range_end;
+
+	mcctrl_tof_utofu_mn_invalidate_range_end =
+		(void *)kallsyms_lookup_name("tof_utofu_mn_invalidate_range_end");
+	if (WARN_ON(!mcctrl_tof_utofu_mn_invalidate_range_end))
 		return -EFAULT;
 
 	return 0;
@@ -467,6 +538,7 @@ void mcctrl_tofu_hijack_release_handlers(void)
 		__mcctrl_tof_utofu_release_cq;
 	mcctrl_tof_utofu_procfs_ops_bch->release =
 		__mcctrl_tof_utofu_release_bch;
+	wmb();
 }
 
 void mcctrl_tofu_restore_release_handlers(void)
@@ -475,7 +547,326 @@ void mcctrl_tofu_restore_release_handlers(void)
 		mcctrl_tof_utofu_release_cq;
 	mcctrl_tof_utofu_procfs_ops_bch->release =
 		mcctrl_tof_utofu_release_bch;
+	wmb();
 }
+
+/*
+ * Tofu cleanup functions
+ */
+#include <tofu/tof_uapi.h>
+#include <tofu/tof_icc.h>
+#include <tofu/tofu_generated-tof_core_cq.h>
+#include <tofu/tofu_generated-tof_utofu_device.h>
+#include <tofu/tofu_generated-tof_utofu_cq.h>
+#include <tofu/tofu_generated-tof_utofu_mbpt.h>
+#include <tofu/tofu_generated-tof_utofu_bg.h>
+
+#define TOF_UTOFU_VERSION TOF_UAPI_VERSION
+#define TOF_UTOFU_NUM_STAG_NTYPES 3
+#define TOF_UTOFU_NUM_STAG_BITS(size) ((size) + 13)
+#define TOF_UTOFU_NUM_STAG(size) ((uint64_t)1 << TOF_UTOFU_NUM_STAG_BITS(size))
+#define TOF_UTOFU_STAG_TRANS_BITS 3
+#define TOF_UTOFU_STAG_TRANS_SIZE ((uint64_t)1 << TOF_UTOFU_STAG_TRANS_BITS)
+#define TOF_UTOFU_STAG_TRANS_TABLE_LEN(size) (TOF_UTOFU_NUM_STAG(size) * TOF_UTOFU_STAG_TRANS_SIZE)
+#define TOF_UTOFU_STEERING_TABLE_LEN(size) (TOF_UTOFU_NUM_STAG(size) * TOF_ICC_STEERING_SIZE)
+#define TOF_UTOFU_MB_TABLE_LEN(size) (TOF_UTOFU_NUM_STAG(size) * TOF_ICC_MB_SIZE)
+#define TOF_UTOFU_STAG_MEM_LEN(size) (TOF_UTOFU_STEERING_TABLE_LEN(size) * 4)
+#define TOF_UTOFU_SPECIAL_STAG 4096
+
+#define TOF_UTOFU_ICC_COMMON_REGISTER (tof_icc_reg_pa + 0x0B000000)
+#define TOF_UTOFU_REG_START tof_icc_reg_pa
+#define TOF_UTOFU_REG_END (TOF_UTOFU_ICC_COMMON_REGISTER + 0x000FFFFF)
+
+#define TOF_UTOFU_SET_SUBNET_TNI	0	/* This number is kernel TNIs number in setting subnet */
+#define TOF_UTOFU_KCQ			11
+#define TOF_UTOFU_LINKDOWN_PORT_MASK	0x000003FF
+
+#define TOF_UTOFU_ALLOC_STAG_LPG	0x2
+#define TOF_UTOFU_BLANK_MBVA (-1)
+
+#define TOF_UTOFU_MRU_EMPTY (-1)
+
+struct tof_utofu_trans_list {
+	int16_t prev;
+	int16_t next;
+	uint8_t pgszbits;
+	struct tof_utofu_mbpt *mbpt;
+};
+
+
+/*
+ * Bit 30 marks a kref as McKernel internal.
+ * This can be used to distinguish krefs from Linux and
+ * it also ensures that a non deallocated kref will not
+ * crash the Linux allocator.
+ */
+#define MCKERNEL_KREF_MARK	(1U << 30)
+static inline unsigned int mcctrl_kref_is_mckernel(const struct kref *kref)
+{
+	return (refcount_read(&kref->refcount) & (MCKERNEL_KREF_MARK));
+}
+
+/**
+ * kref_put - decrement refcount for object.
+ * @kref: object.
+ * @release: pointer to the function that will clean up the object when the
+ *	     last reference to the object is released.
+ *	     This pointer is required, and it is not acceptable to pass kfree
+ *	     in as this function.  If the caller does pass kfree to this
+ *	     function, you will be publicly mocked mercilessly by the kref
+ *	     maintainer, and anyone else who happens to notice it.  You have
+ *	     been warned.
+ *
+ * Decrement the refcount, and if 0, call release().
+ * Return 1 if the object was removed, otherwise return 0.  Beware, if this
+ * function returns 0, you still can not count on the kref from remaining in
+ * memory.  Only use the return value if you want to see if the kref is now
+ * gone, not present.
+ */
+static inline int mcctrl_kref_put(struct kref *kref, void (*release)(struct kref *kref))
+{
+	if (atomic_dec_return(&kref->refcount.refs) == MCKERNEL_KREF_MARK) {
+		release(kref);
+		return 1;
+	}
+	return 0;
+}
+
+static int tof_utofu_cq_cacheflush(struct tof_utofu_cq *ucq){
+	return mcctrl_tof_core_cq_cacheflush(ucq->tni, ucq->cqid);
+}
+
+static void tof_utofu_trans_mru_delete(struct tof_utofu_cq *ucq, int stag){
+	struct tof_utofu_trans_list *mru = ucq->trans.mru;
+	int prev = mru[stag].prev;
+	int next = mru[stag].next;
+	if(prev == TOF_UTOFU_MRU_EMPTY || next == TOF_UTOFU_MRU_EMPTY){ /* already deleted */
+		return;
+	}
+	if(prev == stag){  /* a single entry */
+		ucq->trans.mruhead = TOF_UTOFU_MRU_EMPTY;
+	}else{
+		if(ucq->trans.mruhead == stag){
+			ucq->trans.mruhead = next;
+		}
+		mru[prev].next = next;
+		mru[next].prev = prev;
+	}
+	mru[stag].prev = TOF_UTOFU_MRU_EMPTY;
+	mru[stag].next = TOF_UTOFU_MRU_EMPTY;
+}
+
+static void tof_utofu_trans_disable(struct tof_utofu_cq *ucq, int stag){
+	struct tof_trans_table *table = ucq->trans.table;
+	atomic64_set((atomic64_t *)&table[stag], 0);
+	tof_utofu_trans_mru_delete(ucq, stag);
+}
+
+/* McKernel scatterlist is simply a contiguous buffer. */
+struct scatterlist {
+	void *pages;
+	unsigned int	offset;
+	unsigned int	length;
+	unsigned long	dma_address;
+	unsigned int	dma_length;
+};
+
+static uintptr_t tof_utofu_disable_mbpt(struct tof_utofu_mbpt *mbpt, int idx){
+	int i0, i1;
+	struct tof_icc_mbpt_entry *ent;
+	uintptr_t ipa;
+	i0 = idx / (PAGE_SIZE / TOF_ICC_MBPT_SIZE);
+	i1 = idx - i0 * (PAGE_SIZE / TOF_ICC_MBPT_SIZE);
+	//ent = sg_virt(&mbpt->sg[i0]);
+	ent = mbpt->sg->pages + (i0 * PAGE_SIZE);
+	if(!ent[i1].enable){
+		return 0;
+	}
+	ent[i1].enable = 0;
+	ipa = (uint64_t)ent[i1].ipa << 12;
+	ent[i1].ipa = 0;
+	return ipa;
+}
+
+static void tof_utofu_free_mbpt(struct tof_utofu_cq *ucq, struct tof_utofu_mbpt *mbpt){
+	int i;
+
+	for(i = 0; i < mbpt->nsgents * PAGE_SIZE / sizeof(struct tof_icc_mbpt_entry); i++){
+		uintptr_t iova;
+		iova = tof_utofu_disable_mbpt(mbpt, i);
+#if 0
+		/*
+		 * NOTE: Not performed for McKernel managed stags.
+		 */
+		if(iova){
+			tof_smmu_release_ipa_cq(ucq->tni, ucq->cqid, iova, mbpt->pgsz);
+		}
+#endif
+	}
+
+#if 0
+	/*
+	 * NOTE: Everyhing below has been allocated in McKernel, do nothing here!!
+	 * This leaks memory in McKernel, but it doesn't crash Linux.
+	 * Memory will be released once McKernel is unbooted.
+	 */
+	tof_smmu_iova_unmap_sg(ucq->tni, ucq->cqid, mbpt->sg, mbpt->nsgents);
+
+	for(i = 0; i < mbpt->nsgents; i++){
+		tof_util_free_pages((unsigned long)sg_virt(&mbpt->sg[i]), 0);
+	}
+	tof_util_free(mbpt->sg);
+	tof_util_free(mbpt);
+#endif
+}
+
+static void tof_utofu_mbpt_release(struct kref *kref)
+{
+	struct tof_utofu_mbpt *mbpt = container_of(kref, struct tof_utofu_mbpt, kref);
+	//atomic64_inc((atomic64_t *)&kref_free_count);
+	tof_utofu_free_mbpt(mbpt->ucq, mbpt);
+}
+
+static int tof_utofu_free_stag(struct tof_utofu_cq *ucq, int stag){
+	if(stag < 0 || stag >= TOF_UTOFU_NUM_STAG(ucq->num_stag) ||
+	   ucq->steering == NULL){
+		return -EINVAL;
+	}
+	if(!(ucq->steering[stag].enable)){
+		return -ENOENT;
+	}
+	if (!mcctrl_kref_is_mckernel(&ucq->trans.mru[stag].mbpt->kref)) {
+		printk("%s: stag: %d is not an McKernel kref\n", __func__, stag);
+		return -EINVAL;
+	}
+	ucq->steering[stag].enable = 0;
+	ucq->mb[stag].enable = 0;
+	tof_utofu_trans_disable(ucq, stag);
+	dma_wmb();
+	tof_utofu_cq_cacheflush(ucq);
+	mcctrl_kref_put(&ucq->trans.mru[stag].mbpt->kref, tof_utofu_mbpt_release);
+	ucq->trans.mru[stag].mbpt = NULL;
+	dprintk("%s: TNI: %d, CQ: %d: stag %d deallocated\n",
+			__func__, ucq->tni, ucq->cqid, stag);
+	return 0;
+}
+
+void mcctrl_mckernel_tof_utofu_release_cq(void *pde_data)
+{
+	struct tof_utofu_cq *ucq;
+	struct tof_utofu_device *dev;
+	unsigned long irqflags;
+	int stag;
+
+	dev = (struct tof_utofu_device *)pde_data;
+	ucq = container_of(dev, struct tof_utofu_cq, common);
+
+	if (!ucq->common.enabled) {
+		return;
+	}
+
+	dprintk("%s: UCQ (PDE: 0x%lx) TNI %d CQ %d\n",
+		__func__, (unsigned long)pde_data, ucq->tni, ucq->cqid);
+
+	/*
+	 * Only release stags here, actual cleanup is still performed
+	 * in the Tofu driver
+	 */
+	for (stag = 0; stag < TOF_UTOFU_NUM_STAG(ucq->num_stag); stag++) {
+		spin_lock_irqsave(&ucq->trans.mru_lock, irqflags);
+		tof_utofu_free_stag(ucq, stag);
+		spin_unlock_irqrestore(&ucq->trans.mru_lock, irqflags);
+	}
+}
+
+static inline void tof_core_unregister_signal_bg(int tni, int bgid)
+{
+	return mcctrl_tof_core_register_signal_bg(tni, bgid, NULL);
+}
+
+static struct tof_utofu_bg *tof_utofu_bg_get(int tni, int bgid){
+	if((unsigned int)tni >= TOF_ICC_NTNIS ||
+	   (unsigned int)bgid >= TOF_ICC_NBGS){
+		return NULL;
+	}
+	//return &tof_utofu_bg[tni][bgid];
+
+	// Convert [][] notion into pointer aritmethic
+	return mcctrl_tof_utofu_bg + (tni * TOF_ICC_NBGS) + bgid;
+}
+
+static int __tof_utofu_unset_bg(struct tof_utofu_bg *ubg){
+	if(ubg->common.enabled){
+		mcctrl_tof_core_unset_bg(ubg->tni, ubg->bgid);
+		ubg->common.enabled = false;
+		tof_core_unregister_signal_bg(ubg->tni, ubg->bgid);
+	}
+	return 0;
+}
+
+static int mcctrl_tof_utofu_disable_bch(struct tof_utofu_bg *ubg){
+	int ret;
+	int tni, bgid;
+
+	if(!ubg->bch.enabled){
+		return -EPERM;
+	}
+
+	ret = mcctrl_tof_core_disable_bch(ubg->tni, ubg->bgid);
+	if(ret < 0){
+		return ret;
+	}
+
+	for(tni = 0; tni < TOF_ICC_NTNIS; tni++){
+		uint64_t mask = ubg->bch.bgmask[tni];
+		for(bgid = 0; bgid < TOF_ICC_NBGS; bgid++){
+			if((mask >> bgid) & 1){
+				ret = __tof_utofu_unset_bg(tof_utofu_bg_get(tni, bgid));
+				if(ret < 0){
+					/* OK? */
+					//BUG();
+					return ret;
+				}
+			}
+		}
+	}
+
+	/* Not performed in McKernel handler */
+	//tof_smmu_release_ipa_bg(ubg->tni, ubg->bgid, ubg->bch.iova, TOF_ICC_BCH_DMA_ALIGN);
+	//put_page(ubg->bch.page);
+	ubg->bch.enabled = false;
+	smp_mb();
+	dprintk("%s: tni=%d bgid=%d\n", __func__, ubg->tni, ubg->bgid);
+	return 0;
+}
+
+void mcctrl_mckernel_tof_utofu_release_bch(void *pde_data)
+{
+	struct tof_utofu_bg *ubg;
+	struct tof_utofu_device *dev = (struct tof_utofu_device *)pde_data;
+
+	ubg = container_of(dev, struct tof_utofu_bg, common);
+	//tof_log_if("tni=%d bgid=%d\n", ubg->tni, ubg->bgid);
+	dprintk("%s: tni=%d bgid=%d\n", __func__, ubg->tni, ubg->bgid);
+	mcctrl_tof_utofu_disable_bch(ubg);
+}
+
+void mcctrl_tofu_cleanup_file(struct mcctrl_file_to_pidfd *f2pfd)
+{
+	/* Figure out whether CQ or BCH */
+	if (strstr(f2pfd->tofu_dev_path, "cq")) {
+		dprintk("%s: PID: %d, fd: %d (%s) -> release CQ\n",
+			__func__, f2pfd->pid, f2pfd->fd, f2pfd->tofu_dev_path);
+		mcctrl_mckernel_tof_utofu_release_cq(f2pfd->pde_data);
+	}
+
+	else if (strstr(f2pfd->tofu_dev_path, "bch")) {
+		dprintk("%s: PID: %d, fd: %d (%s) -> release BCH\n",
+			__func__, f2pfd->pid, f2pfd->fd, f2pfd->tofu_dev_path);
+		mcctrl_mckernel_tof_utofu_release_bch(f2pfd->pde_data);
+	}
+}
+
 
 int __mcctrl_tof_utofu_release_handler(struct inode *inode, struct file *filp,
 		int (*__release_func)(struct inode *inode, struct file *filp))
@@ -521,28 +912,22 @@ int __mcctrl_tof_utofu_release_handler(struct inode *inode, struct file *filp,
 	ret = mcctrl_ikc_send_wait(f2pfd->os, ppd->ikc_target_cpu,
 			&isp, -20, NULL, NULL, 0);
 	if (ret != 0) {
-		dprintk("%s: WARNING: failed to send IKC msg: %d\n",
-				__func__, ret);
+		pr_err("%s: WARNING: IKC req for PID: %d, fd: %d failed\n",
+				__func__, f2pfd->pid, f2pfd->fd);
 	}
+
+	/* Disable any remaining STAGs/BCH in mcctrl anyway */
+	mcctrl_tofu_cleanup_file(f2pfd);
 
 	mcctrl_file_to_pidfd_hash_remove(filp, f2pfd->os,
 			current->group_leader, f2pfd->fd);
 
 	mcctrl_put_per_proc_data(ppd);
 
-	/* Do not call into Linux driver if timed out in SIGKILL.. */
-	if (ret == -ETIME && __fatal_signal_pending(current)) {
-		pr_err("%s: WARNING: failed to send IKC msg in SIGKILL: %d\n",
-				__func__, ret);
-		goto out_no_release;
-	}
 out:
 	dprintk("%s: current PID: %d, comm: %s -> calling release\n",
 			__func__, task_tgid_vnr(current), current->comm);
 	return __release_func(inode, filp);
-
-out_no_release:
-	return ret;
 }
 
 int __mcctrl_tof_utofu_release_cq(struct inode *inode, struct file *filp)
@@ -555,4 +940,70 @@ int __mcctrl_tof_utofu_release_bch(struct inode *inode, struct file *filp)
 {
 	return __mcctrl_tof_utofu_release_handler(inode, filp,
 			mcctrl_tof_utofu_release_bch);
+}
+
+/*
+ * Tofu MMU notifier functions
+ */
+void __mcctrl_tof_utofu_mn_invalidate_range_end(
+	struct mmu_notifier *mn,
+	struct mm_struct *mm,
+	unsigned long start,
+	unsigned long end)
+{
+	char tmpname[TASK_COMM_LEN];
+
+	/* Not an offloaded syscall? */
+	if (current->mm != mm) {
+		goto out_call_real;
+	}
+
+	/* Not mcexec? Just in case.. */
+	get_task_comm(tmpname, current);
+	if (strncmp(tmpname, "mcexec", TASK_COMM_LEN)) {
+		goto out_call_real;
+	}
+
+	/* This is only called for Tofu enabled mcexec processes */
+	dprintk("%s: skipping tof_utofu_mn_invalidate_range_end() "
+			"for mcexec PID %d\n",
+			__func__, task_tgid_vnr(current));
+	return;
+
+out_call_real:
+	return mcctrl_tof_utofu_mn_invalidate_range_end(mn, mm, start, end);
+}
+
+int __mcctrl_tof_utofu_ioctl_init_cq(struct tof_utofu_device *dev,
+		unsigned long arg) {
+	struct tof_utofu_cq *ucq;
+
+	ucq = container_of(dev, struct tof_utofu_cq, common);
+	if (!ucq->common.enabled) {
+		return -EINVAL;
+	}
+
+	dprintk("%s: Tofu TNI %d CQ %d (PDE: 0x%lx) MMU notifier to be hijacked\n",
+		__func__, ucq->tni, ucq->cqid, (unsigned long)dev);
+	/* Override the MMU notifier */
+	ucq->mn.ops = &__mcctrl_tof_utofu_mn_ops;
+
+	return 0;
+}
+
+long __mcctrl_tof_utofu_unlocked_ioctl_cq(void *pde_data, unsigned int cmd,
+					unsigned long arg) {
+	struct tof_utofu_device *dev = (struct tof_utofu_device *)pde_data;
+	int ret;
+
+	switch (cmd) {
+		/* We only care about init, where we hijack the MMU notifier */
+		case TOF_IOCTL_INIT_CQ:
+			ret = __mcctrl_tof_utofu_ioctl_init_cq(dev, arg);
+			break;
+		default:
+			ret = 0;
+	}
+
+	return ret;
 }

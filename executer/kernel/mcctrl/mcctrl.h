@@ -263,6 +263,7 @@ struct mcctrl_per_proc_data {
 
 	struct list_head devobj_pager_list;
 	struct semaphore devobj_pager_lock;
+	int enable_tofu;
 };
 
 struct sysfsm_req {
@@ -464,7 +465,8 @@ struct mcctrl_per_thread_data *mcctrl_get_per_thread_data(struct mcctrl_per_proc
 							  struct task_struct *task);
 int mcctrl_clear_pte_range(uintptr_t start, uintptr_t len);
 
-void __return_syscall(ihk_os_t os, struct ikc_scd_packet *packet, 
+void __return_syscall(ihk_os_t os, struct mcctrl_per_proc_data *ppd,
+		struct ikc_scd_packet *packet,
 		long ret, int stid);
 int clear_pte_range(uintptr_t start, uintptr_t len);
 
@@ -576,10 +578,13 @@ struct mcctrl_file_to_pidfd {
 	int pid;
 	int fd;
 	struct list_head hash;
+	char tofu_dev_path[128];
+	void *pde_data;
 };
 
 int mcctrl_file_to_pidfd_hash_insert(struct file *filp,
-	ihk_os_t os, int pid, struct task_struct *group_leader, int fd);
+	ihk_os_t os, int pid, struct task_struct *group_leader, int fd,
+	char *path, void *pde_data);
 struct mcctrl_file_to_pidfd *mcctrl_file_to_pidfd_hash_lookup(
 	struct file *filp, struct task_struct *group_leader);
 int mcctrl_file_to_pidfd_hash_remove(struct file *filp,
