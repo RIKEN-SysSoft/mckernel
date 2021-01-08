@@ -2075,7 +2075,9 @@ out:
 	return error;
 }
 
-static int page_fault_process_memory_range(struct process_vm *vm, struct vm_range *range, uintptr_t fault_addr, uint64_t reason)
+int page_fault_process_memory_range(struct process_vm *vm,
+				    struct vm_range *range,
+				    uintptr_t fault_addr, uint64_t reason)
 {
 	int error;
 	pte_t *ptep;
