@@ -1,0 +1,22 @@
+【Issue#1330 動作確認】
+□ テスト内容
+1. xpmemの基本操作の確認
+mckernel/test/xpmemのテストを実行し、xpmemの基本操作が
+正常に動作することを確認する
+テスト内容の詳細はmckernel/test/xpmem/README を参照
+
+□ 実行手順
+1. mckernel/test/xpmem に移動する
+1. xpmemのインストールディレクトリをMakefileとgo_test.sh中のXPMEM_DIRに記載する
+2. xpmemのビルドディレクトリをgo_test.sh中のXPMEM_BUILD_DIRに記載する
+3. 下記の手順でテストを実行する
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log, aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。
