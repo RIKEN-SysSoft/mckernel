@@ -1,0 +1,13 @@
+diff --git linux/include/ihk/ihk_debug.h linux/include/ihk/ihk_debug.h
+index 9b53dd7..305a3a9 100644
+--- linux/include/ihk/ihk_debug.h
++++ linux/include/ihk/ihk_debug.h
+@@ -8,7 +8,7 @@
+ #ifndef IHK_DEBUG_H_INCLUDED
+ #define IHK_DEBUG_H_INCLUDED
+ 
+-#define IHK_KMSG_SIZE            8192
++#define IHK_KMSG_SIZE            (4UL<<20)
+ #define IHK_KMSG_HIGH_WATER_MARK (IHK_KMSG_SIZE / 2)
+ #define IHK_KMSG_NOTIFY_DELAY    400 /* Unit is us, 400 us would avoid overloading fwrite of ihkmond */
+ 

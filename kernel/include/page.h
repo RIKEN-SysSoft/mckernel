@@ -71,5 +71,6 @@ static inline int page_is_multi_mapped(struct page *page)
 extern int anon_on_demand;
 #ifdef ENABLE_FUGAKU_HACKS
 extern int hugetlbfs_on_demand;
+extern int xpmem_remote_on_demand;
 #endif
 #endif
