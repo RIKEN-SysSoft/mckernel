@@ -248,11 +248,12 @@ static void xpmem_clear_PTEs_of_att(struct xpmem_attachment *, unsigned long,
 static int xpmem_remap_pte(struct process_vm *, struct vm_range *,
 	unsigned long, uint64_t, struct xpmem_segment *, unsigned long);
 
-static int xpmem_ensure_valid_page(struct xpmem_segment *, unsigned long);
+static int xpmem_ensure_valid_page(struct xpmem_segment *, unsigned long,
+				   int);
 static pte_t * xpmem_vaddr_to_pte(struct process_vm *, unsigned long, 
 	size_t *pgsize);
 static int xpmem_pin_page(struct xpmem_thread_group *, struct thread *,
-	struct process_vm *, unsigned long);
+	struct process_vm *, unsigned long, int);
 static void xpmem_unpin_pages(struct xpmem_segment *, struct process_vm *, 
 	unsigned long, size_t);
 

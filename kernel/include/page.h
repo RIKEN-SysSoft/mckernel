@@ -72,4 +72,5 @@ extern int anon_on_demand;
 #ifdef ENABLE_FUGAKU_HACKS
 extern int hugetlbfs_on_demand;
 #endif
+extern int xpmem_remote_on_demand;
 #endif
