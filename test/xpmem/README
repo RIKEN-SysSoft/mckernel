@@ -1,0 +1,71 @@
+【XPMEMの基本操作確認】
+□ テスト内容
+XPMEM_TESTSUITE:
+	xpmemに付随するテストスイートをmckernelで実行
+
+XTP_001: 単一プロセスでのXPMEM操作
+	1. 実行したプロセスがxpmem_make -> xpmem_get -> xpmem_attach -> xpmem_detach -> xpmem_remove
+
+XTP_002: 子プロセスでのXPMEM操作
+	1. 親プロセスがfork()
+	2. 子プロセスがxpmem_make -> xpmem_get -> xpmem_attach -> xpmem_detach ->xpmem_remove
+	3. 子プロセス終了後、親プロセスが終了
+
+XTP_003: 親プロセスがmakeした共有領域への子プロセスによるXPMEM操作
+	1. 親プロセスがxpmem_make
+	2. fork()で子プロセスを作成
+	3. 子プロセスで、xpmem_get -> xpmem_attach -> 値(TEST_VAL)の設定 -> xpmem_detach
+	4. 子プロセスが終了
+	5. 親プロセスが、子プロセスによって設定された値(TEST_VAL)を確認
+	6. 親プロセスがxpmem_remove
+
+XTP_004: fork()後に親プロセスがmakeした共有領域への子プロセスによるXPMEM操作
+	1. fork()で子プロセスを作成
+	2. 親プロセスがxpmem_make
+	3. 子プロセスで、xpmem_get -> xpmem_attach -> 値(TEST_VAL)の設定 -> xpmem_detach
+	4. 子プロセスが終了
+	5. 親プロセスが、子プロセスによって設定された値(TEST_VAL)を確認
+	6. 親プロセスがxpmem_remove
+
+XTP_005: 子プロセスがxpmem_attach後、xpmem_detachをせずに終了
+	1. 親プロセスがxpmem_make
+	2. fork()で子プロセスを作成
+	3. 子プロセスで、xpmem_get -> xpmem_attach
+	4. 子プロセスが終了
+	5. 親プロセスがxpmem_remove
+
+XTP_006: 子プロセスがXPMEM操作を行う時点で、xpmem_makeをした親プロセスが終了している
+	1. 親プロセスがxpmem_make
+	2. fork()で子プロセスを作成
+	3. 親プロセスが終了
+	4. 子プロセスで、xpmem_get (失敗)
+	5. 子プロセスが終了
+
+XTP_007: 子プロセスがxpmem_attach後、xpmem_detachをせずに対象領域をunmapする
+	1. 親プロセスがxpmem_make
+	2. fork()で子プロセスを作成
+	3. 子プロセスで、xpmem_get -> xpmem_attach
+	4. 子プロセスがattachした領域をunmap
+	4. 子プロセスが終了
+	5. 親プロセスがxpmem_remove
+
+XTP_901: xpmem_make 呼び出しの異常系
+	1. xpmem_make の第1引数に不正なアドレスを指定する (失敗)
+	2. 1度xpmem_make を実施したメモリ領域に対して、再度xpmem_make を行う (成功)
+
+XTP_902: xpmem_get 呼び出しの異常系
+	1. xpmem_get の第1引数に不正なsegidを指定する (失敗)
+	2. 1度xpmem_get を実施したsegidで、再度xpmem_get を行う (成功)
+
+XTP_903: xpmem_attach 呼び出しの異常系
+	1. xpmem_attach の第1引数に不正なapidを指定する (失敗)
+	2. 1度xpmem_attach を実施したapidで、再度xpmem_attach を行う (成功)
+
+XTP_904: xpmem_detach 呼び出しの異常系
+	1. xpmem_detach の第1引数に不正なアドレスを指定する (成功)
+	2. 1度xpmem_detach を実施したメモリ領域に対して、再度xpmem_detach を行う (成功)
+
+XTP_905: xpmem_remove 呼び出しの異常系
+	1. xpmem_remove の第1引数に不正なsegidを指定する (失敗)
+	2. 1度xpmem_remove を実施したsegidで、再度xpmem_remove を行う (失敗)
+
