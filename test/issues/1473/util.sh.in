@@ -1,0 +1,122 @@
+function patch_and_build()
+{
+    fn_mckernel=$1
+    fn_ihk=$2
+
+    if [ "$fn_mckernel" != "" ]; then
+	pushd @WITH_MCK_SRC@
+        patch -p0 < @CMAKE_INSTALL_PREFIX@/bin/${fn_mckernel}.patch
+	ret=$?
+	if [ $ret -ne 0 ]; then
+	    echo "[INTERR] patch failed"
+            patch -p0 -R < @CMAKE_INSTALL_PREFIX@/bin/${fn_mckernel}.patch
+	    return $ret
+	fi
+	popd
+    fi
+
+    if [ "$fn_ihk" != "" ]; then
+	pushd @WITH_MCK_SRC@/ihk
+        patch -p0 < @CMAKE_INSTALL_PREFIX@/bin/${fn_ihk}.patch
+	ret=$?
+	if [ $ret -ne 0 ]; then
+	    echo "[INTERR] patch failed"
+            patch -p0 -R < @CMAKE_INSTALL_PREFIX@/bin/${fn_ihk}.patch
+	    return $ret
+	fi
+	popd
+    fi
+
+    if [ -f ${AUTOTEST_HOME}/bin/config.sh ]; then
+	BUILDDIR=$WORKDIR/build/$(uname -r)
+    else
+	BUILDDIR=@WITH_MCK_BUILD@
+    fi
+
+    pushd $BUILDDIR
+    make -j install
+    popd
+
+    if [ "$fn_mckernel" != "" ]; then
+	pushd @WITH_MCK_SRC@
+        patch -R -p0 < @CMAKE_INSTALL_PREFIX@/bin/${fn_mckernel}.patch
+	popd
+    fi
+
+    if [ "$fn_ihk" != "" ]; then
+	pushd @WITH_MCK_SRC@/ihk
+        patch -R -p0 < @CMAKE_INSTALL_PREFIX@/bin/${fn_ihk}.patch
+        popd
+    fi
+
+    return 0
+}
+
+function detect_cpu_model()
+{
+    implementer=$(gawk '/CPU implementer/ { print $4; exit; }' /proc/cpuinfo)
+    arch=$(gawk '/CPU architecture/ { print $3; exit; }' /proc/cpuinfo)
+    var=$(gawk '/CPU variant/ { print $4; exit; }' /proc/cpuinfo)
+    part=$(gawk '/CPU part/ { print $4; exit; }' /proc/cpuinfo)
+
+    if [[ "$implementer" == "0x46" ]] && [[ "$arch" == "8" ]] &&
+	[[ "$var" == "0x1" ]] && [[ "$part" == "0x001" ]]; then
+	cpu_model="a64fx"
+    elif [[ "$implementer" == "0x43" ]] && [[ "$arch" == "8" ]] &&
+	[[ "$var" == "0x1" ]] && [[ "$part" == "0x0a1" ]]; then
+	cpu_model="thunderx"
+    else
+	cpu_model="unknown"
+    fi
+}
+
+function init_oom_killer()
+{
+    echo "[ INFO ] performing \"echo 0 > /proc/sys/vm/min_free_kbytes\""
+    min_free_kbytes=$(cat /proc/sys/vm/min_free_kbytes)
+    sudo bash -c 'echo 0 > /proc/sys/vm/min_free_kbytes'
+}
+
+function fini_oom_killer()
+{
+    echo "[ INFO ] performing \"echo $min_free_kbytes > /proc/sys/vm/min_free_kbytes\""
+    sudo bash -c "echo $min_free_kbytes > /proc/sys/vm/min_free_kbytes"
+}
+
+function check_dump() {
+    dump=$1
+    interactive=$2
+
+    if [ $interactive -eq 1 ]; then
+	eclair_opt="-i"
+    else
+	eclair_opt=
+    fi
+
+    expect -c "
+set timeout 20
+spawn sudo @WITH_MCK@/bin/eclair -d ${dump} -k @WITH_MCK@/smp-arm64/kernel/mckernel.img -l $eclair_opt
+
+expect \"(eclair)\"
+send \"set pagination 0\n\"
+
+expect \"(eclair)\"
+send \"info threads\n\"
+
+expect \"(eclair)\"
+send \"thread 3\n\"
+
+expect \"(eclair)\"
+send \"bt\n\"
+
+expect \"(eclair)\"
+send \"p/x _end\n\"
+
+expect \"(eclair)\"
+send \"quit\n\"
+
+" > ${WORKDIR}/log
+
+    awk -f @CMAKE_INSTALL_PREFIX@/bin/check_dump.awk ${WORKDIR}/log
+    ret=$?
+}

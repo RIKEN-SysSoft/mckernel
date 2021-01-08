@@ -31,7 +31,7 @@ int xpmem_update_process_page_table(struct process_vm *vm,
 	struct vm_range *vmr);
 
 struct xpmem_attachment {
-	mcs_rwlock_lock_t at_lock;	/* att lock */
+	ihk_rwspinlock_t at_lock;	/* att lock */
 	unsigned long vaddr;	/* starting address of seg attached */
 	unsigned long at_vaddr;	/* address where seg is attached */
 	size_t at_size;		/* size of seg attachment */

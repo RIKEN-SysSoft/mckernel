@@ -1,23 +1,67 @@
 #!/usr/bin/bash
 
-USELTP=0
-USEOSTEST=0
+run() {
+    tid=05
+    ng=0
+    echo "*** C${issue}T${tid} start *******************************"
+    echo "** xpmem testsuite"
 
-XPMEM_DIR=$HOME/usr
-XPMEM_BUILD_DIR=/home/satoken/xpmem
+    pushd @WITH_XPMEM_BUILD@/test
 
-arch=`uname -p`
-if [ -f "./${arch}_config" ]; then
-	. ./${arch}_config
+    test -e /tmp/xpmem.share && rm -f /tmp/xpmem.share
+    test -e /tmp/xpmem.lock && rm -f /tmp/xpmem.lock
+
+    # create TMP_SHARE_SIZE bytes defined in xpmem_test.h
+    for i in `seq 0 31` ; do
+	echo -n 0 >> /tmp/xpmem.share
+    done
+    echo 0 > /tmp/xpmem.lock
+
+    # Run the main test app
+    @WITH_MCK@/bin/mcexec $PWD/xpmem_master
+
+    popd
+
+
+    # xpmem basic test
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_001
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_002
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_003
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_004
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_005
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_006
+    sleep 3
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_007
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_008
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_009
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_010
+    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/XTP_011
+}
+
+SCRIPT_PATH=$(readlink -m "${BASH_SOURCE[0]}")
+SCRIPT_NAME="${SCRIPT_PATH##*/}"
+
+# prepare recorddir
+. @CMAKE_INSTALL_PREFIX@/bin/common.sh
+recorddir=$WORKDIR/output/$SCRIPT_NAME
+[[ ! -d $recorddir ]] && mkdir -p $recorddir
+recordfile=$WORKDIR/output/$SCRIPT_NAME.log
+
+# define patch function
+. @CMAKE_INSTALL_PREFIX@/bin/util.sh
+patch_and_build large_page ihk_kmsg_size || exit 1
+
+# boot patched McKernel
+if [[ -e ${AUTOTEST_HOME}/bin/config.sh ]]; then
+    ${AUTOTEST_HOME}/bin/boot.sh reboot
 else
-	echo "$1 is unexpected arch"
-	exit 1
+    . @WITH_MCK_SRC@/test/common.sh
 fi
 
-. ../../common.sh
-
-sudo insmod ${XPMEM_DIR}/lib/modules/`uname -r`/xpmem.ko
+sudo insmod @WITH_XPMEM@/lib/modules/`uname -r`/xpmem.ko
 sudo chmod og+rw /dev/xpmem
+
+sum_ng=0
 
 issue=1259
 tid=01
@@ -25,17 +69,18 @@ ng=0
 echo "*** C${issue}T${tid} start *******************************"
 echo "** xpmem_attach to Huge mapped memory range"
 echo "** end of range is aligned with Large page size"
-for pgshift in ${PGSHIFT_LIST[@]}
-do
-	${IHKOSCTL} 0 clear_kmsg
-	log_file="./C${issue}T${tid}_${pgshift}.log"
+for pgshift in $PGSHIFT_LIST; do
+	((pgshift == $PAGE_SHIFT)) && continue
+
+	@WITH_MCK@/sbin/ihkosctl 0 clear_kmsg
+	log_file=$recorddir/C${issue}T${tid}_${pgshift}.log
 	echo pageshift: ${pgshift}
-	${MCEXEC} ./huge_page_xpmem ${pgshift} 2 0 > ${log_file}
-	${IHKOSCTL} 0 kmsg >> ${log_file}
+	@WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/huge_page_xpmem ${pgshift} 2 0 > ${log_file}
+	@WITH_MCK@/sbin/ihkosctl 0 kmsg >> ${log_file}
 
 	EXPECT_PGSIZE=`grep EXPECT_PAGE_SIZE ${log_file} | awk '{ print $2; }'`
 
-	SEG_ADDR=`grep parent: ${log_file} | awk '{ print $3; }'`
+	SEG_ADDR=$(grep -o "anonymous_map_addr: [^ ]* " $log_file | awk '{ print $2; }')
 	SEG_PGSIZE=`cat ${log_file} | awk '/OK/,/DONE/' | \
 grep -o "large_page_allocation.*${SEG_ADDR}.*" | awk '{ print $5; }'`
 
@@ -43,9 +88,9 @@ grep -o "large_page_allocation.*${SEG_ADDR}.*" | awk '{ print $5; }'`
 	XPMEM_PGSIZE=`grep -o "xpmem_page_attach.*${XPMEM_ADDR}.*" ${log_file} | awk '{ print $NF; }'`
 
 	if [ "${SEG_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
-		echo "** [ OK ] seg_addr ($SEG_ADDR) is allocated until xpmem_attach"
+		echo "** [ OK ] seg_addr ($SEG_ADDR) is allocated before xpmem_attach"
 	else
-		echo "** [ NG ] seg_addr ($SEG_ADDR) is NOT allocated until xpmem_attach"
+		echo "** [ NG ] seg_addr ($SEG_ADDR) is not allocated before xpmem_attach"
 		let ng++
 	fi
 	if [ "${XPMEM_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
@@ -55,6 +100,9 @@ grep -o "large_page_allocation.*${SEG_ADDR}.*" | awk '{ print $5; }'`
 		let ng++
 	fi
 done
+
+((sum_ng += ng))
+
 if [ ${ng} -eq 0 ]; then
 	echo "*** C${issue}T${tid}: PASSED"
 else
@@ -67,17 +115,18 @@ ng=0
 echo "*** C${issue}T${tid} start *******************************"
 echo "** xpmem_attach to Huge mapped memory range"
 echo "** end of range is NOT aligned with Large page size"
-for pgshift in ${PGSHIFT_LIST[@]}
-do
-	${IHKOSCTL} 0 clear_kmsg
-	log_file="./C${issue}T${tid}_${pgshift}.log"
+for pgshift in $PGSHIFT_LIST; do
+	((pgshift == $PAGE_SHIFT)) && continue
+
+	@WITH_MCK@/sbin/ihkosctl 0 clear_kmsg
+	log_file=$recorddir/C${issue}T${tid}_${pgshift}.log
 	echo pageshift: ${pgshift}
-	${MCEXEC} ./huge_page_xpmem ${pgshift} 2 ${SMALL_PGSIZE} > ${log_file}
-	${IHKOSCTL} 0 kmsg >> ${log_file}
+	@WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/huge_page_xpmem ${pgshift} 2 $PAGE_SIZE > ${log_file}
+	@WITH_MCK@/sbin/ihkosctl 0 kmsg >> ${log_file}
 
 	EXPECT_PGSIZE=`grep EXPECT_PAGE_SIZE ${log_file} | awk '{ print $2; }'`
 
-	SEG_ADDR=`grep parent: ${log_file} | awk '{ print $3; }'`
+	SEG_ADDR=$(grep -o "anonymous_map_addr: [^ ]* " $log_file | awk '{ print $2; }')
 	SEG_PGSIZE=`cat ${log_file} | awk '/OK/,/DONE/' | \
 grep -o "large_page_allocation.*${SEG_ADDR}.*" | awk '{ print $5; }'`
 
@@ -100,6 +149,9 @@ grep -o "large_page_allocation.*${SEG_ADDR}.*" | awk '{ print $5; }'`
 	fi
 	echo "size of 1st page of attachment at ${XPMEM_ADDR}: ${XPMEM_PGSIZE}, expected: ${EXPECT_PGSIZE}"
 done
+
+((sum_ng += ng))
+
 if [ ${ng} -eq 0 ]; then
 	echo "*** C${issue}T${tid}: PASSED"
 else
@@ -111,11 +163,11 @@ tid=03
 ng=0
 echo "*** C${issue}T${tid} start *******************************"
 echo "** xpmem_attach to small mapped memory range"
-${IHKOSCTL} 0 clear_kmsg
-log_file="./C${issue}T${tid}.log"
+@WITH_MCK@/sbin/ihkosctl 0 clear_kmsg
+log_file=$recorddir/C${issue}T${tid}.log
 echo pageshift: small page
-${MCEXEC} ./huge_page_xpmem -1 2 0 > ${log_file}
-${IHKOSCTL} 0 kmsg >> ${log_file}
+@WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/huge_page_xpmem -1 2 0 > ${log_file}
+@WITH_MCK@/sbin/ihkosctl 0 kmsg >> ${log_file}
 
 EXPECT_PGSIZE=`grep EXPECT_PAGE_SIZE ${log_file} | awk '{ print $2; }'`
 
@@ -126,8 +178,11 @@ if [ "${XPMEM_PGSIZE}" = "${EXPECT_PGSIZE}" ]; then
 	echo "** [ OK ] xpmem_addr ($XPMEM_ADDR) is allocated using small pages"
 else
 	echo "** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using small pages"
-	ng=1
+	((ng++))
 fi
+
+((sum_ng += ng))
+
 if [ ${ng} -eq 0 ]; then
 	echo "*** C${issue}T${tid}: PASSED"
 else
@@ -139,12 +194,12 @@ tid=04
 ng=0
 echo "*** C${issue}T${tid} start *******************************"
 echo "** xpmem_attach to multi pagesize range"
-pgshift=${PGSHIFT_LIST[0]}
-${IHKOSCTL} 0 clear_kmsg
-log_file="./C${issue}T${tid}_${pgshift}.log"
+pgshift=$(echo $PGSHIFT_LIST | awk '{print $2}')
+@WITH_MCK@/sbin/ihkosctl 0 clear_kmsg
+log_file=$recorddir/C${issue}T${tid}_${pgshift}.log
 echo pageshift: ${pgshift}
-${MCEXEC} ./multi_vmr_xpmem ${pgshift} 1 | tee ${log_file}
-${IHKOSCTL} 0 kmsg >> ${log_file}
+@WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/multi_vmr_xpmem ${pgshift} 1 | tee ${log_file}
+@WITH_MCK@/sbin/ihkosctl 0 kmsg >> ${log_file}
 
 EXPECT_PGSIZE=`grep EXPECT_PAGE_SIZE ${log_file} | awk '{ print $2; }'`
 
@@ -157,6 +212,9 @@ else
 	echo "** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using large pages"
 	let ng++
 fi
+
+((sum_ng += ng))
+
 if [ ${ng} -eq 0 ]; then
 	echo "*** C${issue}T${tid}: PASSED"
 else
@@ -164,27 +222,9 @@ else
 fi
 echo ""
 
-tid=05
-ng=0
-echo "*** C${issue}T${tid} start *******************************"
-echo "** xpmem testsuite"
-cwd=`pwd`
-cd ${XPMEM_BUILD_DIR}/test
-. ${cwd}/mc_run.sh
-cd ${cwd}
-
-# xpmem basic test
-${MCEXEC} ./XTP_001
-${MCEXEC} ./XTP_002
-${MCEXEC} ./XTP_003
-${MCEXEC} ./XTP_004
-${MCEXEC} ./XTP_005
-${MCEXEC} ./XTP_006
-sleep 3
-${MCEXEC} ./XTP_007
-${MCEXEC} ./XTP_008
-${MCEXEC} ./XTP_009
-${MCEXEC} ./XTP_010
-${MCEXEC} ./XTP_011
+run 2>&1 | tee $recordfile
+grep -E '(FAIL|  NG  )' $recordfile && ((sum_ng++))
 
 sudo rmmod xpmem.ko
+
+exit $sum_ng
