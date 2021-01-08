@@ -177,19 +177,6 @@ struct xpmem_access_permit {
 	struct list_head ap_hashlist;	/* access permit hash list */
 };
 
-struct xpmem_attachment {
-	mcs_rwlock_lock_t at_lock;	/* att lock */
-	unsigned long vaddr;	/* starting address of seg attached */
-	unsigned long at_vaddr;	/* address where seg is attached */
-	size_t at_size;		/* size of seg attachment */
-	struct vm_range *at_vmr;	/* vm_range where seg is attachment */
-	volatile int flags;	/* att attributes and state */
-	ihk_atomic_t refcnt;	/* references to att */
-	struct xpmem_access_permit *ap;	/* associated access permit */
-	struct list_head att_list;	/* atts linked to access permit */
-	struct process_vm *vm;	/* process_vm attached to */
-};
-
 struct xpmem_partition {
 	ihk_atomic_t n_opened;	/* # of /dev/xpmem opened */
 	struct xpmem_hashlist tg_hashtable[];	/* locks + tg hash lists */
@@ -261,11 +248,12 @@ static void xpmem_clear_PTEs_of_att(struct xpmem_attachment *, unsigned long,
 static int xpmem_remap_pte(struct process_vm *, struct vm_range *,
 	unsigned long, uint64_t, struct xpmem_segment *, unsigned long);
 
-static int xpmem_ensure_valid_page(struct xpmem_segment *, unsigned long);
+static int xpmem_ensure_valid_page(struct xpmem_segment *, unsigned long,
+				   int);
 static pte_t * xpmem_vaddr_to_pte(struct process_vm *, unsigned long, 
 	size_t *pgsize);
 static int xpmem_pin_page(struct xpmem_thread_group *, struct thread *,
-	struct process_vm *, unsigned long);
+	struct process_vm *, unsigned long, int);
 static void xpmem_unpin_pages(struct xpmem_segment *, struct process_vm *, 
 	unsigned long, size_t);
 
@@ -331,6 +319,7 @@ static void xpmem_ap_deref(struct xpmem_access_permit *ap);
 static void xpmem_att_deref(struct xpmem_attachment *att);
 static int xpmem_validate_access(struct xpmem_access_permit *, off_t, size_t,
 	int, unsigned long *);
+static int is_remote_vm(struct process_vm *vm);
 
 /*
  * Inlines that mark an internal driver structure as being destroyable or not.
@@ -418,7 +407,7 @@ static inline void xpmem_tg_ref(
 	DBUG_ON(ihk_atomic_read(&tg->refcnt) <= 0);
 	ihk_atomic_inc(&tg->refcnt);
 
-	XPMEM_DEBUG("return: tg->refcnt=%d", tg->refcnt);
+	//XPMEM_DEBUG("return: tg->refcnt=%d", tg->refcnt);
 }
 
 static inline void xpmem_seg_ref(
@@ -427,7 +416,7 @@ static inline void xpmem_seg_ref(
 	DBUG_ON(ihk_atomic_read(&seg->refcnt) <= 0);
 	ihk_atomic_inc(&seg->refcnt);
 
-	XPMEM_DEBUG("return: seg->refcnt=%d", seg->refcnt);
+	//XPMEM_DEBUG("return: seg->refcnt=%d", seg->refcnt);
 }
 
 static inline void xpmem_ap_ref(
@@ -436,7 +425,7 @@ static inline void xpmem_ap_ref(
 	DBUG_ON(ihk_atomic_read(&ap->refcnt) <= 0);
 	ihk_atomic_inc(&ap->refcnt);
 
-	XPMEM_DEBUG("return: ap->refcnt=%d", ap->refcnt);
+	//XPMEM_DEBUG("return: ap->refcnt=%d", ap->refcnt);
 }
 
 static inline void xpmem_att_ref(
@@ -445,7 +434,7 @@ static inline void xpmem_att_ref(
 	DBUG_ON(ihk_atomic_read(&att->refcnt) <= 0);
 	ihk_atomic_inc(&att->refcnt);
 
-	XPMEM_DEBUG("return: att->refcnt=%d", att->refcnt);
+	//XPMEM_DEBUG("return: att->refcnt=%d", att->refcnt);
 }
 
 static inline int xpmem_is_private_data(
