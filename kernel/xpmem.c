@@ -1115,16 +1115,18 @@ static int xpmem_attach(
 		existing_vmr = lookup_process_memory_range(vm, vaddr, 
 			vaddr + size);
 
-		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
-
 		for (; existing_vmr && existing_vmr->start < vaddr + size;
 			existing_vmr = next_process_memory_range(vm, 
 			existing_vmr)) {
 			if (xpmem_is_private_data(existing_vmr)) {
 				ret = -EINVAL;
+				ihk_rwspinlock_read_unlock_noirq(
+					&vm->memory_range_lock);
 				goto out_2;
 			}
 		}
+
+		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 	}
 
 	flags |= MAP_ANONYMOUS;
@@ -1419,19 +1421,17 @@ static void xpmem_detach_att(
 
 	XPMEM_DEBUG("detaching att->vm=0x%p", (void *)att->vm);
 
-	vm = att->vm;
-
-	ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
-
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
 		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
-		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 		XPMEM_DEBUG("return: XPMEM_FLAG_DESTROYING");
 		return;
 	}
 	att->flags |= XPMEM_FLAG_DESTROYING;
+
+	vm = att->vm;
+	ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
 
 	range = lookup_process_memory_range(vm,
 		att->at_vaddr, att->at_vaddr + 1);
@@ -1672,10 +1672,8 @@ int xpmem_remove_process_memory_range(
 	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
-		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
-		xpmem_att_deref(att);
 		XPMEM_DEBUG("already cleaned up");
-		return 0;
+		goto out;
 	}
 
 	if (vmr->start == att->at_vaddr &&
@@ -1906,12 +1904,12 @@ static int xpmem_remap_pte(
 		"seg_vaddr=0x%lx", 
 		vmr, vaddr, reason, seg->segid, seg_vaddr);
 
-	ihk_rwspinlock_read_lock_noirq(&seg_tg->vm->memory_range_lock);
+	if (is_remote_vm(seg_tg->vm)) {
+		ihk_rwspinlock_read_lock_noirq(&seg_tg->vm->memory_range_lock);
+	}
 
 	seg_vmr = lookup_process_memory_range(seg_tg->vm, seg_vaddr, 
 		seg_vaddr + 1);
-
-	ihk_rwspinlock_read_unlock_noirq(&seg_tg->vm->memory_range_lock);
 
 	if (!seg_vmr) {
 		ret = -EFAULT;
@@ -1985,6 +1983,10 @@ static int xpmem_remap_pte(
 	}
 
 out:
+	if (is_remote_vm(seg_tg->vm)) {
+		ihk_rwspinlock_read_unlock_noirq(&seg_tg->vm->memory_range_lock);
+	}
+
 	XPMEM_DEBUG("return: ret=%d", ret);
 
 	return ret;
@@ -2332,3 +2334,14 @@ static int xpmem_validate_access(
 	return 0;
 }
 
+static int is_remote_vm(struct process_vm *vm)
+{
+	int ret = 0;
+
+	if (cpu_local_var(current)->proc->vm != vm) {
+		/* vm is not mine */
+		ret = 1;
+	}
+
+	return ret;
+}
