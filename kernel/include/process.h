@@ -55,6 +55,7 @@
 #define	VR_MEMTYPE_MASK    0x0f000000
 #define VR_PAGEOUT	   0x10000000
 #define VR_DONTDUMP	   0x20000000
+#define VR_XPMEM	   0x40000000
 #define VR_WIPEONFORK	   0x80000000
 
 #define	PROT_TO_VR_FLAG(prot)	(((unsigned long)(prot) << 16) & VR_PROT_MASK)
@@ -847,7 +848,7 @@ int add_process_memory_range(struct process_vm *vm,
 		unsigned long start, unsigned long end,
 		unsigned long phys, unsigned long flag,
 		struct memobj *memobj, off_t offset,
-		int pgshift, struct vm_range **rp);
+		int pgshift, void *private_data, struct vm_range **rp);
 int remove_process_memory_range(struct process_vm *vm, unsigned long start,
 		unsigned long end, int *ro_freedp);
 int split_process_memory_range(struct process_vm *vm,
@@ -872,6 +873,9 @@ struct vm_range *previous_process_memory_range(
 int extend_up_process_memory_range(struct process_vm *vm,
 		struct vm_range *range, uintptr_t newend);
 
+int page_fault_process_memory_range(struct process_vm *vm,
+				    struct vm_range *range,
+				    uintptr_t fault_addr, uint64_t reason);
 int page_fault_process_vm(struct process_vm *fault_vm, void *fault_addr,
 		uint64_t reason);
 int remove_process_region(struct process_vm *vm,
