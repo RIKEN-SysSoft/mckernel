@@ -423,6 +423,11 @@ static int xpmem_make(
 	struct xpmem_thread_group *seg_tg;
 	struct xpmem_segment *seg;
 	struct mcs_rwlock_node_irqsave lock;
+	struct process_vm *vm = cpu_local_var(current)->vm;
+	int ret;
+	pte_t *seg_pte = NULL;
+	size_t pgsize = 0, seg_size = 0;
+	unsigned long pf_addr;
 
 	XPMEM_DEBUG("call: vaddr=0x%lx, size=0x%lx, permit_type=%d, " 
 		"permit_value=0%04lo", 
@@ -452,6 +457,27 @@ static int xpmem_make(
 		xpmem_tg_deref(seg_tg);
 		XPMEM_DEBUG("return: ret=%d", -EINVAL);
 		return -EINVAL;
+	}
+
+	/* Page-in segment area */
+	pf_addr = vaddr;
+	while (pf_addr < vaddr + size) {
+		ret = page_fault_process_vm(vm, (void *)pf_addr,
+			PF_POPULATE | PF_WRITE | PF_USER);
+		if (ret) {
+			xpmem_tg_deref(seg_tg);
+			return -ENOENT;
+		}
+		seg_pte = xpmem_vaddr_to_pte(vm, pf_addr, &pgsize);
+		if (!seg_pte || pte_is_null(seg_pte)) {
+			xpmem_tg_deref(seg_tg);
+			return -ENOENT;
+		}
+		pf_addr += pgsize;
+		seg_size += pgsize;
+	}
+	if (seg_size > size) {
+		size = seg_size;
 	}
 
 	segid = xpmem_make_segid(seg_tg);
@@ -1011,7 +1037,6 @@ static int xpmem_attach(
 	struct xpmem_segment *seg;
 	struct xpmem_attachment *att;
 	struct mcs_rwlock_node_irqsave at_lock;
-	struct vm_range *vmr;
 	struct process_vm *vm = cpu_local_var(current)->vm;
 
 	XPMEM_DEBUG("call: apid=0x%lx, offset=0x%lx, size=0x%lx, vaddr=0x%lx, " 
@@ -1126,37 +1151,15 @@ static int xpmem_attach(
 	XPMEM_DEBUG("do_mmap(): vaddr=0x%lx, size=0x%lx, prot_flags=0x%lx, " 
 		"flags=0x%lx, fd=%d, offset=0x%lx", 
 		vaddr, size, prot_flags, flags, mckfd->fd, offset);
-	/* The new range uses on-demand paging and is associated with shmobj because of 
+	/* The new range is associated with shmobj because of
 	   MAP_ANONYMOUS && !MAP_PRIVATE && MAP_SHARED */
-	at_vaddr = do_mmap(vaddr, size, prot_flags, flags, mckfd->fd, offset);
+	at_vaddr = do_mmap(vaddr, size, prot_flags, flags, mckfd->fd,
+			offset, VR_XPMEM, att);
 	if (IS_ERR((void *)(uintptr_t)at_vaddr)) {
 		ret = at_vaddr;
 		goto out_2;
 	}
 	XPMEM_DEBUG("at_vaddr=0x%lx", at_vaddr);
-	att->at_vaddr = at_vaddr;
-
-	ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
-
-	vmr = lookup_process_memory_range(vm, at_vaddr, at_vaddr + 1);
-
-	/* To identify pages of XPMEM attachment for rusage accounting */
-	if(vmr->memobj) {
-		vmr->memobj->flags |= MF_XPMEM;
-	} else {
-		ekprintf("%s: vmr->memobj equals to NULL\n", __FUNCTION__);
-	}
-
-	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
-
-	if (!vmr) {
-		ret = -ENOENT;
-		goto out_2;
-	}
-	vmr->private_data = att;
-
-
-	att->at_vmr = vmr;
 
 	*at_vaddr_p = at_vaddr + offset_in_page(att->vaddr);
 
@@ -1181,7 +1184,6 @@ out_1:
 
 	return ret;
 }
-
 
 static int xpmem_detach(
 	unsigned long at_vaddr)
@@ -1878,6 +1880,117 @@ out_1:
 	return ret;
 }
 
+int xpmem_update_process_page_table(
+	struct process_vm *vm, struct vm_range *vmr)
+{
+	int ret = 0;
+	unsigned long seg_vaddr = 0;
+	unsigned long vaddr = vmr->start;
+	pte_t *pte = NULL;
+	pte_t *seg_pte = NULL;
+	struct xpmem_thread_group *ap_tg;
+	struct xpmem_thread_group *seg_tg;
+	struct xpmem_access_permit *ap;
+	struct xpmem_attachment *att;
+	struct xpmem_segment *seg;
+	size_t seg_pgsize;
+	size_t pgsize;
+
+	XPMEM_DEBUG("call: vmr=0x%p", vmr);
+
+	att = (struct xpmem_attachment *)vmr->private_data;
+	if (att == NULL) {
+		return -EFAULT;
+	}
+
+	xpmem_att_ref(att);
+	ap = att->ap;
+	xpmem_ap_ref(ap);
+	ap_tg = ap->tg;
+	xpmem_tg_ref(ap_tg);
+
+	if ((ap->flags & XPMEM_FLAG_DESTROYING) ||
+		(ap_tg->flags & XPMEM_FLAG_DESTROYING)) {
+		ret = -EFAULT;
+		goto out_1;
+	}
+
+	DBUG_ON(cpu_local_var(current)->proc->pid != ap_tg->tgid);
+	DBUG_ON(ap->mode != XPMEM_RDWR);
+
+	seg = ap->seg;
+	xpmem_seg_ref(seg);
+	seg_tg = seg->tg;
+	xpmem_tg_ref(seg_tg);
+
+	if ((seg->flags & XPMEM_FLAG_DESTROYING) ||
+		(seg_tg->flags & XPMEM_FLAG_DESTROYING)) {
+		ret = -ENOENT;
+		goto out_2;
+	}
+
+	att->at_vaddr = vmr->start;
+	att->at_vmr = vmr;
+
+	if ((att->flags & XPMEM_FLAG_DESTROYING) ||
+		(ap_tg->flags & XPMEM_FLAG_DESTROYING) ||
+		(seg_tg->flags & XPMEM_FLAG_DESTROYING)) {
+		goto out_2;
+	}
+
+	seg_vaddr = (att->vaddr & PAGE_MASK) + (vaddr - att->at_vaddr);
+	XPMEM_DEBUG("vaddr=%lx, seg_vaddr=%lx", vaddr, seg_vaddr);
+	while (vaddr < vmr->end) {
+		ret = xpmem_ensure_valid_page(seg, seg_vaddr);
+		if (ret != 0) {
+			goto out_2;
+		}
+
+		seg_pte = xpmem_vaddr_to_pte(seg_tg->vm, seg_vaddr,
+				&seg_pgsize);
+
+		if (seg_pte && !pte_is_null(seg_pte)) {
+			pte = xpmem_vaddr_to_pte(cpu_local_var(current)->vm,
+					vaddr, &pgsize);
+			if (pte && !pte_is_null(pte)) {
+				if (*seg_pte != *pte) {
+					ret = -EFAULT;
+					ekprintf("%s: ERROR: pte mismatch: "
+						"0x%lx != 0x%lx\n",
+						__func__, *seg_pte, *pte);
+				}
+
+				ihk_atomic_dec(&seg->tg->n_pinned);
+				goto out_2;
+			}
+
+			ret = xpmem_remap_pte(vm, vmr, vaddr,
+					0, seg, seg_vaddr);
+			if (ret) {
+				ekprintf("%s: ERROR: xpmem_remap_pte() failed %d\n",
+					__func__, ret);
+			}
+		}
+		flush_tlb_single(vaddr);
+		att->flags |= XPMEM_FLAG_VALIDPTEs;
+
+		seg_vaddr += seg_pgsize;
+		vaddr += seg_pgsize;
+	}
+
+out_2:
+	xpmem_tg_deref(seg_tg);
+	xpmem_seg_deref(seg);
+
+out_1:
+	xpmem_att_deref(att);
+	xpmem_ap_deref(ap);
+	xpmem_tg_deref(ap_tg);
+
+	XPMEM_DEBUG("return: ret=%d", ret);
+
+	return ret;
+}
 
 static int xpmem_remap_pte(
 	struct process_vm *vm,
@@ -1905,12 +2018,16 @@ static int xpmem_remap_pte(
 		"seg_vaddr=0x%lx", 
 		vmr, vaddr, reason, seg->segid, seg_vaddr);
 
-	ihk_rwspinlock_read_lock_noirq(&seg_tg->vm->memory_range_lock);
+	if (is_remote_vm(seg_tg->vm)) {
+		ihk_rwspinlock_read_lock_noirq(&seg_tg->vm->memory_range_lock);
+	}
 
 	seg_vmr = lookup_process_memory_range(seg_tg->vm, seg_vaddr, 
 		seg_vaddr + 1);
 
-	ihk_rwspinlock_read_unlock_noirq(&seg_tg->vm->memory_range_lock);
+	if (is_remote_vm(seg_tg->vm)) {
+		ihk_rwspinlock_read_unlock_noirq(&seg_tg->vm->memory_range_lock);
+	}
 
 	if (!seg_vmr) {
 		ret = -EFAULT;
@@ -1959,28 +2076,27 @@ static int xpmem_remap_pte(
 	att_attr = arch_vrflag_to_ptattr(vmr->flag, reason, att_pte);
 	XPMEM_DEBUG("att_attr=0x%lx", att_attr);
 
-	if (att_pte) {
-		ret = ihk_mc_pt_set_pte(vm->address_space->page_table, att_pte, 
-			att_pgsize, seg_phys, att_attr);
+	if (att_pte && !pgsize_is_contiguous(seg_pgsize)) {
+		ret = ihk_mc_pt_set_pte(vm->address_space->page_table, att_pte,
+			seg_pgsize, seg_phys, att_attr);
 		if (ret) {
 			ret = -EFAULT;
-			ekprintf("%s: ERROR: ihk_mc_pt_set_pte() failed %d\n", 
-				__FUNCTION__, ret);
+			ekprintf("%s: ERROR: ihk_mc_pt_set_pte() failed %d\n",
+				__func__, ret);
 			goto out;
 		}
-		// memory_stat_rss_add() is called by the process hosting the memory area
 	}
 	else {
-		ret = ihk_mc_pt_set_range(vm->address_space->page_table, vm, 
-			att_pgaddr, att_pgaddr + att_pgsize, seg_phys, att_attr,
-								  vmr->pgshift, vmr, 0);
+		ret = ihk_mc_pt_set_range(vm->address_space->page_table, vm,
+				att_pgaddr, att_pgaddr + seg_pgsize,
+				seg_phys, att_attr,
+				pgsize_to_pgshift(seg_pgsize), vmr, 1);
 		if (ret) {
 			ret = -EFAULT;
 			ekprintf("%s: ERROR: ihk_mc_pt_set_range() failed %d\n",
-				 __FUNCTION__, ret);
+				 __func__, ret);
 			goto out;
 		}
-		// memory_stat_rss_add() is called by the process hosting the memory area
 	}
 
 out:
@@ -2040,8 +2156,7 @@ static pte_t * xpmem_vaddr_to_pte(
 	}
 
 out:
-
-        return pte;
+	return pte;
 }
 
 
@@ -2051,19 +2166,23 @@ static int xpmem_pin_page(
 	struct process_vm *src_vm,
 	unsigned long vaddr)
 {
-	int ret;
+	int ret = 0;
 	struct vm_range *range;
 
 	XPMEM_DEBUG("call: tgid=%d, vaddr=0x%lx", tg->tgid, vaddr);
 
 retry:
-	ihk_rwspinlock_read_lock_noirq(&src_vm->memory_range_lock);
+	if (is_remote_vm(src_vm)) {
+		ihk_rwspinlock_read_lock_noirq(&src_vm->memory_range_lock);
+	}
 
 	range = lookup_process_memory_range(src_vm, vaddr, vaddr + 1);
 
-	ihk_rwspinlock_read_unlock_noirq(&src_vm->memory_range_lock);
-
 	if (!range || range->start > vaddr) {
+		if (is_remote_vm(src_vm)) {
+			ihk_rwspinlock_read_unlock_noirq(&src_vm->memory_range_lock);
+		}
+
 		/*
 		 * Grow the stack if address falls into stack region
 		 * so that we can lookup range successfully.
@@ -2082,21 +2201,18 @@ retry:
 	}
 
 	if (xpmem_is_private_data(range)) {
-		return -ENOENT;
+		ret = -ENOENT;
+		goto out;
 	}
 
-	ret = page_fault_process_vm(src_vm, (void *)vaddr, 
-		PF_POPULATE | PF_WRITE | PF_USER);
-	if (!ret) {
-		ihk_atomic_inc(&tg->n_pinned);
-	}
-	else {
-		return -ENOENT;
+	ihk_atomic_inc(&tg->n_pinned);
+out:
+	if (is_remote_vm(src_vm)) {
+		ihk_rwspinlock_read_unlock_noirq(&src_vm->memory_range_lock);
 	}
 
 	XPMEM_DEBUG("return: ret=%d", ret);
-
-        return ret;
+	return ret;
 }
 
 
@@ -2106,30 +2222,24 @@ static void xpmem_unpin_pages(
 	unsigned long vaddr,
 	size_t size)
 {
-	int n_pgs = (((offset_in_page(vaddr) + (size)) + (PAGE_SIZE - 1)) >> 
-		PAGE_SHIFT);
 	int n_pgs_unpinned = 0;
 	size_t vsize = 0;
+	unsigned long end = vaddr + size;
 	pte_t *pte = NULL;
 
 	XPMEM_DEBUG("call: segid=0x%lx, vaddr=0x%lx, size=0x%lx", 
 		seg->segid, vaddr, size);
 
-	XPMEM_DEBUG("n_pgs=%d", n_pgs);
-
 	vaddr &= PAGE_MASK;
 
-	while (n_pgs > 0) {
+	while (vaddr < end) {
 		pte = xpmem_vaddr_to_pte(vm, vaddr, &vsize);
 		if (pte && !pte_is_null(pte)) {
 			n_pgs_unpinned++;
-			vaddr += PAGE_SIZE;
-			n_pgs--;
+			vaddr += vsize;
 		}
 		else {
-			vsize = ((vaddr + vsize) & (~(vsize - 1)));
-			n_pgs -= (vsize - vaddr) / PAGE_SIZE;
-			vaddr = vsize;
+			vaddr = ((vaddr + vsize) & (~(vsize - 1)));
 		}
 	}
 
@@ -2329,5 +2439,17 @@ static int xpmem_validate_access(
 	XPMEM_DEBUG("return: ret=%d, vaddr=0x%lx", 0, *vaddr);
 
 	return 0;
+}
+
+static int is_remote_vm(struct process_vm *vm)
+{
+	int ret = 0;
+
+	if (cpu_local_var(current)->proc->vm != vm) {
+		/* vm is not mine */
+		ret = 1;
+	}
+
+	return ret;
 }
 

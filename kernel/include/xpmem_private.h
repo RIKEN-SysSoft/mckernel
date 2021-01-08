@@ -177,19 +177,6 @@ struct xpmem_access_permit {
 	struct list_head ap_hashlist;	/* access permit hash list */
 };
 
-struct xpmem_attachment {
-	mcs_rwlock_lock_t at_lock;	/* att lock */
-	unsigned long vaddr;	/* starting address of seg attached */
-	unsigned long at_vaddr;	/* address where seg is attached */
-	size_t at_size;		/* size of seg attachment */
-	struct vm_range *at_vmr;	/* vm_range where seg is attachment */
-	volatile int flags;	/* att attributes and state */
-	ihk_atomic_t refcnt;	/* references to att */
-	struct xpmem_access_permit *ap;	/* associated access permit */
-	struct list_head att_list;	/* atts linked to access permit */
-	struct process_vm *vm;	/* process_vm attached to */
-};
-
 struct xpmem_partition {
 	ihk_atomic_t n_opened;	/* # of /dev/xpmem opened */
 	struct xpmem_hashlist tg_hashtable[];	/* locks + tg hash lists */
@@ -331,6 +318,7 @@ static void xpmem_ap_deref(struct xpmem_access_permit *ap);
 static void xpmem_att_deref(struct xpmem_attachment *att);
 static int xpmem_validate_access(struct xpmem_access_permit *, off_t, size_t,
 	int, unsigned long *);
+static int is_remote_vm(struct process_vm *vm);
 
 /*
  * Inlines that mark an internal driver structure as being destroyable or not.
