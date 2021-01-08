@@ -1,0 +1,99 @@
+diff --git arch/arm64/kernel/memory.c arch/arm64/kernel/memory.c
+index a84bc21..7368ada 100644
+--- arch/arm64/kernel/memory.c
++++ arch/arm64/kernel/memory.c
+@@ -2701,6 +2701,13 @@ int set_range_l1(void *args0, pte_t *ptep, uintptr_t base, uintptr_t start,
+ 	ptl1_set(ptep, pte);
+ 
+ 	error = 0;
++
++	if (args->attr[0] & PTE_CONT &&
++	    __page_offset(base, PTL1_CONT_SIZE) == 0) {
++		kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx , phys: %lx\n",
++			__func__, base, PTL1_CONT_SIZE, phys);
++	}
++
+ 	// call memory_stat_rss_add() here because pgshift is resolved here
+ 	if (!(args->attr[0] & PTE_CONT)) {
+ 		if (rusage_memory_stat_add(args->range, phys,
+@@ -2810,6 +2817,17 @@ retry:
+ 					level);
+ 
+ 				error = 0;
++
++				if (args->attr[level-1] & PTE_CONT) {
++					if (__page_offset(base, tbl.cont_pgsize) == 0) {
++						kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx , phys: %lx\n",
++							__func__, base, tbl.cont_pgsize, phys);
++					}
++				} else {
++					kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx , phys: %lx\n",
++						__func__, base, tbl.pgsize, phys);
++				}
++
+ 				dkprintf("set_range_middle(%lx,%lx,%lx,%d):"
+ 					 "large page. %d %lx\n",
+ 					 base, start, end, level, error, *ptep);
+diff --git arch/x86_64/kernel/memory.c arch/x86_64/kernel/memory.c
+index df545e1..633e390 100644
+--- arch/x86_64/kernel/memory.c
++++ arch/x86_64/kernel/memory.c
+@@ -1931,6 +1931,10 @@ retry:
+ 			dkprintf("set_range_l2(%lx,%lx,%lx):"
+ 					"2MiB page. %d %lx\n",
+ 					base, start, end, error, *ptep);
++
++			kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx\n",
++				__func__, base, PTL2_SIZE);
++
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL2_SIZE, PTL2_SIZE)) {
+ 				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL2_SIZE, PTL2_SIZE);
+@@ -2020,6 +2024,9 @@ retry:
+ 					"1GiB page. %d %lx\n",
+ 					base, start, end, error, *ptep);
+ 
++			kprintf("%s: large_page_allocation, addr: %016lx, size: 0x%lx\n",
++				__func__, base, PTL3_SIZE);
++
+ 			// Call memory_stat_rss_add() here because pgshift is resolved here
+ 			if (rusage_memory_stat_add(args->range, phys, PTL3_SIZE, PTL3_SIZE)) {
+ 				dkprintf("%lx+,%s: calling memory_stat_rss_add(),base=%lx,phys=%lx,size=%ld,pgsize=%ld\n", phys, __FUNCTION__, base, phys, PTL3_SIZE, PTL3_SIZE);
+diff --git kernel/process.c kernel/process.c
+index 809f5e0..cba9e5a 100644
+--- kernel/process.c
++++ kernel/process.c
+@@ -2059,6 +2059,12 @@ retry:
+ 		}
+ 
+ 		dkprintf("%s: attr=%x\n", __FUNCTION__, attr);
++
++		if (pgsize > PAGE_SIZE) {
++			kprintf("large_page_allocation, addr: %016lx, size: %d, phys: %lx\n",
++				pgaddr, pgsize, phys);
++		}
++
+ 		error = ihk_mc_pt_set_pte(vm->address_space->page_table, ptep,
+ 		                          pgsize, phys, attr);
+ 		if (error) {
+diff --git kernel/xpmem.c kernel/xpmem.c
+index e1d0231..c9da711 100644
+--- kernel/xpmem.c
++++ kernel/xpmem.c
+@@ -514,6 +514,7 @@ static int xpmem_make(
+ 	*segid_p = segid;
+ 
+ 	XPMEM_DEBUG("return: ret=%d, segid=0x%lx", 0, *segid_p);
++	kprintf("%s: DONE\n", __func__);
+ 
+ 	return 0;
+ }
+@@ -1994,6 +1995,8 @@ int xpmem_update_process_page_table(
+ 		flush_tlb_single(vaddr);
+ 		att->flags |= XPMEM_FLAG_VALIDPTEs;
+ 
++		kprintf("%s: xpmem_page_attach, addr: %016lx, size: 0x%lx\n",
++					__func__, vaddr, seg_pgsize);
+ 		seg_vaddr += seg_pgsize;
+ 		vaddr += seg_pgsize;
+ 	}
