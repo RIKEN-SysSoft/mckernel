@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+
+. @CMAKE_INSTALL_PREFIX@/bin/common.sh
+
+@WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/xpmem_make01
+ret=$?
+
+exit $ret

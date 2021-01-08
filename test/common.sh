@@ -107,7 +107,7 @@ fi
 
 mcstop() {
 	echo -n "mcstop+release.sh ... "
-	sudo "$SBIN/mcstop+release.sh"
+	"$SBIN/mcstop+release.sh"
 	echo "done"
 
 	if lsmod | grep mcctrl > /dev/null 2>&1; then
@@ -118,7 +118,7 @@ mcstop() {
 
 mcreboot() {
 	echo -n "mcreboot.sh $BOOTPARAM ... "
-	sudo "$SBIN/mcreboot.sh" $BOOTPARAM
+	"$SBIN/mcreboot.sh" $BOOTPARAM
 	echo "done"
 
 	if ! lsmod | grep mcctrl > /dev/null 2>&1; then

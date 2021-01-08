@@ -27,6 +27,8 @@ int xpmem_remove_process_memory_range(struct process_vm *vm,
 	struct vm_range *vmr);
 int xpmem_fault_process_memory_range(struct process_vm *vm,
 	struct vm_range *vmr, unsigned long vaddr, uint64_t reason);
+int xpmem_update_process_page_table(struct process_vm *vm,
+	struct vm_range *vmr);
 
 struct xpmem_attachment {
 	ihk_rwspinlock_t at_lock;	/* att lock */
