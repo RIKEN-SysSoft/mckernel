@@ -64,6 +64,7 @@ struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
 int anon_on_demand = 0;
 int hugetlbfs_on_demand;
+int xpmem_remote_on_demand;
 int sysctl_overcommit_memory = OVERCOMMIT_ALWAYS;
 
 static struct ihk_mc_pa_ops *pa_ops;
@@ -2096,6 +2097,11 @@ void mem_init(void)
 	if (find_command_line("anon_on_demand")) {
 		kprintf("Demand paging on ANONYMOUS mappings enabled.\n");
 		anon_on_demand = 1;
+	}
+
+	if (find_command_line("xpmem_remote_on_demand")) {
+		kprintf("Demand paging on XPMEM remote mappings enabled.\n");
+		xpmem_remote_on_demand = 1;
 	}
 	
 	if (find_command_line("hugetlbfs_on_demand")) {

@@ -70,4 +70,5 @@ static inline int page_is_multi_mapped(struct page *page)
 /* Should we take page faults on ANONYMOUS mappings? */
 extern int anon_on_demand;
 extern int hugetlbfs_on_demand;
+extern int xpmem_remote_on_demand;
 #endif
