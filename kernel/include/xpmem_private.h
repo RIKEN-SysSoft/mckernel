@@ -331,6 +331,7 @@ static void xpmem_ap_deref(struct xpmem_access_permit *ap);
 static void xpmem_att_deref(struct xpmem_attachment *att);
 static int xpmem_validate_access(struct xpmem_access_permit *, off_t, size_t,
 	int, unsigned long *);
+static int is_remote_vm(struct process_vm *vm);
 
 /*
  * Inlines that mark an internal driver structure as being destroyable or not.
