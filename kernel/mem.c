@@ -64,7 +64,7 @@ struct tlb_flush_entry tlb_flush_vector[IHK_TLB_FLUSH_IRQ_VECTOR_SIZE];
 
 int anon_on_demand = 0;
 int hugetlbfs_on_demand;
-int xpmem_remote_on_demand;
+int xpmem_remote_on_demand = 1;
 int sysctl_overcommit_memory = OVERCOMMIT_ALWAYS;
 
 static struct ihk_mc_pa_ops *pa_ops;
