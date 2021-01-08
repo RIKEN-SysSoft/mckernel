@@ -1464,7 +1464,7 @@ int add_process_memory_range(struct process_vm *vm,
 		unsigned long start, unsigned long end,
 		unsigned long phys, unsigned long flag,
 		struct memobj *memobj, off_t offset,
-		int pgshift, struct vm_range **rp)
+		int pgshift, void *private_data, struct vm_range **rp)
 {
 	dkprintf("%s: start=%lx,end=%lx,phys=%lx,flag=%lx\n", __FUNCTION__, start, end, phys, flag);
 	struct vm_range *range;
@@ -1492,7 +1492,7 @@ int add_process_memory_range(struct process_vm *vm,
 	range->memobj = memobj;
 	range->objoff = offset;
 	range->pgshift = pgshift;
-	range->private_data = NULL;
+	range->private_data = private_data;
 	range->straight_start = 0;
 #ifdef ENABLE_TOFU
 	INIT_LIST_HEAD(&range->tofu_stag_list);
@@ -1516,6 +1516,10 @@ int add_process_memory_range(struct process_vm *vm,
 	else if (flag & VR_IO_NOCACHE) {
 		rc = update_process_page_table(vm, range, phys, PTATTR_UNCACHABLE);
 	}
+	else if (flag & VR_XPMEM) {
+		range->memobj->flags |= MF_XPMEM;
+		rc = xpmem_update_process_page_table(vm, range);
+	}
 	else if (flag & VR_DEMAND_PAGING) {
 		dkprintf("%s: range: 0x%lx - 0x%lx is demand paging\n",
 				__FUNCTION__, range->start, range->end);
@@ -1538,7 +1542,8 @@ int add_process_memory_range(struct process_vm *vm,
 	}
 
 	/* Clear content! */
-	if (phys != NOPHYS && !(flag & (VR_REMOTE | VR_DEMAND_PAGING))
+	if (phys != NOPHYS
+			&& !(flag & (VR_REMOTE | VR_DEMAND_PAGING | VR_XPMEM))
 			&& ((flag & VR_PROT_MASK) != VR_PROT_NONE)) {
 
 		if (!zero_at_free) {
@@ -2620,7 +2625,8 @@ int init_process_stack(struct thread *thread, struct program_load_desc *pn,
 	vrflag |= VR_MAXPROT_READ | VR_MAXPROT_WRITE | VR_MAXPROT_EXEC;
 #define	NOPHYS	((uintptr_t)-1)
 	if ((rc = add_process_memory_range(thread->vm, start, end, NOPHYS,
-			vrflag, NULL, 0, USER_STACK_PAGE_SHIFT, &range)) != 0) {
+			vrflag, NULL, 0, USER_STACK_PAGE_SHIFT,
+			NULL, &range)) != 0) {
 		ihk_mc_free_pages_user(stack, minsz >> PAGE_SHIFT);
 		kprintf("%s: error addding process memory range: %d\n", rc);
 		return rc;
@@ -2794,7 +2800,7 @@ unsigned long extend_process_region(struct process_vm *vm,
 
 	if ((rc = add_process_memory_range(vm, end_allocated, new_end_allocated,
 					(p == 0 ? 0 : virt_to_phys(p)), flag, NULL, 0,
-					align_shift, NULL)) != 0) {
+					align_shift, NULL, NULL)) != 0) {
 		ihk_mc_free_pages_user(p, npages);
 		return end_allocated;
 	}

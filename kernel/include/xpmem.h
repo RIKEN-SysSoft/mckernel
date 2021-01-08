@@ -27,6 +27,20 @@ int xpmem_remove_process_memory_range(struct process_vm *vm,
 	struct vm_range *vmr);
 int xpmem_fault_process_memory_range(struct process_vm *vm,
 	struct vm_range *vmr, unsigned long vaddr, uint64_t reason);
+int xpmem_update_process_page_table(struct process_vm *vm,
+	struct vm_range *vmr);
 
+struct xpmem_attachment {
+	mcs_rwlock_lock_t at_lock;	/* att lock */
+	unsigned long vaddr;	/* starting address of seg attached */
+	unsigned long at_vaddr;	/* address where seg is attached */
+	size_t at_size;		/* size of seg attachment */
+	struct vm_range *at_vmr;	/* vm_range where seg is attachment */
+	int flags;	/* att attributes and state */
+	ihk_atomic_t refcnt;	/* references to att */
+	struct xpmem_access_permit *ap;	/* associated access permit */
+	struct list_head att_list;	/* atts linked to access permit */
+	struct process_vm *vm;	/* process_vm attached to */
+};
 #endif /* _XPMEM_H */
 
