@@ -1,0 +1,66 @@
+#!/usr/bin/bash
+
+SCRIPT_PATH=$(readlink -m "${BASH_SOURCE[0]}")
+SCRIPT_NAME="${SCRIPT_PATH##*/}"
+
+# prepare recorddir
+. @CMAKE_INSTALL_PREFIX@/bin/common.sh
+recorddir=$WORKDIR/output/$SCRIPT_NAME
+[[ ! -d $recorddir ]] && mkdir -p $recorddir
+
+# define patch function
+. @CMAKE_INSTALL_PREFIX@/bin/util.sh
+patch_and_build large_page ihk_kmsg_size || exit 1
+
+# boot patched McKernel
+if [[ -e ${AUTOTEST_HOME}/bin/config.sh ]]; then
+    ${AUTOTEST_HOME}/bin/boot.sh reboot
+else
+    . @WITH_MCK_SRC@/test/common.sh
+fi
+
+sudo insmod @WITH_XPMEM@/lib/modules/`uname -r`/xpmem.ko
+sudo chmod og+rw /dev/xpmem
+
+for seg_pgshift in $PGSHIFT_LIST; do
+    for att_pgshift in $PGSHIFT_LIST; do
+	if (( seg_pgshift < att_pgshift )); then
+	    echo "seg_pgshift: $seg_pgshift, att_pgshift: $att_pgshift"
+	    log_file=$recorddir/${SCRIPT_NAME%.sh}-${seg_pgshift}-${att_pgshift}.log
+	    @WITH_MCK@/sbin/ihkosctl 0 clear_kmsg
+	    @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/xpmem_attach01 $seg_pgshift $att_pgshift | tee $log_file
+	    @WITH_MCK@/sbin/ihkosctl 0 kmsg >> $log_file
+
+	    seg_addr=$(grep 'parent.*seg_addr' $log_file | awk '{ print $NF; }')
+	    seg_pgsize=$(grep 'parent.*seg_pgsize' $log_file | awk '{ print $NF; }')
+	    # note that showing DONE is done by the patch
+	    seg_pgsize_kmsg=$(awk '!/DONE/{print $0} /DONE/{exit}' $log_file | grep -o "large_page_allocation.*${seg_addr}.*" | awk '{ print $5; }')
+	    [[ "$seg_pgsize_kmsg" == "" ]] && seg_pgsize_kmsg=$PAGE_SIZE
+
+	    att_addr=$(grep 'child.*att_addr' $log_file | awk '{ print $NF; }')
+	    att_pgsize_kmsg=$(grep -o "xpmem_page_attach.*${att_addr}.*" $log_file | awk '{ print $NF; }')
+	    [[ "$att_pgsize_kmsg" == "" ]] && att_pgsize_kmsg=$PAGE_SIZE
+
+	    if (( seg_pgsize == seg_pgsize_kmsg )); then
+		printf "[  OK  ] "
+	    else
+		printf "[  NG  ] "
+		let ng++
+	    fi
+	    echo "page-size of $seg_addr: $seg_pgsize_kmsg, expected: $seg_pgsize"
+
+	    if (( att_pgsize_kmsg == seg_pgsize )); then
+		printf "[  OK  ] "
+	    else
+		printf "[  NG  ] "
+		let ng++
+	    fi
+	    echo "page-size of attachment at $att_addr: $att_pgsize_kmsg, expected: $seg_pgsize"
+
+	fi
+    done
+done
+
+sudo rmmod xpmem.ko
+
+exit $ng

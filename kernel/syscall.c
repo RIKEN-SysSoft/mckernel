@@ -1772,6 +1772,12 @@ static int search_free_space(size_t len, int pgshift, uintptr_t *addrp)
 	/* try given addr first */
 	addr = *addrp;
 	if (addr != 0) {
+		if ((region->user_end <= addr)
+				|| ((region->user_end - len) < addr)) {
+			error = -ENOMEM;
+			goto out;
+		}
+
 		range = lookup_process_memory_range(thread->vm, addr, addr+len);
 		if (range == NULL)
 			goto out;
@@ -1807,7 +1813,8 @@ out:
 
 intptr_t
 do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
-	const int flags, const int fd, const off_t off0)
+	const int flags, const int fd, const off_t off0,
+	const int vrf0, void *private_data)
 {
 	struct thread *thread = cpu_local_var(current);
 	struct vm_regions *region = &thread->vm->region;
@@ -1815,11 +1822,11 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	size_t len = len0;
 	size_t populate_len = 0;
 	off_t off;
-	int error;
-	intptr_t npages;
+	int error = 0;
+	intptr_t npages = 0;
 	int p2align;
 	void *p = NULL;
-	int vrflags;
+	int vrflags = VR_NONE;
 	uintptr_t phys;
 	intptr_t straight_phys;
 	struct memobj *memobj = NULL;
@@ -1941,7 +1948,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 		if (add_process_memory_range(proc->vm, (unsigned long)proc->straight_va,
 					(unsigned long)proc->straight_va + proc->straight_len,
 					NOPHYS, vrflags, NULL, 0,
-					PAGE_SHIFT + p2align, &range) != 0) {
+					PAGE_SHIFT + p2align, private_data, &range) != 0) {
 			kprintf("%s: error: adding straight memory range \n",
 					__FUNCTION__);
 			proc->straight_va = 0;
@@ -2076,7 +2083,8 @@ straight_out:
 		}
 		p2align = pgshift - PAGE_SHIFT;
 	}
-	else if ((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS)
+	else if ((((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS))
+			|| (vrf0 & VR_XPMEM))
 		    && !proc->thp_disable) {
 		pgshift = 0;		/* transparent huge page */
 		p2align = PAGE_P2ALIGN;
@@ -2116,22 +2124,24 @@ straight_out:
 	}
 	else if (flags & MAP_ANONYMOUS) {
 		/* Obtain mapping address */
-		error = search_free_space(len, PAGE_SHIFT + p2align, &addr);
+		error = search_free_space(len,
+					  PAGE_SHIFT + p2align, &addr);
 		if (error) {
-			ekprintf("do_mmap:search_free_space(%lx,%lx,%d) failed. %d\n",
-					len, region->map_end, p2align, error);
+			kprintf("%s: error: search_free_space(%lx,%lx,%lx) failed. %d\n",
+				__func__, len, PAGE_SHIFT + p2align, addr, error);
 			goto out;
 		}
 	}
 
 	/* do the map */
 	vrflags = VR_NONE;
+	vrflags |= vrf0;
 	vrflags |= PROT_TO_VR_FLAG(prot);
 	vrflags |= (flags & MAP_PRIVATE)? VR_PRIVATE: 0;
 	vrflags |= (flags & MAP_LOCKED)? VR_LOCKED: 0;
 	vrflags |= VR_DEMAND_PAGING;
-	if (flags & MAP_ANONYMOUS) {
-		if (!anon_on_demand && (flags & MAP_PRIVATE)) {
+	if (flags & MAP_ANONYMOUS && !anon_on_demand) {
+		if (flags & MAP_PRIVATE) {
 			vrflags &= ~VR_DEMAND_PAGING;
 		}
 	}
@@ -2276,6 +2286,7 @@ straight_out:
 	}
 	/* Prepopulated ANONYMOUS mapping */
 	else if (!(vrflags & VR_DEMAND_PAGING)
+			&& !(flags & MAP_SHARED)
 			&& ((vrflags & VR_PROT_MASK) != VR_PROT_NONE)) {
 		npages = len >> PAGE_SHIFT;
 		/* Small allocations mostly benefit from closest RAM,
@@ -2379,7 +2390,7 @@ straight_out:
 	}
 
 	error = add_process_memory_range(thread->vm, addr, addr+len, phys,
-			vrflags, memobj, off, pgshift, &range);
+			vrflags, memobj, off, pgshift, private_data, &range);
 	if (error) {
 		kprintf("%s: add_process_memory_range failed for 0x%lx:%lu"
 				" flags: %lx, vrflags: %lx, pgshift: %d, error: %d\n",
@@ -2467,6 +2478,19 @@ out:
 	}
 	ihk_rwspinlock_write_unlock_noirq(&thread->vm->memory_range_lock);
 
+	ihk_rwspinlock_read_lock_noirq(&thread->vm->memory_range_lock);
+	if (!error && range && range->memobj &&
+	    (range->memobj->flags & MF_XPMEM)) {
+		error = xpmem_update_process_page_table(thread->vm, range);
+		if (error) {
+			ekprintf("%s: xpmem_update_process_page_table(): "
+				"vm: %p, range: %lx-%lx failed %d\n",
+				__func__, thread->vm,
+				range->start, range->end, error);
+		}
+	}
+	ihk_rwspinlock_read_unlock_noirq(&thread->vm->memory_range_lock);
+
 	if (!error && populated_mapping &&
 			!((vrflags & VR_PROT_MASK) == VR_PROT_NONE) && !range->straight_start) {
 		error = populate_process_memory(thread->vm,
@@ -2496,7 +2520,7 @@ out:
 		}
 	}
 
-	if (p) {
+	if (p && npages > 0) {
 		ihk_mc_free_pages_user(p, npages);
 	}
 	if (memobj) {
@@ -5009,7 +5033,7 @@ perf_mmap(struct mckfd *sfd, ihk_mc_user_context_t *ctx)
 
 	flags |= MAP_ANONYMOUS;
 	prot |= PROT_WRITE;
-	rc = do_mmap(addr0, len0, prot, flags, fd, off0);
+	rc = do_mmap(addr0, len0, prot, flags, fd, off0, 0, NULL);
 
 	// setup perf_event_mmap_page
 	page = (struct perf_event_mmap_page *)rc;
@@ -6542,7 +6566,7 @@ SYSCALL_DECLARE(shmat)
 	}
 
 	error = add_process_memory_range(vm, addr, addr+len, -1,
-			vrflags, &obj->memobj, 0, obj->pgshift, NULL);
+			vrflags, &obj->memobj, 0, obj->pgshift, NULL, NULL);
 	if (error) {
 		if (!(prot & PROT_WRITE)) {
 			(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
@@ -9441,7 +9465,7 @@ SYSCALL_DECLARE(mremap)
 		error = add_process_memory_range(thread->vm, newstart, newend, -1,
 				range->flag, range->memobj,
 				range->objoff + (oldstart - range->start),
-				range->pgshift, NULL);
+				0, NULL, NULL);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"add failed. %d\n",

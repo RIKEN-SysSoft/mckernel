@@ -66,6 +66,7 @@ int anon_on_demand = 0;
 #ifdef ENABLE_FUGAKU_HACKS
 int hugetlbfs_on_demand;
 #endif
+int xpmem_page_in_remote_on_attach;
 int sysctl_overcommit_memory = OVERCOMMIT_ALWAYS;
 
 static struct ihk_mc_pa_ops *pa_ops;
@@ -2143,6 +2144,11 @@ void mem_init(void)
 	if (find_command_line("anon_on_demand")) {
 		kprintf("Demand paging on ANONYMOUS mappings enabled.\n");
 		anon_on_demand = 1;
+	}
+
+	if (find_command_line("xpmem_page_in_remote_on_attach")) {
+		kprintf("Demand paging on XPMEM remote mappings enabled.\n");
+		xpmem_page_in_remote_on_attach = 1;
 	}
 	
 #ifdef ENABLE_FUGAKU_HACKS
