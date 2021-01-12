@@ -160,6 +160,83 @@ int tofu_stag_range_remove_overlapping(struct process_vm *vm,
 	return entries;
 }
 
+void tofu_stag_range_remove_by_addr(struct process_vm *vm,
+	uintptr_t addr, size_t len)
+{
+	struct tofu_stag_range *tsr, *next;
+	int hash;
+
+	ihk_mc_spinlock_lock_noirq(&vm->tofu_stag_lock);
+	for (hash = 0; hash < TOFU_STAG_HASH_SIZE; ++hash) {
+		list_for_each_entry_safe(tsr, next,
+				&vm->tofu_stag_hash[hash], hash) {
+
+			if (tsr->start >= addr && tsr->end <= (addr + len)) {
+				linux_spin_lock(&tsr->ucq->trans.mru_lock);
+				tof_utofu_free_stag(tsr->ucq, tsr->stag);
+				linux_spin_unlock(&tsr->ucq->trans.mru_lock);
+
+				kprintf("%s: removed stag %d in %p:%lu\n",
+						__func__, tsr->stag, addr, len);
+				__tofu_stag_range_remove(vm, tsr);
+			}
+
+			{
+				uintptr_t max_start, min_end;
+
+				max_start = addr > tsr->start ? addr : tsr->start;
+				min_end = (addr + len) < tsr->end ? (addr + len) : tsr->end;
+
+				if ((tsr->start != 0 || vm->proc->status == PS_EXITED) &&
+						(max_start < min_end)) {
+					linux_spin_lock(&tsr->ucq->trans.mru_lock);
+					tof_utofu_free_stag(tsr->ucq, tsr->stag);
+					linux_spin_unlock(&tsr->ucq->trans.mru_lock);
+
+					kprintf("%s: removed stag %p:%lu (overlaps with range %p:%lu)\n",
+						__func__, tsr->start, (tsr->end - tsr->start), addr, len);
+					__tofu_stag_range_remove(vm, tsr);
+				}
+			}
+		}
+	}
+	ihk_mc_spinlock_unlock_noirq(&vm->tofu_stag_lock);
+}
+
+int tofu_stag_split_vm_range_on_addr(struct process_vm *vm,
+		struct vm_range *range_low, struct vm_range *range_high,
+		uintptr_t addr)
+{
+	struct tofu_stag_range *tsr, *next;
+	int moved = 0;
+
+	ihk_mc_spinlock_lock_noirq(&vm->tofu_stag_lock);
+
+	list_for_each_entry_safe(tsr, next,
+			&range_low->tofu_stag_list, list) {
+
+		if (tsr->start >= addr) {
+			list_del(&tsr->list);
+			list_add_tail(&tsr->list, &range_high->tofu_stag_list);
+			++moved;
+
+			kprintf("%s: stag: %d @ %p:%lu moved to high range..\n",
+					__func__,
+					tsr->stag,
+					tsr->start,
+					(unsigned long)(tsr->end - tsr->start));
+		}
+
+		if (tsr->start < addr && tsr->end > addr) {
+			kprintf("%s: WARNING: VM range split in middle of stag range..\n", __func__);
+		}
+	}
+
+	ihk_mc_spinlock_unlock_noirq(&vm->tofu_stag_lock);
+
+	return moved;
+}
+
 
 
 #define TOF_UTOFU_VERSION TOF_UAPI_VERSION
@@ -1463,7 +1540,8 @@ static int tof_utofu_free_stag(struct tof_utofu_cq *ucq, int stag){
 #endif // PROFILE_ENABLE
 	kref_put(&ucq->trans.mru[stag].mbpt->kref, tof_utofu_mbpt_release);
 	ucq->trans.mru[stag].mbpt = NULL;
-	dkprintf("%s: stag: %d deallocated\n", __func__, stag);
+	dkprintf("%s: TNI: %d, CQ: %d, STAG: %d deallocated\n",
+			__func__, ucq->tni, ucq->cqid, stag);
 #ifdef PROFILE_ENABLE
 	profile_event_add(PROFILE_tofu_stag_free_stag_dealloc, rdtsc() - ts_rolling);
 	profile_event_add(PROFILE_tofu_stag_free_stag, rdtsc() - ts);
@@ -1486,7 +1564,7 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 		return -EFAULT;
 	}
 	//tof_log_if("[IN] tni=%d cqid=%d num=%u stags=%p\n", ucq->tni, ucq->cqid, req.num, req.stags);
-	dkprintf("%: [IN] tni=%d cqid=%d num=%u stags=%p\n",
+	dkprintf("%s: [IN] tni=%d cqid=%d num=%u stags=%p\n",
 			__func__, ucq->tni, ucq->cqid, req.num, req.stags);
 
 	if(req.num > 1024 || req.stags == NULL){
@@ -1559,10 +1637,8 @@ static int tof_utofu_ioctl_free_stags(struct tof_utofu_device *dev, unsigned lon
 void tof_utofu_release_cq(void *pde_data)
 {
 	struct tof_utofu_cq *ucq;
-	//int stag;
 	struct tof_utofu_device *dev;
 	unsigned long irqflags;
-	struct process_vm *vm = cpu_local_var(current)->vm;
 	int do_free = 1;
 
 	dev = (struct tof_utofu_device *)pde_data;
@@ -1574,15 +1650,10 @@ void tof_utofu_release_cq(void *pde_data)
 		do_free = 0;
 	}
 
-#if 0
-	for (stag = 0; stag < TOF_UTOFU_NUM_STAG(ucq->num_stag); stag++) {
-		linux_spin_lock_irqsave(&ucq->trans.mru_lock, irqflags);
-		tof_utofu_free_stag(ucq, stag);
-		linux_spin_unlock_irqrestore(&ucq->trans.mru_lock, irqflags);
-#endif
 	{
 		int i;
 		struct tofu_stag_range *tsr, *next;
+		struct process_vm *vm = cpu_local_var(current)->vm;
 
 		ihk_mc_spinlock_lock_noirq(&vm->tofu_stag_lock);
 		for (i = 0; i < TOFU_STAG_HASH_SIZE; ++i) {
@@ -1608,6 +1679,17 @@ void tof_utofu_release_cq(void *pde_data)
 			}
 		}
 		ihk_mc_spinlock_unlock_noirq(&vm->tofu_stag_lock);
+	}
+
+	/* Loop through as well just to make sure everything is cleaned up */
+	if (do_free) {
+		int stag;
+
+		for (stag = 0; stag < TOF_UTOFU_NUM_STAG(ucq->num_stag); stag++) {
+			linux_spin_lock_irqsave(&ucq->trans.mru_lock, irqflags);
+			tof_utofu_free_stag(ucq, stag);
+			linux_spin_unlock_irqrestore(&ucq->trans.mru_lock, irqflags);
+		}
 	}
 
 	dkprintf("%s: UCQ (pde: %p) TNI %d, CQ %d\n",
@@ -2356,9 +2438,10 @@ void tof_utofu_finalize(void)
 			list_for_each_entry_safe(tsr, next,
 					&vm->tofu_stag_hash[i], hash) {
 
-				dkprintf("%s: WARNING: stray stag %d for TNI %d CQ %d?\n",
-						__func__, tsr->stag, tsr->ucq->tni, tsr->ucq->cqid);
-
+				dkprintf("%s: WARNING: stray stag %d (%p:%lu) for TNI %d CQ %d?\n",
+						__func__, tsr->stag,
+						tsr->start, tsr->end - tsr->start,
+						tsr->ucq->tni, tsr->ucq->cqid);
 			}
 		}
 		kprintf("%s: STAG processing done\n", __func__);
