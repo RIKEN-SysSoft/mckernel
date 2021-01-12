@@ -961,8 +961,18 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	newrange->pgshift = range->pgshift;
 	newrange->private_data = range->private_data;
 
-	/* TODO: figure out which entries to put on which list! */
 	INIT_LIST_HEAD(&newrange->tofu_stag_list);
+	{
+		extern int tofu_stag_split_vm_range_on_addr(struct process_vm *vm,
+				struct vm_range *range_low, struct vm_range *range_high,
+				uintptr_t addr);
+
+		int moved =
+			tofu_stag_split_vm_range_on_addr(vm, range, newrange, addr);
+		if (moved > 0) {
+			kprintf("%s: moved %d stag ranges\n", __func__, moved);
+		}
+	}
 
 	if (range->memobj) {
 		memobj_ref(range->memobj);
@@ -1174,7 +1184,7 @@ straight_out:
 
 		entries = tofu_stag_range_remove_overlapping(vm, range);
 		if (entries > 0) {
-			kprintf("%s: removed %d Tofu stag entries for range 0x%lx:%lu\n",
+			dkprintf("%s: removed %d Tofu stag entries for range 0x%lx:%lu\n",
 				__func__,
 				entries,
 				range->start,

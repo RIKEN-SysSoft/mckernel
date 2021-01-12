@@ -6,10 +6,25 @@ CURRENT_DIR=`pwd`
 
 cd ${SCRIPT_DIR}
 
-DWARF_TOOL=~/src/mckernel-apollo+a64fx/mckernel/tools/dwarf-extract-struct/dwarf-extract-struct
+DWARF_TOOL=${SCRIPT_DIR}/../../../tools/dwarf-extract-struct/dwarf-extract-struct
+if [ ! -x ${DWARF_TOOL} ]; then
+	echo "error: couldn't find DWARF extractor executable (${DWARF_TOOL}), have you compiled it?"
+	cd -
+	exit 1
+fi
+
+echo "Looking for Tofu driver debug symbols..."
+if [ "`find /lib/modules/ -name "tof_module.tar.gz" | xargs -r ls -t | head -n 1 | wc -l`" == "0" ]; then
+	echo "error: couldn't find Tofu modules with debug symbols"
+	cd -
+	exit 1
+fi
+
+MODULE_TAR_GZ=`find /lib/modules/ -name "tof_module.tar.gz" | xargs ls -t | head -n 1`
+echo "Using Tofu driver debug symbols: ${MODULE_TAR_GZ}"
 
 KMODULE=tof_utofu.ko 
-if ! tar zxvf /lib/modules/`uname -r`+debug/extra/tof_module.tar.gz ${KMODULE} 2>&1 > /dev/null; then
+if ! tar zxvf ${MODULE_TAR_GZ} ${KMODULE} 2>&1 > /dev/null; then
 	echo "error: uncompressing kernel module with debug symbols"
 	cd -
 	exit 1
@@ -22,7 +37,7 @@ ${DWARF_TOOL} ${KMODULE} tof_utofu_bg common tni bgid bch | sed "s/struct FILL_I
 rm ${KMODULE}
 
 KMODULE=tof_core.ko 
-if ! tar zxvf /lib/modules/`uname -r`+debug/extra/tof_module.tar.gz ${KMODULE} 2>&1 > /dev/null; then
+if ! tar zxvf ${MODULE_TAR_GZ} ${KMODULE} 2>&1 > /dev/null; then
 	echo "error: uncompressing kernel module with debug symbols"
 	cd -
 	exit 1
@@ -33,4 +48,4 @@ ${DWARF_TOOL} ${KMODULE} tof_core_bg lock reg irq subnet gpid sighandler | sed "
 rm ${KMODULE}
 
 #cat tofu_generated*.h
-cd -
+cd - > /dev/null
