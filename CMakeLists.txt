@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.11)
 
 if (NOT CMAKE_BUILD_TYPE)
 	set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type: Debug Release..." FORCE)
@@ -76,6 +76,22 @@ endif()
 if(ENABLE_FUGAKU_HACKS)
 	add_definitions(-DENABLE_FUGAKU_HACKS)
 	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_FUGAKU_HACKS")
+endif()
+
+# krm that mandates reserved memory amount >= available at boot time?
+execute_process(COMMAND bash -c "rpm -qi FJSVpxkrm-plugin-mckernel | awk '$1 == \"Version\" && $2 == \":\" { print $3 }'"
+  OUTPUT_VARIABLE KRM_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+message("KRM_VERSION: ${KRM_VERSION}")
+
+if(NOT "${KRM_VERSION}" STREQUAL "" AND "${KRM_VERSION}" VERSION_LESS_EQUAL 4.0.1)
+	option(ENABLE_KRM_WORKAROUND "krm workaround" ON)
+else()
+	option(ENABLE_KRM_WORKAROUND "krm workaround" OFF)
+endif()
+
+if(ENABLE_KRM_WORKAROUND)
+	add_definitions(-DENABLE_KRM_WORKAROUND)
+	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_KRM_WORKAROUND")
 endif()
 
 # SIGSTOP instead of SIGSEGV, additional IHK Linux kmsg
@@ -297,6 +313,7 @@ message("ENABLE_PERF: ${ENABLE_PERF}")
 message("ENABLE_TOFU: ${ENABLE_TOFU}")
 message("ENABLE_FUGAKU_HACKS: ${ENABLE_FUGAKU_HACKS}")
 message("ENABLE_FUGAKU_DEBUG: ${ENABLE_FUGAKU_DEBUG}")
+message("ENABLE_KRM_WORKAROUND: ${ENABLE_KRM_WORKAROUND}")
 message("PROFILE_ENABLE: ${PROFILE_ENABLE}")
 message("ENABLE_RUSAGE: ${ENABLE_RUSAGE}")
 message("ENABLE_QLMPI: ${ENABLE_QLMPI}")
