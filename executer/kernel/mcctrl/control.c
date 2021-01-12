@@ -279,7 +279,12 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 #else
 	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
 #endif
-	
+
+	if (!rpm) {
+		pr_err("%s(): error: invalid remote address\n", __func__);
+		return -EFAULT;
+	}
+
 	if (pt.direction == MCEXEC_UP_TRANSFER_TO_REMOTE) {
 		if (copy_from_user(rpm, pt.userp, pt.size)) {
 			ret = -EFAULT;
