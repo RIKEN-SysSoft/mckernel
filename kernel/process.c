@@ -833,6 +833,8 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		range->objoff = src_range->objoff;
 		range->pgshift = src_range->pgshift;
 		range->private_data = src_range->private_data;
+		range->straight_start = src_range->straight_start;
+
 		if (range->memobj) {
 			memobj_ref(range->memobj);
 		}
