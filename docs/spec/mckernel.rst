@@ -2,8 +2,6 @@
    :suffix: .
    :depth: 3
 
-Interfaces
-==========
-
-Interface details
-=================
+Specifications
+==============
+The specifications pdf is :download:`here <mckernel.pdf>`
