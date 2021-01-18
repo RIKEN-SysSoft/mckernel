@@ -2,17 +2,6 @@
    :suffix: .
    :depth: 3
 
-External Specs
+Specifications
 ==============
-
-Overview
---------
-
-Function Specs
---------------
-
-Command / Daemon Specs
-----------------------
-
-Booting LWK
-===========
+pdf file of the specifications :download:`ihk.pdf <ihk.pdf>`
