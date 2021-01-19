@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "e21697b4_c3c9ccb7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2021-01-19T02:30:36Z",
+      "side": 1,
+      "message": "brkによるregion拡張の際に、拡張先のvm_rangeの存在チェックも行うようにしました。",
+      "revId": "4d4d08cbcd5cda4c14d8b01770cd1223790d29b1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "c319f5a1_0561d7bc",
         "filename": "kernel/process.c",
         "patchSetId": 2
