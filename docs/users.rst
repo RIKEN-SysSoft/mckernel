@@ -34,6 +34,19 @@ For example, with Fujitsu Technical Computing Suite (TCS), you need to specify `
 
    #PJM -L jobenv=mck1
 
+(Optional, Fujitsu TCS only) Specify boot parameters
+----------------------------------------------------
+
+You can specify the boot parameters by defining environmental variables and pass them to Fujitsu TCS.
+The parameters include the resource reservation settings, resource reservation amount, kernel arguments and routing of message channels between McKernel CPUs and Linux CPUs.
+See `IHK Specifications - ihk_create_os_str() <spec/ihk.html>`__ for the parameter names and allowed values.
+The example of setting the memory amount is shown below.
+
+.. code-block:: none
+
+   export IHK_MEM="7G@4,7G@5,7G@6,7G@7"
+   pjsub -X run.sh
+
 Insert ``mcexec`` into the command line
 ---------------------------------------
 
