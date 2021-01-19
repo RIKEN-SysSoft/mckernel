@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 test -e /tmp/xpmem.share && rm -f /tmp/xpmem.share
 test -e /tmp/xpmem.lock && rm -f /tmp/xpmem.lock
 
@@ -10,6 +8,6 @@ done
 echo 0 > /tmp/xpmem.lock
 
 # Run the main test app
-mcexec $PWD/xpmem_master
+(cd $XPMEM_BUILD_DIR/test/ && ${MCEXEC} ./xpmem_master)
 exit 0
 

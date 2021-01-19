@@ -4,7 +4,7 @@ USELTP=0
 USEOSTEST=0
 
 XPMEM_DIR=$HOME/usr
-XPMEM_BUILD_DIR=/home/satoken/xpmem
+XPMEM_BUILD_DIR=$HOME/project/src/xpmem
 
 arch=`uname -p`
 if [ -f "./${arch}_config" ]; then
@@ -16,6 +16,7 @@ fi
 
 . ../../common.sh
 
+if false; then
 sudo insmod ${XPMEM_DIR}/lib/modules/`uname -r`/xpmem.ko
 sudo chmod og+rw /dev/xpmem
 
@@ -160,6 +161,7 @@ else
 	echo "*** C${issue}T${tid}: FAILED"
 fi
 echo ""
+fi
 
 tid=05
 ng=0
@@ -167,9 +169,9 @@ echo "*** C${issue}T${tid} start *******************************"
 echo "** xpmem testsuite"
 cwd=`pwd`
 cd ${XPMEM_BUILD_DIR}/test
-${cwd}/mc_run.sh
+. ${cwd}/mc_run.sh
 cd ${cwd}
-
+exit 0
 # xpmem basic test
 ${MCEXEC} ./XTP_001
 ${MCEXEC} ./XTP_002
