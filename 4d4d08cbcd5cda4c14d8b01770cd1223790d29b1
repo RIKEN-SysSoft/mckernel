@@ -20,6 +20,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "965b0ecc_d1e330d3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-01-19T05:32:23Z",
+      "side": 1,
+      "message": "AI\ntest結果を見る\nsubmitする",
+      "revId": "4d4d08cbcd5cda4c14d8b01770cd1223790d29b1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "c319f5a1_0561d7bc",
         "filename": "kernel/process.c",
         "patchSetId": 2
