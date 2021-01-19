@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c319f5a1_0561d7bc",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 2754,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-01-19T01:56:37Z",
+      "side": 1,
+      "message": "WARNING: \u0027extention\u0027 may be misspelled - perhaps \u0027extension\u0027?\n+\t\tdkprintf(\"%s: warning: vm_range for extention already exists\\n\",",
+      "revId": "4d4d08cbcd5cda4c14d8b01770cd1223790d29b1",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
