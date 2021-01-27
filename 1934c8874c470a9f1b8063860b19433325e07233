@@ -1,0 +1,44 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "46e624fa_d3a8210b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-01-27T01:05:58Z",
+      "side": 1,
+      "message": "AI\naarch64でshmt09がPASSすることを確認するように修正する\nsubmit",
+      "revId": "1934c8874c470a9f1b8063860b19433325e07233",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "79f25eae_408c5d17",
+        "filename": "test/issues/1512/C1512.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-01-27T01:05:58Z",
+      "side": 1,
+      "message": "if [[ $(uname -p) \u003d\u003d \"aarch64\" ]]; then\n...\nfi",
+      "range": {
+        "startLine": 15,
+        "startChar": 0,
+        "endLine": 15,
+        "endChar": 41
+      },
+      "revId": "1934c8874c470a9f1b8063860b19433325e07233",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
