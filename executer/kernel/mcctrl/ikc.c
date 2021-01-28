@@ -536,9 +536,6 @@ int prepare_ikc_channels(ihk_os_t os)
 	usrdata->os = os;
 	ihk_host_os_set_usrdata(os, usrdata);
 
-	ihk_ikc_listen_port(os, &lp_ikc2linux);
-	ihk_ikc_listen_port(os, &lp_ikc2mckernel);
-
 	init_waitqueue_head(&usrdata->wq_procfs);
 	mutex_init(&usrdata->reserve_lock);
 	mutex_init(&usrdata->part_exec_lock);
@@ -554,6 +551,18 @@ int prepare_ikc_channels(ihk_os_t os)
 
 	INIT_LIST_HEAD(&usrdata->wakeup_descs_list);
 	spin_lock_init(&usrdata->wakeup_descs_lock);
+
+	/* ihk_ikc_listen_port should be performed after
+	 * usrdata->cpu_topology_list is initialized because the
+	 * function enables syscall_packet_handler (through
+	 * lp_ikc2linux.handler) which accesses
+	 * usrdata->cpu_topology_list (the call path is
+	 * sysfsm_packet_handler --> sysfsm_work_main -->
+	 * --> sysfsm_setup --> setup_sysfs_files -->
+	 * setup_cpus_sysfs_files).
+	 */
+	ihk_ikc_listen_port(os, &lp_ikc2linux);
+	ihk_ikc_listen_port(os, &lp_ikc2mckernel);
 
 	return 0;
 
