@@ -1510,7 +1510,7 @@ int add_process_memory_range(struct process_vm *vm,
 	}
 	else if (flag & VR_XPMEM) {
 		range->memobj->flags |= MF_XPMEM;
-		rc = xpmem_update_process_page_table(vm, range);
+		// xpmem_update_process_page_table() is called in do_mmap()
 	}
 	else if (flag & VR_DEMAND_PAGING) {
 		dkprintf("%s: range: 0x%lx - 0x%lx is demand paging\n",
