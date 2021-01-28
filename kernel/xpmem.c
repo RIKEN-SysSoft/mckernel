@@ -1027,10 +1027,15 @@ static int xpmem_attach(
 		return -EINVAL;
 	}
 
+#ifdef ENABLE_FJMPI_WORKAROUND
+	/* Truncate size at page boundaries */
+	size = (size & ~(PAGE_SIZE - 1));
+#else
 	/* If the size is not page aligned, fix it */
 	if (offset_in_page(size) != 0) {
 		size += PAGE_SIZE - offset_in_page(size);
 	}
+#endif
 
 	ap_tg = xpmem_tg_ref_by_apid(apid);
 	if (IS_ERR(ap_tg))
