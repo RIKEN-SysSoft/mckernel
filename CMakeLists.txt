@@ -78,6 +78,22 @@ if(ENABLE_FUGAKU_HACKS)
 	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_FUGAKU_HACKS")
 endif()
 
+# Fujitsu MPI tries to xpmem-attach segment with size of range size + 1?
+execute_process(COMMAND bash -c "module list | awk '/lang/ {print $2}' | grep -o '[0-9]*\\.[0-9]*\\.[0-9]*'"
+  OUTPUT_VARIABLE FJMPI_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+message("FJMPI_VERSION: ${FJMPI_VERSION}")
+
+if(NOT "${FJMPI_VERSION}" STREQUAL "" AND "${FJMPI_VERSION}" VERSION_LESS_EQUAL 1.2.29)
+	option(ENABLE_FJMPI_WORKAROUND "Fujitsu MPI workaround" ON)
+else()
+	option(ENABLE_FJMPI_WORKAROUND "Fujitsu MPI workaround" OFF)
+endif()
+
+if(ENABLE_FJMPI_WORKAROUND)
+	add_definitions(-DENABLE_FJMPI_WORKAROUND)
+	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_FJMPI_WORKAROUND")
+endif()
+
 # krm that mandates reserved memory amount >= available at boot time?
 execute_process(COMMAND bash -c "rpm -qi FJSVpxkrm-plugin-mckernel | awk '$1 == \"Version\" && $2 == \":\" { print $3 }'"
   OUTPUT_VARIABLE KRM_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -314,6 +330,7 @@ message("ENABLE_TOFU: ${ENABLE_TOFU}")
 message("ENABLE_FUGAKU_HACKS: ${ENABLE_FUGAKU_HACKS}")
 message("ENABLE_FUGAKU_DEBUG: ${ENABLE_FUGAKU_DEBUG}")
 message("ENABLE_KRM_WORKAROUND: ${ENABLE_KRM_WORKAROUND}")
+message("ENABLE_FJMPI_WORKAROUND: ${ENABLE_FJMPI_WORKAROUND}")
 message("PROFILE_ENABLE: ${PROFILE_ENABLE}")
 message("ENABLE_RUSAGE: ${ENABLE_RUSAGE}")
 message("ENABLE_QLMPI: ${ENABLE_QLMPI}")
