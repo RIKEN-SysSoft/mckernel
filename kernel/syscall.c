@@ -2078,7 +2078,8 @@ straight_out:
 		}
 		p2align = pgshift - PAGE_SHIFT;
 	}
-	else if ((((flags & MAP_PRIVATE) && (flags & MAP_ANONYMOUS))
+	else if ((((flags & (MAP_PRIVATE | MAP_SHARED))
+			&& (flags & MAP_ANONYMOUS))
 			|| (vrf0 & VR_XPMEM))
 		    && !proc->thp_disable) {
 		pgshift = 0;		/* transparent huge page */
@@ -2353,7 +2354,7 @@ straight_out:
 		memset(&ads, 0, sizeof(ads));
 		ads.shm_segsz = len;
 		ads.shm_perm.mode = SHM_DEST;
-		ads.init_pgshift = PAGE_SHIFT;
+		ads.init_pgshift = PAGE_SHIFT + p2align;
 		error = shmobj_create(&ads, &memobj);
 		if (error) {
 			ekprintf("do_mmap:shmobj_create failed. %d\n", error);
