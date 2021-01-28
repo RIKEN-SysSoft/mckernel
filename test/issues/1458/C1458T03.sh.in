@@ -1,0 +1,38 @@
+#!/usr/bin/bash
+
+SCRIPT_PATH=$(readlink -m "${BASH_SOURCE[0]}")
+SCRIPT_NAME="${SCRIPT_PATH##*/}"
+
+# prepare recorddir
+. @CMAKE_INSTALL_PREFIX@/bin/common.sh
+recorddir=$WORKDIR/output/$SCRIPT_NAME
+[[ ! -d $recorddir ]] && mkdir -p $recorddir
+
+issue="1458"
+tid=03
+tname=`printf "C${issue}T%02d" ${tid}`
+
+echo "*** ${tname} start *******************************"
+ng=0
+for mapps in ${PS_LIST}
+do
+	for unmapps in ${PS_LIST}
+	do
+		if [ $unmapps -ge $mapps ]; then
+			continue
+		fi
+	    log_file=$recorddir/${SCRIPT_NAME}.log
+		echo "** Map pgshift:${mapps} Unmap pgshift:${unmapps}" | tee $log_file
+		sudo @WITH_MCK@/bin/mcexec @CMAKE_INSTALL_PREFIX@/bin/${tname} ${mapps} ${unmapps} | tee $log_file
+		if [ $? -ne 0 ]; then
+			$((++ng))
+		fi
+	done
+done
+if [ $ng -eq 0 ]; then
+	echo "*** ${tname} PASSED ******************************"
+else
+	echo "*** ${tname} FAILED ******************************"
+fi
+exit $ng
+

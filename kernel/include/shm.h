@@ -107,5 +107,6 @@ void shmobj_list_unlock(void);
 int shmobj_create_indexed(struct shmid_ds *ds, struct shmobj **objp);
 void shmlock_user_free(struct shmlock_user *user);
 int shmlock_user_get(uid_t ruid, struct shmlock_user **userp);
+struct shmobj *to_shmobj(struct memobj *memobj);
 
 #endif /* HEADER_SHM_H */
