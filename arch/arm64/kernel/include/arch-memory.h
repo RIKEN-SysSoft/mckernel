@@ -783,32 +783,8 @@ static inline pte_t *get_contiguous_tail(pte_t *__ptep, size_t __pgsize)
 	return  (pte_t *)__page_align_up(__ptep + 1, align) - 1;
 }
 
-static inline int split_contiguous_pages(pte_t *ptep, size_t pgsize)
-{
-	int ret;
-	pte_t *head = get_contiguous_head(ptep, pgsize);
-	pte_t *tail = get_contiguous_tail(ptep, pgsize);
-	pte_t *ptr;
-
-	uintptr_t phys;
-	struct page *page;
-
-	phys = pte_get_phys(head);
-	page = phys_to_page(phys);
-	if (page && (page_is_in_memobj(page)
-		     || page_is_multi_mapped(page))) {
-		ret = -EINVAL;
-		goto out;
-	}
-
-	for (ptr = head; ptr <= tail; ptr++) {
-		*ptr &= ~PTE_CONT;
-	}
-
-	ret = 0;
-out:
-	return ret;
-}
+int split_contiguous_pages(pte_t *ptep, size_t pgsize,
+		uint32_t memobj_flags);
 
 static inline int page_is_contiguous_head(pte_t *ptep, size_t pgsize)
 {

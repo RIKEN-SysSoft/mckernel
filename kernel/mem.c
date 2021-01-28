@@ -46,6 +46,7 @@
 #include <ihk/debug.h>
 #include <llist.h>
 #include <bootparam.h>
+#include <memobj.h>
 
 //#define DEBUG_PRINT_MEM
 
@@ -2976,4 +2977,19 @@ int lookup_node(struct process_vm *vm, void *addr)
 	node = phys_to_nid(pte_get_phys(ptep));
 out:
 	return node;
+}
+
+int is_splitable(struct page *page, uint32_t memobj_flags)
+{
+	int ret = 1;
+
+	if (page && (page_is_in_memobj(page)
+			|| page_is_multi_mapped(page))) {
+		if (memobj_flags & MF_SHM) {
+			goto out;
+		}
+		ret = 0;
+	}
+out:
+	return ret;
 }
