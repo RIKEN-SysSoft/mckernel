@@ -1027,10 +1027,19 @@ static int xpmem_attach(
 		return -EINVAL;
 	}
 
+#ifdef ENABLE_FJMPI_WORKAROUND
+	/* Truncate size at page boundary because Fujitsu MPI
+	 * erroneously passes (source range size + 1) as "size"
+	 */
+	size = (size & ~(PAGE_SIZE - 1));
+#else
 	/* If the size is not page aligned, fix it */
 	if (offset_in_page(size) != 0) {
 		size += PAGE_SIZE - offset_in_page(size);
 	}
+#endif
+
+	XPMEM_DEBUG("size after fix: 0x%lx", size);
 
 	ap_tg = xpmem_tg_ref_by_apid(apid);
 	if (IS_ERR(ap_tg))
