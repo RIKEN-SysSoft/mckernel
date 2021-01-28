@@ -1817,11 +1817,11 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	size_t len = len0;
 	size_t populate_len = 0;
 	off_t off;
-	int error;
+	int error = 0;
 	intptr_t npages;
 	int p2align;
 	void *p = NULL;
-	int vrflags;
+	int vrflags = VR_NONE;
 	uintptr_t phys;
 	intptr_t straight_phys;
 	struct memobj *memobj = NULL;
@@ -2119,7 +2119,7 @@ straight_out:
 	}
 	else if (flags & MAP_ANONYMOUS) {
 		/* Obtain mapping address */
-		if (vrf0 && VR_XPMEM) {
+		if (vrf0 & VR_XPMEM) {
 			/* Fit address format to segment area */
 			struct xpmem_attachment *att;
 			uintptr_t prev_addr;
@@ -2493,6 +2493,17 @@ out:
 		(void)set_host_vma(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, 1/* holding memory_range_lock */);
 	}
 	ihk_rwspinlock_write_unlock_noirq(&thread->vm->memory_range_lock);
+
+	if (!error && range && (range->memobj) &&
+			(range->memobj->flags & MF_XPMEM)) {
+		error = xpmem_update_process_page_table(thread->vm, range);
+		if (error) {
+			ekprintf("%s: xpmem_update_process_page_table(): "
+				"vm: %p, range: %lx-%lx failed %d\n",
+				__func__, thread->vm,
+				range->start, range->end, error);
+		}
+	}
 
 	if (!error && populated_mapping &&
 			!((vrflags & VR_PROT_MASK) == VR_PROT_NONE) && !range->straight_start) {
