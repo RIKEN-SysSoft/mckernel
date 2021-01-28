@@ -1,0 +1,19 @@
+#!/usr/bin/sh
+
+# expecting this script is on <autotest>/shmobj/install/bin
+SCRIPT_PATH=$(readlink -m "${BASH_SOURCE[0]}")
+AUTOTEST_HOME="${SCRIPT_PATH%/*/*/*/*}"
+if [[ -e ${AUTOTEST_HOME}/bin/config.sh ]]; then
+    . ${AUTOTEST_HOME}/bin/config.sh
+else
+    WORKDIR=$(pwd)
+fi
+
+arch=`uname -p`
+if [ -f @CMAKE_INSTALL_PREFIX@/etc/${arch}.conf ]; then
+	. @CMAKE_INSTALL_PREFIX@/etc/${arch}.conf
+else
+	echo "unknown arch: $1"
+	exit 1
+fi
+
