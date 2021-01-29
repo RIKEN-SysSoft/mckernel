@@ -1957,14 +1957,14 @@ opendev()
 			fprintf(stderr, "%s: warning: LD_PRELOAD line is too long\n", __FUNCTION__); \
 			return; \
 		} \
-		strncat(envbuf, elembuf, remainder); \
+		strncat(envbuf, elembuf, remainder - 1); \
 		remainder = PATH_MAX - (strlen(envbuf) + 1); \
 		nelem++; \
 	} while (0)
 
 static ssize_t find_libdir(char *libdir, size_t len)
 {
-	FILE *filep;
+	FILE *filep = NULL;
 	ssize_t rc;
 	size_t linelen = 0;
 	char *line = NULL;
@@ -2020,7 +2020,9 @@ static ssize_t find_libdir(char *libdir, size_t len)
 	}
 
 out:
-	pclose(filep);
+	if (filep) {
+		pclose(filep);
+	}
 	free(line);
 	return rc;
 }
