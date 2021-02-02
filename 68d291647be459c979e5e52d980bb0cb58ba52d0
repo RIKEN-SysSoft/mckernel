@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "2b4cdb6a_7bfe50b1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-02T07:15:01Z",
+      "side": 1,
+      "message": "CT33\u0027.cを増やすのではなく、CT33.cをLinuxでWAIT、McKernelでWAKEするものに置き換えた。→OK。OKとして良い理由は、元々のCT32.cとCT33.cは実質同じだったため。\n\nAI\n富岳上での修正を追加してsubmit\n",
+      "revId": "68d291647be459c979e5e52d980bb0cb58ba52d0",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "24111c08_951997cf",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 7
