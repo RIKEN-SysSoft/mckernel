@@ -214,3 +214,9 @@ Limitations
     ::
 
        sudo systemctl restart xos_hwb
+
+31. System calls can write the mcexec VMAs with PROT_WRITE flag not
+    set. This is because we never turn off PROT_WRITE of the mcexec
+    VMAs to circumvent the issue "set_host_vma(): do NOT read protect
+    Linux VMA".
+
