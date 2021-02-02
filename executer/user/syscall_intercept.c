@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <libsyscall_intercept_hook_point.h>
 #include <errno.h>
 #include <stdio.h>
@@ -10,9 +11,11 @@
 #include "../include/uti.h"
 #include "./archdep_uti.h"
 
+#define DEBUG_UTI
+
 static struct uti_desc uti_desc;
 
-#define DEBUG_UTI
+static __thread int on_linux = -1;
 
 static int
 hook(long syscall_number,
@@ -21,22 +24,29 @@ hook(long syscall_number,
 	 long arg4, long arg5,
 	 long *result)
 {
-	//return 1; /* debug */
-	int tid = uti_syscall0(__NR_gettid);
 	struct terminate_thread_desc term_desc;
 	unsigned long code;
 	int stack_top;
 	long ret;
-		
+
 	if (!uti_desc.start_syscall_intercept) {
 		return 1; /* System call isn't taken over */
 	}
-	if (tid != uti_desc.mck_tid) {
+
+	/* new thread */
+	if (on_linux == -1) {
+		int tid = uti_syscall0(__NR_gettid);
+
+		on_linux = (tid == uti_desc.mck_tid) ? 1 : 0;
+	}
+
+	if (on_linux == 0) {
 		if (uti_desc.syscalls2 && syscall_number >= 0 && syscall_number < 512) {
 			uti_desc.syscalls2[syscall_number]++;
 		}
 		return 1;
 	}
+
 #ifdef DEBUG_UTI
 	if (uti_desc.syscalls && syscall_number >= 0 && syscall_number < 512) {
 		uti_desc.syscalls[syscall_number]++;
