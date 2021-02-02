@@ -1,6 +1,12 @@
 #ifndef UTI_H_INCLUDED
 #define UTI_H_INCLUDED
 
+/* copied from kernel/include/process.h */
+#define UTI_STATE_DEAD 0
+#define UTI_STATE_PROLOGUE 1
+#define UTI_STATE_RUNNING_IN_LINUX 2
+#define UTI_STATE_EPILOGUE 3
+
 struct syscall_struct {
 	int number;
 	unsigned long args[6];

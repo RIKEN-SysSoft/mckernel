@@ -3,15 +3,53 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <syscall.h>
+#include <pthread.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include "../include/uprotocol.h"
 #include "../include/uti.h"
 #include "./archdep_uti.h"
 
-static struct uti_desc uti_desc;
-
 #define DEBUG_UTI
+
+static struct uti_desc uti_desc;
+static __thread int uti_state;
+typedef int (*__pthread_create_fn)(pthread_t *thread,
+		const pthread_attr_t *attr,
+		void *(*start_routine)(void *arg),
+		void *arg);
+static __pthread_create_fn orig_pthread_create;
+struct wrapper_arg {
+	void *(*start_routine)(void *arg);
+	void *arg;
+};
+static struct wrapper_arg _arg;
+
+static void *_start_routine(void *(*start_routine)(void *),
+			    void *arg)
+{
+	uti_state = uti_syscall0(734);
+
+	return arg->start_routine(arg->arg);
+}
+
+#undef pthread_create
+int pthread_create(pthread_t *thread,
+		const pthread_attr_t *attr,
+		void *(*start_routine)(void *),
+		void *arg)
+{
+	if (!orig_pthread_create) {
+		orig_pthread_create =
+			(__pthread_create_fn)dlsym(RTLD_NEXT,
+						   "pthread_create");
+	}
+
+	_arg.start_routine = start_routine;
+	_arg.arg = arg;
+
+	return orig_pthread_create(thread, attr, _start_routine, &_arg);
+}
 
 static int
 hook(long syscall_number,
@@ -20,8 +58,6 @@ hook(long syscall_number,
 	 long arg4, long arg5,
 	 long *result)
 {
-	//return 1; /* debug */
-	int tid = uti_syscall0(__NR_gettid);
 	struct terminate_thread_desc term_desc;
 	unsigned long code;
 	int stack_top;
@@ -30,7 +66,7 @@ hook(long syscall_number,
 	if (!uti_desc.start_syscall_intercept) {
 		return 1; /* System call isn't taken over */
 	}
-	if (tid != uti_desc.mck_tid) {
+	if (uti_state != UTI_STATE_RUNNING_IN_LINUX) {
 		if (uti_desc.syscalls2 && syscall_number >= 0 && syscall_number < 512) {
 			uti_desc.syscalls2[syscall_number]++;
 		}

@@ -10675,6 +10675,13 @@ SYSCALL_DECLARE(util_indicate_clone)
 	return 0;
 }
 
+SYSCALL_DECLARE(util_get_state)
+{
+	struct thread *thread = cpu_local_var(current);
+
+	return thread->uti_state;
+}
+
 SYSCALL_DECLARE(get_system)
 {
 	return 0;

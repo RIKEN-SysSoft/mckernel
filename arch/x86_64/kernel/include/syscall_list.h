@@ -174,6 +174,7 @@ SYSCALL_HANDLED(730, util_migrate_inter_kernel)
 SYSCALL_HANDLED(731, util_indicate_clone)
 SYSCALL_HANDLED(732, get_system)
 SYSCALL_HANDLED(733, util_register_desc)
+SYSCALL_HANDLED(734, util_get_state)
 
 /* McKernel Specific */
 SYSCALL_HANDLED(801, swapout)
