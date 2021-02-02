@@ -202,3 +202,9 @@ Limitations
 28. munlockall() is not supported and returns zero.
 
 29. scheduling behavior is not Linux compatible. For example, sometimes one of the two processes on the same CPU continues to run after yielding.
+
+30. System calls can write the mcexec VMAs with PROT_WRITE flag not
+    set. This is because we never turn off PROT_WRITE of the mcexec
+    VMAs to circumvent the issue "set_host_vma(): do NOT read protect
+    Linux VMA".
+
