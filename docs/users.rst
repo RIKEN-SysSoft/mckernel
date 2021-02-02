@@ -202,3 +202,11 @@ Limitations
 28. munlockall() is not supported and returns zero.
 
 29. scheduling behavior is not Linux compatible. For example, sometimes one of the two processes on the same CPU continues to run after yielding.
+
+30. system calls that call copy_to_user() won't check if PROT_WRITE of
+    the destination VMA is set.
+    This happens because we never turn off PROT_WRITE of the mcexec VMAs
+    to fix the issue "set_host_vma(): do NOT read protect Linux VMA".
+    The scope of the fault caused by this restriction is limited,
+    i.e., the user process VMA.
+
