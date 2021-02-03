@@ -3998,6 +3998,7 @@ int main_loop(struct thread_data_s *my_thread)
 #endif
 
 		case __NR_gettid:{
+			int rc = 0;
 			/*
 			 * Number of TIDs and the remote physical address where TIDs are
 			 * expected are passed in arg 4 and 5, respectively.
@@ -4009,6 +4010,7 @@ int main_loop(struct thread_data_s *my_thread)
 				int *tids = malloc(sizeof(int) * w.sr.args[4]);
 				if (!tids) {
 					fprintf(stderr, "__NR_gettid(): error allocating TIDs\n");
+					rc = -ENOMEM;
 					goto gettid_out;
 				}
 
@@ -4029,13 +4031,14 @@ int main_loop(struct thread_data_s *my_thread)
 				trans.direction = MCEXEC_UP_TRANSFER_TO_REMOTE;
 
 				if (ioctl(fd, MCEXEC_UP_TRANSFER, &trans) != 0) {
+					rc = -EFAULT;
 					fprintf(stderr, "__NR_gettid(): error transfering TIDs\n");
 				}
 
 				free(tids);
 			}
 gettid_out:
-			do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
+			do_syscall_return(fd, cpu, rc, 0, 0, 0, 0);
 			break;
 		}
 
