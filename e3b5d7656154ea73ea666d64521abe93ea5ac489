@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "4ab2207b_6c5f10b0",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-03T02:06:44Z",
+      "side": 1,
+      "message": "コードレビュー、テスト結果レビュー完了\n\nAI:\nsubmit",
+      "revId": "e3b5d7656154ea73ea666d64521abe93ea5ac489",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "22e4f686_1f4c1efb",
         "filename": "test/issues/1555/C1555.c",
         "patchSetId": 1
