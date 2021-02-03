@@ -270,16 +270,17 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 		return -EFAULT;
 	}
 
+#ifdef CONFIG_MIC
 	if (pt.size > PAGE_SIZE) {
 		printk("mcexec_transfer_image(): ERROR: size exceeds PAGE_SIZE\n");
 		return -EFAULT;
 	}
-	
+
 	phys = ihk_device_map_memory(ihk_os_to_dev(os), pt.rphys, PAGE_SIZE);
-#ifdef CONFIG_MIC
 	rpm = ioremap_wc(phys, PAGE_SIZE);
 #else
-	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, PAGE_SIZE, NULL, 0);
+	phys = ihk_device_map_memory(ihk_os_to_dev(os), pt.rphys, pt.size);
+	rpm = ihk_device_map_virtual(ihk_os_to_dev(os), phys, pt.size, NULL, 0);
 #endif
 
 	if (!rpm) {
@@ -304,10 +305,11 @@ int mcexec_transfer_image(ihk_os_t os, struct remote_transfer *__user upt)
 
 #ifdef CONFIG_MIC
 	iounmap(rpm);
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);
 #else
-	ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, PAGE_SIZE);
+	ihk_device_unmap_virtual(ihk_os_to_dev(os), rpm, pt.size);
+	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, pt.size);
 #endif
-	ihk_device_unmap_memory(ihk_os_to_dev(os), phys, PAGE_SIZE);	
 
 	return ret;
 
