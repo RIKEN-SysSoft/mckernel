@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "07c52426_4b71ef24",
+        "filename": "kernel/futex.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:43:10Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+extern struct ihk_ikc_channel_desc **ikc2linuxs;",
+      "revId": "68bf6f9b8e5f497cb0cf978e53fe0c1fb34f0614",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3ceedadc_cc7e8d78",
+        "filename": "kernel/futex.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 247,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:43:10Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp\u003d%p,linux_cpu: %d\\n\",",
+      "revId": "68bf6f9b8e5f497cb0cf978e53fe0c1fb34f0614",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
