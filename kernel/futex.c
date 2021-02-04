@@ -73,11 +73,14 @@
 #include <ihk/debug.h>
 #include <syscall.h>
 #include <kmalloc.h>
+#include <ikc/queue.h>
 
 
 unsigned long ihk_mc_get_ns_per_tsc(void);
 
 struct futex_hash_bucket *futex_queues;
+
+extern struct ihk_ikc_channel_desc **ikc2linuxs;
 
 struct futex_hash_bucket *get_futex_queues(void)
 {
@@ -238,11 +241,18 @@ static void wake_futex(struct futex_q *q)
 
 	if (q->uti_futex_resp) { 
 		int rc;
-		dkprintf("%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp=%p\n",
-			__func__, p->tid, q->uti_futex_resp);
-
 		struct ikc_scd_packet pckt;
-		struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
+		struct ihk_ikc_channel_desc *resp_channel;
+
+		dkprintf("%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp=%p,linux_cpu: %d\n",
+			__func__, p->tid, q->uti_futex_resp, q->linux_cpu);
+
+		if (q->linux_cpu < ihk_mc_get_nr_linux_cores()) {
+			resp_channel = ikc2linuxs[q->linux_cpu];
+		} else {
+			resp_channel = cpu_local_var(ikc2linux);
+		}
+
 		pckt.msg = SCD_MSG_FUTEX_WAKE;
 		pckt.futex.resp = q->uti_futex_resp;
 		pckt.futex.spin_sleep = &p->spin_sleep;

@@ -813,6 +813,7 @@ static int futex_wait(uint32_t __user *uaddr, int fshared,
 	q->bitset = bitset;
 	q->requeue_pi_key = NULL;
 	q->uti_futex_resp = uti_info->uti_futex_resp;
+	q->linux_cpu = ihk_ikc_get_processor_id();
 
 retry:
 	/* Prepare to wait on uaddr. */
