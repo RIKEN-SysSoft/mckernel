@@ -239,7 +239,7 @@ static void wake_futex(struct futex_q *q)
 	if (q->uti_futex_resp) { 
 		int rc;
 		dkprintf("%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp=%p\n",
-				__func__, p->tid, q->uti_futex_resp);
+			__func__, p->tid, q->uti_futex_resp);
 
 		struct ikc_scd_packet pckt;
 		struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);

@@ -10,6 +10,7 @@
 #include <linux/semaphore.h>
 #include <linux/interrupt.h>
 #include <linux/cpumask.h>
+#include <linux/rbtree.h>
 #include <asm/uaccess.h>
 #include <asm/delay.h>
 #include <asm/io.h>
@@ -213,6 +214,76 @@ retry_alloc:
 	return error;
 }
 
+struct rva_to_rpa_cache_node {
+	struct rb_node node;
+	unsigned long rva;
+	unsigned long rpa;
+};
+
+void futex_remove_process(struct mcctrl_per_proc_data *ppd)
+{
+	struct rb_node *node;
+
+	while ((node = rb_first(&ppd->rva_to_rpa_cache))) {
+		struct rva_to_rpa_cache_node *cache_node;
+
+		cache_node = container_of(node, struct rva_to_rpa_cache_node,
+					  node);
+		rb_erase(node, &ppd->rva_to_rpa_cache);
+		kfree(cache_node);
+	}
+}
+
+struct rva_to_rpa_cache_node *rva_to_rpa_cache_search(struct rb_root *root,
+						      unsigned long rva)
+{
+	struct rb_node **iter = &root->rb_node, *parent = NULL;
+
+	while (*iter) {
+		struct rva_to_rpa_cache_node *inode =
+			container_of(*iter, struct rva_to_rpa_cache_node, node);
+
+		parent = *iter;
+
+		if (rva == inode->rva) {
+			return inode;
+		}
+
+		if (rva < inode->rva)
+			iter = &((*iter)->rb_left);
+		else
+			iter = &((*iter)->rb_right);
+	}
+
+	return NULL;
+}
+
+int rva_to_rpa_cache_insert(struct rb_root *root,
+			    struct rva_to_rpa_cache_node *cache_node)
+{
+	struct rb_node **iter = &root->rb_node, *parent = NULL;
+
+	while (*iter) {
+		struct rva_to_rpa_cache_node *inode =
+			container_of(*iter, struct rva_to_rpa_cache_node, node);
+
+		parent = *iter;
+
+		if (cache_node->rva == inode->rva)
+			return -EINVAL;
+
+		if (cache_node->rva < inode->rva)
+			iter = &((*iter)->rb_left);
+		else
+			iter = &((*iter)->rb_right);
+	}
+
+	rb_link_node(&cache_node->node, parent, iter);
+	rb_insert_color(&cache_node->node, root);
+
+	return 0;
+}
+
 /**
  * get_futex_key() - Get parameters which are the keys for a futex
  * @uaddr:	virtual address of the futex
@@ -238,6 +309,7 @@ get_futex_key(uint32_t *uaddr, int fshared, union futex_key *key,
 	struct mcctrl_usrdata *usrdata;
 	struct mcctrl_per_proc_data *ppd;
 	int ret = 0, error = 0;
+	struct rva_to_rpa_cache_node *cache_node;
 
 	/*
 	 * The futex address must be "naturally" aligned.
@@ -281,6 +353,17 @@ get_futex_key(uint32_t *uaddr, int fshared, union futex_key *key,
 		goto out;
 	}
 
+	/* cache because translate_rva_to_rpa calls smp_ihk_arch_dcache_flush
+	 * via ihk_device_unmap_virtual
+	 */
+	cache_node = rva_to_rpa_cache_search(&ppd->rva_to_rpa_cache,
+					     (unsigned long)uaddr);
+	if (cache_node) {
+		phys = cache_node->rpa;
+		dprintk("%s: cache hit, rva: %lx, rpa: %lx\n",
+			__func__, (unsigned long)uaddr, phys);
+		goto found;
+	}
 retry_v2p:
 	error = translate_rva_to_rpa((ihk_os_t)uti_info->os, ppd->rpgtable,
 			(unsigned long)uaddr, &phys, &pgsize);
@@ -299,6 +382,23 @@ retry_v2p:
 		goto retry_v2p;
 	}
 
+	cache_node = kmalloc(sizeof(struct rva_to_rpa_cache_node), GFP_KERNEL);
+	if (!cache_node) {
+		ret = -ENOMEM;
+		goto put_out;
+	}
+	cache_node->rva = (unsigned long)uaddr;
+	cache_node->rpa = phys;
+	dprintk("%s: cache insert, rva: %lx, rpa: %lx\n",
+		__func__, (unsigned long)uaddr, phys);
+	ret = rva_to_rpa_cache_insert(&ppd->rva_to_rpa_cache, cache_node);
+	if (ret) {
+		pr_err("%s: error: cache entry found, rva: %lx, rpa: %lx\n",
+		       __func__, (unsigned long)uaddr, phys);
+		goto put_out;
+	}
+
+ found:
 	key->shared.phys = (void *)phys;
 	key->shared.pgoff = 0;
 
@@ -444,8 +544,7 @@ static int uti_sched_wakeup_thread(struct futex_q *q, int valid_states,
 	irqstate = ihk_mc_spinlock_lock(
 			(_ihk_spinlock_t *)q->th_spin_sleep_lock);
 	if (*(int *)q->th_spin_sleep == 1) {
-		dprintk("%s: spin wakeup: cpu_id: %d\n",
-				__func__, uti_info->cpu);
+		dprintk("%s: spin wakeup: cpu_id: %d\n", __func__, uti_info->cpu);
 		status = 0;
 	}
 	*(int *)q->th_spin_sleep = 0;
@@ -477,11 +576,11 @@ static int uti_sched_wakeup_thread(struct futex_q *q, int valid_states,
 	ihk_mc_spinlock_unlock((_ihk_spinlock_t *)q->runq_lock, irqstate);
 
 	if (!status) {
-		dprintk("%s: issuing IPI, thread->cpu_id=%d\n",
-				__func__, uti_info->cpu);
+		dprintk("%s: issuing IPI, thread->cpu_id=%d, intr_id: %d\n",
+			__func__, uti_info->cpu, q->intr_id);
 
-		ihk_os_issue_interrupt(uti_info->os,
-				q->intr_id, q->intr_vector);
+		ihk_os_issue_interrupt(uti_info->os, q->intr_id,
+				       q->intr_vector);
 	}
 
 	return status;
@@ -582,6 +681,7 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 {
 	int64_t time_remain = 0;
 	unsigned long irqstate;
+
 	/*
 	 * The task state is guaranteed to be set before another task can
 	 * wake it.
@@ -606,8 +706,8 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 	queue_me(q, hb, uti_info);
 
 	if (!mc_plist_node_empty(&q->list)) {
-		dprintk("%s: tid: %d is trying to sleep\n", __func__,
-				uti_info->tid);
+		dprintk("%s: tid: %d is trying to sleep, cpu: %d\n",
+			__func__, uti_info->tid, ihk_ikc_get_processor_id());
 		/* Note that the unit of timeout is nsec */
 		time_remain = uti_wait_event(q->uti_futex_resp, timeout);
 
@@ -619,7 +719,8 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 				pr_err("%s: ERROR: wait_event returned %lld\n", __func__, time_remain);
 			}
 		}
-		dprintk("%s: tid: %d woken up\n", __func__, uti_info->tid);
+		dprintk("%s: tid: %d woken up, cpu: %d\n",
+			__func__, uti_info->tid, ihk_ikc_get_processor_id());
 	}
 
 	/* This does not need to be serialized */
@@ -1052,7 +1153,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	}
 	op = (op & FUTEX_CMD_MASK);
 
-	dprintk("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%p, uaddr2=%p, val3=%x, []=%x, shared: %d\n",
+	dprintk("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%p, uaddr2=%p, val3=%x, shared: %d\n",
 			flags,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -1061,7 +1162,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			(op == FUTEX_WAKE_BITSET) ? "FUTEX_WAKE_BITSET" :
 			(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
 			(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
-			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared);
+			(unsigned long)uaddr, val, utime, uaddr2, val3, fshared);
 
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		if (copy_from_user(&ts, utime, sizeof(ts)) != 0) {
@@ -1100,7 +1201,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	ret = futex(uaddr, op, val, timeout, uaddr2,
 			val2, val3, fshared, uti_info);
 
-	dprintk("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%p, uaddr2=%p, val3=%x, []=%x, shared: %d, ret: %d\n",
+	dprintk("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%p, uaddr2=%p, val3=%x, shared: %d, ret: %d\n",
 			op,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -1109,7 +1210,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			(op == FUTEX_WAKE_BITSET) ? "FUTEX_WAKE_BITSET" :
 			(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
 			(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
-			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared, ret);
+			(unsigned long)uaddr, val, utime, uaddr2, val3, fshared, ret);
 
 	return ret;
 }

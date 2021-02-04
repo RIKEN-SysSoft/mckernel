@@ -264,6 +264,8 @@ struct mcctrl_per_proc_data {
 	struct list_head devobj_pager_list;
 	struct semaphore devobj_pager_lock;
 	int enable_tofu;
+
+	struct rb_root rva_to_rpa_cache;
 };
 
 struct sysfsm_req {
