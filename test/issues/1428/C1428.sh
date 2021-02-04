@@ -2,6 +2,7 @@
 
 USELTP=1
 USEOSTEST=0
+MCREBOOT=0
 
 . ../../common.sh
 
@@ -23,6 +24,7 @@ pushd ${UTI_TEST_DIR}
 make
 popd
 
+mcreboot
 for tno in `seq 12 20`
 do
 	tname=`printf "C${issue}T%02d" ${tid}`
@@ -46,6 +48,7 @@ for tno in `seq 31 34`
 do
 	sudo ${UTI_TEST_DIR}/CT${tno} -l &> ./lnx_CT${tno}.txt
 done
+
 echo "*** Boot mckernel"
 mcreboot
 echo ""
@@ -84,4 +87,3 @@ do
 	let tid++
 	echo ""
 done
-

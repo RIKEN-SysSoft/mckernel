@@ -40,8 +40,8 @@ void *util_thread(void *arg)
 			FUTEX_WAKE, 1, NULL, NULL, 0);
 	if (rc != 1) {
 		fprintf(stderr,
-			"CT13101 FUTEX_WAKE NG (%d,%s)\n",
-			rc, strerror(errno));
+			"CT13101 FUTEX_WAKE NG (%d,%d)\n",
+			rc, errno);
 	}
 	else {
 		fprintf(stderr, "CT13101 FUTEX_WAKE OK\n");
