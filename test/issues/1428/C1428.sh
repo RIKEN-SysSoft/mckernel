@@ -1,6 +1,6 @@
 #/bin/sh
 
-USELTP=1
+USELTP=0
 USEOSTEST=0
 
 . ../../common.sh
@@ -23,6 +23,7 @@ pushd ${UTI_TEST_DIR}
 make
 popd
 
+if false; then
 for tno in `seq 12 20`
 do
 	tname=`printf "C${issue}T%02d" ${tid}`
@@ -39,6 +40,7 @@ do
 	let tid++
 	echo ""
 done
+fi
 
 echo "*** Stop mckernel to exec CT31-33 on Linux"
 mcstop
@@ -46,6 +48,7 @@ for tno in `seq 31 34`
 do
 	sudo ${UTI_TEST_DIR}/CT${tno} -l &> ./lnx_CT${tno}.txt
 done
+
 echo "*** Boot mckernel"
 mcreboot
 echo ""
@@ -68,7 +71,7 @@ do
 	let tid++
 	echo ""
 done
-
+if false; then
 for tp in futex_wait01 futex_wait02 futex_wait03 futex_wait04 futex_wait_bitset01 futex_wait_bitset02 futex_wake01 futex_wake02 futex_wake03
 do
 	tname=`printf "C${issue}T%02d" ${tid}`
@@ -84,4 +87,4 @@ do
 	let tid++
 	echo ""
 done
-
+fi

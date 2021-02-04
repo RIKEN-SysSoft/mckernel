@@ -179,6 +179,8 @@ error_cleanup_channels:
 	return rc;
 }
 
+extern long uti_nev[10], uti_sum[10];
+
 int mcctrl_os_shutdown_notifier(int os_index)
 {
 	if (os[os_index]) {
@@ -194,6 +196,16 @@ int mcctrl_os_shutdown_notifier(int os_index)
 	os[os_index] = NULL;
 
 	printk("mcctrl: OS ID %d shutdown event handled\n", os_index);
+
+	{
+	int i;
+	for (i = 0; i < 10; i++) {
+		if (uti_nev[i]) {
+			kprintf("nr: %d sum: %ld, #events: %ld, ave: %ld\n", i, uti_sum[i], uti_nev[i], uti_sum[i] / uti_nev[i]);
+		}
+	}
+	}
+
 	return 0;
 }
 

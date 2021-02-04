@@ -75,6 +75,17 @@
 #include <kmalloc.h>
 
 
+static inline uint64_t cntvct(void)
+{
+	unsigned long cval;
+
+	asm volatile("isb" : : : "memory");
+	asm volatile("mrs %0, cntvct_el0" : "=r" (cval));
+
+	return cval;
+}
+long uti_nev[10], uti_sum[10];
+
 unsigned long ihk_mc_get_ns_per_tsc(void);
 
 struct futex_hash_bucket *futex_queues;
@@ -238,11 +249,25 @@ static void wake_futex(struct futex_q *q)
 
 	if (q->uti_futex_resp) { 
 		int rc;
-		dkprintf("%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp=%p\n",
-				__func__, p->tid, q->uti_futex_resp);
+		dkprintf("%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp=%p,linux_cpu: %d\n",
+			__func__, p->tid, q->uti_futex_resp, q->linux_cpu);
 
 		struct ikc_scd_packet pckt;
+#if 1
 		struct ihk_ikc_channel_desc *resp_channel = cpu_local_var(ikc2linux);
+#else
+		struct ihk_ikc_channel_desc *resp_channel = ikc2linuxs[q->linux_cpu];
+#endif
+#if 0
+		kprintf("%s: channel: %lx\n",
+			__func__, (unsigned long)resp_channel);
+		extern struct ihk_ikc_channel_desc **ikc2linuxs;
+		int i;
+		for (i = 0; i < 2; i++) {
+			kprintf("%s: linux_cpu: %d, channel: %lx\n",
+				__func__, i, (unsigned long)ikc2linuxs[i]);
+		}
+#endif
 		pckt.msg = SCD_MSG_FUTEX_WAKE;
 		pckt.futex.resp = q->uti_futex_resp;
 		pckt.futex.spin_sleep = &p->spin_sleep;
@@ -690,7 +715,10 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb,
 		}
 		else {
 			dkprintf("futex_wait_queue_me(): tid: %d schedule()\n", thread->tid);
+			long start = cntvct();
 			spin_sleep_or_schedule();
+			uti_nev[2]++;
+			uti_sum[2] += cntvct() - start;
 			time_remain = 0;
 		}
 		dkprintf("futex_wait_queue_me(): tid: %d woken up\n", thread->tid);
@@ -804,7 +832,10 @@ retry:
 	}
 
 	/* queue_me and wait for wakeup, timeout, or a signal. */
+	long start = cntvct();
 	time_remain = futex_wait_queue_me(hb, q, timeout);
+	uti_nev[0]++;
+	uti_sum[0] += cntvct() - start;
 
 	/* If we were woken (and unqueued), we succeeded, whatever. */
 	ret = 0;
@@ -860,11 +891,15 @@ int futex(uint32_t *uaddr, int op, uint32_t val, uint64_t timeout,
 	if (clockrt && cmd != FUTEX_WAIT_BITSET && cmd != FUTEX_WAIT_REQUEUE_PI)
 		return -ENOSYS;
 
+	long start;
 	switch (cmd) {
 	case FUTEX_WAIT:
 		val3 = FUTEX_BITSET_MATCH_ANY;
 	case FUTEX_WAIT_BITSET:
+		start = cntvct();
 		ret = futex_wait(uaddr, fshared, val, timeout, val3, clockrt);
+		uti_nev[1]++;
+		uti_sum[1] += cntvct() - start;
 		break;
 	case FUTEX_WAKE:
 		val3 = FUTEX_BITSET_MATCH_ANY;

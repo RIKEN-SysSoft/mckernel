@@ -2915,6 +2915,17 @@ uti_info_p2v(struct uti_info *info)
 		(void *)phys_to_virt(info->futex_queue_pa);
 }
 
+inline uint64_t cntvct(void)
+{
+	unsigned long cval;
+
+	asm volatile("isb" : : : "memory");
+	asm volatile("mrs %0, cntvct_el0" : "=r" (cval));
+
+	return cval;
+}
+long uti_nev[10], uti_sum[10];
+
 long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 {
 	struct syscall_struct {
@@ -2947,11 +2958,14 @@ long mcexec_syscall_thread(ihk_os_t os, unsigned long arg, struct file *file)
 
 		_uti_info->os = (void *)os;
 		
+		long start = cntvct();
 		rc = do_futex(param.number, param.args[0],
 				param.args[1], param.args[2],
 				param.args[3], param.args[4], param.args[5],
 				(struct uti_info *)param.uti_info,
 				(void *)&resp);
+		uti_nev[3]++;
+		uti_sum[3] += cntvct() - start;
 
 		param.ret = rc;
 	} else {
@@ -3012,6 +3026,8 @@ void mcctrl_futex_wake(struct ikc_scd_packet *pisp)
 	}
 
 	resp->done = 1;
+	//pr_err("%s: cpu: %d\n", __func__, ihk_ikc_get_processor_id());
+
 	wake_up_interruptible(&resp->wq);
 }
 

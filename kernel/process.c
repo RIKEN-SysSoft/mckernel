@@ -3636,6 +3636,7 @@ void spin_sleep_or_schedule(void)
 		}
 
 		if (woken) {
+			//kprintf("%s: woken while spinning, cpu: %d, do_schedule: %d\n", __func__, ihk_ikc_get_processor_id(), do_schedule);
 			if (do_schedule) {
 				irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 				v->flags |= CPU_FLAG_NEED_RESCHED;
@@ -3654,6 +3655,7 @@ void spin_sleep_or_schedule(void)
 
 out_schedule:
 	schedule();
+	//kprintf("%s: woken while sleeping, cpu: %d\n", __func__, ihk_ikc_get_processor_id());
 }
 
 void schedule(void)
@@ -3666,8 +3668,7 @@ void schedule(void)
 	unsigned long irqstate = 0;
 
 	if (cpu_local_var(no_preempt)) {
-		kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n",
-			__FUNCTION__, cpu_local_var(no_preempt));
+		//kprintf("%s: WARNING can't schedule() while no preemption, cnt: %d\n", __FUNCTION__, cpu_local_var(no_preempt));
 
 		irqstate = cpu_disable_interrupt_save();
 		ihk_mc_spinlock_lock_noirq(

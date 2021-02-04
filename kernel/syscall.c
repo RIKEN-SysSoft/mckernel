@@ -10491,6 +10491,7 @@ static void do_mod_exit(int status){
 #endif
 
 extern void save_uctx(void *, void *);
+extern long uti_nev[10], uti_sum[10];
 
 /* TODO: use copy_from_user() */
 int util_show_syscall_profile()
@@ -10509,6 +10510,12 @@ int util_show_syscall_profile()
 	for (i = 0; i < 512; i++) {
 		if (desc->syscalls2[i]) {
 			kprintf("nr=%d #called=%ld\n", i, desc->syscalls2[i]);
+		}
+	}
+
+	for (i = 0; i < 10; i++) {
+		if (uti_nev[i]) {
+			kprintf("nr: %d sum: %ld, #events: %ld, ave: %ld\n", i, uti_sum[i], uti_nev[i], uti_sum[i] / uti_nev[i]);
 		}
 	}
 

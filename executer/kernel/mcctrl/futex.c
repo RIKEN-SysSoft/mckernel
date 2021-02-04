@@ -30,6 +30,7 @@
 #include <mc_jhash.h>
 #include <arch-futex.h>
 
+//#define DEBUG
 #ifdef DEBUG
 #define dprintk printk
 #else
@@ -37,6 +38,9 @@
 #endif
 
 #define NS_PER_SEC  1000000000UL
+
+uint64_t cntvct(void);
+extern long uti_nev[10], uti_sum[10];
 
 static long uti_wait_event(void *_resp, unsigned long nsec_timeout)
 {
@@ -441,16 +445,17 @@ static int uti_sched_wakeup_thread(struct futex_q *q, int valid_states,
 	unsigned long irqstate;
 
 	futex_q_p2v(q);
+			{long start = cntvct();
 	irqstate = ihk_mc_spinlock_lock(
 			(_ihk_spinlock_t *)q->th_spin_sleep_lock);
 	if (*(int *)q->th_spin_sleep == 1) {
-		dprintk("%s: spin wakeup: cpu_id: %d\n",
-				__func__, uti_info->cpu);
+		//pr_err("%s: spin wakeup: cpu_id: %d\n", __func__, uti_info->cpu);
 		status = 0;
 	}
 	*(int *)q->th_spin_sleep = 0;
 	ihk_mc_spinlock_unlock(
 			(_ihk_spinlock_t *)q->th_spin_sleep_lock, irqstate);
+			uti_nev[6]++; uti_sum[6] += cntvct() - start;}
 
 	irqstate = ihk_mc_spinlock_lock((_ihk_spinlock_t *)q->runq_lock);
 
@@ -477,11 +482,9 @@ static int uti_sched_wakeup_thread(struct futex_q *q, int valid_states,
 	ihk_mc_spinlock_unlock((_ihk_spinlock_t *)q->runq_lock, irqstate);
 
 	if (!status) {
-		dprintk("%s: issuing IPI, thread->cpu_id=%d\n",
-				__func__, uti_info->cpu);
+		//pr_err("%s: issuing IPI, thread->cpu_id=%d, intr_id: %d\n", __func__, uti_info->cpu, q->intr_id);
 
-		ihk_os_issue_interrupt(uti_info->os,
-				q->intr_id, q->intr_vector);
+		//ihk_os_issue_interrupt(uti_info->os, q->intr_id, q->intr_vector);
 	}
 
 	return status;
@@ -533,7 +536,9 @@ static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake,
 	union futex_key key = FUTEX_KEY_INIT;
 	int ret;
 	unsigned long irqstate;
+	long start;
 
+	start = cntvct();
 	if (!bitset) {
 		return -EINVAL;
 	}
@@ -547,14 +552,21 @@ static int futex_wake(uint32_t *uaddr, int fshared, int nr_wake,
 	irqstate = ihk_mc_spinlock_lock(&hb->lock);
 	head = &hb->chain;
 
+	uti_nev[7]++; uti_sum[7] += cntvct() - start;
 	mc_plist_for_each_entry_safe(this, next, head, list) {
-		if (match_futex(&this->key, &key)) {
+		int ret;
+		start = cntvct();
+		ret = match_futex(&this->key, &key);
+		uti_nev[8]++; uti_sum[8] += cntvct() - start;
+		if (ret) {
 			/* RIKEN: no pi state... */
 			/* Check if one of the bits is set in both bitsets */
 			if (!(this->bitset & bitset))
 				continue;
 
+			{long start = cntvct();
 			wake_futex(this, uti_info);
+			uti_nev[5]++; uti_sum[5] += cntvct() - start;}
 			if (++ret >= nr_wake)
 				break;
 		}
@@ -582,6 +594,7 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 {
 	int64_t time_remain = 0;
 	unsigned long irqstate;
+
 	/*
 	 * The task state is guaranteed to be set before another task can
 	 * wake it.
@@ -606,8 +619,7 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 	queue_me(q, hb, uti_info);
 
 	if (!mc_plist_node_empty(&q->list)) {
-		dprintk("%s: tid: %d is trying to sleep\n", __func__,
-				uti_info->tid);
+		//pr_info("%s: tid: %d is trying to sleep, cpu: %d\n", __func__, uti_info->tid, ihk_ikc_get_processor_id());
 		/* Note that the unit of timeout is nsec */
 		time_remain = uti_wait_event(q->uti_futex_resp, timeout);
 
@@ -619,7 +631,7 @@ static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q 
 				pr_err("%s: ERROR: wait_event returned %lld\n", __func__, time_remain);
 			}
 		}
-		dprintk("%s: tid: %d woken up\n", __func__, uti_info->tid);
+		//pr_info("%s: tid: %d woken up, cpu: %d\n", __func__, uti_info->tid, ihk_ikc_get_processor_id());
 	}
 
 	/* This does not need to be serialized */
@@ -712,6 +724,7 @@ static int futex_wait(uint32_t __user *uaddr, int fshared,
 	q->bitset = bitset;
 	q->requeue_pi_key = NULL;
 	q->uti_futex_resp = uti_info->uti_futex_resp;
+	q->linux_cpu = ihk_ikc_get_processor_id();
 
 retry:
 	/* Prepare to wait on uaddr. */
@@ -1052,7 +1065,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 	}
 	op = (op & FUTEX_CMD_MASK);
 
-	dprintk("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%p, uaddr2=%p, val3=%x, []=%x, shared: %d\n",
+	dprintk("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%p, uaddr2=%p, val3=%x, shared: %d\n",
 			flags,
 			(op == FUTEX_WAIT) ? "FUTEX_WAIT" :
 			(op == FUTEX_WAIT_BITSET) ? "FUTEX_WAIT_BITSET" :
@@ -1061,7 +1074,7 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 			(op == FUTEX_WAKE_BITSET) ? "FUTEX_WAKE_BITSET" :
 			(op == FUTEX_CMP_REQUEUE) ? "FUTEX_CMP_REQUEUE" :
 			(op == FUTEX_REQUEUE) ? "FUTEX_REQUEUE (NOT IMPL!)" : "unknown",
-			(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared);
+			(unsigned long)uaddr, val, utime, uaddr2, val3, fshared);
 
 	if (utime && (op == FUTEX_WAIT_BITSET || op == FUTEX_WAIT)) {
 		if (copy_from_user(&ts, utime, sizeof(ts)) != 0) {
@@ -1097,8 +1110,13 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 		val2 = (uint32_t) (unsigned long) arg3;
 	}
 
+	{
+	long start = cntvct();
 	ret = futex(uaddr, op, val, timeout, uaddr2,
 			val2, val3, fshared, uti_info);
+	uti_nev[4]++;
+	uti_sum[4] += cntvct() - start;
+	}
 
 	dprintk("futex op=[%x, %s],uaddr=%lx, val=%x, utime=%p, uaddr2=%p, val3=%x, []=%x, shared: %d, ret: %d\n",
 			op,
