@@ -46,7 +46,7 @@ void *util_fn(void *arg)
 	start = rdtsc_light();
 	for (i = 0; i < nloop; i++) {
 		
-		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAIT, 0, NULL, NULL, 0))) {
+		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAIT, i, NULL, NULL, 0))) {
 			printf("Error: futex wait failed (%s)\n", strerror(errno));
 		}
 
@@ -149,8 +149,10 @@ int main(int argc, char **argv)
 		end = rdtsc_light();
 		t_fwq += end - start;
 
-		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAKE, 1, NULL, NULL, 0)) == -1) {
-			printf("Error: futex wake: %s\n", strerror(errno));
+		sem = i + 1;
+		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAKE, 1,
+				   NULL, NULL, 0)) != 1) {
+			printf("Error: futex wake: %d, %d\n", ret, errno);
 		}
 
 		//pthread_barrier_wait(&bar);

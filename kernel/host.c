@@ -43,7 +43,7 @@
 #endif
 
 /* Linux channel table, indexec by Linux CPU id */
-static struct ihk_ikc_channel_desc **ikc2linuxs = NULL;
+struct ihk_ikc_channel_desc **ikc2linuxs = NULL;
 
 void check_mapping_for_proc(struct thread *thread, unsigned long addr)
 {

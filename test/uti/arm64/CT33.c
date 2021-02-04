@@ -22,7 +22,7 @@ int sem;
 pthread_barrier_t bar;
 int flag;
 pthread_t thr;
-long t_futex_wait, t_fwq;
+long t_futex_wait, t_fwq, t_syscall;
 long nloop;
 long blocktime = 10L * 1000 * 1000;
 int linux_run;
@@ -52,8 +52,10 @@ void *util_fn(void *arg)
 		end = rdtsc_light();
 		t_fwq += end - start;
 
-		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAKE, 1, NULL, NULL, 0)) == -1) {
-			printf("Error: futex wake: %s\n", strerror(errno));
+		sem = i + 1;
+		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAKE, 1,
+				   NULL, NULL, 0)) != 1) {
+			printf("Error: futex wake: %d,%d\n", ret, errno);
 		}
 
 		//pthread_barrier_wait(&bar);
@@ -148,8 +150,7 @@ int main(int argc, char **argv)
 	pthread_barrier_wait(&bar);
 	start = rdtsc_light();
 	for (i = 0; i < nloop; i++) {
-		
-		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAIT, 0, NULL, NULL, 0))) {
+		if ((ret = syscall(__NR_futex, &sem, FUTEX_WAIT, i, NULL, NULL, 0))) {
 			printf("Error: futex wait failed (%s)\n", strerror(errno));
 		}
 
