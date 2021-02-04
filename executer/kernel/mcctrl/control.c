@@ -1301,6 +1301,7 @@ void mcctrl_put_per_proc_data(struct mcctrl_per_proc_data *ppd)
 	ihk_ikc_spinlock_unlock(&ppd->wq_list_lock, flags);
 
 	pager_remove_process(ppd);
+	futex_remove_process(ppd);
 	kfree(ppd);
 }
 
@@ -1901,6 +1902,7 @@ int mcexec_create_per_process_data(ihk_os_t os,
 	spin_lock_init(&ppd->wq_list_lock);
 	memset(&ppd->cpu_set, 0, sizeof(cpumask_t));
 	ppd->ikc_target_cpu = 0;
+	ppd->rva_to_rpa_cache = RB_ROOT;
 	/* Final ref will be dropped in release_handler() through
 	 * mcexec_destroy_per_process_data() */
 	atomic_set(&ppd->refcount, 1);
@@ -3014,6 +3016,8 @@ void mcctrl_futex_wake(struct ikc_scd_packet *pisp)
 	}
 
 	resp->done = 1;
+	dprintk("%s: cpu: %d\n", __func__, ihk_ikc_get_processor_id());
+
 	wake_up_interruptible(&resp->wq);
 }
 
