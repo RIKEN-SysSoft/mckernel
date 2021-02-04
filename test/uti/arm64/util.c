@@ -20,11 +20,11 @@
 static inline void FIXED_SIZE_WORK(unsigned long *ptr)
 {
 	asm volatile("mov %x0, x20\n"
-			 "add x20, x20, #1\n"
-			 "mov x20, %x0\n"
-			 : "+rm" (*ptr)
-			 :
-			 : "x20", "cc", "memory");
+		     "add x20, x20, #1\n"
+		     "mov x20, %x0\n"
+		     : "+rm" (*ptr)
+		     :
+		     : "x20", "cc", "memory");
 }
 
 static inline void BULK_FSW(unsigned long n,
