@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8f9b91c1_04ed9e46",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 547,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: spin wakeup: cpu_id: %d\\n\", __func__, uti_info-\u003ecpu);",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6414fb5b_3f156e70",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1156,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, shared: %d\\n\",",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ca98f968_6d7d4b0d",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1165,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, fshared);",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d358b627_b1598af3",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1204,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, shared: %d, ret: %d\\n\",",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7d39af93_8f893898",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1213,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, fshared, ret);",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c4d4a80d_1ce54ce3",
+        "filename": "kernel/host.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "ERROR: do not initialise globals to NULL\n+struct ihk_ikc_channel_desc **ikc2linuxs \u003d NULL;",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8d4fc543_7307b2ca",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3639,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: woken while spinning, cpu: %d, do_schedule: %d\\n\",",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3316a256_460a9cda",
+        "filename": "kernel/process.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 3640,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t __func__, ihk_ikc_get_processor_id(), do_schedule);",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "671d9203_301483a7",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((ret \u003d syscall(__NR_futex, \u0026sem, FUTEX_WAIT, i, NULL, NULL, 0))) {",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "da6819bf_8ec700b9",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-04T08:42:32Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((ret \u003d syscall(__NR_futex, \u0026sem, FUTEX_WAIT, i, NULL, NULL, 0))) {",
+      "revId": "2e5c760976079abdcfa5169f3344e6dd3666817b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
