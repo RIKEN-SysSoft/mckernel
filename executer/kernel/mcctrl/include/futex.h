@@ -166,4 +166,6 @@ long do_futex(int n, unsigned long arg0, unsigned long arg1,
 		struct uti_info *uti_info,
 		void *uti_futex_resp);
 
+void futex_remove_process(struct mcctrl_per_proc_data *ppd);
+
 #endif
