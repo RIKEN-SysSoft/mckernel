@@ -216,6 +216,9 @@ struct futex_q {
 	/* Used to wake-up a thread running on a Linux CPU */
 	void *uti_futex_resp;
 
+	/* Used to send IPI directly to the waiter CPU */
+	int linux_cpu;
+
 	/* Used to wake-up a thread running on a McKernel from Linux */
 	void *th_spin_sleep;
 	void *th_status;
