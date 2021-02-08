@@ -175,11 +175,10 @@ static void send_syscall(struct syscall_request *req, int cpu,
 #endif
 }
 
-long do_syscall(struct syscall_request *req, int cpu)
+long _do_syscall(struct thread *thread, struct syscall_request *req, int cpu)
 {
 	struct syscall_response res;
 	long rc;
-	struct thread *thread = cpu_local_var(current);
 	struct ihk_os_cpu_monitor *monitor = cpu_local_var(monitor);
 	int mstatus = 0;
 
@@ -212,7 +211,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 #endif
 
 	/* The current thread is the requester */
-	req->rtid = cpu_local_var(current)->tid;
+	req->rtid = thread->tid;
 
 	if (req->number == __NR_sched_setaffinity && req->args[0] == 0) {
 		/* mcexec thread serving migrate-to-Linux request must have
@@ -220,7 +219,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 		   serving thread jumps to hfi driver and then jumps to
 		   rus_vm_fault() without registering it into per thread data
 		   by mcctrl_add_per_thread_data()). */
-		req->ttid = cpu_local_var(current)->tid/*0*/;
+		req->ttid = thread->tid/*0*/;
 		dkprintf("%s: uti, ttid=%d\n", __FUNCTION__, req->ttid);
 	} else {
 		/* Any thread from the pool may serve the request */
@@ -247,7 +246,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			int do_schedule = 0;
 			long runq_irqstate;
 			unsigned long flags;
-			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
+			DECLARE_WAITQ_ENTRY(scd_wq_entry, thread);
 
 			if (req->number == __NR_epoll_wait ||
 				req->number == __NR_epoll_pwait ||
@@ -339,7 +338,6 @@ schedule:
 
 			if (num == __NR_rt_sigaction) {
 				int sig = request.args[0];
-				struct thread *thread = cpu_local_var(current);
 
 				sig--;
 				if (sig < 0 || sig >= _NSIG)
@@ -378,7 +376,7 @@ schedule:
 			req2.args[1] = syscall_ret;
 			/* The current thread is the requester and only the waiting thread
 			 * may serve the request */
-			req2.rtid = cpu_local_var(current)->tid;
+			req2.rtid = thread->tid;
 			req2.ttid = res.stid;
 
 			res.req_thread_status = IHK_SCD_REQ_THREAD_SPINNING;
@@ -400,7 +398,7 @@ schedule:
 		char *path = req->number == __NR_ioctl ?
 			thread->proc->fd_path[fd] : thread->fd_path_in_open;
 
-		if (cpu_local_var(current)->proc->enable_tofu &&
+		if (thread->proc->enable_tofu &&
 				res.pde_data &&
 				fd < MAX_FD_PDE &&
 				!thread->proc->fd_pde_data[fd] &&
@@ -447,6 +445,21 @@ schedule:
 	monitor->status = mstatus;
 	monitor->counter++;
 	return rc;
+}
+
+long do_syscall(struct syscall_request *req, int cpu)
+{
+	struct thread *thread = cpu_local_var(current);
+
+	return _do_syscall(thread, req, cpu);
+}
+
+long _syscall_generic_forwarding(struct thread *thread, int n, ihk_mc_user_context_t *ctx)
+{
+	SYSCALL_HEADER;
+	dkprintf("syscall_generic_forwarding(%d)\n", n);
+	SYSCALL_ARGS_6(D,D,D,D,D,D);
+	return _do_syscall(thread, &request, ihk_mc_get_processor_id());
 }
 
 long syscall_generic_forwarding(int n, ihk_mc_user_context_t *ctx)
@@ -1603,11 +1616,10 @@ SYSCALL_DECLARE(exit_group)
 	return 0;
 }
 
-void clear_host_pte(uintptr_t addr, size_t len, int holding_memory_range_lock)
+void _clear_host_pte(struct thread *thread, uintptr_t addr, size_t len, int holding_memory_range_lock)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
-	struct thread *thread = cpu_local_var(current);
 
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
@@ -1621,7 +1633,7 @@ void clear_host_pte(uintptr_t addr, size_t len, int holding_memory_range_lock)
 	if (holding_memory_range_lock) {
 		thread->vm->is_memory_range_lock_taken = ihk_mc_get_processor_id();
 	}
-	lerror = syscall_generic_forwarding(__NR_munmap, &ctx);
+	lerror = _syscall_generic_forwarding(thread, __NR_munmap, &ctx);
 	if (holding_memory_range_lock) {
 		thread->vm->is_memory_range_lock_taken = -1;
 	}
@@ -1631,11 +1643,17 @@ void clear_host_pte(uintptr_t addr, size_t len, int holding_memory_range_lock)
 	return;
 }
 
-static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory_range_lock)
+void clear_host_pte(uintptr_t addr, size_t len, int holding_memory_range_lock)
+{
+	struct thread *thread = cpu_local_var(current);
+
+	return _clear_host_pte(thread, addr, len, holding_memory_range_lock);
+}
+
+static int _set_host_vma(struct thread *thread, uintptr_t addr, size_t len, int prot, int holding_memory_range_lock)
 {
 	ihk_mc_user_context_t ctx;
 	long lerror;
-	struct thread *thread = cpu_local_var(current);
 
 	ihk_mc_syscall_arg0(&ctx) = addr;
 	ihk_mc_syscall_arg1(&ctx) = len;
@@ -1681,14 +1699,21 @@ out:
 	return (int)lerror;
 }
 
-int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
+static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory_range_lock)
+{
+	struct thread *thread = cpu_local_var(current);
+
+	return _set_host_vma(thread, addr, len, prot, holding_memory_range_lock);
+}
+
+int do_munmap(struct thread *thread, struct process_vm *vm,
+	      void *addr, size_t len, int holding_memory_range_lock)
 {
 	int error;
 	int ro_freed;
-	struct thread *thread = cpu_local_var(current);
 
 	begin_free_pages_pending();
-	error = remove_process_memory_range(cpu_local_var(current)->vm,
+	error = remove_process_memory_range(vm,
 			(intptr_t)addr, (intptr_t)addr+len, &ro_freed);
 
 	/* No host involvement for straight mapping ranges */
@@ -1700,10 +1725,10 @@ int do_munmap(void *addr, size_t len, int holding_memory_range_lock)
 	}
 
 	if (error || !ro_freed) {
-		clear_host_pte((uintptr_t)addr, len, holding_memory_range_lock);
+		_clear_host_pte(thread, (uintptr_t)addr, len, holding_memory_range_lock);
 	}
 	else {
-		error = set_host_vma((uintptr_t)addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, holding_memory_range_lock);
+		error = _set_host_vma(thread, (uintptr_t)addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, holding_memory_range_lock);
 		if (error) {
 			kprintf("sys_munmap:set_host_vma failed. %d\n", error);
 			/* through */
@@ -1771,6 +1796,7 @@ do_mmap(const uintptr_t addr0, const size_t len0, const int prot,
 	const int flags, const int fd, const off_t off0)
 {
 	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	struct vm_regions *region = &thread->vm->region;
 	uintptr_t addr = addr0;
 	size_t len = len0;
@@ -2066,7 +2092,7 @@ straight_out:
 
 	if (flags & MAP_FIXED) {
 		/* clear specified address range */
-		error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */);
+		error = do_munmap(thread, vm, (void *)addr, len, 1/* holding memory_range_lock */);
 		if (error) {
 			ekprintf("do_mmap:do_munmap(%lx,%lx) failed. %d\n",
 					addr, len, error);
@@ -2472,6 +2498,7 @@ SYSCALL_DECLARE(munmap)
 	const uintptr_t addr = ihk_mc_syscall_arg0(ctx);
 	const size_t len0 = ihk_mc_syscall_arg1(ctx);
 	struct thread *thread = cpu_local_var(current);
+	struct process_vm *vm = thread->vm;
 	struct vm_regions *region = &thread->vm->region;
 	size_t len;
 	int error;
@@ -2491,7 +2518,7 @@ SYSCALL_DECLARE(munmap)
 	}
 
 	ihk_rwspinlock_write_lock_noirq(&thread->vm->memory_range_lock);
-	error = do_munmap((void *)addr, len, 1/* holding memory_range_lock */);
+	error = do_munmap(thread, vm, (void *)addr, len, 1/* holding memory_range_lock */);
 	ihk_rwspinlock_write_unlock_noirq(&thread->vm->memory_range_lock);
 
 out:
@@ -2930,7 +2957,7 @@ static void munmap_all(void)
 
 		addr = (void *)range->start;
 		size = range->end - range->start;
-		error = do_munmap(addr, size, 1/* holding memory_range_lock */);
+		error = do_munmap(thread, vm, addr, size, 1/* holding memory_range_lock */);
 		if (error) {
 			kprintf("munmap_all():do_munmap(%p,%lx) failed. %d\n",
 					addr, size, error);
@@ -6701,7 +6728,7 @@ SYSCALL_DECLARE(shmdt)
 		return -EINVAL;
 	}
 
-	error = do_munmap((void *)range->start, (range->end - range->start), 1/* holding memory_range_lock */);
+	error = do_munmap(thread, vm, (void *)range->start, (range->end - range->start), 1/* holding memory_range_lock */);
 	if (error) {
 		ihk_rwspinlock_write_unlock_noirq(&vm->memory_range_lock);
 		dkprintf("shmdt(%p): %d\n", shmaddr, error);
@@ -9241,7 +9268,7 @@ SYSCALL_DECLARE(mremap)
 	/* do the remap */
 	if (need_relocate) {
 		if (flags & MREMAP_FIXED) {
-			error = do_munmap((void *)newstart, newsize, 1/* holding memory_range_lock */);
+			error = do_munmap(thread, vm, (void *)newstart, newsize, 1/* holding memory_range_lock */);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 						"fixed:munmap failed. %d\n",
@@ -9311,7 +9338,7 @@ SYSCALL_DECLARE(mremap)
 				goto out;
 			}
 
-			error = do_munmap((void *)oldstart, oldsize, 1/* holding memory_range_lock */);
+			error = do_munmap(thread, vm, (void *)oldstart, oldsize, 1/* holding memory_range_lock */);
 			if (error) {
 				ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 						"relocate:munmap failed. %d\n",
@@ -9322,7 +9349,7 @@ SYSCALL_DECLARE(mremap)
 		}
 	}
 	else if (newsize < oldsize) {
-		error = do_munmap((void *)newend, (oldend - newend), 1/* holding memory_range_lock */);
+		error = do_munmap(thread, vm, (void *)newend, (oldend - newend), 1/* holding memory_range_lock */);
 		if (error) {
 			ekprintf("sys_mremap(%#lx,%#lx,%#lx,%#x,%#lx):"
 					"shrink:munmap failed. %d\n",
