@@ -65,7 +65,7 @@ if(ENABLE_TOFU)
 endif()
 
 # when compiling on a compute-node
-execute_process(COMMAND bash -c "grep $(hostname) /etc/opt/FJSVfefs/config/fefs_node1.csv 2>/dev/null | cut -d, -f2"
+execute_process(COMMAND bash -c "grep $(hostname) /etc/opt/FJSVfefs/config/fefs_node1.csv 2>/dev/null | cut -d, -f2 | grep -o CN"
   OUTPUT_VARIABLE FUGAKU_NODE_TYPE OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(FUGAKU_NODE_TYPE STREQUAL "CN")
 	option(ENABLE_FUGAKU_HACKS "Fugaku hacks" ON)
