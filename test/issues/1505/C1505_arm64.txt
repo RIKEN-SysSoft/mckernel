@@ -1,0 +1,55 @@
+Script started on Tue 22 Dec 2020 08:24:38 AM JST
+[shirasawa@apollo16 1505]$ make test
+sh ./C1505.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 2-31 -m 2G@0,2G@1 -O ... done
+aarch64
+msgrcv05    1  TPASS  :  got EINTR as expected
+*** C1505T01: msgrcv05 PASS (1)
+tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
+msgsnd05.c:63: PASS: msgsnd() failed as expected: EAGAIN
+msgsnd05.c:63: PASS: msgsnd() failed as expected: EINTR
+
+Summary:
+passed   2
+failed   0
+skipped  0
+warnings 0
+*** C1505T02: msgsnd05 PASS (2)
+semctl01    1  TPASS  :  buf.sem_nsems and buf.sem_perm.mode are correct
+semctl01    2  TPASS  :  buf.sem_perm.mode is correct
+semctl01    3  TPASS  :  semaphores have expected values
+semctl01    4  TPASS  :  number of sleeping processes is correct
+semctl01    5  TPASS  :  last pid value is correct
+semctl01    6  TPASS  :  semaphore value is correct
+semctl01    7  TPASS  :  number of sleeping processes is correct
+semctl01    8  TPASS  :  semaphore values are correct
+semctl01    9  TPASS  :  semaphore value is correct
+semctl01   10  TPASS  :  the highest index is correct
+semctl01   11  TPASS  :  number of semaphore sets is correct
+semctl01   12  TPASS  :  id of the semaphore set is correct
+semctl01   13  TPASS  :  semaphore appears to be removed
+*** C1505T03: semctl01 PASS (13)
+semop05     1  TPASS  :  expected failure - errno = 43 : Identifier removed
+semop05     1  TPASS  :  expected failure - errno = 43 : Identifier removed
+semop05     1  TPASS  :  expected failure - errno = 4 : Interrupted system call
+semop05     1  TPASS  :  expected failure - errno = 4 : Interrupted system call
+*** C1505T04: semop05 PASS (4)
+kill01      1  TPASS  :  received expected signal 9
+*** C1505T05: kill01 PASS (1)
+kill02      1  TPASS  :  The signal was sent to all processes in the process group.
+kill02      2  TPASS  :  The signal was not sent to selective processes that were not in the process group.
+*** C1505T06: kill02 PASS (2)
+kill06      1  TPASS  :  received expected signal 9
+*** C1505T07: kill06 PASS (1)
+kill07      0  TINFO  :  received expected signal 9
+kill07      1  TPASS  :  Did not catch signal as expected
+*** C1505T08: kill07 PASS (1)
+kill08      1  TPASS  :  received expected signal 9
+*** C1505T09: kill08 PASS (1)
+kill09      1  TPASS  :  kill(83510, SIGKILL) returned 0
+*** C1505T10: kill09 PASS (1)
+]0;shirasawa@apollo16:~/issue1505/mckernel/test/issues/1505[shirasawa@apollo16 1505]$ exit
+exit
+
+Script done on Tue 22 Dec 2020 08:25:23 AM JST
