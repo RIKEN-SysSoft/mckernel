@@ -1,0 +1,28 @@
+【Issue#1505 動作確認】
+□ テスト内容
+1. Issue 指摘事項の再現確認
+   問題が発生していた以下のLTPが対策によってPASSすることを確認する。
+C1505T01 msgrcv05: msgrcv発行中にシグナルによりシステムコールを中断する
+C1505T02 msgsnd05: msgsnd発行中にシグナルによりシステムコールを中断する
+C1505T03 semctl01: semctl発行中にシグナルによりシステムコールを中断する
+C1505T04 semop05: semop発行中にシグナルによりシステムコールを中断する
+
+2. LTP を用いて既存処理に影響しないことを確認
+   シグナル関連のテストプログラムの動作に影響しないことを確認する
+C1505T05 kill01: kill の基本機能の確認
+C1505T06 kill02: kill の基本機能の確認
+C1505T07 kill06: kill の基本機能の確認
+C1505T08 kill07: kill の基本機能の確認
+C1505T09 kill08: kill の基本機能の確認
+C1505T10 kill09: kill の基本機能の確認
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や LTP の配置場所は、$HOME/.mck_test_config を
+参照する。.mck_test_config は、McKernel をビルドした際に生成される
+mck_test_config.sample ファイルを $HOME にコピーし、適宜編集すること。
+
+□ 実行結果
+C1505_x86_64.txt(x86_64実行結果)、C1505_arm64.txt(arm64実行結果)参照。
+全ての項目が PASS していることを確認。
