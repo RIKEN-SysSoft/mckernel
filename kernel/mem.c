@@ -1511,11 +1511,11 @@ out_linux:
 out_ok:
 #endif
 	error = 0;
+	preempt_enable();
+out:
 #ifdef ENABLE_FUGAKU_HACKS
 	--cpu_local_var(in_page_fault);
 #endif
-	preempt_enable();
-out:
 	dkprintf("%s: addr: %p, reason: %lx, regs: %p -> error: %d\n",
 			__FUNCTION__, fault_addr, reason, regs, error);
 	if(interrupt_from_user(regs)){
