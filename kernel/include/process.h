@@ -397,6 +397,10 @@ struct vm_range {
 	int pgshift;	/* page size. 0 means THP */
 	int padding;
 	struct list_head tofu_stag_list;
+	union {  /* to ref source range */
+		ihk_atomic64_t atomic;
+		long l;
+	} xpmem_count;
 	void *private_data;
 };
 

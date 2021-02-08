@@ -1013,6 +1013,10 @@ static int xpmem_attach(
 	struct mcs_rwlock_node_irqsave at_lock;
 	struct vm_range *vmr;
 	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct thread *src_thread;
+	struct process_vm *src_vm;
+	struct vm_range *src_range;
+	unsigned long old;
 
 	XPMEM_DEBUG("call: apid=0x%lx, offset=0x%lx, size=0x%lx, vaddr=0x%lx, " 
 		"fd=%d, att_flags=%d", 
@@ -1058,6 +1062,31 @@ static int xpmem_attach(
 		goto out_1;
 	}
 
+	/* ref remote process, vm, range */
+	src_thread = seg_tg->group_leader;
+	hold_thread(src_thread);
+
+	src_vm = seg_tg->vm;
+	hold_process_vm(src_vm);
+
+	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
+	src_range = lookup_process_memory_range(src_vm, seg_vaddr, seg_vaddr + 1);
+
+	if (!src_range) {
+		kprintf("%s: source vm not found, vaddr: %lx\n",
+			__func__, seg_vaddr);
+		ret = -ENOENT;
+		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+		goto out_1;
+	}
+
+	/* first attach "ref"s for source range as well */
+	if ((old = ihk_atomic64_cmpxchg(&src_range->xpmem_count.atomic, 0, 2)) != 0) {
+		ihk_atomic_add_long(1, &src_range->xpmem_count.l);
+	}
+	ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+
+	/* range check */
 	size += offset_in_page(seg_vaddr);
 
 	seg = ap->seg;
@@ -1182,6 +1211,8 @@ out_1:
 	return ret;
 }
 
+extern int _do_munmap(struct thread *thread, struct process_vm *vm,
+		      void *addr, size_t len, int holding_memory_range_lock);
 
 static int xpmem_detach(
 	unsigned long at_vaddr)
@@ -1192,6 +1223,13 @@ static int xpmem_detach(
 	struct mcs_rwlock_node_irqsave at_lock;
 	struct vm_range *range;
 	struct process_vm *vm = cpu_local_var(current)->vm;
+	struct xpmem_segment *seg;
+	struct xpmem_thread_group *seg_tg;
+	struct thread *src_thread;
+	struct process_vm *src_vm;
+	struct vm_range *src_range;
+	unsigned long seg_vaddr;
+	int count;
 
 	XPMEM_DEBUG("call: at_vaddr=0x%lx", at_vaddr);
 
@@ -1260,12 +1298,65 @@ static int xpmem_detach(
 
 	xpmem_att_destroyable(att);
 
+	/* deref remote thread, vm, range */
+	seg = ap->seg;
+	xpmem_seg_ref(seg);
+	seg_tg = seg->tg;
+	xpmem_tg_ref(seg_tg);
+	src_vm = seg_tg->vm;
+	seg_vaddr = att->vaddr;
+
+	src_thread = seg_tg->group_leader;
+
+	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
+
+	src_range = lookup_process_memory_range(src_vm, seg_vaddr, seg_vaddr + 1);
+
+	if (!src_range) {
+		kprintf("%s: source vm not found, vaddr: %lx\n",
+			__func__, seg_vaddr);
+		ret = -ENOENT;
+		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+		goto out;
+	}
+
+	if ((count = ihk_atomic_add_long_return(-1, &src_range->xpmem_count.l)) == 0) {
+		kprintf("%s: info: remote-munmapping %lx-%lx (vm: %lx)\n",
+			__func__, src_range->start, src_range->end,
+			(unsigned long)src_vm);
+
+		ret = _do_munmap(src_thread,
+				 src_vm,
+				 (void *)src_range->start,
+				 src_range->end - src_range->start,
+				 1);
+		if (ret) {
+			kprintf("%s: error: _do_munmap: %lx-%lx, ret: %d\n",
+				__func__, src_range->start,
+				src_range->end, ret);
+			ret = -EINVAL;
+			ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+			goto out;
+		}
+
+		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+		release_process_vm(src_vm);
+		release_thread(src_thread);
+	} else {
+		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+	}
+
+ out:
+	xpmem_seg_deref(seg);
+	xpmem_tg_deref(seg_tg);
+
 	xpmem_ap_deref(ap);
 	xpmem_att_deref(att);
 
-	XPMEM_DEBUG("return: ret=%d", 0);
+	ret = 0;
+	XPMEM_DEBUG("return: ret=%d", ret);
 
-	return 0;
+	return ret;
 }
 
 
