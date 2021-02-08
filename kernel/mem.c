@@ -1451,6 +1451,7 @@ out_linux:
 			__func__, thread ? thread->tid : -1, fault_addr,
 			reason, error);
 		unhandled_page_fault(thread, fault_addr, reason, regs);
+		--cpu_local_var(in_page_fault);
 		preempt_enable();
 
 		kprintf("%s: sending SIGSTOP to TID: %d\n", __func__, thread->tid);
