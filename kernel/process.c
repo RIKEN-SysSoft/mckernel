@@ -834,6 +834,7 @@ static int copy_user_ranges(struct process_vm *vm, struct process_vm *orgvm)
 		range->pgshift = src_range->pgshift;
 		range->private_data = src_range->private_data;
 		range->straight_start = src_range->straight_start;
+		range->xpmem_count = src_range->xpmem_count;
 
 		if (range->memobj) {
 			memobj_ref(range->memobj);
@@ -965,6 +966,7 @@ int split_process_memory_range(struct process_vm *vm, struct vm_range *range,
 	newrange->flag = range->flag;
 	newrange->pgshift = range->pgshift;
 	newrange->private_data = range->private_data;
+	newrange->xpmem_count = range->xpmem_count;
 
 #ifdef ENABLE_TOFU
 	INIT_LIST_HEAD(&newrange->tofu_stag_list);
@@ -1092,12 +1094,26 @@ static int free_process_memory_range(struct process_vm *vm,
 	intptr_t lpstart;
 	intptr_t lpend;
 	size_t pgsize;
+	int count;
 
 	dkprintf("free_process_memory_range(%p, 0x%lx - 0x%lx)\n",
 			vm, range->start, range->end);
 
 	start = range->start;
 	end = range->end;
+
+	/* referenced xpmem source range is freed remotely on detach */
+	if (ihk_atomic64_read(&range->xpmem_count.atomic) > 0) {
+		if ((count = ihk_atomic_add_long_return(-1, &range->xpmem_count.l)) > 0) {
+			kprintf("%s: skipping unmap: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+				__func__, (unsigned long)vm,
+				start, end, count);
+			return 0;
+		}
+		kprintf("%s: unmapping: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+			__func__, (unsigned long)vm,
+			start, end, ihk_atomic64_read(&range->xpmem_count.atomic));
+	}
 
 	/* No regular page table manipulation for straight mappings */
 	if (range->straight_start || ((void *)start == vm->proc->straight_va))
@@ -1493,6 +1509,7 @@ int add_process_memory_range(struct process_vm *vm,
 	range->objoff = offset;
 	range->pgshift = pgshift;
 	range->private_data = NULL;
+	ihk_atomic64_set(&range->xpmem_count.atomic, 0);
 	range->straight_start = 0;
 #ifdef ENABLE_TOFU
 	INIT_LIST_HEAD(&range->tofu_stag_list);

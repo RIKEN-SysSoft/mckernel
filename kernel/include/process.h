@@ -398,6 +398,10 @@ struct vm_range {
 #ifdef ENABLE_TOFU
 	struct list_head tofu_stag_list;
 #endif
+	union {  /* to ref source range */
+		ihk_atomic64_t atomic;
+		long l;
+	} xpmem_count;
 	void *private_data;
 };
 

@@ -180,6 +180,7 @@ struct xpmem_access_permit {
 struct xpmem_attachment {
 	mcs_rwlock_lock_t at_lock;	/* att lock */
 	unsigned long vaddr;	/* starting address of seg attached */
+	unsigned long min, max; /* min / max address of source ranges containing attached */
 	unsigned long at_vaddr;	/* address where seg is attached */
 	size_t at_size;		/* size of seg attachment */
 	struct vm_range *at_vmr;	/* vm_range where seg is attachment */
