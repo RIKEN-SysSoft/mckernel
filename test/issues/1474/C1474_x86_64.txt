@@ -1,0 +1,40 @@
+Script started on Mon Mar  1 15:20:29 2021
+bash-4.2$ make test
+gcc -g -Wall -o C1474T01 C1474T01.c
+gcc -g -Wall -o C1474T02 C1474T02.c
+gcc -g -Wall -o C1474T03 C1474T03.c
+gcc -g -Wall -O0 -pthread -o C1474T04 C1474T04.c
+gcc -g -Wall -O0 -pthread -o C1474T05 C1474T05.c
+gcc -g -Wall -O0 -pthread -o C1474T06 C1474T06.c
+sh ./C1474.sh
+mcstop+release.sh ... done
+mcreboot.sh -O -c 1-7 -m 2G@0 ... done
+x86_64
+1+0 records in
+1+0 records out
+4096 bytes (4.1 kB) copied, 0.000548447 s, 7.5 MB/s
+*** C1474T01 START ***
+remote page fault OK
+*** C1474T01 OK ***
+*** C1474T02 START ***
+remote page fault OK
+*** C1474T02 OK ***
+*** C1474T03 START ***
+remote page fault OK
+*** C1474T03 OK ***
+*** C1474T04 START ***
+thread is running on Linux OK
+remote page fault OK
+*** C1474T04 OK ***
+*** C1474T05 START ***
+thread is running on Linux OK
+remote page fault OK
+*** C1474T05 OK ***
+*** C1474T06 START ***
+thread is running on Linux OK
+remote page fault OK
+*** C1474T06 OK ***
+bash-4.2$ exit
+exit
+
+Script done on Mon Mar  1 15:20:46 2021
