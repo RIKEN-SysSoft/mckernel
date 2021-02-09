@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3486249e_c6d382bd",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1946,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-09T08:36:50Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tPAGE_SHIFT + p2align, private_data, \u0026range) !\u003d 0) {",
+      "revId": "aa50740646aae85fc8a492a806c7f92ebccc5388",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
