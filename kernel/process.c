@@ -139,6 +139,8 @@ init_process(struct process *proc, struct process *parent)
 	waitq_init(&proc->waitpid_q);
 	ihk_atomic_set(&proc->refcount, 2);
 	proc->monitoring_event = NULL;
+	ihk_mc_spinlock_init(&proc->backlog_lock);
+	INIT_LIST_HEAD(&proc->backlog_list);
 #ifdef PROFILE_ENABLE
 	mcs_lock_init(&proc->profile_lock);
 	proc->profile_events = NULL;
@@ -3602,6 +3604,7 @@ void spin_sleep_or_schedule(void)
 	int woken = 0;
 	long irqstate;
 
+	PROCESS_BACKLOG(thread->proc);
 	/* Spinning disabled explicitly */
 	if (idle_halt) {
 		dkprintf("%s: idle_halt -> schedule()\n", __FUNCTION__);
@@ -3862,6 +3865,8 @@ void check_need_resched(void)
 {
 	unsigned long irqstate;
 	struct cpu_local_var *v = get_this_cpu_local_var();
+
+	PROCESS_BACKLOG(cpu_local_var(current)->proc);
 	irqstate = ihk_mc_spinlock_lock(&v->runq_lock);
 	if (v->flags & CPU_FLAG_NEED_RESCHED) {
 		if (v->in_interrupt && (v->flags & CPU_FLAG_NEED_MIGRATE)) {
@@ -3872,6 +3877,7 @@ void check_need_resched(void)
 		v->flags &= ~CPU_FLAG_NEED_RESCHED;
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
 		schedule();
+		PROCESS_BACKLOG(cpu_local_var(current)->proc);
 	}
 	else {
 		ihk_mc_spinlock_unlock(&v->runq_lock, irqstate);
@@ -4262,3 +4268,38 @@ int access_ok(struct process_vm *vm, int type, uintptr_t addr, size_t len) {
 
 	return 0;
 }
+
+void register_process_backlog(struct process *proc,
+			      void (*func)(void *arg), void *arg)
+{
+	unsigned long flags;
+	struct process_backlog *backlog;
+
+	backlog = kmalloc(sizeof(struct process_backlog), IHK_MC_AP_NOWAIT);
+	INIT_LIST_HEAD(&backlog->list);
+	backlog->func = func;
+	backlog->arg = arg;
+	flags = ihk_mc_spinlock_lock(&proc->backlog_lock);
+	list_add_tail(&backlog->list, &proc->backlog_list);
+	ihk_mc_spinlock_unlock(&proc->backlog_lock, flags);
+}
+
+void process_backlog(void)
+{
+	struct thread *thread = cpu_local_var(current);
+	struct process *proc = thread->proc;
+
+	while (!list_empty(&proc->backlog_list)) {
+		unsigned long flags;
+		struct process_backlog *backlog;
+
+		flags = ihk_mc_spinlock_lock(&proc->backlog_lock);
+		backlog = list_first_entry(&proc->backlog_list,
+					   struct process_backlog, list);
+		list_del(&backlog->list);
+		ihk_mc_spinlock_unlock(&proc->backlog_lock, flags);
+		backlog->func(backlog->arg);
+		kfree(backlog);
+	}
+}
+

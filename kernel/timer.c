@@ -64,6 +64,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 		uint64_t t_s = rdtsc();
 		uint64_t t_e;
 
+		PROCESS_BACKLOG(cpu_local_var(current)->proc);
 		irqstate = ihk_mc_spinlock_lock(&thread->spin_sleep_lock);
 
 		/* Woken up by someone? */
@@ -103,6 +104,7 @@ uint64_t schedule_timeout(uint64_t timeout)
 		/* Spin wait */
 		while ((rdtsc() - t_s) < LOOP_TIMEOUT) {
 			ihk_numa_zero_free_pages(ihk_mc_get_numa_node_by_distance(0));
+			PROCESS_BACKLOG(cpu_local_var(current)->proc);
 			cpu_pause();
 		}
 

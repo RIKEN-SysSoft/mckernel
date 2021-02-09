@@ -460,6 +460,13 @@ struct mcexec_tid {
 	struct thread *thread;
 };
 
+struct process_backlog {
+	struct list_head list;
+	void (*func)(void *arg);
+	void *arg;
+
+};
+
 /* Represents a node in the process fork tree, it may exist even after the 
  * corresponding process exited due to references from the parent and/or 
  * children and is used for implementing wait/waitpid without having a 
@@ -598,6 +605,9 @@ struct process {
 
 	int coredump_barrier_count, coredump_barrier_count2;
 	mcs_rwlock_lock_t coredump_lock; // lock for coredump
+
+	ihk_spinlock_t backlog_lock;
+	struct list_head backlog_list;
 #ifdef ENABLE_TOFU
 #define MAX_FD_PDE 1024
 	void *fd_pde_data[MAX_FD_PDE];
@@ -925,6 +935,14 @@ int save_fp_regs(struct thread *proc);
 int copy_fp_regs(struct thread *from, struct thread *to);
 void restore_fp_regs(struct thread *proc);
 void clear_fp_regs(void);
+void register_process_backlog(struct process *proc,
+			      void (*func)(void *arg), void *arg);
+void process_backlog(void);
+#define PROCESS_BACKLOG(proc) {\
+	if (!list_empty(&(proc)->backlog_list)) {\
+		process_backlog();\
+	}\
+}
 
 #define VERIFY_READ 0
 #define VERIFY_WRITE 1
