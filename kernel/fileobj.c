@@ -483,6 +483,7 @@ static void fileobj_do_pageio(void *args0)
 	}
 
 	while (page->mode == PM_PAGEIO) {
+		PROCESS_BACKLOG(cpu_local_var(current)->proc);
 		mcs_lock_unlock(&obj->page_hash_locks[hash], &mcs_node);
 		++attempts;
 		if (attempts > 49) {
