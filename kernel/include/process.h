@@ -760,6 +760,9 @@ struct thread {
 	struct waitq coredump_wq;
 	int coredump_status;
 
+	void (*rpf_backlog)(void *arg);
+	void *rpf_arg;
+
 #ifdef ENABLE_TOFU
 	/* Path of file being opened */
 	char *fd_path_in_open;

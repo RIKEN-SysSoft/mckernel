@@ -252,6 +252,16 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long flags;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
+			if (thread->rpf_backlog) {
+				void (*func)(void *) = thread->rpf_backlog;
+				void *arg = thread->rpf_arg;
+
+				thread->rpf_backlog = NULL;
+				thread->rpf_arg = NULL;
+				func(arg);
+				kfree(arg);
+			}
+
 			check_sig_pending();
 			cpu_pause();
 
