@@ -246,6 +246,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long flags;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
+			PROCESS_BACKLOG(cpu_local_var(current)->proc);
 			check_sig_pending();
 			cpu_pause();
 
@@ -1044,6 +1045,7 @@ do_wait(int pid, int *status, int options, void *rusage)
 		 thread->proc->pid, pid);
 
  rescan:
+	PROCESS_BACKLOG(thread->proc);
 	waitq_init_entry(&waitpid_wqe, thread);
 	waitq_prepare_to_wait(&thread->proc->waitpid_q, &waitpid_wqe,
 			      PS_INTERRUPTIBLE);
@@ -1261,6 +1263,7 @@ void terminate(int rc, int sig)
 		sync_child_event(proc->monitoring_event);
 
 	// clean up threads
+	PROCESS_BACKLOG(mythread->proc);
 	mcs_rwlock_writer_lock_noirq(&proc->update_lock, &updatelock);
 	mcs_rwlock_writer_lock(&proc->threads_lock, &lock); // conflict clone
 	if (proc->status == PS_EXITED) {
@@ -1361,6 +1364,7 @@ void terminate(int rc, int sig)
 	}
 
 	for (;;) {
+		PROCESS_BACKLOG(thread->proc);
 		__mcs_rwlock_reader_lock(&proc->threads_lock, &lock);
 		found = 0;
 		list_for_each_entry(thread, &proc->threads_list,
@@ -5591,6 +5595,7 @@ do_sigsuspend(struct thread *thread, const sigset_t *set)
 			struct cpu_local_var *v;
 			long runq_irqstate;
 
+			PROCESS_BACKLOG(thread->proc);
 			thread->status = PS_INTERRUPTIBLE;
 			runq_irqstate = cpu_disable_interrupt_save();
 			ihk_mc_spinlock_lock_noirq(
@@ -7025,6 +7030,8 @@ do_exit(int code)
 	struct timespec ats;
 
 	dkprintf("sys_exit,pid=%d\n", proc->pid);
+
+	PROCESS_BACKLOG(thread->proc);
 
 	/* XXX: for if all threads issued the exit(2) rather than exit_group(2),
 	 *      exit(2) also should delegate.
@@ -8810,6 +8817,7 @@ SYSCALL_DECLARE(sched_yield)
 	ihk_mc_spinlock_unlock(&v->runq_lock, runq_irqstate);
 
 	if (do_schedule) {
+		PROCESS_BACKLOG(cpu_local_var(current)->proc);
 		schedule();
 	}
 
