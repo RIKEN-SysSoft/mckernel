@@ -1345,6 +1345,8 @@ static int xpmem_detach(
 	} else {
 		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
 	}
+	kprintf("%s: deref: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+		__func__, (unsigned long)vm, start, end, count);
 
  out:
 	xpmem_seg_deref(seg);
@@ -1898,6 +1900,8 @@ int xpmem_fault_process_memory_range(
 
 	if ((seg->flags & XPMEM_FLAG_DESTROYING) ||
 		(seg_tg->flags & XPMEM_FLAG_DESTROYING)) {
+		kprintf("%s: error: destroying, seg->flag: %lx, seg_tg->flags: %lx\n",
+			__func__, seg->flags, seg_tg->flags);
 		ret = -ENOENT;
 		goto out_2;
 	}
@@ -1920,6 +1924,8 @@ int xpmem_fault_process_memory_range(
 
 	ret = xpmem_ensure_valid_page(seg, seg_vaddr);
 	if (ret != 0) {
+		kprintf("%s: xpmem_ensure_valid_page failed with %d\n",
+			__func__, ret);
 		goto out_2;
 	}
 
@@ -2154,6 +2160,13 @@ static int xpmem_pin_page(
 	ihk_rwspinlock_read_unlock_noirq(&src_vm->memory_range_lock);
 
 	if (!range || range->start > vaddr) {
+		kprintf("%s: error: src range not found, "
+			"src vm: %lx, vaddr: %lx, stack_start: %lx, stack_end: %lx\n",
+			__func__,
+			(unsigned long)src_vm,
+			vaddr,
+			src_vm->region.stack_start,
+			src_vm->region.stack_end);
 		return -ENOENT;
 	}
 
