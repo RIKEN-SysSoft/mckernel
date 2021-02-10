@@ -1062,6 +1062,8 @@ static int xpmem_attach(
 	if (ret != 0) {
 		goto out_1;
 	}
+	kprintf("%s: source: vm: %lx, range: %lx-%lx\n",
+		__func__, seg_tg->vm, seg_vaddr, seg_vaddr + size);
 
 	size += offset_in_page(seg_vaddr);
 
@@ -1787,6 +1789,8 @@ static int _xpmem_fault_process_memory_range(
 
 	if ((seg->flags & XPMEM_FLAG_DESTROYING) ||
 		(seg_tg->flags & XPMEM_FLAG_DESTROYING)) {
+		kprintf("%s: error: destroying, seg->flag: %lx, seg_tg->flags: %lx\n",
+			__func__, seg->flags, seg_tg->flags);
 		ret = -ENOENT;
 		goto out;
 	}
@@ -1809,6 +1813,8 @@ static int _xpmem_fault_process_memory_range(
 
 	ret = xpmem_ensure_valid_page(seg, seg_vaddr, page_in_remote);
 	if (ret != 0) {
+		kprintf("%s: xpmem_ensure_valid_page failed with %d\n",
+			__func__, ret);
 		goto out;
 	}
 
@@ -2157,6 +2163,14 @@ retry:
 
 			goto retry;
 		}
+
+		kprintf("%s: error: src range not found, "
+			"src vm: %lx, vaddr: %lx, stack_start: %lx, stack_end: %lx\n",
+			__func__,
+			(unsigned long)src_vm,
+			vaddr,
+			src_vm->region.stack_start,
+			src_vm->region.stack_end);
 
 		return -ENOENT;
 	}
