@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "25aafdbb_6dea13b6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 14
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-10T06:49:28Z",
+      "side": 1,
+      "message": "arm/CT3[1-4].c\nに加えて、\nCT3[1-4].c\nも修正しましたので、x86_64, utiでの再テストをお願いいたします。",
+      "revId": "61442474e1693c0ab6ee8308a2262da941843213",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "c248fa3f_cee91fcd",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 14
