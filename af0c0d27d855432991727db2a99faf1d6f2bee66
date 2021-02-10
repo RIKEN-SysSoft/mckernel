@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e01db36f_30cff8b8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 13
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-10T05:51:56Z",
+      "side": 1,
+      "message": "CT33.c, CT34.cを修正して、aarch64, LinuxでOKとなることを確認いたしました。\nx86_64での確認をよろしくお願いいたします。",
+      "revId": "af0c0d27d855432991727db2a99faf1d6f2bee66",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
