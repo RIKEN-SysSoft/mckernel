@@ -78,6 +78,9 @@ This package contains headers and libraries required for build apps using IHK/Mc
 	%{?cmake_libdir:-DCMAKE_INSTALL_LIBDIR=%{cmake_libdir}} \
 	%{?build_target:-DBUILD_TARGET=%{build_target}} \
 	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
+	-DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON \
+	-DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON \
+	-DENABLE_FUGAKU_DEBUG=OFF \
 	.
 %make_build
 

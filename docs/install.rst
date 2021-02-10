@@ -129,7 +129,7 @@ Create the tarball and the spec file:
    make dist
    cp mckernel-<version>.tar.gz <rpmbuild>/SOURCES
 
-(optional) Insert a line into ``scripts/mckernel.spec`` to specify
+(optional) Edit the following line in ``scripts/mckernel.spec`` to change
 cmake options. For example:
 
 ::
@@ -140,7 +140,9 @@ cmake options. For example:
 	%{?cmake_libdir:-DCMAKE_INSTALL_LIBDIR=%{cmake_libdir}} \
 	%{?build_target:-DBUILD_TARGET=%{build_target}} \
 	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
-	-DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON -DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON -DENABLE_FUGAKU_DEBUG=OFF \
+	-DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON \
+	-DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON \
+	-DENABLE_FUGAKU_DEBUG=OFF \
 	.
 
 Create the rpm package:
