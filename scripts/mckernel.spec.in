@@ -25,9 +25,17 @@ Source0: mckernel-%{version}.tar.gz
 
 Requires: systemd-libs numactl-libs libdwarf
 
-# kernel_module_package macro does not handle cross build...
+# don't use kernel_module_package so that one rpm including .ko and binaries are created
 %if "%{?_host_cpu}" == "x86_64" && "%{?_target_cpu}" == "aarch64"
 %define cross_compile 1
+%else
+BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel libdwarf-devel
+# Friendly reminder of the fact that kernel-rpm-macros is no longer included in kernel-devel
+%if 0%{?rhel} >= 8
+BuildRequires: redhat-rpm-config kernel-rpm-macros elfutils-libelf-devel
+%endif
+%endif
+
 %if 0%{?rhel} >= 8
 Requires: kernel >= %{krequires}
 %else
@@ -35,17 +43,6 @@ Requires: kernel = %{krequires}
 %endif
 Requires(post):   /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
-%else
-BuildRequires: systemd-devel numactl-devel binutils-devel kernel-devel libdwarf-devel
-# Friendly reminder of the fact that kernel-rpm-macros is no longer included in kernel-devel
-%if 0%{?rhel} >= 8
-BuildRequires: redhat-rpm-config kernel-rpm-macros elfutils-libelf-devel kmod
-%endif
-%if %{defined kernel_module_package_buildreqs}
-BuildRequires: %kernel_module_package_buildreqs
-%kernel_module_package %{?kmod_flavors}
-%endif
-%endif
 
 %description
 Interface for Heterogeneous Kernels and McKernel.
@@ -116,7 +113,6 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %{_mandir}/man1/ihkosctl.1.gz
 %{_mandir}/man1/mcexec.1.gz
 
-%if 0%{?cross_compile}
 /lib/modules/%{kernel_version}/extra/mckernel/ihk.ko
 /lib/modules/%{kernel_version}/extra/mckernel/mcctrl.ko
 %ifarch x86_64
@@ -124,7 +120,6 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %endif
 %ifarch aarch64
 /lib/modules/%{kernel_version}/extra/mckernel/ihk-smp-arm64.ko
-%endif
 %endif
 
 %files	devel
@@ -138,8 +133,7 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %{_includedir}/ihk/ihk_host_driver.h
 /lib/modules/%{kernel_version}/extra/mckernel/ihk/linux/core/Module.symvers
 
-%if 0%{?cross_compile}
-# scripts from /usr/lib/rpm/redhat/kmodtool (kernel_module_package) as well
+# taken from /usr/lib/rpm/redhat/kmodtool (kernel_module_package)
 %post
 if [ -e "/boot/System.map-%{kernel_version}" ]; then
     /usr/sbin/depmod -aeF "/boot/System.map-%{kernel_version}" "%{kernel_version}" > /dev/null || :
@@ -165,7 +159,6 @@ if [ -x "/sbin/weak-modules" ]; then
     printf '%s\n' "${modules[@]}" \
     | /sbin/weak-modules --remove-modules
 fi
-%endif
 
 %changelog
 * Tue Feb 12 2019 Dominique Martinet <dominique.martinet@cea.fr> - 1.6.0-0
