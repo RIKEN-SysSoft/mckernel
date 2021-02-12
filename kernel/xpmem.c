@@ -1321,9 +1321,9 @@ static int xpmem_detach(
 	}
 
 	if ((count = ihk_atomic_add_long_return(-1, &src_range->xpmem_count.l)) == 0) {
-		kprintf("%s: info: remote-munmapping %lx-%lx (vm: %lx)\n",
-			__func__, src_range->start, src_range->end,
-			(unsigned long)src_vm);
+		kprintf("%s: remote-munmap, vm: %lx, range: %lx-%lx\n",
+			__func__, (unsigned long)src_vm,
+			src_range->start, src_range->end);
 
 		ret = _do_munmap(src_thread,
 				 src_vm,
