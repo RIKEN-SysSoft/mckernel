@@ -1271,9 +1271,7 @@ static int xpmem_detach(
 	struct xpmem_thread_group *seg_tg;
 	struct thread *src_thread;
 	struct process_vm *src_vm;
-	struct vm_range *src_range;
 	unsigned long seg_vaddr;
-	int count;
 
 	XPMEM_DEBUG("call: at_vaddr=0x%lx", at_vaddr);
 
@@ -1349,51 +1347,36 @@ static int xpmem_detach(
 	xpmem_tg_ref(seg_tg);
 	src_vm = seg_tg->vm;
 	seg_vaddr = att->vaddr;
-
 	src_thread = seg_tg->group_leader;
 
 	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
 
-	src_range = lookup_process_memory_range(src_vm, seg_vaddr, seg_vaddr + 1);
+	kprintf("%s: remote-munmap, vm: %lx, range: %lx-%lx\n",
+		__func__, (unsigned long)src_vm,
+		seg_vaddr, seg_vaddr + att->at_size);
 
-	if (!src_range) {
-		kprintf("%s: source vm not found, vaddr: %lx\n",
-			__func__, seg_vaddr);
-		ret = -ENOENT;
+	ret = _do_munmap(src_thread,
+			 src_vm,
+			 (void *)seg_vaddr,
+			 seg_vaddr + att->at_size,
+			 1);
+
+	if (ret) {
+		kprintf("%s: error: _do_munmap: %lx-%lx, ret: %d\n",
+			__func__,
+			seg_vaddr, seg_vaddr + att->at_size,
+			ret);
+		ret = -EINVAL;
 		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
 		goto out;
 	}
 
-	if ((count = ihk_atomic_add_long_return(-1, &src_range->xpmem_count.l)) == 0) {
-		kprintf("%s: remote-munmap, vm: %lx, range: %lx-%lx\n",
-			__func__, (unsigned long)src_vm,
-			src_range->start, src_range->end);
+	ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
 
-		ret = _do_munmap(src_thread,
-				 src_vm,
-				 (void *)src_range->start,
-				 src_range->end - src_range->start,
-				 1);
-		if (ret) {
-			kprintf("%s: error: _do_munmap: %lx-%lx, ret: %d\n",
-				__func__, src_range->start,
-				src_range->end, ret);
-			ret = -EINVAL;
-			ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
-			goto out;
-		}
+	release_process_vm(src_vm);
+	release_thread(src_thread);
 
-		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
-		release_process_vm(src_vm);
-		release_thread(src_thread);
-	} else {
-		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
-	}
-	kprintf("%s: deref: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
-		__func__, (unsigned long)src_vm,
-		src_range->start, src_range->end,
-		count);
-
+	ret = 0;
  out:
 	xpmem_seg_deref(seg);
 	xpmem_tg_deref(seg_tg);
@@ -1401,7 +1384,6 @@ static int xpmem_detach(
 	xpmem_ap_deref(ap);
 	xpmem_att_deref(att);
 
-	ret = 0;
 	XPMEM_DEBUG("return: ret=%d", ret);
 
 	return ret;
