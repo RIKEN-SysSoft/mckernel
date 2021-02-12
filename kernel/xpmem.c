@@ -1062,6 +1062,8 @@ static int xpmem_attach(
 	if (ret != 0) {
 		goto out_1;
 	}
+	kprintf("%s: source: vm: %lx, range: %lx-%lx\n",
+		__func__, seg_tg->vm, seg_vaddr, seg_vaddr + size);
 
 	/* ref remote process, vm, range */
 	src_thread = seg_tg->group_leader;
