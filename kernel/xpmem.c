@@ -1017,6 +1017,7 @@ static int xpmem_attach(
 	struct process_vm *src_vm;
 	struct vm_range *src_range;
 	unsigned long old;
+	unsigned long src_vaddr;
 
 	XPMEM_DEBUG("call: apid=0x%lx, offset=0x%lx, size=0x%lx, vaddr=0x%lx, " 
 		"fd=%d, att_flags=%d", 
@@ -1070,20 +1071,61 @@ static int xpmem_attach(
 	hold_process_vm(src_vm);
 
 	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
-	src_range = lookup_process_memory_range(src_vm, seg_vaddr, seg_vaddr + 1);
 
-	if (!src_range) {
-		kprintf("%s: source vm not found, vaddr: %lx\n",
-			__func__, seg_vaddr);
-		ret = -ENOENT;
-		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
-		goto out_1;
+	src_range = NULL;
+	for (src_vaddr = seg_vaddr; src_vaddr < seg_vaddr + size; src_vaddr = src_range->end) {
+		if (src_range == NULL) {
+			src_range = lookup_process_memory_range(src_vm, seg_vaddr, seg_vaddr + 1);
+		}
+		else {
+			src_range = next_process_memory_range(src_vm, src_range);
+		}
+
+		if (!src_range) {
+			kprintf("%s: source range not found, vm: %lx, vaddr: %lx\n",
+				__func__, (unsigned long)src_vm, seg_vaddr);
+			ret = -ENOENT;
+			ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+			goto out_1;
+		}
+
+		if (src_range->start < src_vaddr) {
+			kprintf("%s: split, vm: %lx, range: %lx-%lx and %lx-%lx\n",
+				__func__, seg_tg->vm,
+				src_range->start, src_vaddr,
+				src_vaddr, src_range->end);
+			ret = split_process_memory_range(src_vm, src_range, src_vaddr, &src_range);
+			if (ret) {
+				ekprintf("%s :split failed with %d\n",
+					 __func__, ret);
+				ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+				goto out_1;
+			}
+		}
+
+		if (seg_vaddr + size < src_range->end) {
+			kprintf("%s: split, vm: %lx, range: %lx-%lx and %lx-%lx\n",
+				__func__, seg_tg->vm,
+				src_range->start, seg_vaddr + size,
+				seg_vaddr + size, src_range->end);
+			ret = split_process_memory_range(src_vm, src_range, seg_vaddr + size, NULL);
+			if (ret) {
+				ekprintf("%s :split failed with %d\n",
+					 __func__, ret);
+				ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+				goto out_1;
+			}
+		}
+
+		/* first attach "ref"s for source range as well */
+		if ((old = ihk_atomic64_cmpxchg(&src_range->xpmem_count.atomic, 0, 2)) != 0) {
+			ihk_atomic_add_long(1, &src_range->xpmem_count.l);
+		}
+		kprintf("%s: ref done, source: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+			__func__, seg_tg->vm, src_range->start, src_range->end,
+			ihk_atomic64_read(&range->xpmem_count.atomic));
 	}
 
-	/* first attach "ref"s for source range as well */
-	if ((old = ihk_atomic64_cmpxchg(&src_range->xpmem_count.atomic, 0, 2)) != 0) {
-		ihk_atomic_add_long(1, &src_range->xpmem_count.l);
-	}
 	ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
 
 	/* range check */
