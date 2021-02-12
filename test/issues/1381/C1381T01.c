@@ -52,13 +52,12 @@ int main(int argc, char **argv)
 	memset(addr, 'a', size);
 	errno = 0;
 	err = munmap(addr + size - ps, ps);
-	if (err == -1 && errno == EINVAL) {
-		printf("[OK] munmap returned %d and errno: EINVAL\n", err);
-	}
-	else {
-		printf("[NG] munamp succceeded\n");
+	if (err == 0 && errno == 0) {
+		printf("[OK] munamp succceeded\n");
+	} else {
+		printf("[NG] munmap returned %d and errno: %d\n",
+			err, errno);
 		ret = -1;
-//		goto out;
 	}
 
 	printf("** Case 2: size is aligned on large page\n");
@@ -72,13 +71,12 @@ int main(int argc, char **argv)
 	memset(addr, 'a', size);
 	errno = 0;
 	err = munmap(addr + size - ps, ps);
-	if (err == -1 && errno == EINVAL) {
-		printf("[OK] munmap returned %d and errno: EINVAL\n", err);
-	}
-	else {
-		printf("[NG] munamp succceeded\n");
+	if (err == 0 && errno == 0) {
+		printf("[OK] munamp succceeded\n");
+	} else {
+		printf("[NG] munmap returned %d and errno: %d\n",
+			err, errno);
 		ret = -1;
-//		goto out;
 	}
 
 	printf("** Case 3: size is NOT aligned on large page\n");
