@@ -1,14 +1,16 @@
+mcstop+release.sh ... done
+mcreboot.sh -e hugetlbfs_on_demand -c 12-59 -m 7G@4,7G@5,7G@6,7G@7 ... done
 *** C1381T01 start *******************************
 ** Case 1: specified MAP_HUGETLB
-[OK] munmap returned -1 and errno: EINVAL
+[OK] munamp succceeded
 ** Case 2: size is aligned on large page
-[OK] munmap returned -1 and errno: EINVAL
+[OK] munamp succceeded
 ** Case 3: size is NOT aligned on large page
 [OK] munamp succceeded
 *** C1381T01 PASSED ******************************
 
 *** C1381T02 start *******************************
-futex_wake04    0  TINFO  :  Hugepagesize 536870912
+futex_wake04    0  TINFO  :  Hugepagesize 2097152
 futex_wake04    1  TPASS  :  Hi hydra, thread2 awake!
 *** C1381T02 PASSED (1)
 
@@ -17,7 +19,7 @@ tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
 shmat01.c:147: PASS: shmat() succeeded to attach NULL address
 shmat01.c:147: PASS: shmat() succeeded to attach aligned address
 shmat01.c:147: PASS: shmat() succeeded to attach unaligned address with SHM_RND
-shmat01.c:147: PASS: shmat() succeeded to attach aligned address with SHM_READONLY, and got S  IGSEGV on write
+shmat01.c:147: PASS: shmat() succeeded to attach aligned address with SHM_READONLY, and got SIGSEGV on write
 
 Summary:
 passed   4
@@ -42,7 +44,7 @@ warnings 0
 *** C1381T05 start *******************************
 tst_test.c:1096: INFO: Timeout per run is 0h 05m 00s
 shmat03.c:75: INFO: Attempting to attach shared memory to null page
-shmat03.c:91: INFO: Mapped shared memory to 0x1000001e0000
+shmat03.c:91: INFO: Mapped shared memory to 0x1000001c0000
 shmat03.c:98: PASS: The kernel assigned a different VM address
 shmat03.c:101: INFO: Touching shared memory to see if anything strange happens
 
@@ -70,8 +72,8 @@ shmctl02    2  TPASS  :  expected failure - errno = 14 : Bad address
 shmctl02    3  TPASS  :  expected failure - errno = 14 : Bad address
 shmctl02    4  TPASS  :  expected failure - errno = 22 : Invalid argument
 shmctl02    5  TPASS  :  expected failure - errno = 22 : Invalid argument
-shmctl02    6  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be   okay for your distribution.
-shmctl02    7  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be   okay for your distribution.
+shmctl02    6  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
+shmctl02    7  TCONF  :  shmctl02.c:138: shmctl() did not fail for non-root user.This may be okay for your distribution.
 *** C1381T07 PASSED (5)
 
 *** C1381T08 start *******************************
@@ -114,3 +116,4 @@ shmget04    1  TPASS  :  expected failure - errno = 13 : Permission denied
 *** C1381T16 start *******************************
 shmget05    1  TPASS  :  expected failure - errno = 13 : Permission denied
 *** C1381T16 PASSED (1)
+
