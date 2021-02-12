@@ -1328,14 +1328,14 @@ int remove_process_memory_range(struct process_vm *vm,
 		/* referenced xpmem source range is freed remotely on detach */
 		if (ihk_atomic64_read(&range->xpmem_count.atomic) > 0) {
 			if ((count = ihk_atomic_add_long_return(-1, &range->xpmem_count.l)) > 0) {
-				kprintf("%s: info: skipping unmap of %lx-%lx (vm: %lx) with xpmem_count of %d\n",
-					__func__, start, end,
-					(unsigned long)vm, count);
+				kprintf("%s: skipping unmap: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+					__func__, (unsigned long)vm,
+					start, end, count);
 				continue;
 			}
-			kprintf("%s: info: unmapping of %lx-%lx (vm: %lx) with xpmem_count of %d\n",
-				__func__, start, end,
-				(unsigned long)vm, count);
+			kprintf("%s: unmapping: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+				__func__, (unsigned long)vm,
+				start, end, count);
 		}
 
 		error = free_process_memory_range(vm, range);

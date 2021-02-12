@@ -1125,7 +1125,7 @@ static int xpmem_attach(
 		}
 		kprintf("%s: ref done, source: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
 			__func__, seg_tg->vm, src_range->start, src_range->end,
-			ihk_atomic64_read(&range->xpmem_count.atomic));
+			ihk_atomic64_read(&src_range->xpmem_count.atomic));
 	}
 
 	ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
@@ -1390,7 +1390,9 @@ static int xpmem_detach(
 		ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
 	}
 	kprintf("%s: deref: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
-		__func__, (unsigned long)vm, start, end, count);
+		__func__, (unsigned long)src_vm,
+		src_range->start, src_range->end,
+		count);
 
  out:
 	xpmem_seg_deref(seg);
