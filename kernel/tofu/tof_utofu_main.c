@@ -1267,13 +1267,6 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 		}
 	}
 	else {
-		/* grow stack before lookup */
-		ret = grow_stack(vm, start);
-		if (ret) {
-			kprintf("%s: grow_stack failed with %d\n",
-				__func__, ret);
-			goto unlock_out;
-		}
 		range = lookup_process_memory_range(vm, start, end);
 	}
 
