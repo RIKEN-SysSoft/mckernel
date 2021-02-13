@@ -952,6 +952,8 @@ wait_thread(int tid, int *status, int options, void *rusage, int *empty)
 					mcs_rwlock_writer_unlock_noirq(
 					    &thread->proc->threads_lock, &lock);
 					release_thread(child);
+					kprintf("%s: thread->refcount: %d\n",
+						__func__, ihk_atomic_read(&child->refcount));
 				}
 			}
 			else
@@ -1273,6 +1275,8 @@ void terminate(int rc, int sig)
 		mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 		mcs_rwlock_writer_unlock_noirq(&proc->update_lock, &updatelock);
 		release_thread(mythread);
+		kprintf("%s: thread->refcount: %d\n",
+			__func__, ihk_atomic_read(&mythread->refcount));
 		preempt_enable();
 		schedule();
 		// no return
@@ -1413,6 +1417,8 @@ void terminate(int rc, int sig)
 			thr->report_proc = NULL;
 			mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 			release_thread(thr);
+			kprintf("%s: thread->refcount: %d\n",
+				__func__, ihk_atomic_read(&thr->refcount));
 		}
 	}
 
@@ -1483,7 +1489,11 @@ void terminate(int rc, int sig)
 	mythread->status = PS_EXITED;
 	mcs_rwlock_writer_unlock(&proc->threads_lock, &lock);
 	release_thread(mythread);
+	kprintf("%s: thread->refcount: %d\n",
+		__func__, ihk_atomic_read(&mythread->refcount));
 	release_process_vm(vm);
+	kprintf("%s: vm->refcount: %d\n",
+		__func__, ihk_atomic_read(&vm->refcount));
 	preempt_enable();
 	schedule();
 	kprintf("%s: ERROR: returned from terminate() -> schedule()\n", __FUNCTION__);
@@ -1562,6 +1572,8 @@ terminate_host(int pid, struct thread *thread)
 			proc = thread->proc;
 			ihk_atomic_set(&thread->refcount, 1);
 			release_thread(thread);
+			kprintf("%s: thread->refcount: %d\n",
+				__func__, ihk_atomic_read(&thread->refcount));
 			release_process(proc);
 		}
 		return;

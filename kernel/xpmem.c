@@ -1225,7 +1225,6 @@ out_2:
 	/* ref remote process, vm, range */
 	src_thread = seg_tg->group_leader;
 	hold_thread(src_thread);
-
 	hold_process_vm(src_vm);
 
 	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
@@ -1486,8 +1485,12 @@ static int xpmem_detach(
 			ihk_atomic64_read(&src_range->xpmem_count.atomic));
 	}
 	ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
-	release_process_vm(src_vm);
 	release_thread(src_thread);
+	kprintf("%s: thread->refcount: %d\n",
+		__func__, ihk_atomic_read(&src_thread->refcount));
+	release_process_vm(src_vm);
+	kprintf("%s: vm->refcount: %d\n",
+		__func__, ihk_atomic_read(&src_vm->refcount));
 	}
 #endif
 
