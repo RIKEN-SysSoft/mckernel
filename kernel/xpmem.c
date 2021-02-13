@@ -1062,7 +1062,7 @@ static int xpmem_attach(
 	if (ret != 0) {
 		goto out_1;
 	}
-	kprintf("%s: source: vm: %lx, range: %lx-%lx\n",
+	kprintf("%s: source: vm: %lx, seg_vaddr: %lx-%lx\n",
 		__func__, seg_tg->vm, seg_vaddr, seg_vaddr + size);
 
 	/* ref remote process, vm, range */
@@ -2188,13 +2188,48 @@ static int xpmem_pin_page(
 	ihk_rwspinlock_read_unlock_noirq(&src_vm->memory_range_lock);
 
 	if (!range || range->start > vaddr) {
-		kprintf("%s: error: src range not found, "
-			"src vm: %lx, vaddr: %lx, stack_start: %lx, stack_end: %lx\n",
+		struct vm_range *stack_range = NULL;
+		unsigned long stack_vaddr;
+
+		if (range) {
+			kprintf("%s: error: invalid range->start, "
+				"src vm: %lx, range: %lx, vaddr: %lx, range: %lx-%lx\n",
+				__func__,
+				(unsigned long)src_vm,
+				range,
+				vaddr,
+				range->start,
+				range->end);
+		} else {
+			kprintf("%s: error: src range not found, "
+				"src vm: %lx, range: %lx, vaddr: %lx\n",
+				__func__,
+				(unsigned long)src_vm,
+				range,
+				vaddr);
+		}
+
+		kprintf("%s: dumping stack ranges: src vm: %lx, src_vm->region.stack: %lx-%lx\n",
 			__func__,
 			(unsigned long)src_vm,
-			vaddr,
 			src_vm->region.stack_start,
 			src_vm->region.stack_end);
+
+		for (stack_vaddr = src_vm->region.stack_end; stack_vaddr - 1 >= src_vm->region.stack_start; stack_vaddr = stack_range->start) {
+			if (stack_range == NULL) {
+				stack_range = lookup_process_memory_range(src_vm, stack_vaddr - 1, stack_vaddr);
+			}
+			else {
+				stack_range = previous_process_memory_range(src_vm, stack_range);
+			}
+
+			kprintf("%s: info: src vm: %lx, stack_range: %lx-%lx\n",
+				__func__,
+				(unsigned long)src_vm,
+				stack_range->start,
+				stack_range->end);
+		}
+
 		return -ENOENT;
 	}
 
