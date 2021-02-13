@@ -1236,7 +1236,6 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 
 	readonly = (req.flags & 1) != 0;
 
-	ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
 
 	/* Assume smallest page size at first */
 	start = round_down((uintptr_t)req.va, PAGE_SIZE);
@@ -1252,6 +1251,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 					vm->proc->straight_len))) {
 		struct vm_range *range_iter;
 
+		ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
 		range_iter = lookup_process_memory_range(vm, 0, -1);
 
 		while (range_iter) {
@@ -1267,6 +1267,14 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 		}
 	}
 	else {
+		/* grow stack before lookup */
+		ret = grow_stack(vm, start);
+		if (ret) {
+			kprintf("%s: grow_stack failed with %d\n",
+				__func__, ret);
+			goto out;
+		}
+		ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
 		range = lookup_process_memory_range(vm, start, end);
 	}
 
@@ -1357,7 +1365,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 
 unlock_out:
 	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
-
+out:
 	if(ret == 0){
 		if(copy_to_user((void *)arg, &req, sizeof(req)) != 0){
 			kprintf("%s: ret: %d\n", __func__, -EFAULT);

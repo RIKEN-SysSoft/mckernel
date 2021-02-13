@@ -1087,12 +1087,26 @@ static int free_process_memory_range(struct process_vm *vm,
 	intptr_t lpstart;
 	intptr_t lpend;
 	size_t pgsize;
+	int count;
 
 	dkprintf("free_process_memory_range(%p, 0x%lx - 0x%lx)\n",
 			vm, range->start, range->end);
 
 	start = range->start;
 	end = range->end;
+
+	/* referenced xpmem source range is freed remotely on detach */
+	if (ihk_atomic64_read(&range->xpmem_count.atomic) > 0) {
+		if ((count = ihk_atomic_add_long_return(-1, &range->xpmem_count.l)) > 0) {
+			kprintf("%s: skipping unmap: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+				__func__, (unsigned long)vm,
+				start, end, count);
+			return 0;
+		}
+		kprintf("%s: unmapping: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+			__func__, (unsigned long)vm,
+			start, end, ihk_atomic64_read(&range->xpmem_count.atomic));
+	}
 
 	/* No regular page table manipulation for straight mappings */
 	if (range->straight_start || ((void *)start == vm->proc->straight_va))
@@ -1291,8 +1305,6 @@ int remove_process_memory_range(struct process_vm *vm,
 
 	next = lookup_process_memory_range(vm, start, end);
 	while ((range = next) && range->start < end) {
-		int count;
-
 		next = next_process_memory_range(vm, range);
 
 		if (range->start < start) {
@@ -1323,19 +1335,6 @@ int remove_process_memory_range(struct process_vm *vm,
 
 		if (range->private_data) {
 			xpmem_remove_process_memory_range(vm, range);
-		}
-
-		/* referenced xpmem source range is freed remotely on detach */
-		if (ihk_atomic64_read(&range->xpmem_count.atomic) > 0) {
-			if ((count = ihk_atomic_add_long_return(-1, &range->xpmem_count.l)) > 0) {
-				kprintf("%s: skipping unmap: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
-					__func__, (unsigned long)vm,
-					start, end, count);
-				continue;
-			}
-			kprintf("%s: unmapping: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
-				__func__, (unsigned long)vm,
-				start, end, count);
 		}
 
 		error = free_process_memory_range(vm, range);
