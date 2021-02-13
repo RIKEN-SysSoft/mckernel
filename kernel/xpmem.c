@@ -1074,6 +1074,7 @@ static int xpmem_attach(
 
 	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
 
+	/* mark all possibly surrounding ranges */
 	src_range = NULL;
 	for (src_vaddr = seg_vaddr; src_vaddr < seg_vaddr + size; src_vaddr = src_range->end) {
 		if (src_range == NULL) {
@@ -1090,7 +1091,7 @@ static int xpmem_attach(
 			ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
 			goto out_1;
 		}
-
+#if 0 /* hugefileobj does not support splitting */
 		if (src_range->start < src_vaddr) {
 			kprintf("%s: split, vm: %lx, range: %lx-%lx and %lx-%lx\n",
 				__func__, seg_tg->vm,
@@ -1118,12 +1119,13 @@ static int xpmem_attach(
 				goto out_1;
 			}
 		}
+#endif
 
 		/* first attach "ref"s for source range as well */
 		if ((old = ihk_atomic64_cmpxchg(&src_range->xpmem_count.atomic, 0, 2)) != 0) {
 			ihk_atomic_add_long(1, &src_range->xpmem_count.l);
 		}
-		kprintf("%s: ref done, source: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
+		kprintf("%s: ref, source: vm: %lx, range: %lx-%lx, xpmem_count: %d\n",
 			__func__, seg_tg->vm, src_range->start, src_range->end,
 			ihk_atomic64_read(&src_range->xpmem_count.atomic));
 	}
@@ -1351,6 +1353,7 @@ static int xpmem_detach(
 
 	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
 
+#if 0
 	kprintf("%s: remote-munmap, vm: %lx, range: %lx-%lx\n",
 		__func__, (unsigned long)src_vm,
 		seg_vaddr, seg_vaddr + att->at_size);
@@ -1375,6 +1378,58 @@ static int xpmem_detach(
 
 	release_process_vm(src_vm);
 	release_thread(src_thread);
+#else /* munmap all possibly surrounding ranges */
+	{
+	struct vm_range *src_range;
+	unsigned long src_vaddr;
+	int count;
+
+	/* avoid splitting by unmapping range by range */
+	src_range = NULL;
+	for (src_vaddr = seg_vaddr; src_vaddr < seg_vaddr + att->at_size; src_vaddr = src_range->end) {
+		if (src_range == NULL) {
+			src_range = lookup_process_memory_range(src_vm, seg_vaddr, seg_vaddr + 1);
+			if (!src_range) {
+				kprintf("%s: source range not found, vm: %lx, seg_vaddr: %lx-%lx\n",
+					__func__, (unsigned long)src_vm,
+					seg_vaddr, seg_vaddr + att->at_size);
+				ret = -ENOENT;
+				ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+				goto out;
+			}
+		}
+		else {
+			src_range = next_process_memory_range(src_vm, src_range);
+		}
+
+		if ((count = ihk_atomic_add_long_return(-1, &src_range->xpmem_count.l)) == 0) {
+			kprintf("%s: remote-munmap, vm: %lx,src_range: %lx-%lx\n",
+				__func__, (unsigned long)src_vm,
+				src_range->start, src_range->end);
+
+			ret = _do_munmap(src_thread,
+					 src_vm,
+					 (void *)src_range->start,
+					 src_range->end - src_range->start,
+					 1);
+			if (ret) {
+				kprintf("%s: error: _do_munmap: %lx-%lx, ret: %d\n",
+					__func__, src_range->start,
+					src_range->end, ret);
+				ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+	                        goto out;
+	                }
+		}
+		kprintf("%s: deref, src_vm: %lx, src_range: %lx-%lx, xpmem_count: %d\n",
+			__func__, (unsigned long)src_vm,
+			src_range->start, src_range->end,
+			ihk_atomic64_read(&src_range->xpmem_count.atomic));
+	}
+	ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+	release_process_vm(src_vm);
+	release_thread(src_thread);
+	}
+#endif
 
 	ret = 0;
  out:
