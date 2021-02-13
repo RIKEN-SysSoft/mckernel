@@ -1216,7 +1216,7 @@ out_2:
 
 	/* grow stack before lookup */
 	ret = grow_stack(src_vm, seg_vaddr);
-        if (ret) {
+	if (ret) {
 		kprintf("%s: grow_stack failed with %d\n",
 			__func__, ret);
 		goto out_1;
@@ -1229,7 +1229,7 @@ out_2:
 
 	ihk_rwspinlock_write_lock_noirq(&src_vm->memory_range_lock);
 
-	/* mark source ranges containing attached */
+	/* ref source ranges containing attached */
 	src_range = NULL;
 	for (src_vaddr = seg_vaddr; src_vaddr < seg_vaddr + size; src_vaddr = src_range->end) {
 		if (src_range == NULL) {

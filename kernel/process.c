@@ -2335,6 +2335,74 @@ out:
 	return error;
 }
 
+int grow_stack(struct process_vm *vm, uintptr_t fault_addr)
+{
+	int ret;
+	struct vm_range *range;
+	int locked = 0;
+
+	if (fault_addr < vm->region.stack_start ||
+	    fault_addr >= vm->region.stack_end) {
+		return 0;
+	}
+
+	range = lookup_process_memory_range(vm,
+					    vm->region.stack_end - 1,
+					    vm->region.stack_end);
+	if (range == NULL) {
+		ret = -EFAULT;
+		kprintf("%s: stack not found, vm: %lx, addr: %lx\n",
+			__func__, (unsigned long)vm, fault_addr);
+		goto out;
+	}
+
+	/* you don't need to grow */
+	if (fault_addr >= range->start) {
+		ret = 0;
+		goto out;
+	}
+
+	/* don't grow if replaced with hugetlbfs */
+	if (range->memobj) {
+		kprintf("%s: warning, memobj found, vm: %lx, addr: %lx, stack-segment: %lx-%lx\n",
+			__func__, (unsigned long)vm,
+			fault_addr,
+			vm->region.stack_start,
+			vm->region.stack_end);
+	
+		ret = 0;
+		goto out;
+	}
+
+	if (vm->is_memory_range_lock_taken == -1 ||
+	    vm->is_memory_range_lock_taken !=
+	    ihk_mc_get_processor_id()) {
+		ihk_rwspinlock_write_lock_noirq(&vm->memory_range_lock);
+		locked = 1;
+	}
+
+	if (range->pgshift) {
+		range->start = fault_addr &
+			~((1UL << range->pgshift) - 1);
+	} else {
+		range->start = fault_addr & PAGE_MASK;
+	}
+
+	if (locked) {
+		ihk_rwspinlock_write_unlock_noirq(&vm->memory_range_lock);
+		locked = 0;
+	}
+
+	dkprintf("%s: stack grown, vm: %lx, addr: %lx, new range: %lx-%lx\n",
+		 __func__, (unsigned long)vm,
+		 (unsigned long)fault_addr,
+		 range->start, range->end);
+
+	ret = 0;
+ out:
+	return ret;
+}
+
 static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, uint64_t reason)
 {
 	int error;
@@ -2346,54 +2414,12 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
 	
-	/* grow stack */
-	if (fault_addr >= thread->vm->region.stack_start &&
-	    fault_addr < thread->vm->region.stack_end) {
-		range = lookup_process_memory_range(vm,
-						    thread->vm->region.stack_end - 1,
-						    thread->vm->region.stack_end);
-		if (range == NULL) {
-			error = -EFAULT;
-			ekprintf("%s: vm: %p, addr: %p, reason: %lx):"
-				 "stack not found: %d\n",
-				 __func__, vm, fault_addr0, reason, error);
-			goto out;
-		}
-
-		/* don't grow if replaced with hugetlbfs */
-		if (range->memobj) {
-			goto skip;
-		}
-
-		if (fault_addr >= range->start) {
-			goto skip;
-		}
-
-		if (thread->vm->is_memory_range_lock_taken == -1 ||
-		    thread->vm->is_memory_range_lock_taken !=
-		    ihk_mc_get_processor_id()) {
-			ihk_rwspinlock_write_lock_noirq(&vm->memory_range_lock);
-			locked = 1;
-		}
-
-		if (range->pgshift) {
-			range->start = fault_addr &
-				~((1UL << range->pgshift) - 1);
-		} else {
-			range->start = fault_addr & PAGE_MASK;
-		}
-
-		if (locked) {
-			ihk_rwspinlock_write_unlock_noirq(&vm->memory_range_lock);
-			locked = 0;
-		}
-
-		dkprintf("%s: addr: %lx, reason: %lx, range: %lx-%lx:"
-			 "stack found\n",
-			 __func__, (unsigned long)fault_addr, reason,
-			 range->start, range->end);
+	error = grow_stack(vm, fault_addr);
+	if (error) {
+		kprintf("%s: grow_stack failed with %d\n",
+			__func__, error);
+		goto out;
 	}
-skip:
 
 	if (thread->vm->is_memory_range_lock_taken == -1 ||
 			thread->vm->is_memory_range_lock_taken != ihk_mc_get_processor_id()) {
