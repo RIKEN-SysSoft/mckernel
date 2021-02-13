@@ -1237,6 +1237,8 @@ out_2:
 			ret = -ENOENT;
 			dump_stack_ranges(src_vm);
 			ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+			release_process_vm(src_vm);
+			release_thread(src_thread);
 			goto out_1;
 		}
 #if 0 /* hugefileobj does not support splitting */
@@ -1250,6 +1252,8 @@ out_2:
 				ekprintf("%s :split failed with %d\n",
 					 __func__, ret);
 				ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+				release_process_vm(src_vm);
+				release_thread(src_thread);
 				goto out_1;
 			}
 		}
@@ -1264,6 +1268,8 @@ out_2:
 				ekprintf("%s :split failed with %d\n",
 					 __func__, ret);
 				ihk_rwspinlock_write_unlock_noirq(&src_vm->memory_range_lock);
+				release_process_vm(src_vm);
+				release_thread(src_thread);
 				goto out_1;
 			}
 		}
