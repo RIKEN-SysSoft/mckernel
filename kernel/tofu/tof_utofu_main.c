@@ -1236,6 +1236,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 
 	readonly = (req.flags & 1) != 0;
 
+retry:
 	ihk_rwspinlock_read_lock_noirq(&vm->memory_range_lock);
 
 	/* Assume smallest page size at first */
@@ -1271,6 +1272,20 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 	}
 
 	if (!range) {
+		if (vm->region.stack_start <= start &&
+				vm->region.stack_end > end) {
+
+			ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
+
+			if (page_fault_process_vm(vm, (void *)start,
+						PF_POPULATE | PF_WRITE | PF_USER) < 0) {
+				ret = -EINVAL;
+				goto out;
+			}
+
+			goto retry;
+		}
+
 		ret = -EINVAL;
 		goto unlock_out;
 	}
@@ -1358,6 +1373,7 @@ static int tof_utofu_ioctl_alloc_stag(struct tof_utofu_device *dev, unsigned lon
 unlock_out:
 	ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 
+out:
 	if(ret == 0){
 		if(copy_to_user((void *)arg, &req, sizeof(req)) != 0){
 			kprintf("%s: ret: %d\n", __func__, -EFAULT);
