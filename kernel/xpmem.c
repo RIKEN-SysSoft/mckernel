@@ -2056,6 +2056,7 @@ static int xpmem_pin_page(
 
 	XPMEM_DEBUG("call: tgid=%d, vaddr=0x%lx", tg->tgid, vaddr);
 
+retry:
 	ihk_rwspinlock_read_lock_noirq(&src_vm->memory_range_lock);
 
 	range = lookup_process_memory_range(src_vm, vaddr, vaddr + 1);
@@ -2063,6 +2064,20 @@ static int xpmem_pin_page(
 	ihk_rwspinlock_read_unlock_noirq(&src_vm->memory_range_lock);
 
 	if (!range || range->start > vaddr) {
+		/*
+		 * Grow the stack if address falls into stack region
+		 * so that we can lookup range successfully.
+		 */
+		if (src_vm->region.stack_start <= vaddr &&
+				src_vm->region.stack_end > vaddr) {
+			if (page_fault_process_vm(src_vm, (void *)vaddr,
+						PF_POPULATE | PF_WRITE | PF_USER) < 0) {
+				return -ENOENT;
+			}
+
+			goto retry;
+		}
+
 		return -ENOENT;
 	}
 
