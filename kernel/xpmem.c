@@ -1171,6 +1171,21 @@ out_2:
 	}
 	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
 	xpmem_att_deref(att);
+
+	if (ret) {
+		goto out_1;
+	}
+
+	src_vm = seg_tg->vm;
+
+	/* grow stack before lookup */
+	ret = grow_stack(src_vm, seg_vaddr);
+	if (ret) {
+		kprintf("%s: grow_stack failed with %d\n",
+			__func__, ret);
+		goto out_1;
+	}
+
 out_1:
 	xpmem_ap_deref(ap);
 	xpmem_tg_deref(ap_tg);

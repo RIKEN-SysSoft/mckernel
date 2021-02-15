@@ -854,6 +854,8 @@ struct vm_range *previous_process_memory_range(
 int extend_up_process_memory_range(struct process_vm *vm,
 		struct vm_range *range, uintptr_t newend);
 
+int grow_stack(struct process_vm *vm, uintptr_t fault_addr);
+
 int page_fault_process_vm(struct process_vm *fault_vm, void *fault_addr,
 		uint64_t reason);
 int remove_process_region(struct process_vm *vm,
