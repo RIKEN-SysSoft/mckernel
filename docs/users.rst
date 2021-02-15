@@ -202,3 +202,15 @@ Limitations
 28. munlockall() is not supported and returns zero.
 
 29. scheduling behavior is not Linux compatible. For example, sometimes one of the two processes on the same CPU continues to run after yielding.
+
+30. (TCS-only) A job following the one in which __mcctrl_os_read_write_cpu_register() returns ``-ETIME`` fails because xos_hwb related CPU state isn't finalized. You can tell if the function returned ``-ETIME`` by checking if the following line appeared in the Linux kernel message:
+
+    ::
+
+       __mcctrl_os_read_write_cpu_register: ERROR sending IKC msg: -62
+
+    You can re-initialize xos_hwb related CPU state by the following command:
+
+    ::
+
+       sudo systemctl restart xos_hwb
