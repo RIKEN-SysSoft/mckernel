@@ -1176,14 +1176,19 @@ out_2:
 		goto out_1;
 	}
 
-	src_vm = seg_tg->vm;
-
 	/* grow stack before lookup */
-	ret = grow_stack(src_vm, seg_vaddr);
-	if (ret) {
-		kprintf("%s: grow_stack failed with %d\n",
-			__func__, ret);
-		goto out_1;
+	if (seg_vaddr >= seg_tg->vm->region.stack_start &&
+	    seg_vaddr < seg_tg->vm->region.stack_end) {
+		kprintf("%s: growing stack, seg_vaddr: %lx\n",
+			__func__, seg_vaddr);
+
+		ret = grow_stack(seg_tg->vm, seg_vaddr);
+		if (ret) {
+			kprintf("%s: grow_stack failed with %d\n",
+				__func__, ret);
+			goto out_1;
+		}
+
 	}
 
 out_1:
