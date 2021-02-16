@@ -1811,20 +1811,35 @@ static int _xpmem_fault_process_memory_range(
 		ihk_rwspinlock_read_lock_noirq(&seg_tg->vm->memory_range_lock);
 	}
 
-	seg_pte = xpmem_vaddr_to_pte(seg_tg->vm, seg_vaddr, &seg_pgsize);
+	if (seg_tg->vm->proc->straight_va &&
+	    seg_vaddr >= seg_tg->vm->proc->straight_va &&
+	    seg_vaddr < (seg_tg->vm->proc->straight_va +
+			 seg_tg->vm->proc->straight_len)) {
+		seg_phys = (((unsigned long)seg_vaddr & PAGE_MASK) -
+			    (unsigned long)seg_tg->vm->proc->straight_va) +
+			seg_tg->vm->proc->straight_pa;
+		seg_pgsize = (1UL << 29);
+		dkprintf("%s: 0x%lx in PID %d is straight -> phys: 0x%lx\n",
+			 __func__, (unsigned long)seg_vaddr & PAGE_MASK,
+			 seg_tg->tgid, seg_phys);
+	}
+	else {
+		seg_pte = xpmem_vaddr_to_pte(seg_tg->vm, seg_vaddr, &seg_pgsize);
 
-	/* map only resident remote pages on attach and
-	 * xpmem_remote_on_demand is specified
-	 */
-	if (!seg_pte || pte_is_null(seg_pte)) {
-		ret = page_in_remote ? -EFAULT : 0;
-		if (is_remote_vm(seg_tg->vm)) {
-			ihk_rwspinlock_read_unlock_noirq(&seg_tg->vm->memory_range_lock);
+		/* map only resident remote pages on attach and
+		 * xpmem_remote_on_demand is specified
+		 */
+		if (!seg_pte || pte_is_null(seg_pte)) {
+			ret = page_in_remote ? -EFAULT : 0;
+			if (is_remote_vm(seg_tg->vm)) {
+				ihk_rwspinlock_read_unlock_noirq(&seg_tg->vm->memory_range_lock);
+			}
+			goto out;
 		}
-		goto out;
+
+		seg_phys = pte_get_phys(seg_pte);
 	}
 
-	seg_phys = pte_get_phys(seg_pte);
 	/* clear lower bits of the contiguous-PTE tail entries */
 	seg_phys_plus_off = (seg_phys & ~(seg_pgsize - 1)) |
 		(seg_vaddr & (seg_pgsize - 1));
