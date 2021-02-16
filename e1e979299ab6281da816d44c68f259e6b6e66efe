@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "90135af4_bbb1ef95",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1827,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-16T03:35:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tseg_pte \u003d xpmem_vaddr_to_pte(seg_tg-\u003evm, seg_vaddr, \u0026seg_pgsize);",
+      "revId": "e1e979299ab6281da816d44c68f259e6b6e66efe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9fca5b15_0809ef80",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 1835,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-16T03:35:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "e1e979299ab6281da816d44c68f259e6b6e66efe",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
