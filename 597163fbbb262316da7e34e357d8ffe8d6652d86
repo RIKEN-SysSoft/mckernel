@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "97f908e9_5f15d570",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 16
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2021-02-17T02:35:34Z",
+      "side": 1,
+      "message": "Patch set 15 にてテストを再実行しました。\n・aarch64(jupiter04) は実行が成功し、テスト結果を更新しました。\n・x86_64(wallaby12) は依然としてMcKernel実行のCT31-33 がSEGVで終了するようです。\nSEGV発生時のkmsgは下記です。\n\nIHK/McKernel booted.\n[  1]: Syscall stats for offloaded thread:\n[  1]: nr\u003d2 #called\u003d1\n[  1]: nr\u003d9 #called\u003d1\n[  1]: nr\u003d186 #called\u003d1\n[  1]: nr\u003d273 #called\u003d1\n[  1]: Syscall stats for other threads:\n[  1]: util_thread: ERROR: do_syscall() failed (-9)\n[  1]: do_page_fault_process_vm: reason: PF_PROT PF_WRITE PF_USER\n[  1]: do_page_fault_process_vm: range-\u003eflag \u0026 (VR_PROT_READ VR_PROT_EXEC )\n[  1]: if (((reason \u0026 PF_WRITE) \u0026\u0026 !(reason \u0026 PF_PATCH)))\n[  1]: if (!(range-\u003eflag \u0026 VR_PROT_WRITE))\n[  1]: page_fault_handler fault VM failed for TID: 27101, addr: 0x2aaaab1448dd, reason: 7, error: -14\n[  1]: Page fault for 0x2aaaab1448dd\n[  1]: protection fault for write access in user mode (reserved bit wasn\u0027t set), it wasn\u0027t an instruction fetch\n[  1]: address is in range, flag: 0x753000 (/usr/lib64/libc-2.17.so)\n[  1]: l4 table: 0x200B5D000 l4idx: 85\n[  1]: l4 entry: 0x200BFE027\n[  1]: l3 table: 0x200BFE000 l3idx: 170\n[  1]: l3 entry: 0x200BFF027\n[  1]: l2 table: 0x200BFF000 l2idx: 344\n[  1]: l2 entry: 0x200CDF027\n[  1]: l1 table: 0x200CDF000 l1idx: 324\n[  1]: l1 entry: 0x2010ED065\n[  1]: CS:RIP \u003d   33:    2aaaac800700\n[  1]:              RAX              RBX              RCX              RDX\n[  1]:     2aaaac800700     2aaaac800700                1     2aaaac8009d0\n[  1]:              RSI              RDI              RSP              RBP\n[  1]:     2aaaac7fffb0     2aaaab1448dd     2aaaac7fffb8                0\n[  1]:               R8               R9              R10              R11\n[  1]:     2aaaac800700     2aaaac800700     2aaaac8009d0                1\n[  1]:              R12              R13              R14              R15\n[  1]:                1           801000                4     2aaaac800700\n[  1]:               CS               SS           RFLAGS            ERROR\n[  1]:               33               3b            10206                7\n[  1]: do_signal: INFO: coredump not performed, try ulimit -c \u003cnon-zero\u003e",
+      "revId": "597163fbbb262316da7e34e357d8ffe8d6652d86",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "6e0179b1_32d5ef33",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 16
