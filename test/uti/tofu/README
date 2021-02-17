@@ -1,0 +1,112 @@
+実行手順
+========
+
+初回実行時、tofu get通信する両方のノードでtofuサブネットを設定する。
+ソース一式をビルドしたときに生成される ctrl を使用する。
+sudo ./ctrl <NX> <NY> <NZ> <SX> <SY> <SZ> <LX> <LY> <LZ>
+
+tofu_perf プログラムの実行は受信側("-r"オプションを付加した方)を先にする。
+"do_recv: Measure the reaction delay, Ready" メッセージを確認したあと、
+送信側 ("-r"オプションを付加しない方) を実行する。
+"-r"オプション以外は、受信側/送信側で同じ値を指定する。
+
+コマンド例
+==========
+
+init.shに例を示す。以下、init.shの内容を説明する。
+
+以下のコマンドでcgroupsを設定する。
+
+sudo bash -c 'echo "0,1,12-59" > /sys/fs/cgroup/cpuset/system.slice/cpuset.cpus'
+sudo bash -c 'echo "0-7" > /sys/fs/cgroup/cpuset/system.slice/cpuset.mems'
+if [ ! -e /sys/fs/cgroup/cpu/mckrt ]; then
+        mkdir /sys/fs/cgroup/cpu/mckrt
+        echo 950000 > /sys/fs/cgroup/cpu/mckrt/cpu.rt_runtime_us
+fi
+sudo bash -c "echo $PPID > /sys/fs/cgroup/cpu/mckrt/tasks"
+
+第2の計算ノード（progress threadでtofu getする）で次のコマンドを実行する。
+sudo ./ctrl 1 1 1 0 0 0 1 1 1
+sudo <mckernel>/bin/mcexec --enable-uti ./uti_perf -a 0,0,0,0,0,0 -r -f 1 -n 1 -l $((4*1024*1024)) -v
+...
+do_recv: Measure the reaction delay, Ready
+
+"do_recv: Measure the reaction delay, Ready" を確認したあと、
+第1の計算ノード（第2の計算ノードに受信を指示する）で次のコマンドを実行する。
+sudo ./ctrl 1 1 1 0 0 0 1 1 1
+sudo ./uti_perf -a 0,0,0,1,0,0 -f 1 -n 1 -l $((4*1024*1024)) -v
+
+オプション
+==========
+
+(1) ctrl <NX> <NY> <NZ> <SX> <SY> <SZ> <LX> <LY> <LZ>
+
+tofuサブネットを設定する。
+サブネットの意味は以下のとおり。
+
+N: 各軸のシステムサイズ (1～32)
+S: サブネット内での先頭座標(0～N-1)
+L: サブネット内でのノード数(0～N)、0を指定するとネットワーク分割なし
+
+例えば、tofu座標が 0,0,0,0,0,0 と 0,0,0,1,0,0 の場合は次のように指定する。
+sudo ./ctrl 1 1 1 0 0 0 1 1 1
+
+
+(2) uti_perf
+
+progress threadを用いたtofu get通信速度を計測する。
+オプションは以下のとおり。
+
+-a <x>,<y>,<z>,<a>,<b>,<c>
+  送信/受信相手のtofu座標を指定する。
+
+-d <delay>, --d1=<delay>
+  progress threadの反応遅延測定時、プロトコル遅延として用いる時間を
+  10ns単位で指定する。
+
+-t none, --thread=none
+  progress threadを生成せずに tofu get通信を実行する。
+
+-r
+  プログラムを受信モードで実行する。未指定時は送信モードになる。
+
+ -f <num>
+  生成するプロセス数を指定する。 (1～48、既定値は1)
+  2以上の場合、tofu get通信を行うのは1プロセスのみで
+  ほかはprogress threadの生成のみを行う。
+
+ -n <num>
+  反応遅延またはプロトコル遅延の測定回数を指定する。 (既定値は10)
+
+-l <length>
+  tofu get通信するデータサイズ(byte)を指定する。
+  (64 byte ～ 16*1024*1024 - 256 byte、既定値は 16*1024*1024 - 256 byte)
+
+-v
+  デバッグ出力を有効にする。
+
+--sendusleep=<us>
+  送信モードで測定毎に us (usec) だけ待ち合わせる。
+
+--sendfifo
+  送信モードでプロセスのスケジューリングポリシーを SCHED_FIFOにする。
+
+--dummymode1
+  tofu get通信を行わない progress threadを測定完了まで sleepさせる。
+
+--thrprio=<prio>
+  progress threadの優先度を指定する。 (-20 ～ 19、既定値は10)
+
+--thrfifo
+  progress threadのスケジューリングポリシーを SCHED_FIFOにする。
+
+--protocol
+  プロトコル遅延を測定する。
+  "-f 1 -t none" オプション指定と同じ。
+
+--ctrlretry=<num>
+  tofu get通信フラグやスレッド間フラグの確認をリトライする回数を指定する。
+  (既定値は10)
+
+--recvusleep=<us>
+  progress threadの受信完了を確認する間隔 (usec) を指定する。 (既定値は0)
