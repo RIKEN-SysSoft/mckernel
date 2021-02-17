@@ -173,4 +173,7 @@ struct cpu_mapping;
 int arch_get_cpu_mapping(struct cpu_mapping **buf, int *nelemsp);
 int ihk_mc_ikc_arch_issue_host_ipi(int cpu, int vector);
 
+void smp_func_call_handler(void);
+int ihk_mc_get_smp_handler_irq(void);
+
 #endif

@@ -1972,15 +1972,15 @@ int arch_cpu_read_write_register(
 	return ret;
 }
 
-int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)
-{
-	/* TODO: skeleton for smp_call_func */
-	return -1;
-}
-
 void arch_flush_icache_all(void)
 {
 	asm("ic	ialluis");
 	dsb(ish);
 }
+
+int ihk_mc_get_smp_handler_irq(void)
+{
+	return LOCAL_SMP_FUNC_CALL_VECTOR;
+}
+
 /*** end of file ***/
