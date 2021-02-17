@@ -1,0 +1,922 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ebe14cae_8487b959",
+        "filename": "kernel/include/xpmem_private.h",
+        "patchSetId": 1
+      },
+      "lineNbr": 183,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tunsigned long min, max; /* min / max address of source ranges containing attached */",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a4d56e06_61cf158c",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1107,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((count \u003d ihk_atomic_add_long_return(-1, \u0026range-\u003expmem_count.l)) \u003e 0) {",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d8aa7c82_434fe093",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1108,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: skipping unmap: vm: %lx, range: %lx-%lx, xpmem_count: %d\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3f7e2f8b_1e463557",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1113,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: unmapping: vm: %lx, range: %lx-%lx, xpmem_count: %d\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "50c193c8_96483102",
+        "filename": "kernel/process.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1115,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tstart, end, ihk_atomic64_read(\u0026range-\u003expmem_count.atomic));",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "35aa97bd_442fcda4",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 456,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+long _syscall_generic_forwarding(struct thread *thread, int n, ihk_mc_user_context_t *ctx)",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4741d4d0_84c5d95d",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 460,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tSYSCALL_ARGS_6(D,D,D,D,D,D);\n \t                  ^",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "32c1a084_7970b8c7",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 460,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tSYSCALL_ARGS_6(D,D,D,D,D,D);\n \t                ^",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ddfbb0fd_93ab759b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 460,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tSYSCALL_ARGS_6(D,D,D,D,D,D);\n \t                      ^",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a587a5cf_2e8bdb66",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 460,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tSYSCALL_ARGS_6(D,D,D,D,D,D);\n \t                        ^",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6fd8b7e7_0e83613e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 460,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "ERROR: space required after that \u0027,\u0027 (ctx:VxV)\n+\tSYSCALL_ARGS_6(D,D,D,D,D,D);\n \t                    ^",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c62a983f_21115e35",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1653,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+void _clear_host_pte(struct thread *thread, uintptr_t addr, size_t len, int holding_memory_range_lock)",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "eb5f649e_c51074a2",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1687,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static int _set_host_vma(struct thread *thread, uintptr_t addr, size_t len, int prot, int holding_memory_range_lock)",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3e272475_127ac47e",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1736,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static int set_host_vma(uintptr_t addr, size_t len, int prot, int holding_memory_range_lock)",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d494251e_941f3f73",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1740,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\treturn _set_host_vma(thread, addr, len, prot, holding_memory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "74fa7ee9_4dc9fdef",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1762,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t_clear_host_pte(thread, (uintptr_t)addr, len, holding_memory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bddf2d5f_4b0f0264",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1765,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d _set_host_vma(thread, (uintptr_t)addr, len, PROT_READ | PROT_WRITE | PROT_EXEC, holding_memory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "231f3268_35b0ad5f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2131,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d do_munmap(thread, vm, (void *)addr, len, 1/* holding memory_range_lock */);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "601a3e31_7e7a8437",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2571,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\terror \u003d do_munmap(thread, vm, (void *)addr, len, 1/* holding memory_range_lock */);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9b4bd7ca_21af8969",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3012,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d do_munmap(thread, vm, addr, size, 1/* holding memory_range_lock */);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "79376e9e_b8256a90",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 6837,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\terror \u003d do_munmap(thread, vm, (void *)range-\u003estart, (range-\u003eend - range-\u003estart), 1/* holding memory_range_lock */);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "07f4f3e2_ba863e86",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 9411,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror \u003d do_munmap(thread, vm, (void *)newstart, newsize, 1/* holding memory_range_lock */);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a0c164ab_6e3d4708",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 9481,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\terror \u003d do_munmap(thread, vm, (void *)oldstart, oldsize, 1/* holding memory_range_lock */);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "07a4b5ab_5c53e961",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 9492,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\terror \u003d do_munmap(thread, vm, (void *)newend, (oldend - newend), 1/* holding memory_range_lock */);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e9adc149_d80b5a1b",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 998,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tkprintf(\"%s: dumping stack ranges: src vm: %lx, src_vm-\u003eregion.stack: %lx-%lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ce2567c7_9bd8eebb",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1004,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfor (stack_vaddr \u003d src_vm-\u003eregion.stack_end; stack_vaddr - 1 \u003e\u003d src_vm-\u003eregion.stack_start; stack_vaddr \u003d stack_range-\u003estart) {",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d479f623_ce358b82",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1006,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tstack_range \u003d lookup_process_memory_range(src_vm, stack_vaddr - 1, stack_vaddr);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "60e9de43_1abe4400",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1009,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tstack_range \u003d previous_process_memory_range(src_vm, stack_range);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "22f174f6_ddf89ea8",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1226,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfor (src_vaddr \u003d seg_vaddr; src_vaddr \u003c seg_vaddr + size; src_vaddr \u003d src_range-\u003eend) {",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a118fc2b_30f46baa",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1228,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsrc_range \u003d lookup_process_memory_range(src_vm, seg_vaddr, seg_vaddr + 1);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5a0a7f98_dc8b56a0",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1231,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsrc_range \u003d next_process_memory_range(src_vm, src_range);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "51ff97f8_4a7dadc5",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1235,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: source range not found, vm: %lx, vaddr: %lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "517a5033_12e27671",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1239,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026src_vm-\u003ememory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a0a2f50c_6bb8d5a9",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1246,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: split, vm: %lx, range: %lx-%lx and %lx-%lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "78d14d4d_8f0b4e79",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1250,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tret \u003d split_process_memory_range(src_vm, src_range, src_vaddr, \u0026src_range);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a5ef0d40_42b7af2c",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1254,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026src_vm-\u003ememory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e892d181_9ad1e20e",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1262,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: split, vm: %lx, range: %lx-%lx and %lx-%lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ef7a0553_ba5442cf",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1266,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tret \u003d split_process_memory_range(src_vm, src_range, seg_vaddr + size, NULL);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bec25a69_801fd0a7",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1270,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026src_vm-\u003ememory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1b62317a_38c622a9",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1279,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((old \u003d ihk_atomic64_cmpxchg(\u0026src_range-\u003expmem_count.atomic, 0, 2)) !\u003d 0) {",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "54da51ef_8227471b",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1282,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: ref, source: vm: %lx, range: %lx-%lx, xpmem_count: %d\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bfb76d0b_85b44db7",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1292,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: source ranges updated, source: vm: %lx, min-max: %lx-%lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "527b6bd9_e87633c4",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1438,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfor (src_vaddr \u003d att-\u003emin; src_vaddr \u003c att-\u003emax; src_vaddr \u003d src_range-\u003eend) {",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3a832d56_41543716",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1440,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsrc_range \u003d lookup_process_memory_range(src_vm, src_vaddr, src_vaddr + 1);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "97a1e6e9_39dd176a",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1442,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: source range not found, vm: %lx, vaddr: %lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8e745ab8_6f39533b",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1443,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t__func__, (unsigned long)src_vm, src_vaddr);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8b8ff514_b5295b0a",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1445,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026src_vm-\u003ememory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9d1dd2da_54da2d09",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1450,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tsrc_range \u003d next_process_memory_range(src_vm, src_range);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "771e7d57_a915096c",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1453,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((count \u003d ihk_atomic_add_long_return(-1, \u0026src_range-\u003expmem_count.l)) \u003d\u003d 0) {",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f646b4e9_6114f5c5",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1454,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tkprintf(\"%s: remote-munmap, vm: %lx,src_range: %lx-%lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "87f96e99_dc6b7cfc",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1464,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tkprintf(\"%s: error: do_munmap: %lx-%lx, ret: %d\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "026b137c_4b1f6383",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1467,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_rwspinlock_write_unlock_noirq(\u0026src_vm-\u003ememory_range_lock);",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a123f610_3cb39690",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1471,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: deref, src_vm: %lx, src_range: %lx-%lx, xpmem_count: %d\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "11adb460_e7f8d542",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2034,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T04:27:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: error: destroying, seg-\u003eflag: %lx, seg_tg-\u003eflags: %lx\\n\",",
+      "revId": "fe900037e7adc96c997e87d08b2b9fe66ea8546a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
