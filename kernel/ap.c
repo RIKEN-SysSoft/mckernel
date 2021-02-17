@@ -267,3 +267,154 @@ cpu_sysfs_setup(void)
 
 	return;
 } /* cpu_sysfs_setup() */
+
+/*
+ * Generic remote CPU function invocation facility.
+ */
+void smp_func_call_handler(void)
+{
+	unsigned long irq_flags;
+	struct smp_func_call_request *req;
+	int reqs_left;
+
+reiterate:
+	req = NULL;
+	reqs_left = 0;
+
+	irq_flags = ihk_mc_spinlock_lock(
+			&cpu_local_var(smp_func_req_lock));
+
+	/* Take requests one-by-one */
+	if (!list_empty(&cpu_local_var(smp_func_req_list))) {
+		req = list_first_entry(&cpu_local_var(smp_func_req_list),
+			struct smp_func_call_request, list);
+		list_del(&req->list);
+
+		reqs_left = !list_empty(&cpu_local_var(smp_func_req_list));
+	}
+
+	ihk_mc_spinlock_unlock(&cpu_local_var(smp_func_req_lock),
+			irq_flags);
+
+	if (req) {
+		req->ret = req->sfcd->func(req->cpu_index,
+				req->sfcd->nr_cpus, req->sfcd->arg);
+		ihk_atomic_dec(&req->sfcd->cpus_left);
+	}
+
+	if (reqs_left)
+		goto reiterate;
+}
+
+int smp_call_func(cpu_set_t *__cpu_set, smp_func_t __func, void *__arg)
+{
+	int cpu, nr_cpus = 0;
+	int cpu_index = 0;
+	int this_cpu_index = 0;
+	struct smp_func_call_data sfcd;
+	struct smp_func_call_request *reqs;
+	int ret = 0;
+	int call_on_this_cpu = 0;
+	cpu_set_t cpu_set;
+	int max_nr_cpus = 4;
+
+	/* Sanity checks */
+	if (!__cpu_set || !__func) {
+		return -EINVAL;
+	}
+
+	/* Make sure it won't change in between */
+	cpu_set = *__cpu_set;
+
+	for_each_set_bit(cpu, (unsigned long *)&cpu_set,
+			sizeof(cpu_set) * BITS_PER_BYTE) {
+
+		if (cpu == ihk_mc_get_processor_id()) {
+			call_on_this_cpu = 1;
+		}
+		++nr_cpus;
+
+		if (nr_cpus == max_nr_cpus)
+			break;
+	}
+
+	if (!nr_cpus) {
+		return -EINVAL;
+	}
+
+	reqs = kmalloc(sizeof(*reqs) * nr_cpus, IHK_MC_AP_NOWAIT);
+	if (!reqs) {
+		ret = -ENOMEM;
+		goto free_out;
+	}
+
+	kprintf("%s: interrupting %d CPUs for SMP call..\n", __func__, nr_cpus);
+	sfcd.nr_cpus = nr_cpus;
+	sfcd.func = __func;
+	sfcd.arg = __arg;
+	ihk_atomic_set(&sfcd.cpus_left,
+			call_on_this_cpu ? nr_cpus - 1 : nr_cpus);
+	smp_wmb();
+
+	/* Add requests and send IPIs */
+	cpu_index = 0;
+	for_each_set_bit(cpu, (unsigned long *)&cpu_set,
+			sizeof(cpu_set) * BITS_PER_BYTE) {
+		unsigned long irq_flags;
+
+		reqs[cpu_index].cpu_index = cpu_index;
+		reqs[cpu_index].ret = 0;
+
+		if (cpu == ihk_mc_get_processor_id()) {
+			this_cpu_index = cpu_index;
+			++cpu_index;
+			continue;
+		}
+
+		reqs[cpu_index].sfcd = &sfcd;
+
+		irq_flags =
+			ihk_mc_spinlock_lock(&get_cpu_local_var(cpu)->smp_func_req_lock);
+		list_add_tail(&reqs[cpu_index].list,
+				&get_cpu_local_var(cpu)->smp_func_req_list);
+		ihk_mc_spinlock_unlock(&get_cpu_local_var(cpu)->smp_func_req_lock,
+			irq_flags);
+
+		dkprintf("%s: interrupting IRQ: %d -> CPU: %d\n", __func__,
+			ihk_mc_get_smp_handler_irq(), cpu);
+		ihk_mc_interrupt_cpu(cpu, ihk_mc_get_smp_handler_irq());
+
+		++cpu_index;
+		if (cpu_index == max_nr_cpus)
+			break;
+	}
+
+	/* Is this CPU involved? */
+	if (call_on_this_cpu) {
+		reqs[this_cpu_index].ret =
+			__func(this_cpu_index, nr_cpus, __arg);
+	}
+
+	dkprintf("%s: waiting for remote CPUs..\n", __func__);
+	/* Wait for the rest of the CPUs */
+	while (smp_load_acquire(&sfcd.cpus_left.counter) > 0) {
+		cpu_pause();
+	}
+
+	/* Check return values, if error, report the first non-zero */
+	for (cpu_index = 0; cpu_index < nr_cpus; ++cpu_index) {
+		if (reqs[cpu_index].ret != 0) {
+			ret = reqs[cpu_index].ret;
+			goto free_out;
+		}
+	}
+
+	kprintf("%s: all CPUs finished SMP call successfully\n", __func__);
+	ret = 0;
+
+free_out:
+	kfree(reqs);
+
+	return ret;
+}
+
