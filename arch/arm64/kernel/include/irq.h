@@ -17,6 +17,7 @@
 #define INTRID_STACK_TRACE	5
 #define INTRID_MULTI_INTR	6
 #define INTRID_MULTI_NMI	7
+#define LOCAL_SMP_FUNC_CALL_VECTOR   1 /* same as IKC */
 
 /* use PPI interrupt number */
 #define INTRID_PERF_OVF		23
