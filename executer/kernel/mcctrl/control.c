@@ -3183,6 +3183,15 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 
 	kattr = phys_to_virt(desc.phys_attr);
 
+	{
+		int i;
+
+		pr_info("%s: flag: %lx\n", __func__, (unsigned long)kattr->attr.flags);
+		for (i = 0; i < UTI_MAX_NUMA_DOMAINS; i+= 64) {
+			kprintf("%s: numa_set[%d]: %lx\n", __func__, i, (unsigned long)kattr->attr.numa_set[i / 64]);
+		}
+	}
+
 	/* Find caller cpu for later resolution of subgroups */
 	list_for_each_entry(cpu_topo, &ud->cpu_topology_list, chain) {
 		if (cpu_topo->mckernel_cpu_id == kattr->parent_cpuid) {
