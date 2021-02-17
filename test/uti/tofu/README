@@ -1,0 +1,36 @@
+実行手順
+========
+
+初回の実行前に、両方のノードでtofuサブネットの設定をしてください。ソース一式をビルドしたときに生成される ctrl で設定します。
+sudo ./ctrl <NX> <NY> <NZ> <SX> <SY> <SZ> <LX> <LY> <LZ>
+0,0,0,0,0,0と0,0,0,1,0,0の場合は次の指定で動作するはずです。
+sudo ./ctrl 1 1 1 0 0 0 1 1 1
+プログラム実行は、受信側("-r"オプションを付加した方)を先にしてください。具体的には第2の計算ノードから実行して次のメッセージ出力を確認してから、第1の計算ノードでコマンド実行してください。
+do_recv: Measure the protocol delay, Ready
+また、測定回数に関するオプション ("-m"や"-n") を指定する場合は送受で同じ値を指定してください。
+
+コマンド例
+==========
+
+以下のコマンドでcgroupsを設定する。
+
+sudo bash -c 'echo "0,1,12-59" > /sys/fs/cgroup/cpuset/system.slice/cpuset.cpus'
+sudo bash -c 'echo "0-7" > /sys/fs/cgroup/cpuset/system.slice/cpuset.mems'
+
+
+第2の計算ノードで次のコマンドを実行する。
+sudo ./ctrl 1 1 1 0 0 0 1 1 1
+sudo ./uti_perf -a 0,0,0,0,0,0 -r -f 2 -m 2 -n 2 -l $((4*1024*1024)) -v
+...
+do_recv: Measure the protocol delay, Ready
+...
+"do_recv: Measure the protocol delay, Ready" を確認したあと、
+
+第1の計算ノードで次のコマンドを実行する。
+sudo ./ctrl 1 1 1 0 0 0 1 1 1
+sudo ./uti_perf -a 0,0,0,1,0,0 -f 2 -m 2 -n 2 -l $((4*1024*1024)) -v
+
+サブネットの意味は以下のとおりです。@Okamoto Takayuki 補足等あればお願いします。
+N: 各軸のシステムサイズ (1～32)
+S: サブネット内での先頭座標(0～N-1)
+L: サブネット内でのノード数(0～N)、0を指定するとネットワーク分割なし
