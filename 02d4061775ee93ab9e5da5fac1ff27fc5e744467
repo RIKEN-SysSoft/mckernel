@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "1f937ef8_aa489e06",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-17T04:27:36Z",
+      "side": 1,
+      "message": "コードレビュー完了\nAI\nテスト結果確認, submit\n",
+      "revId": "02d4061775ee93ab9e5da5fac1ff27fc5e744467",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "7ca501bd_66faf903",
         "filename": "kernel/include/process.h",
         "patchSetId": 3
