@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ec0fb35d_d72a97e6",
+        "filename": "arch/arm64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2347,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T01:32:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmpsr-\u003enodes[i] \u003e\u003d ihk_mc_get_nr_numa_nodes() ||",
+      "revId": "5f68fad03cbd528d638b7449488c71de9571d2be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5ae4ce8f_d02c9f34",
+        "filename": "arch/x86_64/kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 2408,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T01:32:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tmpsr-\u003enodes[i] \u003e\u003d ihk_mc_get_nr_numa_nodes() ||",
+      "revId": "5f68fad03cbd528d638b7449488c71de9571d2be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "09742ab4_32718ad6",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 9802,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T01:32:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (nodes[i] \u003c 0 || nodes[i] \u003e\u003d ihk_mc_get_nr_numa_nodes()) {",
+      "revId": "5f68fad03cbd528d638b7449488c71de9571d2be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9e5ce872_cf01037e",
+        "filename": "test/issues/1523/C1523.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-17T01:32:42Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in move_pages01 move_pages02 move_pages04 move_pages06 move_pages09 move_pages10",
+      "revId": "5f68fad03cbd528d638b7449488c71de9571d2be",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
