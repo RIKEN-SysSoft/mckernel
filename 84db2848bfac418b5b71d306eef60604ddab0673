@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d77e7726_e5229347",
+        "filename": "arch/x86_64/kernel/cpu.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T04:19:30Z",
+      "side": 1,
+      "message": "WARNING: externs should be avoided in .c files\n+void smp_func_call_handler(void);",
+      "revId": "84db2848bfac418b5b71d306eef60604ddab0673",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9af523dd_d71a1c7b",
+        "filename": "kernel/ap.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 357,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T04:19:30Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tsmp_wmb();",
+      "revId": "84db2848bfac418b5b71d306eef60604ddab0673",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8b57eefc_90e2d235",
+        "filename": "kernel/ap.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 377,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T04:19:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_mc_spinlock_lock(\u0026get_cpu_local_var(cpu)-\u003esmp_func_req_lock);",
+      "revId": "84db2848bfac418b5b71d306eef60604ddab0673",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7c4cb5c6_f2aa2899",
+        "filename": "kernel/ap.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 380,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T04:19:30Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_mc_spinlock_unlock(\u0026get_cpu_local_var(cpu)-\u003esmp_func_req_lock,",
+      "revId": "84db2848bfac418b5b71d306eef60604ddab0673",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
