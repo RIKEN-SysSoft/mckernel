@@ -37,6 +37,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "cc13f749_7a19204f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 16
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2021-02-18T23:50:50Z",
+      "side": 1,
+      "message": "x86_64において、uti threadでmalloc()をするとSEGVが発生する問題は、developmentでも発生するので、\nuti-futexとは無関係な問題のようです。\n頑張って発生コミットを探ったところ、下記コミット以降で発生しています。\n\ncommit 530110e3a900f0e0d782deea8aae2017890580b3\nAuthor: Masamichi Takagi \u003cmasamichi.takagi@riken.jp\u003e\nDate:   Thu Dec 17 17:16:13 2020 +0900\n\n    Tofu: fix ENABLE_TOFU switching\n\n    Change-Id: Ib33323d4b59ea8fb4f5f40dff7ea25a36773d5e2\n\nIssueに登録します。",
+      "revId": "597163fbbb262316da7e34e357d8ffe8d6652d86",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "6e0179b1_32d5ef33",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 16
