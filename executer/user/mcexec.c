@@ -3030,7 +3030,9 @@ static long util_thread(struct thread_data_s *my_thread,
 
 		desc.phys_attr = pattr;
 		desc.uti_cpu_set_str = getenv("UTI_CPU_SET");
-		desc.uti_cpu_set_len = strlen(desc.uti_cpu_set_str) + 1;
+		if (desc.uti_cpu_set_str) {
+			desc.uti_cpu_set_len = strlen(desc.uti_cpu_set_str) + 1;
+		}
 
 		if ((rc = ioctl(fd, MCEXEC_UP_UTI_ATTR, &desc))) {
 			fprintf(stderr, "%s: error: MCEXEC_UP_UTI_ATTR: %s\n",
