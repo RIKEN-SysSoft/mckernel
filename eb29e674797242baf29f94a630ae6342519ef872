@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "605f551b_3a7c84e6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-18T05:16:48Z",
+      "side": 1,
+      "message": "影響範囲が小さいためwallaby testは実施しない。",
+      "revId": "eb29e674797242baf29f94a630ae6342519ef872",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
