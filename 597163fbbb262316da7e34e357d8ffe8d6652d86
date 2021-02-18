@@ -20,6 +20,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "7d75e7d4_0c0a4775",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 16
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2021-02-18T01:27:17Z",
+      "side": 1,
+      "message": "まずはSEGV発生場所の特定を行いました。\ntest/uti/util.c のprint_cpu_last_executed_on() 内、\n result \u003d malloc(65536);\nをutility thread 側から実行した際に発生しているようです。\nまずは情報共有まで。",
+      "revId": "597163fbbb262316da7e34e357d8ffe8d6652d86",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "6e0179b1_32d5ef33",
         "filename": "arch/arm64/kernel/include/arch-futex.h",
         "patchSetId": 16
