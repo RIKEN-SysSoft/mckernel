@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6e078b7e_b99366e7",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2937,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+   int i, numa_id \u003d -1, _numa_id;$",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0da46f9b_1c56bec8",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2938,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+   unsigned long _start, _end;$",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4089bb22_97655443",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2940,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (3, 11)\n+   for (i \u003d 0; i \u003c ihk_mc_get_nr_memory_chunks(); i++) {\n+\t   ihk_mc_get_memory_chunk(i, \u0026_start, \u0026_end, \u0026_numa_id);",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1ba009b6_24fca457",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2940,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+   for (i \u003d 0; i \u003c ihk_mc_get_nr_memory_chunks(); i++) {$",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1d757ca4_b860f643",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2943,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (11, 19)\n+\t   if (p \u003e\u003d _start \u0026\u0026 p \u003c _end) {\n+\t\t   numa_id \u003d _numa_id;",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2eda3965_73eac03b",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2943,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: Statements should start on a tabstop\n+\t   if (p \u003e\u003d _start \u0026\u0026 p \u003c _end) {",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4886014a_254f78b9",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2945,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: Statements should start on a tabstop\n+\t\t   goto out;",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bc0b915b_dfd27000",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2946,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: Statements should start on a tabstop\n+\t   }",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ac9e07e3_21971e5a",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2947,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+   }$",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3f672cb2_c4433678",
+        "filename": "kernel/mem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 2950,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T05:56:30Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+   return numa_id;$",
+      "revId": "6c628deef04804d6679d73c5285e150b2230ae03",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
