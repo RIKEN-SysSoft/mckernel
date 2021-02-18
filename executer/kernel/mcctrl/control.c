@@ -3130,7 +3130,7 @@ static long
 mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 {
 	struct uti_attr_desc desc;
-	char *uti_cpu_set_str;
+	char *uti_cpu_set_str = NULL;
 	struct kuti_attr *kattr;
 	cpumask_t *cpuset = NULL, *env_cpuset = NULL;
 	struct mcctrl_usrdata *ud = ihk_host_os_get_usrdata(os);
@@ -3165,18 +3165,20 @@ mcexec_uti_attr(ihk_os_t os, struct uti_attr_desc __user *_desc)
 		goto out;
 	}
 
-	if (!(uti_cpu_set_str = kmalloc(desc.uti_cpu_set_len, GFP_KERNEL))) {
-		pr_err("%s: error: allocating uti_cpu_set_str\n",
-		       __func__);
-		rc = -ENOMEM;
-		goto out;
-	}
+	if (desc.uti_cpu_set_str) {
+		if (!(uti_cpu_set_str = kmalloc(desc.uti_cpu_set_len, GFP_KERNEL))) {
+			pr_err("%s: error: allocating uti_cpu_set_str\n",
+			       __func__);
+			rc = -ENOMEM;
+			goto out;
+		}
 
-	if ((rc = copy_from_user(uti_cpu_set_str, desc.uti_cpu_set_str, desc.uti_cpu_set_len))) {
-		pr_err("%s: error: copy_from_user\n",
-		       __func__);
-		rc = -EFAULT;
-		goto out;
+		if ((rc = copy_from_user(uti_cpu_set_str, desc.uti_cpu_set_str, desc.uti_cpu_set_len))) {
+			pr_err("%s: error: copy_from_user\n",
+			       __func__);
+			rc = -EFAULT;
+			goto out;
+		}
 	}
 
 	kattr = phys_to_virt(desc.phys_attr);
