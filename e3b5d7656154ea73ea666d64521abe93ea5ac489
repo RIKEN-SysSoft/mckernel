@@ -20,6 +20,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "0257fa1b_c27588fa",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-18T06:58:38Z",
+      "side": 1,
+      "message": "recheck wallaby\n",
+      "revId": "e3b5d7656154ea73ea666d64521abe93ea5ac489",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "22e4f686_1f4c1efb",
         "filename": "test/issues/1555/C1555.c",
         "patchSetId": 1
