@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "81615d79_9da61c92",
+        "filename": "kernel/mem.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 732,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T04:28:47Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tdkprintf(\"%s: policy: CPU @ node %d allocated \"",
+      "revId": "2a34b40e7c5c38d90751654266fa5f3715021e7a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "942861b5_6ad2b1b6",
+        "filename": "test/issues/959/C959.sh",
+        "patchSetId": 7
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T04:28:47Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t${MCEXEC} ${TESTMCK} -s mbind -n ${tno} -- -n 2 2\u003e\u00261 | tee test_mck-mbind${tno}.txt",
+      "revId": "2a34b40e7c5c38d90751654266fa5f3715021e7a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "693ffa0e_467821ed",
+        "filename": "test/issues/959/test_print.patch",
+        "patchSetId": 7
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T04:28:47Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "2a34b40e7c5c38d90751654266fa5f3715021e7a",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
