@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "533496ba_cd866b97",
+        "filename": "test/issues/1555/C1555.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\t\tint sec \u003d SLEEP_SEC;\n+\t\tresp \u003d (int *)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE,",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4c8a8918_453d7061",
+        "filename": "test/issues/1555/test_1555.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "acbb35cb_74a52b45",
+        "filename": "test/issues/1555/test_1555.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6d28e190_0f7e0655",
+        "filename": "test/issues/1555/test_1555.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c6ab3cb2_dfae38e3",
+        "filename": "test/issues/1555/test_1555.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d0444ead_ad18c190",
+        "filename": "test/issues/1555/test_1555.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "85cfa1ea_e4b75c2e",
+        "filename": "test/issues/1555/test_1555.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "68737769_7ed7702e",
+        "filename": "test/issues/1555/test_1555.patch",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-18T07:01:26Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "93dafc5f79bb453bb68553dcf0ac06c47141c9aa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
