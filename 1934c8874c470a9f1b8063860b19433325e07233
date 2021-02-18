@@ -39,6 +39,30 @@
       },
       "revId": "1934c8874c470a9f1b8063860b19433325e07233",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "90e10f65_018cb9af",
+        "filename": "test/issues/1512/C1512.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-18T07:18:39Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "79f25eae_408c5d17",
+      "range": {
+        "startLine": 15,
+        "startChar": 0,
+        "endLine": 15,
+        "endChar": 41
+      },
+      "revId": "1934c8874c470a9f1b8063860b19433325e07233",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     }
   ]
 }
