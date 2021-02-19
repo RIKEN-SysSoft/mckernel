@@ -2318,6 +2318,33 @@ out:
 	return error;
 }
 
+static void dump_stack_ranges(struct process_vm *src_vm)
+{
+	struct vm_range *stack_range = NULL;
+	unsigned long stack_vaddr;
+
+	kprintf("%s: dumping stack ranges: src vm: %lx, src_vm->region.stack: %lx-%lx\n",
+		__func__,
+		(unsigned long)src_vm,
+		src_vm->region.stack_start,
+		src_vm->region.stack_end);
+
+	for (stack_vaddr = src_vm->region.stack_end; stack_vaddr - 1 >= src_vm->region.stack_start; stack_vaddr = stack_range->start) {
+		if (stack_range == NULL) {
+			stack_range = lookup_process_memory_range(src_vm, stack_vaddr - 1, stack_vaddr);
+		}
+		else {
+			stack_range = previous_process_memory_range(src_vm, stack_range);
+		}
+
+		kprintf("%s: info: src vm: %lx, stack_range: %lx-%lx\n",
+			__func__,
+			(unsigned long)src_vm,
+			stack_range->start,
+			stack_range->end);
+	}
+}
+
 int grow_stack(struct process_vm *vm, uintptr_t fault_addr)
 {
 	int ret;
@@ -2329,13 +2356,17 @@ int grow_stack(struct process_vm *vm, uintptr_t fault_addr)
 		return 0;
 	}
 
+	dump_stack_ranges(vm);
+
 	range = lookup_process_memory_range(vm,
 					    vm->region.stack_end - 1,
 					    vm->region.stack_end);
 	if (range == NULL) {
 		ret = -EFAULT;
-		kprintf("%s: stack not found, vm: %lx, addr: %lx\n",
-			__func__, (unsigned long)vm, fault_addr);
+		kprintf("%s: stack not found, vm: %lx, addr: %lx, region: %lx-%lx\n",
+			__func__, (unsigned long)vm, fault_addr,
+			vm->region.stack_start, vm->region.stack_end);
+		dump_stack_ranges(vm);
 		goto out;
 	}
 

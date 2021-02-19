@@ -1046,6 +1046,8 @@ static int xpmem_attach(
 	xpmem_seg_ref(seg);
 	seg_tg = seg->tg;
 	xpmem_tg_ref(seg_tg);
+	kprintf("%s: seg_tg->vm: %lx\n",
+		__func__, (unsigned long)seg_tg->vm);
 
 	if ((seg->flags & XPMEM_FLAG_DESTROYING) ||
 		(seg_tg->flags & XPMEM_FLAG_DESTROYING)) {
@@ -1179,14 +1181,13 @@ out_2:
 	/* grow stack before lookup */
 	if (seg_vaddr >= seg_tg->vm->region.stack_start &&
 	    seg_vaddr < seg_tg->vm->region.stack_end) {
-		kprintf("%s: growing stack, seg_vaddr: %lx\n",
-			__func__, seg_vaddr);
+		kprintf("%s: growing stack, vm: %lx, vaddr: %lx\n",
+			__func__, (unsigned long)seg_tg->vm, seg_vaddr);
 
 		ret = grow_stack(seg_tg->vm, seg_vaddr);
 		if (ret) {
-			kprintf("%s: grow_stack failed with %d\n",
+			kprintf("%s: warning: grow_stack failed with %d\n",
 				__func__, ret);
-			goto out_1;
 		}
 
 	}
@@ -2075,6 +2076,20 @@ static int xpmem_pin_page(
 	struct vm_range *range;
 
 	XPMEM_DEBUG("call: tgid=%d, vaddr=0x%lx", tg->tgid, vaddr);
+
+	/* grow stack before lookup */
+	if (vaddr >= src_vm->region.stack_start &&
+	    vaddr < src_vm->region.stack_end) {
+		kprintf("%s: growing stack, vm: %lx, vaddr: %lx\n",
+			__func__, (unsigned long)src_vm, vaddr);
+
+		ret = grow_stack(src_vm, vaddr);
+		if (ret) {
+			kprintf("%s: warning: grow_stack failed with %d\n",
+				__func__, ret);
+		}
+
+	}
 
 	ihk_rwspinlock_read_lock_noirq(&src_vm->memory_range_lock);
 
