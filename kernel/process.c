@@ -2427,12 +2427,17 @@ static int do_page_fault_process_vm(struct process_vm *vm, void *fault_addr0, ui
 
 	dkprintf("[%d]do_page_fault_process_vm(%p,%lx,%lx)\n",
 			ihk_mc_get_processor_id(), vm, fault_addr0, reason);
-	
-	error = grow_stack(vm, fault_addr);
-	if (error) {
-		kprintf("%s: grow_stack failed with %d\n",
-			__func__, error);
-		goto out;
+
+	if (fault_addr >= vm->region.stack_start &&
+	    fault_addr < vm->region.stack_end) {
+		kprintf("%s: growing stack, vm: %lx, vaddr: %lx\n",
+			__func__, (unsigned long)vm, fault_addr);
+		error = grow_stack(vm, fault_addr);
+		if (error) {
+			kprintf("%s: grow_stack failed with %d\n",
+				__func__, error);
+			goto out;
+		}
 	}
 
 	if (thread->vm->is_memory_range_lock_taken == -1 ||
