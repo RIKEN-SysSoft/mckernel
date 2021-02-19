@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0ac02282_cfa74b77",
+        "filename": "kernel/cls.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-19T09:29:09Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (16, 16)\n+\t\tif (ihk_atomic_read(\u0026cpu_local_var(no_preempt)) \u003c 0) {\n[...]\n+\t\t__kprintf(\"%s: %d\\n\", __func__, ihk_atomic_read(\u0026cpu_local_var(no_preempt)));",
+      "revId": "c3d5dfc8ab5015f88652cfd8ef5c63dcbecce781",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bbf2b24d_3aa9abab",
+        "filename": "kernel/cls.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-19T09:29:09Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t__kprintf(\"%s: %d\\n\", __func__, ihk_atomic_read(\u0026cpu_local_var(no_preempt)));",
+      "revId": "c3d5dfc8ab5015f88652cfd8ef5c63dcbecce781",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "761df1e5_c215ade7",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3683,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-19T09:29:09Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+\t\t\t__FUNCTION__, ihk_atomic_read(\u0026cpu_local_var(no_preempt)));",
+      "revId": "c3d5dfc8ab5015f88652cfd8ef5c63dcbecce781",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9a84b03f_f3156ce0",
+        "filename": "kernel/process.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3683,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-19T09:29:09Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t__FUNCTION__, ihk_atomic_read(\u0026cpu_local_var(no_preempt)));",
+      "revId": "c3d5dfc8ab5015f88652cfd8ef5c63dcbecce781",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
