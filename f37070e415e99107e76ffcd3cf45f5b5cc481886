@@ -1,6 +1,7 @@
 {
   "comments": [
     {
+      "unresolved": true,
       "key": {
         "uuid": "b6b81616_814a92c1",
         "filename": "kernel/syscall.c",
@@ -20,8 +21,31 @@
         "endChar": 14
       },
       "revId": "f37070e415e99107e76ffcd3cf45f5b5cc481886",
-      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
-      "unresolved": true
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "83f445b8_7b0f23a0",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 5679,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-19T02:23:20Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "b6b81616_814a92c1",
+      "range": {
+        "startLine": 5679,
+        "startChar": 0,
+        "endLine": 5679,
+        "endChar": 14
+      },
+      "revId": "f37070e415e99107e76ffcd3cf45f5b5cc481886",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     }
   ]
 }
