@@ -64,6 +64,19 @@ Insert ``mcexec`` before an executable:
 MPI programs
 ~~~~~~~~~~~~
 
+Fujitsu MPI
+'''''''''''
+
+Insert ``mcexec`` **after mpirun** and before an
+executable:
+
+::
+
+   mpirun -n <number-of-MPI-processes> mcexec ./a.out
+
+Other MPI
+'''''''''
+
 Insert ``mcexec -n <processes-per-node>`` **after mpirun** and before an
 executable:
 
