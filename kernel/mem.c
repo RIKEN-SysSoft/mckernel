@@ -1537,6 +1537,11 @@ out_linux:
 			info._sifields._sigfault.si_addr = fault_addr;
 			set_signal(SIGBUS, regs, &info);
 		}
+		else if (error == -ENOMEM) {
+			info.si_signo = SIGKILL;
+			do_kill(thread, thread->proc->pid, -1,
+					SIGKILL, &info, 0);
+		}
 		else {
 			struct vm_range *range = NULL;
 

@@ -1,0 +1,21 @@
+【Issue#1511 動作確認】
+□ テスト内容
+1. 以下のLTPを用いてIssueで報告された症状が発生しないことを確認
+  - oom02
+
+2. 以下のOSTESTを用いて、既存のpage fault機能に影響がないことを確認
+  - page_fault_forwording.000
+  - page_fault_forwording.001
+  - page_fault_forwording.002
+
+□ 実行手順
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。

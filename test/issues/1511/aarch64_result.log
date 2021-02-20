@@ -1,0 +1,129 @@
+sh ./C1511.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 37-43,49-55 -m 2G@2,2G@3 -r 37-43:36+49-55:48 -O ... done
+*** C1511T01 start *******************************
+tst_test.c:1079: INFO: Timeout per run is disabled
+mem.c:814: INFO: set overcommit_memory to 1
+oom02.c:45: INFO: OOM on MPOL_BIND mempolicy...
+mem.c:218: INFO: start normal OOM testing.
+mem.c:140: INFO: expected victim is 28882.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1000e080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10028080f1d0), allocating 3221225472 bytes.
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+mem.c:221: INFO: start OOM testing for mlocked pages.
+mem.c:140: INFO: expected victim is 28898.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1000e080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10028120f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10028080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1004e080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1005c080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1005c120f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10076080f1d0), allocating 3221225472 bytes.
+mem.c:95: INFO: pthread_create: EAGAIN/EWOULDBLOCK
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+mem.c:232: INFO: start OOM testing for KSM pages.
+mem.c:140: INFO: expected victim is 28914.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1000e080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1001c080f1d0), allocating 3221225472 bytes.
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+oom02.c:48: INFO: OOM on MPOL_INTERLEAVE mempolicy...
+mem.c:179: INFO: mempolicy need NUMA system support
+mem.c:218: INFO: start normal OOM testing.
+mem.c:140: INFO: expected victim is 28930.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1001a080f1d0), allocating 3221225472 bytes.
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+mem.c:221: INFO: start OOM testing for mlocked pages.
+mem.c:140: INFO: expected victim is 28946.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10026080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (100261c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10026120f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10034080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1005a080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1005a120f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10068080f1d0), allocating 3221225472 bytes.
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+mem.c:232: INFO: start OOM testing for KSM pages.
+mem.c:140: INFO: expected victim is 28962.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:95: INFO: pthread_create: EAGAIN/EWOULDBLOCK
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+oom02.c:51: INFO: OOM on MPOL_PREFERRED mempolicy...
+mem.c:179: INFO: mempolicy need NUMA system support
+mem.c:218: INFO: start normal OOM testing.
+mem.c:140: INFO: expected victim is 28978.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1001a080f1d0), allocating 3221225472 bytes.
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+mem.c:221: INFO: start OOM testing for mlocked pages.
+mem.c:140: INFO: expected victim is 28994.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10026080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (100261c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10026120f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10034080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1005a080f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10068080f1d0), allocating 3221225472 bytes.
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+mem.c:232: INFO: start OOM testing for KSM pages.
+mem.c:140: INFO: expected victim is 29010.
+mem.c:39: INFO: thread (100000c0f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000160f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (10000200f1d0), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (1001a080f1d0), allocating 3221225472 bytes.
+mem.c:147: PASS: victim signalled: (9) SIGKILL
+mem.c:814: INFO: set overcommit_memory to 1
+
+Summary:
+passed   9
+failed   0
+skipped  0
+warnings 0
+*** C1511T01 PASSED (9)
+
+*** C1511T02 start *******************************
+TEST_SUITE: page_fault_forwording
+TEST_NUMBER: 0
+ARGS:
+hello world
+RESULT: ok
+RESULT: ok
+*** C1511T02 PASSED
+
+*** C1511T03 start *******************************
+TEST_SUITE: page_fault_forwording
+TEST_NUMBER: 1
+ARGS:
+hello world
+RESULT: ok
+RESULT: ok
+*** C1511T03 PASSED
+
+*** C1511T04 start *******************************
+TEST_SUITE: page_fault_forwording
+TEST_NUMBER: 2
+ARGS:
+hello world
+RESULT: ok
+RESULT: ok
+*** C1511T04 PASSED
