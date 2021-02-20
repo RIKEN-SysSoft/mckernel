@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e9f6a7b6_065d17c3",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 1792,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-20T09:53:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: error: destroying, seg-\u003eflag: %lx, seg_tg-\u003eflags: %lx\\n\",",
+      "revId": "33f5b1e778763563d5efbe9ac12ca75b7497741c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
