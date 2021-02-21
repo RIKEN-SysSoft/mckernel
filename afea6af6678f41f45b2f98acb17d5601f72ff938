@@ -16,6 +16,46 @@
       "message": "recheck apollo\n",
       "revId": "afea6af6678f41f45b2f98acb17d5601f72ff938",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a2c4903e_d2e3a3b2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-21T06:42:48Z",
+      "side": 1,
+      "message": "AI\n下記の質問の答えを得る。得たらコードレビュー完了。\n富岳テスト\nsubmit\n",
+      "revId": "afea6af6678f41f45b2f98acb17d5601f72ff938",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "ed3f193b_b50356ff",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 11129,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-21T06:42:48Z",
+      "side": 1,
+      "message": "どのようなときにclvがNULLになるのでしょうか。",
+      "range": {
+        "startLine": 11129,
+        "startChar": 0,
+        "endLine": 11129,
+        "endChar": 17
+      },
+      "revId": "afea6af6678f41f45b2f98acb17d5601f72ff938",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     }
   ]
 }
