@@ -24,6 +24,7 @@ pushd ${UTI_TEST_DIR}
 make
 popd
 
+if false; then
 mcreboot
 for tno in `seq 12 20`
 do
@@ -41,7 +42,7 @@ do
 	let tid++
 	echo ""
 done
-
+fi
 echo "*** Stop mckernel to exec CT31-34 on Linux"
 mcstop
 for tno in `seq 31 34`
