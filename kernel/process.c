@@ -122,6 +122,7 @@ init_process(struct process *proc, struct process *parent)
 		       sizeof(struct rlimit) * MCK_RLIM_MAX);
 		memcpy(&proc->cpu_set, &parent->cpu_set,
 		       sizeof(proc->cpu_set));
+		proc->enable_uti = parent->enable_uti;
 	}
 
 	INIT_LIST_HEAD(&proc->hash_list);

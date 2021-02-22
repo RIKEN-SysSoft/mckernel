@@ -2816,6 +2816,7 @@ int main(int argc, char **argv)
 			  desc->mpol_mode, desc->mpol_nodemask[0]);
 	}
 
+	desc->enable_uti = enable_uti;
 	desc->uti_thread_rank = uti_thread_rank;
 	desc->uti_use_last_cpu = uti_use_last_cpu;
 	desc->thp_disable = get_thp_disable();
