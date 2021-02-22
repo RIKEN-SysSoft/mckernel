@@ -2046,6 +2046,8 @@ static void ld_preload_init()
 	if (enable_uti) {
 		LD_PRELOAD_PREPARE("libmck_syscall_intercept.so");
 		LD_PRELOAD_APPEND;
+		LD_PRELOAD_PREPARE("mck/libuti.so");
+		LD_PRELOAD_APPEND;
 	}
 
 	if (disable_sched_yield) {
