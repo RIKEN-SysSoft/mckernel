@@ -563,6 +563,7 @@ static int process_msg_prepare_process(unsigned long rphys)
 			 __func__, vm->numa_mem_policy, vm->numa_mask[0]);
 	}
 
+	proc->enable_uti = pn->enable_uti;
 	proc->uti_thread_rank = pn->uti_thread_rank;
 	proc->uti_use_last_cpu = pn->uti_use_last_cpu;
 

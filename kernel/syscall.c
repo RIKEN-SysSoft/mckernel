@@ -10721,6 +10721,12 @@ SYSCALL_DECLARE(util_indicate_clone)
 	struct thread *thread = cpu_local_var(current);
 	struct uti_attr *kattr = NULL;
 
+	if (!thread->proc->enable_uti) {
+		kprintf("%s: error: --enable-uti mcexec option not specified\n",
+			__func__);
+		return -EINVAL;
+	}
+
 	if (mod != SPAWN_TO_LOCAL &&
 	    mod != SPAWN_TO_REMOTE)
 		return -EINVAL;
