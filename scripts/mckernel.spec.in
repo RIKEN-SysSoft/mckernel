@@ -111,6 +111,9 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %{_libdir}/libsyscall_intercept.so.0.1.0
 %{_libdir}/libsyscall_intercept.so.0
 %{_libdir}/libsyscall_intercept.so
+%{_libdir}/mck/libuti.so.1.0.0
+%{_libdir}/mck/libuti.so.1
+%{_libdir}/mck/libuti.so
 %{_sysconfdir}/irqbalance_mck.in
 %{_mandir}/man1/mcreboot.1.gz
 %{_mandir}/man1/ihkconfig.1.gz
