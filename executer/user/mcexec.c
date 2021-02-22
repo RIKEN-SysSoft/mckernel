@@ -3395,6 +3395,29 @@ overlay_path(int dirfd, const char *in, char *buf, int *resolvelinks)
 	if (!strcmp(path, "/dev/xpmem"))
 		return "/dev/null";
 
+
+	if (enable_uti && strstr(path, "libuti.so")) {
+		char libdir[PATH_MAX];
+		char *basename;
+
+		basename = strrchr(path, '/');
+		if (basename == NULL) {
+			basename = (char *)path;
+		} else {
+			basename++;
+		}
+		if (find_libdir(libdir, sizeof(libdir)) < 0) {
+			fprintf(stderr, "error: failed to find library directory\n");
+			return in;
+		}
+		n = snprintf(buf, PATH_MAX, "%s/mck/%s",
+			     libdir, basename);
+		__dprintf("%s: %s replaced with %s\n",
+			  __func__, path, buf);
+		goto checkexist;
+	}
+
+
 	if (!strncmp(path, "/proc/self", 10) &&
 	    (path[10] == '/' || path[10] == '\0')) {
 		n = snprintf(buf, PATH_MAX, "/proc/mcos%d/%d%s",
