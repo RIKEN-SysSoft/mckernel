@@ -41,19 +41,6 @@ and then install it to your home directory of the login node:
    sed -i 's#/usr/#'"$HOME"'/'"$(uname -p)"'/usr/#' $HOME/$(uname -p)/usr/lib64/pkgconfig/capstone.pc
 
 
-Install UTI for McKernel
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Install:
-
-.. code-block:: none
-
-   git clone https://github.com/RIKEN-SysSoft/uti.git
-   mkdir build && cd build
-   ../uti/configure --prefix=<mckernel-install> --with-rm=mckernel
-   make && make install
-
-
 Install McKernel
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -73,8 +60,8 @@ Run programs
 
    mcexec --enable-uti <command>
 
-Install UTI for Linux
-~~~~~~~~~~~~~~~~~~~~~
+(Optional) Install UTI for Linux
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can skip this step if you don't want to develop a run-time using UTI, or if it's already installed with, for example, Fujitsu Technical Computing Suite.
 
@@ -100,3 +87,8 @@ Install by rpm
    rpmbuild -ba ./scripts/uti.spec
    rpm -Uvh uti-<version>-<release>-<arch>.rpm
 
+(Optional) Install UTI for McKernel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can skip this step if you don't want to develop a run-time using UTI.
+Execute the commands above for installing UTI for Linux, with ``--with-rm=linux`` replaced with ``--with-rm=mckernel``.
