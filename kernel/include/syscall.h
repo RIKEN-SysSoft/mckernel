@@ -235,6 +235,7 @@ struct program_load_desc {
 				    (sizeof(unsigned long) * 8)];
 
 	int thp_disable;
+	int enable_uti;
 	int uti_thread_rank; /* N-th clone() spawns a thread on Linux CPU */
 	int uti_use_last_cpu; /* Work-around not to share CPU with OpenMP thread */
 	int straight_map;
