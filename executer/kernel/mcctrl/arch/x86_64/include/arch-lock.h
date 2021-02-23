@@ -15,10 +15,11 @@
 typedef unsigned short __ticket_t;
 typedef unsigned int __ticketpair_t;
 
+/* arch/x86/include/asm/spinlock_types.h defines struct __raw_tickets */
 typedef struct ihk_spinlock {
 	union {
 		__ticketpair_t head_tail;
-		struct __raw_tickets {
+		struct ihk__raw_tickets {
 			__ticket_t head, tail;
 		} tickets;
 	};
@@ -31,7 +32,7 @@ static inline void ihk_mc_spinlock_init(_ihk_spinlock_t *lock)
 
 static inline void __ihk_mc_spinlock_lock_noirq(_ihk_spinlock_t *lock)
 {
-	register struct __raw_tickets inc = { .tail = 0x0002 };
+	register struct ihk__raw_tickets inc = { .tail = 0x0002 };
 
 	preempt_disable();
 
