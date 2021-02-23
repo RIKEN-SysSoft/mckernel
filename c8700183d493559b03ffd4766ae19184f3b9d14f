@@ -1,0 +1,4288 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f77afc19_d40db80d",
+        "filename": "arch/arm64/kernel/include/arch-futex.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define ___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0d7c05a4_92198760",
+        "filename": "arch/arm64/kernel/include/arch-futex.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: do {} while (0) macros should not be semicolon terminated\n+#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\\n+do {\t\t\t\t\t\t\t\t\\\n+\tuaccess_enable();\t\t\t\t\t\\\n+\t___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\\n+\tuaccess_disable();\t\t\t\t\t\\\n+} while (0);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c1ac9320_11c7ff8a",
+        "filename": "arch/arm64/kernel/include/arch-futex.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3ad16805_088c18f3",
+        "filename": "arch/arm64/kernel/include/arch-futex.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t___futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)\t\t\\",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8b302668_b6fb6957",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d7292d0e_53965c4e",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: __aligned(size) is preferred over __attribute__((aligned(size)))\n+} __attribute__((aligned(4))) _ihk_spinlock_t;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c6b9eb84_381b184e",
+        "filename": "executer/kernel/mcctrl/arch/arm64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct mcs_rwlock_lock {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bf9ecc9d_746bfbe7",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+/*@\n+  @ assigns \\nothing;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "612f7f45_30f11c35",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+  @*/",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "595dfe9b_886cdeda",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+/*@\n+  @ assigns \\nothing;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "916af425_1b34b9d4",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/cpu.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+  @*/",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "650be53d_efc55167",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef unsigned short __ticket_t;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "584c971d_c4bac94a",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef unsigned int __ticketpair_t;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ab6141e0_f59bcbd4",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct ihk_spinlock {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0cdb9227_950f2be3",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t\tif (*((volatile __ticket_t *)\u0026lock-\u003etickets.head) \u003d\u003d inc.tail)",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3dde6382_25fa4001",
+        "filename": "executer/kernel/mcctrl/arch/x86_64/include/arch-lock.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct mcs_rwlock_lock {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "343ea797_32a6f396",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Comparisons should place the constant on the right side of the test\n+#if LINUX_VERSION_CODE \u003e\u003d KERNEL_VERSION(4, 11, 0)",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "db5642c1_958cbed1",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* Do not use getrawmonotonic() because it returns different value than clock_gettime() */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "af997587_10ca9791",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "745bcee4_727b2cfd",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: void function return statements are not generally useful\n+\treturn;\n+}",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e3232c20_e33b8ddf",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 198,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Possible unnecessary \u0027out of memory\u0027 message\n+\tif (!desc) {\n+\t\tpr_warn(\"WARNING: coudln\u0027t alloc remote page fault wait desc, retrying..\\n\");",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "73ba4bf8_6ebf4f32",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 430,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define PS_TRACED            0x40 /* Set to \"not running\" by a ptrace related event */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "48fd403c_35998203",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 465,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tmcs_rwlock_writer_unlock_noirq((mcs_rwlock_lock_t *)q-\u003eproc_update_lock);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "28a16c06_18a97a9e",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 506,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* TODO: Add the case when a Linux thread waking up another Linux thread */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "23ee44c7_de986728",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 507,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tpr_err(\"%s: ERROR: A Linux thread is waking up migrated-to-Linux thread\\n\", __func__);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "31cf0ead_a426bb16",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 580,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static int64_t futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "03c4ad6a_252928ac",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 614,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* Note that time_remain \u003d\u003d 0 indicates contidion evaluated to false after the timeout elapsed */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9a0d007e_a7493a0c",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 616,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tif (time_remain \u003d\u003d -ERESTARTSYS) { /* Interrupted by signal */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f66e718a_637f7f66",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 617,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tdprintk(\"%s: DEBUG: wait_event returned -ERESTARTSYS\\n\", __func__);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e29455f8_c834b309",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 619,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tpr_err(\"%s: ERROR: wait_event returned %lld\\n\", __func__, time_remain);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4263165e_724a5a86",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 740,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* RIKEN: futex_wait_queue_me() returns -ERESTARTSYS when waiting on Linux CPU and woken up by signal */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "11d4ce70_f1de6c1c",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 794,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ * ^I^Ipi futex (pi to pi requeue is not supported)$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bcabdb0a_532a6b9e",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 916,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t/* RIKEN: set ret to 0 as if fault_in_user_writeable() returned it */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "02dff21c_89f11a27",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 964,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\tint clockrt, ret \u003d -ENOSYS;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "99669c73_b0ecf2b8",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 970,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\treturn -ENOSYS;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2b677191_03b98a8f",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 997,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t/* RIKEN: these calls are not supported for now.\n+\tcase FUTEX_LOCK_PI:",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4fe4e78e_67a2c5a7",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1021,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: ENOSYS means \u0027invalid syscall nr\u0027 and nothing else\n+\t\tret \u003d -ENOSYS;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "31d06199_18999a3a",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1055,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, []\u003d%x, shared: %d\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d4ef458f_a096f219",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1063,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(op \u003d\u003d FUTEX_REQUEUE) ? \"FUTEX_REQUEUE (NOT IMPL!)\" : \"unknown\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "244041fd_5d3de0c5",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1064,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "38fc0aeb_bfdd3819",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1071,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: utime\u003d%ld.%09ld\\n\", __func__, ts.tv_sec, ts.tv_nsec);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "63ce07f5_0a931cb6",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1084,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdprintk(\"%s: ats\u003d%ld.%09ld\\n\", __func__, ats.tv_sec, ats.tv_nsec);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2005d023_bce413c1",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1095,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t * number of waiters to wake in \u0027utime\u0027 if op \u003d\u003d FUTEX_WAKE_OP. */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b5533701_fabb4f9c",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, []\u003d%x, shared: %d, ret: %d\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a7a35559_f8d733f7",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1111,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(op \u003d\u003d FUTEX_REQUEUE) ? \"FUTEX_REQUEUE (NOT IMPL!)\" : \"unknown\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "93668b79_f418fc96",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 1112,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, *uaddr, fshared, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0e8fb891_c55f5513",
+        "filename": "kernel/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 241,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: waking up migrated-to-Linux thread (tid %d),uti_futex_resp\u003d%p\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3063908f_d4104074",
+        "filename": "kernel/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 245,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tstruct ihk_ikc_channel_desc *resp_channel \u003d cpu_local_var(ikc2linux);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "54614f6e_65663016",
+        "filename": "kernel/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 251,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: ERROR: ihk_ikc_send returned %d, resp_channel\u003d%p\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d93c0b5b_00b04689",
+        "filename": "kernel/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 590,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tq-\u003eth_spin_sleep_lock_pa \u003d virt_to_phys((void *)\u0026thread-\u003espin_sleep_lock);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "43d244eb_3b66680e",
+        "filename": "kernel/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 592,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tq-\u003eproc_update_lock_pa \u003d virt_to_phys((void *)\u0026thread-\u003eproc-\u003eupdate_lock);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "91f4d1cc_3707b8bb",
+        "filename": "kernel/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 801,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdkprintf(\"%s: tid\u003d%d futex_wait_setup returns zero, no need to sleep\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6ec905db_3a2bd8eb",
+        "filename": "kernel/futex.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 855,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"%s: uaddr\u003d%p, op\u003d%x, val\u003d%x, timeout\u003d%ld, uaddr2\u003d%p, val2\u003d%x, val3\u003d%x, fshared\u003d%d\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "653b073e_1a5fe575",
+        "filename": "kernel/include/futex.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Use of volatile is usually wrong: see Documentation/process/volatile-considered-harmful.rst\n+\t*dest \u003d *(volatile uint32_t *)from;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "96dca42f_82d88b88",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  a -\u003d b; a -\u003d c; a ^\u003d (c\u003e\u003e13); \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "526e0b00_937430dd",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  b -\u003d c; b -\u003d a; b ^\u003d (a\u003c\u003c8); \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3550948a_89b57888",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  c -\u003d a; c -\u003d b; c ^\u003d (b\u003e\u003e13); \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "87dd86ad_d5b1381a",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  a -\u003d b; a -\u003d c; a ^\u003d (c\u003e\u003e12);  \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0d561726_eb31aa98",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  b -\u003d c; b -\u003d a; b ^\u003d (a\u003c\u003c16); \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fdf956ea_01391458",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  c -\u003d a; c -\u003d b; c ^\u003d (b\u003e\u003e5); \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7a5880c3_6d1e973f",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  a -\u003d b; a -\u003d c; a ^\u003d (c\u003e\u003e3);  \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b916eb48_a7f97459",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  b -\u003d c; b -\u003d a; b ^\u003d (a\u003c\u003c10); \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b67a3dd1_353b16c6",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+  c -\u003d a; c -\u003d b; c ^\u003d (b\u003e\u003e15); \\$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ab6c5f98_757a59c1",
+        "filename": "kernel/include/mc_jhash.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline uint32_t mc_jhash2(const uint32_t *k, uint32_t length, uint32_t initval)",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bcd91eef_08d12662",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 6902,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%lx, uaddr2\u003d%lx, val3\u003d%x, []\u003d%x, shared: %d\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ecca48a9_cd364e7c",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 6974,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t__func__, ats.tv_sec, ats.tv_nsec);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "435bf003_6c2d037f",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 6992,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdkprintf(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%lx, uaddr2\u003d%lx, val3\u003d%x, []\u003d%x, shared: %d, ret: %d\\n\",",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "979c6d4d_300bbe9d",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 10620,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tuti_info-\u003euti_futex_resp_pa \u003d virt_to_phys((void *)cpu_local_var(uti_futex_resp));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a2e81235_f62c1b8a",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 10627,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tuti_info-\u003espin_sleep_lock_pa \u003d virt_to_phys((void *)\u0026thread-\u003espin_sleep_lock);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4f04f667_27539af2",
+        "filename": "test/issues/1428/C1428.sh",
+        "patchSetId": 17
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsudo ${MCEXEC} --enable-uti ${UTI_TEST_DIR}/CT${tno} 2\u003e\u00261 | tee ./${tname}.txt",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4bf2b5c4_02af1994",
+        "filename": "test/issues/1428/C1428.sh",
+        "patchSetId": 17
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tsudo ${MCEXEC} --enable-uti ${UTI_TEST_DIR}/CT${tno} 2\u003e\u00261 | tee ./${tname}.txt",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1c78ee4f_9d8584cf",
+        "filename": "test/issues/1428/C1428.sh",
+        "patchSetId": 17
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in futex_wait01 futex_wait02 futex_wait03 futex_wait04 futex_wait_bitset01 futex_wait_bitset02 futex_wake01 futex_wake02 futex_wake03",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "68d5062d_baf15833",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 237,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    1  TPASS  :  futex_wake() woken up 1 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "83077b43_589661a9",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    2  TPASS  :  futex_wake() woken up 2 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8fd1599f_b35eff43",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 239,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    3  TPASS  :  futex_wake() woken up 3 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a26d4a9d_36cc16c2",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 240,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    4  TPASS  :  futex_wake() woken up 4 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f62610b8_e9beacb8",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 241,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    5  TPASS  :  futex_wake() woken up 5 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "27216e15_7e4a9815",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 242,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    6  TPASS  :  futex_wake() woken up 6 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b237dc94_0b8c6bf4",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    7  TPASS  :  futex_wake() woken up 7 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "eb52b867_a8b9e938",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 244,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    8  TPASS  :  futex_wake() woken up 8 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b6aa4742_b7cbe60a",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 245,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    9  TPASS  :  futex_wake() woken up 9 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e40b0b0f_5657c815",
+        "filename": "test/issues/1428/aarch64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 246,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03   10  TPASS  :  futex_wake() woken up 10 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a0bae6bd_073f31dc",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 225,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    1  TPASS  :  futex_wake() woken up 1 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5ce9ea3a_ed807f30",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 226,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    2  TPASS  :  futex_wake() woken up 2 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b7caa25f_3d1cd6a3",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 227,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    3  TPASS  :  futex_wake() woken up 3 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bd29a8ed_3280589c",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 228,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    4  TPASS  :  futex_wake() woken up 4 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "03891800_67d927e0",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 229,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    5  TPASS  :  futex_wake() woken up 5 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fe5d049b_ea702080",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 230,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    6  TPASS  :  futex_wake() woken up 6 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "27c43a5b_2c72f174",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 231,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    7  TPASS  :  futex_wake() woken up 7 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "914226f8_831daa69",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 232,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    8  TPASS  :  futex_wake() woken up 8 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "66bacdde_5a6be903",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 233,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03    9  TPASS  :  futex_wake() woken up 9 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "54ecfbfb_e8318780",
+        "filename": "test/issues/1428/x86_64_result.log",
+        "patchSetId": 17
+      },
+      "lineNbr": 234,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: \u0027childs\u0027 may be misspelled - perhaps \u0027children\u0027?\n+futex_wake03   10  TPASS  :  futex_wake() woken up 10 childs",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0de33d25_1afc0ea3",
+        "filename": "test/uti/CT14.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfwq(500 * 1000 * 1000UL); /* Sending debug messages through serial takes 0.05 sec */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "baf5b693_0c79dd26",
+        "filename": "test/uti/CT15.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tfwq(500 * 1000 * 1000UL); /* Sending debug messages through serial takes 0.05 sec */",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b478f0e2_8c64125a",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c0303b9e_0cb1d875",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\twhile(!flag) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6be30b2b_1aac3f6e",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "445c8cb8_76648a33",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+ \t\tprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "65cb6885_7e3b4303",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8c170e14_e4a88a22",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "31e4962f_bb0fa8c3",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "dd336c80_4c250308",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fe38b24a_b8c20380",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6a9c469a_95f53929",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1e97769d_77817a7a",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+ \t\tprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "41ee8203_d727ca74",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e0a9fc95_107a26b7",
+        "filename": "test/uti/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 164,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] waker: %ld cycles, waiter: %ld cycles, (waiter - waker) / nloop: %ld cycles\\n\", t_fwq, t_cond_wait, (t_cond_wait - t_fwq) / nloop);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b4afea55_6922c4a3",
+        "filename": "test/uti/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 78,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    long start, end;$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "586a98b5_2a1fa1b3",
+        "filename": "test/uti/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f9a0df7e_fade2c10",
+        "filename": "test/uti/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0e3d0998_899b905b",
+        "filename": "test/uti/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "981c53e5_e3a5bbe2",
+        "filename": "test/uti/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 151,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((ret \u003d syscall(__NR_futex, \u0026sem, FUTEX_WAIT, i, NULL, NULL, 0))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9dc45a00_a142ea7c",
+        "filename": "test/uti/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"Error: futex wait failed (%s)\\n\", strerror(errno));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "106e87b4_2f58e515",
+        "filename": "test/uti/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 164,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] waiter: %ld cycles, waker: %ld cycles, (waiter - waker) / nloop: %ld cycles\\n\", t_futex_wait, t_fwq, (t_futex_wait - t_fwq) / nloop);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "056774d0_8f9a795f",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0b21eed3_4cc2c132",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((ret \u003d syscall(__NR_futex, \u0026sem, FUTEX_WAIT, i, NULL, NULL, 0))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2406e820_dca213d9",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"Error: futex wait failed (%s)\\n\", strerror(errno));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9ebdc8ff_ecb935a5",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "aa523f51_258bd314",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2b89d958_06e600ee",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "227d795e_3fea909a",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1545f17b_dc96223d",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "68b1e08a_7f00fed3",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "64e9927a_1e3a1c27",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7ea8b1f1_0391dd2f",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "24d7ff7e_ab152818",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "97d4cfcc_da2c8060",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d319b6dd_f18810fd",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e4c1b331_2d6d9b71",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "aae7efa4_6c6832a1",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4f917f47_683c7c59",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((ret \u003d pthread_attr_setaffinity_np(\u0026attr, sizeof(cpu_set_t), \u0026cpuset))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "51f39081_c7e7f816",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "50ba2e24_218726f5",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e43f4061_75947baa",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9eb45d75_23218cf2",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "548c8e54_ab8226d4",
+        "filename": "test/uti/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 163,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] waiter: %ld cycles, waker: %ld cycles, (waiter - waker) / nloop: %ld cycles\\n\", t_futex_wait, t_fwq, (t_futex_wait - t_fwq) / nloop);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e7dbbf0d_fc368d4c",
+        "filename": "test/uti/CT35.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint ret;\n+\tret \u003d syscall(732);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9d759479_936a4986",
+        "filename": "test/uti/CT35.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: Bad function definition - int my_thread_create() should probably be int my_thread_create(void)\n+int my_thread_create()",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "24729391_fa9c8eb0",
+        "filename": "test/uti/CT35.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tOKNGNOJUMP(ret \u003d\u003d 0, \"util_indicate_clone,ret\u003d%d,errno\u003d%d\\n\", ret, errno);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bbff7734_0b3c185f",
+        "filename": "test/uti/CT35.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "020393d8_fb6e87e2",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ace9683f_57b6088d",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "29fea28a_70ab29ac",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "be5eb59b_161a68e6",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "444c4a47_a62512c2",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "dbd4c1e2_f3c558a7",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d97059c1_2e16cfd1",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4a5b052a_5fd80dc4",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "965275f6_ae93a05a",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+ \t\tprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "58524d1f_3f147c3b",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b1209d5a_04f283a2",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "da003c8f_8f702716",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cda38f94_754545f7",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b5be2757_a5eb8c60",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e2597e59_5bfbc993",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "252dba82_cda011be",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 129,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((ret \u003d pthread_attr_setaffinity_np(\u0026attr, sizeof(cpu_set_t), \u0026cpuset))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2e4f44a1_27511a4b",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f3016f0c_65eac2ed",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+ \t\tprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "abac155d_9ed9a915",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cdedbfcd_1a0c8e61",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "de8db7fa_e1920e01",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b6da987c_4dd2bfc2",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "592bb732_e02ed049",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\twhile(!flag) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f6fae668_7aa45be1",
+        "filename": "test/uti/arm64/CT31.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 166,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] waker: %ld nsec, waiter: %ld nsec, (waiter - waker) / nloop: %ld nsec\\n\", t_fwq * 10, t_cond_wait * 10, (t_cond_wait - t_fwq) * 10 / nloop);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5fb5bfb8_feeffe91",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c3328e07_be601183",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\twhile(!flag) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f0645110_c31aab6c",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a4dd46f6_527f519d",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9a93d0a9_c89cf035",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "451e77b1_66f97a5e",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a18ba5e4_17455646",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "97c2b585_2f2e9e20",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "49adb194_2962053e",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "68592acb_1d190fee",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "783c4372_aa8901ca",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0a545b65_f1eab1bb",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f3466fd4_b5082da5",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d6cc6328_934abcd3",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+ \t\tprintf(\"%s: Error: pthread_attr_init failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cbb492d3_d57be6e0",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "44c11bb4_b7884b0f",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "64afa209_3a8c64a3",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5e790e75_ad08cead",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 129,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((ret \u003d pthread_attr_setaffinity_np(\u0026attr, sizeof(cpu_set_t), \u0026cpuset))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "840e50b6_ce86fa8d",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "68749b0d_4b308466",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4857d8c6_0f2e90a2",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d4af08d1_d93818e0",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "864b3b4a_fbadb52d",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: __func__ should be used instead of gcc specific __FUNCTION__\n+ \t\tprintf(\"%s: Error: pthread_attr_setaffinity_np failed (%d)\\n\", __FUNCTION__, ret);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0a4a328f_174934ea",
+        "filename": "test/uti/arm64/CT32.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 166,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] waker: %ld nsec, waiter: %ld nsec, (waiter - waker) / nloop: %ld nsec\\n\", t_fwq * 10, t_cond_wait * 10, (t_cond_wait - t_fwq) * 10 / nloop);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9694414e_31dbe3c1",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+    long start, end;$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d98860a2_cfb6dc3a",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4d5363a7_7c703f45",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7848cbff_cea7a899",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0ca0dca7_052d7384",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "013c92af_5d5b4aa0",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ee1edb00_1cefd475",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2eb71d54_0ffc0816",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f8112a6e_0d7d1f8f",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5da173ea_b14bb4e0",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bbab57fb_7162fa89",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9ade9308_26b911f2",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "748c8eb5_f5116b3f",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4acce94f_13a7c0f5",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3f522864_5a0627cc",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 125,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((ret \u003d pthread_attr_setaffinity_np(\u0026attr, sizeof(cpu_set_t), \u0026cpuset))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "daf4891b_3460d5f4",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "82f67732_c05a3622",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "35479f9f_3afad7e7",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "67e63b8c_91196f31",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c6df0bbe_76f6b75e",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((ret \u003d syscall(__NR_futex, \u0026sem, FUTEX_WAIT, i, NULL, NULL, 0))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3ff3d816_ccf012cd",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"Error: futex wait failed (%s)\\n\", strerror(errno));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ef84c8f4_c5ee318a",
+        "filename": "test/uti/arm64/CT33.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 166,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] waiter: %ld nsec, waker: %ld nsec, (waiter - waker) / nloop: %ld nsec\\n\", t_futex_wait * 10, t_fwq * 10, (t_futex_wait - t_fwq) * 10 / nloop);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1b114306_27500a24",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "00b2fb13_7ef7eec5",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((ret \u003d syscall(__NR_futex, \u0026sem, FUTEX_WAIT, i, NULL, NULL, 0))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cc205504_4bb3ed1b",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tprintf(\"Error: futex wait failed (%s)\\n\", strerror(errno));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "52eea655_ba4c45dd",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2a2152b1_b18294d8",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7094d385_d0931312",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9b2fb21b_30ac8fea",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ec6da315_63826005",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "15b9e145_78570726",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c8c6f0bf_8ec64b25",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: sched_setaffinity: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d0e3187e_d1d291e4",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 111,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b9547ac5_e975774a",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 111,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f6204d61_ed927e6a",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 111,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: pthread_attr_init: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2bf5d18c_ddfa70c7",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5e7c5f96_57a463e8",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "22ac7c8a_2e01524b",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^ICPU_ZERO(\u0026cpuset);$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "086280f6_88ac9180",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((ret \u003d pthread_attr_setaffinity_np(\u0026attr, sizeof(cpu_set_t), \u0026cpuset))) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a567fd03_ea3407fe",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+ \t\tprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c9dd824a_c126e1fa",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no space before tabs\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bb9c1078_ea52c9bb",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: code indent should use tabs where possible\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2cb1603f_89c26773",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ ^I^Iprintf(\"Error: pthread_attr_setaffinity_np: %s\\n\", strerror(errno));$",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a24ec4e9_2f3c7f3c",
+        "filename": "test/uti/arm64/CT34.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 165,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] waiter: %ld nsec, waker: %ld nsec, (waiter - waker) / nloop: %ld nsec\\n\", t_futex_wait * 10, t_fwq * 10, (t_futex_wait - t_fwq) * 10 / nloop);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "92642adb_4c010efc",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: open brace \u0027{\u0027 following function definitions go on the next line\n+int print_cpu_last_executed_on(const char *name) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7c46fede_bbda43b5",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+\tchar* result;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "83f37d86_6c033f55",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(fd \u003d\u003d -1) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1c2401cc_adef0302",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(result \u003d\u003d NULL) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "31670ba9_dd17d7ca",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint amount \u003d 0;\n+\toffset \u003d 0;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "aa7ab60f_353f94be",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\twhile(1) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ad9a413f_e75cd5c9",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tif(amount \u003d\u003d -1) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8ec8a515_53ddeed7",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\t\tif(amount \u003d\u003d 0) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "40a46428_9fcecb13",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+\tchar* next_delim \u003d result;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ed599bf6_58d0b34b",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 102,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: \"foo* bar\" should be \"foo *bar\"\n+\tchar* field;",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "23cf31a2_778067de",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tfor(i \u003d 0; i \u003c 39; i++) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a2a941fc_a4ccf8f0",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint i;\n+\tfor(i \u003d 0; i \u003c 39; i++) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a4866571_869976c3",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Missing a blank line after declarations\n+\tint cpu \u003d sched_getcpu();\n+\tif(cpu \u003d\u003d -1) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "24b2f6f3_e3973940",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space required before the open parenthesis \u0027(\u0027\n+\tif(cpu \u003d\u003d -1) {",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "58e474dc_822234ee",
+        "filename": "test/uti/arm64/util.c",
+        "patchSetId": 17
+      },
+      "lineNbr": 114,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tprintf(\"[INFO] %s (tid: %d) is running on %02d,%02d\\n\", name, tid, atoi(field), cpu);",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7bace52e_23fe0c30",
+        "filename": "test/uti/arm64/util.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: Macros with complex values should be enclosed in parentheses\n+#define isb()       asm volatile(\"isb\" : : : \"memory\")",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e38a860a_ecfec866",
+        "filename": "test/uti/arm64/util.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, err, ...) do { \\\n+\tif (cond) {\t\t\t\\\n+\t\teprintf(__VA_ARGS__);   \\\n+\t\tret \u003d err;\t\t\\\n+\t\tgoto fn_fail;\t\t\\\n+\t}\t\t\t\t\\\n+} while (0)",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "aa22fdcc_ac206743",
+        "filename": "test/uti/arm64/util.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\\\n+\tif (cond) {\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\\\n+\t\t\tprintf(\"[ OK ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\\\n+\t\tprintf(\"[ NG ] \" fmt, ##args);\t\t\\\n+\t\tif (jump)\t\t\t\t\\\n+\t\t\tgoto fn_fail;\t\t\t\\\n+\t}\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b9109f8b_fbd791eb",
+        "filename": "test/uti/arm64/util.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+#define DIFFNSEC(end, start) ((end.tv_sec - start.tv_sec) * 1000000000UL + (end.tv_nsec - start.tv_nsec))",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a51d7ff1_8a6a5e64",
+        "filename": "test/uti/arm64/util.h",
+        "patchSetId": 17
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-23T06:21:28Z",
+      "side": 1,
+      "message": "ERROR: space prohibited before that close parenthesis \u0027)\u0027\n+static inline uint64_t rdtsc_light(void )",
+      "revId": "c8700183d493559b03ffd4766ae19184f3b9d14f",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
