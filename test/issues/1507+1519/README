@@ -1,0 +1,39 @@
+【Issue#1507/#1519 動作確認】
+
+□テスト内容
+TCS (Technical Computing Suite) 環境で MPIとOpenMPを利用した
+サンプルプログラムをマルチプロセス+マルチスレッドで実行して、
+xpmemやshmobjを利用するライブラリの初期化および基本動作を確認する。
+
+□実行手順
+1.
+SSMで以下のとおりサンプルプログラムをビルドする。
+必要に応じて PATHを設定すること。
+
+tradモード:
+$ mpifccpx -Kopenmp -Nfjomplib -DMPI -DOPENMP mpi+affinity.c -o mpi+fjopenmp-affinity
+
+LLVMモード:
+$ mpifccpx -DMPI -DOPENMP -Kopenmp mpi+affinity.c -o mpi+llvmopenmp-affinity
+
+2.
+インタラクティブモードでジョブ実行を開始する。
+SSMで以下のように pjsubコマンドを発行する。
+rscunitやrscgrp、jobenvは環境に応じて指定すること。
+
+$ pjsub --interact -L "rscunit=xxx,rscgrp=xxx,jobenv=xxx,node=1" --mpi "proc=2" --sparam wait-time=1000
+
+3.
+サンプルプログラムを2プロセス各24スレッド構成で実行する。
+必要に応じて PATHや LD_LIBRARY_PATHを指定すること。
+
+tradモード:
+$ OMP_NUM_THREADS=24 mpirun -n 2 mcexec -n 2 ./mpi+fjopenmp-affinity
+
+LLVMモード:
+$ OMP_NUM_THREADS=24 mpirun -n 2 mcexec -n 2 ./mpi+llvmopenmp-affinity
+
+
+□実行結果
+result.txt を参照すること。
+サンプルプログラムが異常終了していないことを確認する。
