@@ -244,6 +244,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 #define	STATUS_COMPLETED	1
 #define	STATUS_PAGE_FAULT	3
 #define	STATUS_SYSCALL		4
+#define __NR_syscall_response 8001
 	while (smp_load_acquire(&res.status) != STATUS_COMPLETED) {
 		while (smp_load_acquire(&res.status) == STATUS_IN_PROGRESS) {
 			struct cpu_local_var *v;
@@ -372,7 +373,7 @@ long do_syscall(struct syscall_request *req, int cpu)
 			}
 
 			/* send result */
-			req2.number = __NR_mmap;
+			req2.number = __NR_syscall_response;
 			req2.args[1] = syscall_ret;
 			/* The current thread is the requester and only the waiting thread
 			 * may serve the request */
