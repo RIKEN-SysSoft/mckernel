@@ -362,6 +362,7 @@ retry_alloc:
 
 #define STATUS_IN_PROGRESS	0
 #define	STATUS_SYSCALL		4
+#define __NR_syscall_response 8001
 	req->valid = 0;
 
 	if (__notify_syscall_requester(usrdata->os, packet, resp) < 0) {
@@ -436,7 +437,7 @@ retry_alloc:
 	req->valid = 0;
 
 	/* check result */
-	if (req->number != __NR_mmap) {
+	if (req->number != __NR_syscall_response) {
 		printk("%s:unexpected response. %lx %lx\n",
 		       __FUNCTION__, req->number, req->args[0]);
 		syscall_ret = -EIO;
