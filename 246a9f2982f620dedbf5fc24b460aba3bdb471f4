@@ -16,6 +16,23 @@
       "message": "recheck apollo\n",
       "revId": "246a9f2982f620dedbf5fc24b460aba3bdb471f4",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bd8d6fd3_b8e2d08d",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 2094,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T08:29:44Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "246a9f2982f620dedbf5fc24b460aba3bdb471f4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
     }
   ]
 }
