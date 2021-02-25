@@ -11,5 +11,4 @@ echo 0 > /tmp/xpmem.lock
 
 # Run the main test app
 ${MCEXEC} $PWD/xpmem_master
-exit 0
 
