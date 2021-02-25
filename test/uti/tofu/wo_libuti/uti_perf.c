@@ -1,4 +1,4 @@
-/* uti_perf COPYRIGHT FUJITSU LIMITED 2020-2021 */
+/* uti_perf COPYRIGHT FUJITSU LIMITED 2021 */
 
 #define _GNU_SOURCE
 #include <stdio.h>

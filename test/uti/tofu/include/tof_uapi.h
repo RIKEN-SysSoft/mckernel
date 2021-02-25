@@ -1,3 +1,4 @@
+/* tof_uapi.h COPYRIGHT FUJITSU LIMITED 2021 */
 #ifndef _TOF_UAPI_H_
 #define _TOF_UAPI_H_
 

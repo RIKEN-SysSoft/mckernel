@@ -1,4 +1,4 @@
-# Makefile COPYRIGHT FUJITSU LIMITED 2020
+# Makefile COPYRIGHT FUJITSU LIMITED 2021
 
 CC      = gcc
 INC     = -I../include -I/home/users/ea01/ea0105/aarch64/usr/include
