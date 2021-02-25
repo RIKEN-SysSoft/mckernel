@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f6e7bf77_d23a6225",
+        "filename": "test/uti/libuti/src/uti_pthread_create01.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:56:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT01009 futex (pthread_mutex/pthread_cond) OK\\n\");",
+      "revId": "456c6509dbbabe089aca2c118ffc8aea787a50a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "be4da0d1_3e7ee8a6",
+        "filename": "test/uti/libuti/src/uti_pthread_create01.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:56:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tm \u003d mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);",
+      "revId": "456c6509dbbabe089aca2c118ffc8aea787a50a6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
