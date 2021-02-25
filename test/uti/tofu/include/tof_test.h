@@ -1,3 +1,4 @@
+/* tof_test.h COPYRIGHT FUJITSU LIMITED 2021 */
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +8,6 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "tof_icc.h"
 #include "tof_uapi.h"
 
 #define ST_RDWR   0x0
@@ -39,7 +39,7 @@ static inline void BRK(void) {asm volatile ("brk #0");}
 				TOF_EXIT();		\
 			}				\
 			res;})
-#if 0
+
 enum {
 	TOF_ICC_TOQ_NOP,
 	TOF_ICC_TOQ_PUT,
@@ -56,6 +56,25 @@ enum {
 	TOF_ICC_TOQ_NCOMMANDS,
 };
 
+enum {
+	TOF_ICC_MRQ_ATOMIC_READ_MODIFY_WRITE_HALFWAY_NOTICE = 0x1,
+	TOF_ICC_MRQ_ATOMIC_READ_MODIFY_WRITE_NOTICE,
+	TOF_ICC_MRQ_ATOMIC_READ_MODIFY_WRITE_REMOTE_ERROR,
+	TOF_ICC_MRQ_PUT_HALFWAY_NOTICE,
+	TOF_ICC_MRQ_PUT_LAST_HALFWAY_NOTICE,
+	TOF_ICC_MRQ_GET_HALFWAY_NOTICE,
+	TOF_ICC_MRQ_GET_LAST_HALFWAY_NOTICE,
+	TOF_ICC_MRQ_PUT_NOTICE,
+	TOF_ICC_MRQ_PUT_LAST_NOTICE,
+	TOF_ICC_MRQ_GET_NOTICE,
+	TOF_ICC_MRQ_GET_LAST_NOTICE,
+	TOF_ICC_MRQ_PUT_REMOTE_ERROR,
+	TOF_ICC_MRQ_PUT_LAST_REMOTE_ERROR,
+	TOF_ICC_MRQ_GET_REMOTE_ERROR,
+	TOF_ICC_MRQ_GET_LAST_REMOTE_ERROR,
+
+	TOF_ICC_MRQ_NCOMMANDS,
+};
 
 struct tof_icc_cq_stag_offset {
 	uint64_t offset:40;
@@ -126,7 +145,68 @@ struct tof_icc_toq_get {
 	struct tof_icc_cq_stag_offset local;
 };
 
-#endif
+struct tof_icc_tcq_descriptor {
+	uint8_t res1:5;
+	uint8_t counter_unmatch:1;
+	uint8_t res2:1;
+	uint8_t flip:1;
+	uint8_t rcode;
+	uint8_t res3[2];
+	union{
+		struct {
+			uint32_t length:24;
+			uint32_t res:8;
+		} normal;
+		struct {
+			uint32_t length:6;
+			uint32_t res:26;
+		} piggyback;
+	} len;
+};
+
+struct tof_icc_mrq_common_header1 {
+	uint8_t res1:7;
+	uint8_t flip:1;
+	uint8_t id;
+	uint8_t rcode;
+	uint8_t res2:4;
+	uint8_t pa:1;
+	uint8_t pb:2;
+	uint8_t pc:1;
+	uint8_t x;
+	uint8_t y;
+	uint8_t z;
+	uint8_t a:1;
+	uint8_t b:2;
+	uint8_t c:1;
+	uint8_t res3:1;
+	uint8_t i:3;
+};
+
+struct tof_icc_mrq_common_header2 {
+	uint8_t res1;
+	uint8_t res2:4;
+	uint8_t initial:1;
+	uint8_t res3:3;
+	uint16_t edata;
+	union {
+		struct {
+			uint32_t length:11;
+			uint32_t res:21;
+		} normal;
+		struct {
+			uint32_t op:4;
+			uint32_t res:28;
+		} armw;
+	} lenop;
+};
+
+struct tof_icc_mrq_descriptor {
+	struct tof_icc_mrq_common_header1 head1;
+	struct tof_icc_mrq_common_header2 head2;
+	struct tof_icc_cq_stag_offset cso1;
+	struct tof_icc_cq_stag_offset cso2;
+};
 
 static inline void get_position(struct tof_addr *addr){
 	int fd;

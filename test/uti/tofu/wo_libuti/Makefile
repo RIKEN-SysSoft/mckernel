@@ -1,4 +1,4 @@
-# Makefile COPYRIGHT FUJITSU LIMITED 2020
+# Makefile COPYRIGHT FUJITSU LIMITED 2021
 
 CC      = gcc
 INC     = -I../include

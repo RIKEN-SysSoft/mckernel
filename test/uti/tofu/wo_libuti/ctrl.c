@@ -1,3 +1,4 @@
+/* ctrl.c COPYRIGHT FUJITSU LIMITED 2021 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
