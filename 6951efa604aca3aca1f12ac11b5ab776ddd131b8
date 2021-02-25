@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d1767ea0_137e2635",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 547,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:51:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tdprintk(\"%s: spin wakeup: cpu_id: %d\\n\", __func__, uti_info-\u003ecpu);",
+      "revId": "6951efa604aca3aca1f12ac11b5ab776ddd131b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "898c3adc_9dc98173",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1156,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:51:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, shared: %d\\n\",",
+      "revId": "6951efa604aca3aca1f12ac11b5ab776ddd131b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "80bd0eb7_08c4edb1",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1165,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:51:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, fshared);",
+      "revId": "6951efa604aca3aca1f12ac11b5ab776ddd131b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5bba82e5_33be7f2d",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1204,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:51:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tdprintk(\"futex op\u003d[%x, %s],uaddr\u003d%lx, val\u003d%x, utime\u003d%p, uaddr2\u003d%p, val3\u003d%x, shared: %d, ret: %d\\n\",",
+      "revId": "6951efa604aca3aca1f12ac11b5ab776ddd131b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d13f4f4a_7401f729",
+        "filename": "executer/kernel/mcctrl/futex.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 1213,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:51:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t(unsigned long)uaddr, val, utime, uaddr2, val3, fshared, ret);",
+      "revId": "6951efa604aca3aca1f12ac11b5ab776ddd131b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "172852f8_3f2e9ff6",
+        "filename": "kernel/process.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 3652,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:51:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tdkprintf(\"%s: woken while spinning, cpu: %d, do_schedule: %d\\n\",",
+      "revId": "6951efa604aca3aca1f12ac11b5ab776ddd131b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "19ef97c2_06a9be5a",
+        "filename": "kernel/process.c",
+        "patchSetId": 9
+      },
+      "lineNbr": 3653,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-25T03:51:01Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t __func__, ihk_ikc_get_processor_id(), do_schedule);",
+      "revId": "6951efa604aca3aca1f12ac11b5ab776ddd131b8",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
