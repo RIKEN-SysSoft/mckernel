@@ -1,0 +1,301 @@
+sh ./C1511.sh
+mcstop+release.sh ... done
+mcreboot.sh -c 1-7,9-15,17-23,25-31 -m 10G@0,10G@1 -r 1-7:0+9-15:8+17-23:16+25-31:24 -O ... done
+*** C1511T01 start *******************************
+tst_test.c:1079: INFO: Timeout per run is disabled
+mem.c:814: INFO: set overcommit_memory to 1
+oom02.c:45: INFO: OOM on MPOL_BIND mempolicy...
+mem.c:218: INFO: start normal OOM testing.
+mem.c:140: INFO: expected victim is 26198.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aac80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+mem.c:221: INFO: start OOM testing for mlocked pages.
+mem.c:140: INFO: expected victim is 26228.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aad40800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aad41200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae40800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae41200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae41c00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae42600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae43000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae43a00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae44400700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae44e00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae45800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae46200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae46c00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae47600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae48000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae48a00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae49400700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae49e00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae4a800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae4b200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae4bc00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae4c600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae4d000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae4da00700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+mem.c:232: INFO: start OOM testing for KSM pages.
+mem.c:140: INFO: expected victim is 26260.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aad40800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+oom02.c:48: INFO: OOM on MPOL_INTERLEAVE mempolicy...
+mem.c:179: INFO: mempolicy need NUMA system support
+mem.c:218: INFO: start normal OOM testing.
+mem.c:140: INFO: expected victim is 26298.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae00800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf00800700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+mem.c:221: INFO: start OOM testing for mlocked pages.
+mem.c:140: INFO: expected victim is 26328.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aac80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aad80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf81200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf81c00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf82600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf83000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf83a00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf84400700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf84e00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf85800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf86200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf86c00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf87600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf88000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf88a00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf89400700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf89e00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf8a800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf8b200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf8bc00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf8c600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf8d000700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+mem.c:232: INFO: start OOM testing for KSM pages.
+mem.c:140: INFO: expected victim is 26404.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+oom02.c:51: INFO: OOM on MPOL_PREFERRED mempolicy...
+mem.c:179: INFO: mempolicy need NUMA system support
+mem.c:218: INFO: start normal OOM testing.
+mem.c:140: INFO: expected victim is 26434.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aae00800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf00800700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+mem.c:221: INFO: start OOM testing for mlocked pages.
+mem.c:140: INFO: expected victim is 26464.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aad40800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aad41200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf00800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf01200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf01c00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf02600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf03000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf03a00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf04400700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf04e00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf05800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf06200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf06c00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf07600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf08000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf08a00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf09400700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf09e00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf0a800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf0b200700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf0bc00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf0c600700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf0d000700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaf0da00700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+mem.c:232: INFO: start OOM testing for KSM pages.
+mem.c:140: INFO: expected victim is 26505.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaac800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aad40800700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aaaabe00700), allocating 3221225472 bytes.
+mem.c:39: INFO: thread (2aab80800700), allocating 3221225472 bytes.
+mem.c:151: FAIL: victim signalled: (11) SIGSEGV
+mem.c:814: INFO: set overcommit_memory to 1
+
+Summary:
+passed   0
+failed   9
+skipped  0
+warnings 0
+test process exit
+*** C1511T01 PASSED
+
+*** C1511T02 start *******************************
+signal01    1  TPASS  :  signal(SIGKILL, 0x1(SIG_IGN)) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  signal(SIGKILL, (nil)(SIG_DFL)) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  signal(SIGKILL, 0x403620(catchsig())) failed with EINVAL
+signal01    0  TINFO  :  Child process returned TPASS
+signal01    1  TPASS  :  Child killed with SIGKILL
+signal01    2  TPASS  :  Child killed with SIGKILL
+signal01    3  TPASS  :  Child killed with SIGKILL
+*** C1511T02 PASSED (9)
+
+*** C1511T03 start *******************************
+signal02    1  TPASS  :  expected failure - errno = 22 - Invalid argument
+signal02    2  TPASS  :  expected failure - errno = 22 - Invalid argument
+signal02    3  TPASS  :  expected failure - errno = 22 - Invalid argument
+*** C1511T03 PASSED (3)
+
+*** C1511T04 start *******************************
+signal03    1  TPASS  :  signal03 call succeeded
+signal03    2  TPASS  :  signal03 call succeeded
+signal03    3  TPASS  :  signal03 call succeeded
+signal03    4  TPASS  :  signal03 call succeeded
+signal03    5  TPASS  :  signal03 call succeeded
+signal03    6  TPASS  :  signal03 call succeeded
+signal03    7  TPASS  :  signal03 call succeeded
+signal03    8  TPASS  :  signal03 call succeeded
+signal03    9  TPASS  :  signal03 call succeeded
+signal03   10  TPASS  :  signal03 call succeeded
+signal03   11  TPASS  :  signal03 call succeeded
+signal03   12  TPASS  :  signal03 call succeeded
+signal03   13  TPASS  :  signal03 call succeeded
+signal03   14  TPASS  :  signal03 call succeeded
+signal03   15  TPASS  :  signal03 call succeeded
+signal03   16  TPASS  :  signal03 call succeeded
+signal03   17  TPASS  :  signal03 call succeeded
+signal03   18  TPASS  :  signal03 call succeeded
+signal03   19  TPASS  :  signal03 call succeeded
+signal03   20  TPASS  :  signal03 call succeeded
+signal03   21  TPASS  :  signal03 call succeeded
+signal03   22  TPASS  :  signal03 call succeeded
+signal03   23  TPASS  :  signal03 call succeeded
+signal03   24  TPASS  :  signal03 call succeeded
+signal03   25  TPASS  :  signal03 call succeeded
+signal03   26  TPASS  :  signal03 call succeeded
+signal03   27  TPASS  :  signal03 call succeeded
+signal03   28  TPASS  :  signal03 call succeeded
+signal03   29  TPASS  :  signal03 call succeeded
+signal03   30  TPASS  :  signal03 call succeeded
+signal03   31  TPASS  :  signal03 call succeeded
+*** C1511T04 PASSED (31)
+
+*** C1511T05 start *******************************
+signal04    1  TPASS  :  signal04 call succeeded received (nil).
+signal04    2  TPASS  :  signal04 call succeeded received (nil).
+signal04    3  TPASS  :  signal04 call succeeded received (nil).
+signal04    4  TPASS  :  signal04 call succeeded received (nil).
+signal04    5  TPASS  :  signal04 call succeeded received (nil).
+signal04    6  TPASS  :  signal04 call succeeded received (nil).
+signal04    7  TPASS  :  signal04 call succeeded received (nil).
+signal04    8  TPASS  :  signal04 call succeeded received (nil).
+signal04    9  TPASS  :  signal04 call succeeded received (nil).
+signal04   10  TPASS  :  signal04 call succeeded received (nil).
+signal04   11  TPASS  :  signal04 call succeeded received (nil).
+signal04   12  TPASS  :  signal04 call succeeded received (nil).
+signal04   13  TPASS  :  signal04 call succeeded received (nil).
+signal04   14  TPASS  :  signal04 call succeeded received (nil).
+signal04   15  TPASS  :  signal04 call succeeded received (nil).
+signal04   16  TPASS  :  signal04 call succeeded received (nil).
+signal04   17  TPASS  :  signal04 call succeeded received (nil).
+signal04   18  TPASS  :  signal04 call succeeded received (nil).
+signal04   19  TPASS  :  signal04 call succeeded received (nil).
+signal04   20  TPASS  :  signal04 call succeeded received (nil).
+signal04   21  TPASS  :  signal04 call succeeded received (nil).
+signal04   22  TPASS  :  signal04 call succeeded received (nil).
+signal04   23  TPASS  :  signal04 call succeeded received (nil).
+signal04   24  TPASS  :  signal04 call succeeded received (nil).
+signal04   25  TPASS  :  signal04 call succeeded received (nil).
+signal04   26  TPASS  :  signal04 call succeeded received (nil).
+signal04   27  TPASS  :  signal04 call succeeded received (nil).
+signal04   28  TPASS  :  signal04 call succeeded received (nil).
+*** C1511T05 PASSED (28)
+
+*** C1511T06 start *******************************
+signal05    1  TPASS  :  signal05 call succeeded
+signal05    2  TPASS  :  signal05 call succeeded
+signal05    3  TPASS  :  signal05 call succeeded
+signal05    4  TPASS  :  signal05 call succeeded
+signal05    5  TPASS  :  signal05 call succeeded
+signal05    6  TPASS  :  signal05 call succeeded
+signal05    7  TPASS  :  signal05 call succeeded
+signal05    8  TPASS  :  signal05 call succeeded
+signal05    9  TPASS  :  signal05 call succeeded
+signal05   10  TPASS  :  signal05 call succeeded
+signal05   11  TPASS  :  signal05 call succeeded
+signal05   12  TPASS  :  signal05 call succeeded
+signal05   13  TPASS  :  signal05 call succeeded
+signal05   14  TPASS  :  signal05 call succeeded
+signal05   15  TPASS  :  signal05 call succeeded
+signal05   16  TPASS  :  signal05 call succeeded
+signal05   17  TPASS  :  signal05 call succeeded
+signal05   18  TPASS  :  signal05 call succeeded
+signal05   19  TPASS  :  signal05 call succeeded
+signal05   20  TPASS  :  signal05 call succeeded
+signal05   21  TPASS  :  signal05 call succeeded
+signal05   22  TPASS  :  signal05 call succeeded
+signal05   23  TPASS  :  signal05 call succeeded
+signal05   24  TPASS  :  signal05 call succeeded
+signal05   25  TPASS  :  signal05 call succeeded
+signal05   26  TPASS  :  signal05 call succeeded
+signal05   27  TPASS  :  signal05 call succeeded
+signal05   28  TPASS  :  signal05 call succeeded
+signal05   29  TPASS  :  signal05 call succeeded
+signal05   30  TPASS  :  signal05 call succeeded
+signal05   31  TPASS  :  signal05 call succeeded
+*** C1511T06 PASSED (31)

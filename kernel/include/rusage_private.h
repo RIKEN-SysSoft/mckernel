@@ -15,7 +15,7 @@
 
 #ifdef ENABLE_RUSAGE
 
-#define RUSAGE_OOM_MARGIN (2 * 1024 * 1024) // 2MB
+#define RUSAGE_OOM_MARGIN (8 * 1024 * 1024) // 8MB
 
 extern void eventfd(int type);
 
