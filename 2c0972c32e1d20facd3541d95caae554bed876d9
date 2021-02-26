@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "499ede89_4e979297",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-26T07:06:01Z",
+      "side": 1,
+      "message": "コードレビュー完了",
+      "revId": "2c0972c32e1d20facd3541d95caae554bed876d9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "b467ff6e_47320019",
         "filename": "test/issues/1507+1519/mpi+affinity.c",
         "patchSetId": 2
