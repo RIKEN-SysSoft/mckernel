@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "09c21118_70b1a933",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 3410,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-26T02:02:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tfprintf(stderr, \"error: failed to find library directory\\n\");",
+      "revId": "47e481cc28ff5bade7ada93c7d7a8e3caf3d2485",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1615b54a_123bb4f1",
+        "filename": "test/uti/libuti/src/uti_pthread_create01.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-26T02:02:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"CT01009 futex (pthread_mutex/pthread_cond) OK\\n\");",
+      "revId": "47e481cc28ff5bade7ada93c7d7a8e3caf3d2485",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6ab82da9_ecd65d1c",
+        "filename": "test/uti/libuti/src/uti_pthread_create01.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-26T02:02:12Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tm \u003d mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);",
+      "revId": "47e481cc28ff5bade7ada93c7d7a8e3caf3d2485",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
