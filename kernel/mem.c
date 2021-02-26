@@ -1169,7 +1169,7 @@ int coredump(struct thread *thread, void *regs, int sig)
 	if ((ret = gencore(proc, &coretable, &chunks,
 			proc->saved_cmdline, sig))) {
 		kprintf("%s: ERROR: gencore returned %d\n", __func__, ret);
-		goto out;
+		goto skip;
 	}
 
 	request.number = __NR_coredump;
