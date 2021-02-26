@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "32b1c15a_b32436e6",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 3171,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-26T01:32:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif (!(uti_cpu_set_str \u003d kmalloc(desc.uti_cpu_set_len, GFP_KERNEL))) {",
+      "revId": "32afa807182aeeeeb260f055a18b4af4529fceec",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "26d03b65_609763cc",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 5
+      },
+      "lineNbr": 3178,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-26T01:32:25Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((rc \u003d copy_from_user(uti_cpu_set_str, desc.uti_cpu_set_str, desc.uti_cpu_set_len))) {",
+      "revId": "32afa807182aeeeeb260f055a18b4af4529fceec",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
