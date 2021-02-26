@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "07966c43_36cf49f8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 6
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-26T04:47:43Z",
+      "side": 1,
+      "message": "コードレビュー完了",
+      "revId": "2582a82b0e5580240244d2f07147950ef253e6fa",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "87fe3649_558a222f",
         "filename": "kernel/xpmem.c",
         "patchSetId": 6
