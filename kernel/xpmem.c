@@ -1010,7 +1010,7 @@ static int xpmem_attach(
 	struct xpmem_access_permit *ap;
 	struct xpmem_segment *seg;
 	struct xpmem_attachment *att;
-	struct mcs_rwlock_node_irqsave at_lock;
+	unsigned long at_lock;
 	struct vm_range *vmr;
 	struct process_vm *vm = cpu_local_var(current)->vm;
 
@@ -1082,7 +1082,7 @@ static int xpmem_attach(
 	XPMEM_DEBUG("kmalloc(): att=0x%p", att);
 	memset(att, 0, sizeof(struct xpmem_attachment));
 
-	mcs_rwlock_init(&att->at_lock);
+	ihk_rwspinlock_init(&att->at_lock);
 	att->vaddr = seg_vaddr;
 	att->at_size = size;
 	att->ap = ap;
@@ -1092,7 +1092,7 @@ static int xpmem_attach(
         xpmem_att_not_destroyable(att);
         xpmem_att_ref(att);
 
-	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
+	at_lock = ihk_rwspinlock_write_lock(&att->at_lock);
 
 	ihk_mc_spinlock_lock_noirq(&ap->lock);
 	list_add_tail(&att->att_list, &ap->att_list);
@@ -1176,7 +1176,7 @@ out_2:
 		ihk_mc_spinlock_unlock_noirq(&ap->lock);
 		xpmem_att_destroyable(att);
 	}
-	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+	ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 	xpmem_att_deref(att);
 out_1:
 	xpmem_ap_deref(ap);
@@ -1196,7 +1196,7 @@ static int xpmem_detach(
 	int ret;
 	struct xpmem_access_permit *ap;
 	struct xpmem_attachment *att;
-	struct mcs_rwlock_node_irqsave at_lock;
+	unsigned long at_lock;
 	struct vm_range *range;
 	struct process_vm *vm = cpu_local_var(current)->vm;
 
@@ -1219,10 +1219,10 @@ static int xpmem_detach(
 
 	xpmem_att_ref(att);
 
-	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
+	at_lock = ihk_rwspinlock_write_lock(&att->at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
-		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 		ihk_rwspinlock_write_unlock_noirq(&vm->memory_range_lock);
 		xpmem_att_deref(att);
 		return 0;
@@ -1235,7 +1235,7 @@ static int xpmem_detach(
 	if (cpu_local_var(current)->proc->pid != ap->tg->tgid) {
 		att->flags &= ~XPMEM_FLAG_DESTROYING;
 		xpmem_ap_deref(ap);
-		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 		ihk_rwspinlock_write_unlock_noirq(&vm->memory_range_lock);
 		xpmem_att_deref(att);
 		return -EACCES;
@@ -1247,7 +1247,7 @@ static int xpmem_detach(
     /* range->memobj is released in xpmem_vm_munmap() --> xpmem_remove_process_range() -->
 	   xpmem_free_process_memory_range() */
 
-	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+	ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 
 	XPMEM_DEBUG("xpmem_vm_munmap(): start=0x%lx, len=0x%lx", 
 		range->start, att->at_size);
@@ -1415,16 +1415,16 @@ static void xpmem_detach_att(
 	int ret;
 	struct vm_range *range;
 	struct process_vm *vm;
-	struct mcs_rwlock_node_irqsave at_lock;
+	unsigned long at_lock;
 
 	XPMEM_DEBUG("call: apid=0x%lx, att=0x%p", ap->apid, att);
 
 	XPMEM_DEBUG("detaching att->vm=0x%p", (void *)att->vm);
 
-	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
+	at_lock = ihk_rwspinlock_write_lock(&att->at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
-		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 		XPMEM_DEBUG("return: XPMEM_FLAG_DESTROYING");
 		return;
 	}
@@ -1440,7 +1440,7 @@ static void xpmem_detach_att(
 		ihk_mc_spinlock_lock_noirq(&ap->lock);
 		list_del_init(&att->att_list);
 		ihk_mc_spinlock_unlock_noirq(&ap->lock);
-		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 		ihk_rwspinlock_read_unlock_noirq(&vm->memory_range_lock);
 		xpmem_att_destroyable(att);
 		XPMEM_DEBUG("return: range=%p");
@@ -1466,7 +1466,7 @@ static void xpmem_detach_att(
 	list_del_init(&att->att_list);
 	ihk_mc_spinlock_unlock_noirq(&ap->lock);
 
-	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+	ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 
 	XPMEM_DEBUG("xpmem_vm_munmap(): start=0x%lx, len=0x%lx", 
 		range->start, att->at_size);
@@ -1574,13 +1574,13 @@ static void xpmem_clear_PTEs_of_att(
 	unsigned long end)
 {
 	int ret;
-	struct mcs_rwlock_node_irqsave at_lock;
+	unsigned long at_lock;
 
 	XPMEM_DEBUG("call: att=0x%p, start=0x%lx, end=0x%lx", 
 		att, start, end);
 
 	ihk_rwspinlock_read_lock_noirq(&att->vm->memory_range_lock);
-	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
+	at_lock = ihk_rwspinlock_write_lock(&att->at_lock);
 
 	if (att->flags & XPMEM_FLAG_VALIDPTEs) {
 		struct vm_range *range;
@@ -1620,7 +1620,7 @@ static void xpmem_clear_PTEs_of_att(
 			goto out;
 		}
 
-		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 
 		XPMEM_DEBUG(
 			"xpmem_vm_munmap(): start=0x%lx, len=0x%lx", 
@@ -1632,13 +1632,13 @@ static void xpmem_clear_PTEs_of_att(
 				__FUNCTION__, ret);
 		}
 
-		mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
+		at_lock = ihk_rwspinlock_write_lock(&att->at_lock);
 
 		if (offset_start == 0 && att->at_size == invalidate_len)
 			att->flags &= ~XPMEM_FLAG_VALIDPTEs;
 	}
 out:
-	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+	ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 	ihk_rwspinlock_read_unlock_noirq(&att->vm->memory_range_lock);
 
 	XPMEM_DEBUG("return: ");
@@ -1653,7 +1653,7 @@ int xpmem_remove_process_memory_range(
 	u64 remaining_vaddr;
 	struct xpmem_access_permit *ap;
 	struct xpmem_attachment *att;
-	struct mcs_rwlock_node_irqsave at_lock;
+	unsigned long at_lock;
 
 	XPMEM_DEBUG("call: vmr=0x%p, att=0x%p", vmr, vmr->private_data);
 
@@ -1667,7 +1667,7 @@ int xpmem_remove_process_memory_range(
 
 	xpmem_att_ref(att);
 
-	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
+	at_lock = ihk_rwspinlock_write_lock(&att->at_lock);
 
 	if (att->flags & XPMEM_FLAG_DESTROYING) {
 		XPMEM_DEBUG("already cleaned up");
@@ -1743,7 +1743,7 @@ int xpmem_remove_process_memory_range(
 	 */
 
 out:
-	mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+	ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 
 	xpmem_att_deref(att);
 
@@ -1769,7 +1769,7 @@ int xpmem_fault_process_memory_range(
 	struct xpmem_attachment *att;
 	struct xpmem_segment *seg;
 	size_t pgsize;
-	struct mcs_rwlock_node_irqsave at_lock = { 0 };
+	unsigned long at_lock;
 	int att_locked = 0;
 
 	XPMEM_DEBUG("call: vmr=0x%p, vaddr=0x%lx, reason=0x%lx", 
@@ -1800,14 +1800,14 @@ int xpmem_fault_process_memory_range(
 	seg_tg = seg->tg;
 	xpmem_tg_ref(seg_tg);
 
+	at_lock = ihk_rwspinlock_write_lock(&att->at_lock);
+	att_locked = 1;
+
 	if ((seg->flags & XPMEM_FLAG_DESTROYING) ||
 		(seg_tg->flags & XPMEM_FLAG_DESTROYING)) {
 		ret = -ENOENT;
 		goto out_2;
 	}
-
-	mcs_rwlock_writer_lock(&att->at_lock, &at_lock);
-	att_locked = 1;
 
 	if ((att->flags & XPMEM_FLAG_DESTROYING) ||
 		(ap_tg->flags & XPMEM_FLAG_DESTROYING) ||
@@ -1861,7 +1861,7 @@ out_2:
 
 out_1:
 	if (att_locked) {
-		mcs_rwlock_writer_unlock(&att->at_lock, &at_lock);
+		ihk_rwspinlock_write_unlock(&att->at_lock, at_lock);
 	}
 
 	xpmem_tg_deref(seg_tg);
