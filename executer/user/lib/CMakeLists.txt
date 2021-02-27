@@ -33,17 +33,23 @@ if (ENABLE_UTI)
 	endif()
 
  	include(ExternalProject)
-	# Install libuti.so.* into <prefix>/mck/ so that mcexec can
-	# redirect ld*.so's access to it.  In this way, a.out created
-	# by Fujitsu MPI and linked to libuti.so in the standard path
-	# can use the McKernel version when invoked through mcexec.
- 	ExternalProject_Add(libuti
+	# Install libuti.so.* into /usr/lib64/mck/ so that mcexec can
+	# redirect /usr/lib64/ to /usr/lib64/mck/.  In this way, a.out created
+	# by Fujitsu MPICC and thus linked to /usr/lib64/libuti.so
+	# can be linked to /usr/lib64/mck/libuti.so when invoked via mcexec.
+	ExternalProject_Add(libuti
  	  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/uti
  	  BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/uti
-	  INSTALL_DIR ${prefix}
-	  CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/uti/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib64 --disable-static --with-rm=mckernel
+	  CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/uti/configure --disable-static --with-rm=mckernel
  	  BUILD_COMMAND ${MAKE}
 	  BUILD_IN_SOURCE FALSE
-	  INSTALL_COMMAND ${MAKE} install && bash -c "rm ${prefix}/include/uti.h ${prefix}/lib64/libuti.la && [[ -d ${prefix}/lib64/mck ]] || mkdir ${prefix}/lib64/mck && mv ${prefix}/lib64/libuti.* ${prefix}/lib64/mck"
+	  INSTALL_COMMAND ""
  	  )
+
+	ExternalProject_Get_Property(libuti BINARY_DIR)
+	foreach(target IN ITEMS libuti.so.1.0.0 libuti.so.1 libuti.so)
+	  add_custom_target(${target} ALL COMMAND bash -c "cp -P ${BINARY_DIR}/lib/.libs/${target} ${CMAKE_CURRENT_BINARY_DIR}")
+	  add_dependencies(${target} libuti)
+	  install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${target} DESTINATION "${LIBDIR}/mck")
+	endforeach()
 endif()

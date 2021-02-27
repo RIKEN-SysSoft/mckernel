@@ -142,7 +142,7 @@ cmake options. For example:
 	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
 	-DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON \
 	-DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON \
-	-DENABLE_FUGAKU_DEBUG=OFF \
+	-DENABLE_FUGAKU_DEBUG=OFF -DENABLE_UTI=ON \
 	.
 
 Create the rpm package:
