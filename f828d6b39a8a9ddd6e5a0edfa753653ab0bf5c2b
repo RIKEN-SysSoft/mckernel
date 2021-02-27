@@ -1,0 +1,837 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0d0a0b61_e6ffc815",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1941,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tPAGE_SHIFT + p2align, private_data, \u0026range) !\u003d 0) {",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "dc6d227d_8a830045",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tXPMEM_DEBUG(\"XPMEM_CMD_ATTACH: return: at_vaddr: %lx, cmd\u003d0x%x, ret\u003d%d\",",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b71b027f_db66bbb0",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1762,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^IXPMEM_DEBUG(\"call: vmr\u003d0x%p, vaddr\u003d0x%lx, reason\u003d0x%lx, page_in_remote: %d\", $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c70edc97_891c749b",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1762,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_DEBUG(\"call: vmr\u003d0x%p, vaddr\u003d0x%lx, reason\u003d0x%lx, page_in_remote: %d\",",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0a029563_44e7815c",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1806,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"%s: vaddr: %lx, att-\u003eat_vaddr: %lx, att-\u003eat_size: %lx\\n\",",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "709c8280_94dc12ee",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1840,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tseg_pte \u003d xpmem_vaddr_to_pte(seg_tg-\u003evm, seg_vaddr, \u0026seg_pgsize);",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a40980b3_c693af1b",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1848,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "32c2b48d_4fe82f39",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1859,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_DEBUG(\"seg_vaddr: %lx, seg_phys: %lx, seg_phys_plus_off: %lx, seg_pgsize: %lx\",",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "87104095_f3238900",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 1863,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tihk_rwspinlock_read_unlock_noirq(\u0026seg_tg-\u003evm-\u003ememory_range_lock);",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c01a6a28_d772bb10",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 2042,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\t\txpmem_page_in_remote_on_attach);",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "18a2f14d_68369f8a",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 2152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\tihk_rwspinlock_read_unlock_noirq(\u0026src_vm-\u003ememory_range_lock);",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f69bf201_f8fc3ff1",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 2292,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I/*XPMEM_DEBUG(\"return: tg-\u003erefcnt\u003d%d, tg-\u003en_pinned\u003d%d\", $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "be03799e_91e1c78c",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 2293,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: Block comments use * on subsequent lines\n+\t\t/*XPMEM_DEBUG(\"return: tg-\u003erefcnt\u003d%d, tg-\u003en_pinned\u003d%d\", \n+\t\t  tg-\u003erefcnt, tg-\u003en_pinned);*/",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d43c7189_508b140c",
+        "filename": "kernel/xpmem.c",
+        "patchSetId": 12
+      },
+      "lineNbr": 2293,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: Block comments use a trailing */ on a separate line\n+\t\t  tg-\u003erefcnt, tg-\u003en_pinned);*/",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "baea085f_49cd8998",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_ADDR\u003d`grep xpmem_attachment_addr ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9da69fc7_3a96b42f",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 43,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "493ab2e5_be03fafe",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ OK ] seg_addr ($SEG_ADDR) is allocated until xpmem_attach\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5d44f5d7_d9af811f",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ NG ] seg_addr ($SEG_ADDR) is NOT allocated until xpmem_attach\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "677af6fd_4c6655b0",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ OK ] xpmem_addr ($XPMEM_ADDR) is allocated using large pages\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "125109a1_0b13b222",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\techo \"** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using large pages\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "849a2349_5d233daf",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_ADDR\u003d`grep xpmem_attachment_addr ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fd3c7b0b_8056f9a0",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tXPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d2dc504a_cbcc131a",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"size of 1st page of segment at ${SEG_ADDR}: ${SEG_PGSIZE}, expected: ${EXPECT_PGSIZE}\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "72ffb576_4d5fbafe",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"size of 1st page of attachment at ${XPMEM_ADDR}: ${XPMEM_PGSIZE}, expected: ${EXPECT_PGSIZE}\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "98f3283d_cb2ab634",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+XPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ce37e046_9c6d62b1",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using small pages\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "61a4be25_17757c2a",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+XPMEM_PGSIZE\u003d`grep -o \"xpmem_page_attach.*${XPMEM_ADDR}.*\" ${log_file} | awk \u0027{ print $NF; }\u0027`",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "15409e39_5aa26d8a",
+        "filename": "test/issues/1259/C1259.sh",
+        "patchSetId": 12
+      },
+      "lineNbr": 157,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\techo \"** [ NG ] xpmem_addr ($XPMEM_ADDR) is NOT allocated using large pages\"",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "60c6ddef_5c7dc748",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e5a7ebd2_39a8089a",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "34d8db12_46a7f299",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "34e6c9b5_84119ea8",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "30a2dd47_30dee7a6",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "451a64be_90f28de1",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "67465a6a_5b757d2d",
+        "filename": "test/issues/1259/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fbdd760b_b9710290",
+        "filename": "test/issues/1259/util.h",
+        "patchSetId": 12
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, err, ...) do { \\\n+\tif (cond) {\t\t\t\\\n+\t\tprintf(__VA_ARGS__);   \\\n+\t\tret \u003d err;\t\t\\\n+\t\tgoto out;\t\t\\\n+\t}\t\t\t\t\\\n+} while (0)",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3c54d349_84127ba6",
+        "filename": "test/issues/1259/util.h",
+        "patchSetId": 12
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\\\n+\tif (cond) {\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\\\n+\t\t\tprintf(\"[ OK ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\\\n+\t\tprintf(\"[ NG ] \" fmt, ##args);\t\t\\\n+\t\tif (jump)\t\t\t\t\\\n+\t\t\tgoto out;\t\t\t\\\n+\t}\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "53f4d882_ca401d46",
+        "filename": "test/issues/1259/util2.h",
+        "patchSetId": 12
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define CHKANDJUMP(cond, ...)\tdo {\t\t\\\n+\tif (cond) {\t\t\t\t\\\n+\t\tfprintf(stderr, \" [NG] \");\t\\\n+\t\tfprintf(stderr, __VA_ARGS__);\t\\\n+\t\tfprintf(stderr, \" failed\\n\");\t\\\n+\t\tgoto fn_fail;\t\t\t\\\n+\t}\t\t\t\t\t\\\n+} while (0)",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2d95e77c_ab145206",
+        "filename": "test/issues/1473/ihk_kmsg_size.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8aabb75f_7f134303",
+        "filename": "test/issues/1473/ihk_kmsg_size.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ea218341_3ad71591",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8209ab82_cf164fd7",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "55f92faa_ae311cf9",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "85f7af80_31835ceb",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2a8a10ff_6b80b852",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "eaedd042_ba6e6818",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7697441d_882d345a",
+        "filename": "test/issues/1473/large_page.patch",
+        "patchSetId": 12
+      },
+      "lineNbr": 109,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1a90e4d1_8006af2b",
+        "filename": "test/issues/1473/okng.h",
+        "patchSetId": 12
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define _OKNG(verb, jump, cond, fmt, args...) do {\t\t\\\n+\tif (cond) {\t\t\t\t\t\t\\\n+\t\tif (verb)\t\t\t\t\t\\\n+\t\t\tprintf(\"[  OK  ] \" fmt, ##args);\t\\\n+\t} else {\t\t\t\t\t\t\\\n+\t\tprintf(\"[  NG  ] \" fmt, ##args);\t\t\\\n+\t\tif (jump) {\t\t\t\t\t\\\n+\t\t\tret \u003d 1;\t\t\t\t\\\n+\t\t\tgoto out;\t\t\t\t\\\n+\t\t}\t\t\t\t\t\t\\\n+\t}\t\t\t\t\t\t\t\\\n+} while (0)",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3e4deb8f_427662cd",
+        "filename": "test/issues/1473/okng.h",
+        "patchSetId": 12
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:47:55Z",
+      "side": 1,
+      "message": "WARNING: Macros with flow control statements should be avoided\n+#define INTERR(cond, fmt, args...) do {\t \\\n+\tif (cond) {\t\t\t \\\n+\t\tchar msg[4096];\t\t\t \\\n+\t\tsprintf(msg, fmt, ##args);\t\t \\\n+\t\tprintf(\"[INTERR] %s:%d %s\", __FILE__, __LINE__, msg);\t\\\n+\t\tret \u003d 1;\t\t\t\t\t\\\n+\t\tgoto out;\t\t\t\t\t\\\n+\t} \\\n+} while (0)",
+      "revId": "f828d6b39a8a9ddd6e5a0edfa753653ab0bf5c2b",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
