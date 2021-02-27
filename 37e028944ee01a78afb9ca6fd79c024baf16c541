@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e7e118bc_6b60580f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-02-27T01:01:51Z",
+      "side": 1,
+      "message": "コードレビュー完了",
+      "revId": "37e028944ee01a78afb9ca6fd79c024baf16c541",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
