@@ -69,6 +69,8 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %define __global_ldflags ""
 %define optflags -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic
 
+mkdir build
+pushd build
 %cmake -DCMAKE_BUILD_TYPE=Release \
 	-DUNAME_R=%{kernel_version} \
 	-DKERNEL_DIR=%{kernel_dir} \
@@ -77,12 +79,15 @@ This package contains headers and libraries required for build apps using IHK/Mc
 	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
 	-DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON \
 	-DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON \
-	-DENABLE_FUGAKU_DEBUG=OFF \
-	.
+	-DENABLE_FUGAKU_DEBUG=OFF -DENABLE_UTI=ON \
+	..
 %make_build
+popd
 
 %install
+pushd build
 %make_install
+popd
 
 %files
 %ifarch x86_64
