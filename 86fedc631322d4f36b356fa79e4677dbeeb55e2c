@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "74b82638_56753d2d",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 10
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T00:54:52Z",
+      "side": 1,
+      "message": "WARNING: Possible unwrapped commit description (prefer a maximum 75 chars per line)\nFujitsu MPI tries to attach a segment with the size of the source range size plus one.",
+      "revId": "86fedc631322d4f36b356fa79e4677dbeeb55e2c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "074e9037_9e762fe3",
         "filename": "/PATCHSET_LEVEL",
         "patchSetId": 10
