@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5e430484_2bc8ab84",
+        "filename": "test/issues/1507+1519/mpi+affinity.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:37:34Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tfprintf(stderr, \"error: environment variable %s doesn\u0027t exist?!\\n\", env); \\",
+      "revId": "96db0bb21c070deb7139dc8ec61bc4d908e8cd54",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b71374ca_ccbdbd9b",
+        "filename": "test/issues/1507+1519/mpi+affinity.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:37:34Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tprintf(\"hostname \u003d %s, rank \u003d %03d, PID: %4d, OMP tid \u003d %d, TID \u003d %d, CPU \u003d %d, affinity \u003d%s\\n\",",
+      "revId": "96db0bb21c070deb7139dc8ec61bc4d908e8cd54",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cf1467ff_bf49d192",
+        "filename": "test/issues/1507+1519/mpi+affinity.c",
+        "patchSetId": 7
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:37:34Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\thname, rank, getpgid(0), tid, pid, sched_getcpu(), affinity);",
+      "revId": "96db0bb21c070deb7139dc8ec61bc4d908e8cd54",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
