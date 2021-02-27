@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "773e65dc_3ed7de57",
+        "filename": "test/issues/1381/C1381.sh",
+        "patchSetId": 11
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:08:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in futex_wake04 shmat01 shmat02 shmat03 shmctl01 shmctl02 shmctl03 shmctl04 shmdt01 shmdt02 shmget01 shmget02 shmget03 shmget04 shmget05",
+      "revId": "f3fad5a8b709b85714f456b2f1404c6ee5c01019",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3d279bb1_3f888858",
+        "filename": "test/issues/1458/regression_test.sh",
+        "patchSetId": 11
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-02-27T01:08:21Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+for tp in shmat01 shmat02 shmat03 shmctl01 shmctl02 shmctl03 shmctl04 shmdt01 shmdt02 shmget01 shmget02 shmget03 shmget04 shmget05",
+      "revId": "f3fad5a8b709b85714f456b2f1404c6ee5c01019",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
