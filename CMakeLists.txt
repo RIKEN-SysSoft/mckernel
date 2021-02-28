@@ -120,10 +120,10 @@ if (ENABLE_LINUX_WORK_IRQ_FOR_IKC)
 endif()
 
 if (BUILD_TARGET STREQUAL "smp-arm64")
-	foreach(i RANGE 1 120)
-		add_definitions(-DPOSTK_DEBUG_ARCH_DEP_${i} -DPOSTK_DEBUG_TEMP_FIX_${i})
-		set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DPOSTK_DEBUG_ARCH_DEP_${i} -DPOSTK_DEBUG_TEMP_FIX_${i}")
-	endforeach()
+	execute_process(COMMAND bash -c "find ${CMAKE_CURRENT_SOURCE_DIR} -name \"*.[chS]\"|xargs -r grep -oE \"^#if.*def.*POSTK_DEBUG[^ ]*\" | cut -d':' -f2 | cut -d' ' -f2 | sort | uniq | awk '{print \"-D\"\$0 }' | xargs"
+		OUTPUT_VARIABLE POSTK_DEBUG_DEFINES OUTPUT_STRIP_TRAILING_WHITESPACE)
+	add_definitions("${POSTK_DEBUG_DEFINES}")
+	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} ${POSTK_DEBUG_DEFINES}")
 
 	execute_process(COMMAND awk -F= "$1 == \"CONFIG_ARM64_64K_PAGES\" { print $2; exit; }" "${KERNEL_DIR}/.config"
 			OUTPUT_VARIABLE CONFIG_ARM64_64K_PAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
