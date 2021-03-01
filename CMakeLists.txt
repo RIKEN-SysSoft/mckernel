@@ -238,6 +238,7 @@ else()
 	set(KMODDIR "${CMAKE_INSTALL_PREFIX}/kmod")
 	set(MCKERNELDIR "${CMAKE_INSTALL_PREFIX}/${BUILD_TARGET}/kernel")
 endif()
+set(prefix ${CMAKE_INSTALL_PREFIX})
 
 # set rpath for everyone
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
