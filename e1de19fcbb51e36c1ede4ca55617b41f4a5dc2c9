@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "14674a78_59af6287",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014590
+      },
+      "writtenOn": "2021-03-01T05:14:34Z",
+      "side": 1,
+      "message": "this change is wrong.\nmcctrl_perf_set()\n  isp.arg \u003d virt_to_phys(perf_desc)\n  mcctrl_ikc_send_wait(os, j, \u0026isp,\n                       msecs_to_jiffies(10000),\n                       wakeup_desc_of_perf_desc(perf_desc) /* desc */,\n                       \u0026need_free, 1, perf_desc);\n    pisp-\u003ereply \u003d desc;\nsyscall_packet_handler() in host.c\n  SCD_MSG_PERF_CTRL\n    PERF_CTRL_SET\n      pckt.msg \u003d SCD_MSG_PERF_ACK;\n      pckt.err \u003d ret;\n      pckt.arg \u003d packet-\u003earg;\n      pckt.reply \u003d packet-\u003ereply;\n      ihk_ikc_send\nsyscall_packet_handler() in ikc.c\n  mcctrl_wakeup_cb\n    struct mcctrl_wakeup_desc *desc \u003d packet-\u003ereply;\n    WRITE_ONCE(desc-\u003eerr, packet-\u003eerr)\n",
+      "revId": "e1de19fcbb51e36c1ede4ca55617b41f4a5dc2c9",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
