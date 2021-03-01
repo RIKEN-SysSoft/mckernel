@@ -139,10 +139,10 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			flags |= VR_AP_USER;
 		}
 
-		if (add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
+		if ((error = add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
 					pn->sections[i].len > LARGE_PAGE_SIZE ?
 					LARGE_PAGE_SHIFT : PAGE_SHIFT,
-					&range) != 0) {
+					&range)) != 0) {
 			kprintf("ERROR: adding memory range for ELF section %i\n", i);
 			goto err;
 		}
@@ -150,6 +150,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
 						IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
 			kprintf("ERROR: alloc pages for ELF section %i\n", i);
+			error = -ENOMEM;
 			goto err;
 		}
 
@@ -216,6 +217,8 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	if (vm->region.brk_start >= vm->region.map_start) {
 		kprintf("%s: ERROR: data section is too large (end addr: %lx)\n",
 			__func__, vm->region.data_end);
+		error = -ENOMEM;
+		goto err;
 	}
 
 #if 0
@@ -230,15 +233,16 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 		if (!heap) {
 			kprintf("%s: error: allocating heap\n", __FUNCTION__);
+			error = -ENOMEM;
 			goto err;
 		}
 
 		flags = VR_PROT_READ | VR_PROT_WRITE;
 		flags |= VRFLAG_PROT_TO_MAXPROT(flags);
-		if (add_process_memory_range(vm, vm->region.brk_start,
+		if ((error = add_process_memory_range(vm, vm->region.brk_start,
 					vm->region.brk_start + proc->heap_extension,
 					virt_to_phys(heap),
-					flags, NULL, 0, LARGE_PAGE_P2ALIGN, NULL) != 0) {
+					flags, NULL, 0, LARGE_PAGE_P2ALIGN, NULL)) != 0) {
 			ihk_mc_free_pages(heap, proc->heap_extension >> PAGE_SHIFT);
 			kprintf("%s: error: adding memory range for heap\n", __FUNCTION__);
 			goto err;
@@ -277,14 +281,15 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	if ((args_envs = ihk_mc_alloc_pages_user(argenv_page_count,
 	                                        IHK_MC_AP_NOWAIT, -1)) == NULL){
 		kprintf("ERROR: allocating pages for args/envs\n");
+		error = -ENOMEM;
 		goto err;
 	}
 	args_envs_p = virt_to_phys(args_envs);
 
 	dkprintf("%s: args_envs: %d pages\n",
 			__func__, argenv_page_count);
-	if(add_process_memory_range(vm, addr, e, args_envs_p,
-				flags, NULL, 0, PAGE_SHIFT, NULL) != 0){
+	if ((error = add_process_memory_range(vm, addr, e, args_envs_p,
+					     flags, NULL, 0, PAGE_SHIFT, NULL)) != 0) {
 		ihk_mc_free_pages_user(args_envs, argenv_page_count);
 		kprintf("ERROR: adding memory range for args/envs\n");
 		goto err;
@@ -307,6 +312,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		dkprintf("args_envs_rp: 0x%lX\n", args_envs_rp);
 		if ((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, 
 						args_envs_npages, attr)) == NULL){
+			error = -EFAULT;
 			goto err;
 		}
 		dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
@@ -342,6 +348,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 		
 		if ((args_envs_r = (char *)ihk_mc_map_virtual(args_envs_rp, 
 						args_envs_npages, attr)) == NULL) {
+			error = -EFAULT;
 			goto err;
 		}
 		dkprintf("args_envs_r: 0x%lX\n", args_envs_r);
@@ -383,6 +390,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	proc->saved_cmdline = kmalloc(proc->saved_cmdline_len,
 				      IHK_MC_AP_NOWAIT);
 	if (!proc->saved_cmdline) {
+		error = -ENOMEM;
 		goto err;
 	}
 
@@ -422,7 +430,9 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	p->rprocess = (unsigned long)thread;
 	p->rpgtable = virt_to_phys(as->page_table);
 
-	if (init_process_stack(thread, pn, argc, argv, envc, env) != 0) {
+	if ((error = init_process_stack(thread, pn, argc, argv, envc, env)) != 0) {
+		kprintf("%s: error: init_process_stack failed with %d\n",
+			__func__, error);
 		goto err;
 	}
 
@@ -430,7 +440,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 
 err:
 	/* TODO: cleanup allocated ranges */
-	return -1;
+	return error;
 }
 
 /*
