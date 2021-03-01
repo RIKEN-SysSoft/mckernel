@@ -3110,11 +3110,13 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 	vm->region.map_start = vm->region.map_end = LD_TASK_UNMAPPED_BASE;
 
 	/* Create virtual memory ranges and update args/envs */
-	if (prepare_process_ranges_args_envs(thread, desc, desc,
-				PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
-				argv_flat, argv_flat_len, envp_flat, envp_flat_len) != 0) {
-		kprintf("execve(): PANIC: preparing ranges, args, envs, stack\n");
-		panic("");
+	if ((ret = prepare_process_ranges_args_envs(thread, desc, desc,
+			PTATTR_NO_EXECUTE | PTATTR_WRITABLE | PTATTR_FOR_USER,
+			argv_flat, argv_flat_len, envp_flat, envp_flat_len)) != 0) {
+		kprintf("execve(): ERROR: preparing ranges, args, envs, stack, ret: %d\n",
+			ret);
+		preempt_enable();
+		goto end;
 	}
 	
 	/* Clear host user space PTEs */
