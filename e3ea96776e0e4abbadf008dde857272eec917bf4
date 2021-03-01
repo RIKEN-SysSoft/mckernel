@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a8196ccd_388fffed",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 142,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-01T02:30:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tif ((error \u003d add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,",
+      "revId": "e3ea96776e0e4abbadf008dde857272eec917bf4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b7c2379a_006ab629",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 245,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-01T02:30:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tflags, NULL, 0, LARGE_PAGE_P2ALIGN, NULL)) !\u003d 0) {",
+      "revId": "e3ea96776e0e4abbadf008dde857272eec917bf4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3cb9980f_690c8c18",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 292,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-01T02:30:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t     flags, NULL, 0, PAGE_SHIFT, NULL)) !\u003d 0) {",
+      "revId": "e3ea96776e0e4abbadf008dde857272eec917bf4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4cd5ba52_939d28fa",
+        "filename": "kernel/host.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 433,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-01T02:30:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tif ((error \u003d init_process_stack(thread, pn, argc, argv, envc, env)) !\u003d 0) {",
+      "revId": "e3ea96776e0e4abbadf008dde857272eec917bf4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ec24d26b_10111e6b",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3115,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-01T02:30:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\targv_flat, argv_flat_len, envp_flat, envp_flat_len)) !\u003d 0) {",
+      "revId": "e3ea96776e0e4abbadf008dde857272eec917bf4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ab6d6fd8_34d02678",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 3116,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-01T02:30:36Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\tkprintf(\"execve(): ERROR: preparing ranges, args, envs, stack, ret: %d\\n\",",
+      "revId": "e3ea96776e0e4abbadf008dde857272eec917bf4",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
