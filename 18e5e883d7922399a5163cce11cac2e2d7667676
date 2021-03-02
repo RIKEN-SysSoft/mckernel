@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4f45f17a_5b0b88a4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1015580
+      },
+      "writtenOn": "2021-03-02T04:55:47Z",
+      "side": 1,
+      "message": "submodule(ihk)の変更取り消しに伴い、アップロードし直しました。",
+      "revId": "18e5e883d7922399a5163cce11cac2e2d7667676",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
