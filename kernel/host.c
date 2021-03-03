@@ -589,6 +589,10 @@ static int process_msg_prepare_process(unsigned long rphys)
 	}
 #endif
 
+	proc->mcexec_flags = pn->mcexec_flags;
+	dkprintf("%s: PID: %d, flags: 0x%lx\n",
+		__func__, proc->pid, proc->mcexec_flags);
+
 #ifdef PROFILE_ENABLE
 	proc->profile = pn->profile;
 	thread->profile = pn->profile;
