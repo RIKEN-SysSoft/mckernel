@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0332cbff_befc775c",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-03T21:44:48Z",
+      "side": 1,
+      "message": "ERROR: do not initialise statics to 0\n+static unsigned long mcexec_flags \u003d 0;",
+      "revId": "e372c8c021809b7b0bfd56dd81591c920e541584",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
