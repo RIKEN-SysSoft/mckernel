@@ -137,7 +137,7 @@ if (ENABLE_LINUX_WORK_IRQ_FOR_IKC)
 endif()
 
 if (BUILD_TARGET STREQUAL "smp-arm64")
-	execute_process(COMMAND bash -c "find ${CMAKE_CURRENT_SOURCE_DIR} -name \"*.[chS]\"|xargs -r grep -oE \"^#if.*def.*POSTK_DEBUG[^ ]*\" | cut -d':' -f2 | cut -d' ' -f2 | sort | uniq | awk '{print \"-D\"\$0 }' | xargs"
+	execute_process(COMMAND bash -c "find -L ${CMAKE_CURRENT_SOURCE_DIR} -name \"*.[chS]\"|xargs -r grep -oE \"^#if.*def.*POSTK_DEBUG[^ ]*\" | cut -d':' -f2 | cut -d' ' -f2 | sort | uniq | awk '{print \"-D\"\$0 }' | xargs"
 		OUTPUT_VARIABLE POSTK_DEBUG_DEFINES OUTPUT_STRIP_TRAILING_WHITESPACE)
 	add_definitions("${POSTK_DEBUG_DEFINES}")
 	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} ${POSTK_DEBUG_DEFINES}")
