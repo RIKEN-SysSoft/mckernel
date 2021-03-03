@@ -1,0 +1,138 @@
+#!/bin/bash
+
+# IHK SMP-x86 example McKernel unload script.
+# author: Balazs Gerofi <bgerofi@riken.jp>
+#      Copyright (C) 2015  RIKEN AICS
+# 
+# This is an example script for destroying McKernel and releasing IHK resources
+# Note that the script does no output anything unless an error occurs.
+
+prefix="/home/takagi/project/os/install"
+BINDIR="/home/takagi/project/os/install/bin"
+SBINDIR="/home/takagi/project/os/install/sbin"
+ETCDIR=/home/takagi/project/os/install/etc
+KMODDIR="/home/takagi/project/os/install/kmod"
+KERNDIR="/home/takagi/project/os/install/smp-x86/kernel"
+
+mem=""
+cpus=""
+irqbalance_used=""
+
+# No SMP module? Exit.
+if ! grep ihk_smp_x86 /proc/modules &>/dev/null; then exit 0; fi
+
+if [ "`systemctl status irqbalance_mck.service 2> /dev/null |grep -E 'Active: active'`" \
+!= "" ]; then
+	irqbalance_used="yes"
+	if ! systemctl stop irqbalance_mck.service 2>/dev/null; then
+		echo "warning: failed to stop irqbalance_mck" >&2
+	fi
+	if ! systemctl disable irqbalance_mck.service >/dev/null 2>/dev/null; then
+		echo "warning: failed to disable irqbalance_mck" >&2
+	fi
+fi
+
+# Destroy all LWK instances
+if ls /dev/mcos* 1>/dev/null 2>&1; then
+	for i in /dev/mcos*; do
+		ind=`echo $i|cut -c10-`;
+		# Retry when conflicting with ihkmond 
+		nretry=0
+		until ${SBINDIR}/ihkconfig 0 destroy $ind || [ $nretry -lt 4 ]; do
+		    sleep 0.25
+		    nretry=$[ $nretry + 1 ]
+		done
+		if [ $nretry -eq 4 ]; then
+		    echo "error: destroying LWK instance $ind failed" >&2
+		    exit 1
+		fi
+	done
+fi
+
+# Query IHK-SMP resources and release them
+if ! ${SBINDIR}/ihkconfig 0 query cpu > /dev/null; then
+	echo "error: querying cpus" >&2
+	exit 1
+fi
+
+cpus=`${SBINDIR}/ihkconfig 0 query cpu`
+if [ "${cpus}" != "" ]; then
+	if ! ${SBINDIR}/ihkconfig 0 release cpu $cpus > /dev/null; then
+		echo "error: releasing CPUs" >&2
+		exit 1
+	fi
+fi
+
+if ! ${SBINDIR}/ihkconfig 0 query mem > /dev/null; then
+	echo "error: querying memory" >&2
+	exit 1
+fi
+
+mem=`${SBINDIR}/ihkconfig 0 query mem`
+if [ "${mem}" != "" ]; then
+	if ! ${SBINDIR}/ihkconfig 0 release mem $mem > /dev/null; then
+		echo "error: releasing memory" >&2
+		exit 1
+	fi
+fi
+
+# Remove delegator if loaded
+if grep mcctrl /proc/modules &>/dev/null; then
+	if ! rmmod mcctrl 2>/dev/null; then
+		echo "error: removing mcctrl" >&2
+		exit 1
+	fi
+fi
+
+# Remove mcoverlay if loaded
+if grep mcoverlay /proc/modules &>/dev/null; then
+	if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_sys`" != "" ]; \
+then umount -l /tmp/mcos/mcos0_sys; fi
+	if [ "`cat /proc/mounts | grep /tmp/mcos/mcos0_proc`" != "" ]; \
+then umount -l /tmp/mcos/mcos0_proc; fi
+	if [ "`cat /proc/mounts | grep /tmp/mcos/linux_proc`" != "" ]; \
+then umount -l /tmp/mcos/linux_proc; fi
+	if [ "`cat /proc/mounts | grep /tmp/mcos`" != "" ]; then umount -l /tmp/mcos; fi
+	if [ -e /tmp/mcos ]; then rm -rf /tmp/mcos; fi
+	if ! rmmod mcoverlay 2>/dev/null; then
+		echo "warning: failed to remove mcoverlay" >&2
+	fi
+fi
+
+# Remove SMP module
+if grep ihk_smp_x86 /proc/modules &>/dev/null; then
+	if ! rmmod ihk_smp_x86 2>/dev/null; then
+		echo "error: removing ihk_smp_x86" >&2
+		exit 1
+	fi
+fi
+
+# Remove core module
+if grep -E 'ihk\s' /proc/modules &>/dev/null; then
+	if ! rmmod ihk 2>/dev/null; then
+		echo "error: removing ihk" >&2
+		exit 1
+	fi
+fi
+
+# Stop ihkmond
+pid=`pidof ihkmond`
+if [ "${pid}" != "" ]; then
+    sudo kill -9 ${pid} > /dev/null 2> /dev/null
+fi
+
+# Start irqbalance with the original settings
+if [ "${irqbalance_used}" != "" ]; then
+	if ! etcdir=/home/takagi/project/os/install/etc perl -e \
+'$etcdir=$ENV{'etcdir'}; @files = grep { -f } glob "$etcdir/proc/irq/*/smp_affinity";'\
+' foreach $file (@files) { $dest = substr($file, length($etcdir));'\
+' if(0) {print "cp $file $dest\n";} system("cp $file $dest 2>/dev/null"); }'; then
+		echo "warning: failed to restore /proc/irq/*/smp_affinity" >&2
+	fi
+	if ! systemctl start irqbalance.service; then
+		echo "warning: failed to start irqbalance" >&2;
+	fi
+fi
+
+# Set back default swappiness
+echo 60 > /proc/sys/vm/swappiness

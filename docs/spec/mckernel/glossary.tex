@@ -1,0 +1,45 @@
+% \chapter{Terms}
+% 本章では用語とその定義を説明する。
+% \begin{description}
+\newglossaryentry{レイテンシコア}{name=レイテンシコア, description={シングルスレッド実行における遅延削減に重点を置いて開発されたプロセッサのコア。}}
+%または結果が出始めるまでのコストであるスタートアップコストを小さくすることに重点を置いて開発されたプロセッサのコア。
+\newglossaryentry{ノード}{name=ノード, description={一つ以上のプロセッサ、それらに接続されたRAM、それらに接続されたI/Oデバイスから構成されるコンピュータで、スーパーコンピュータはこれらの群で構成される。}}
+\newglossaryentry{OSサービス}{name=OSサービス, description={プロセス管理、メモリ管理、システムコールなどアプリケーションに提供するハードウェア仮想化サービス。}}
+\newglossaryentry{汎用OS}{name=汎用OS, description={Linuxに代表される、主にサーバ用途のOS。}}
+\newglossaryentry{軽量カーネル、Light-Weight Kernel (LWK)}{name=軽量カーネル、Light-Weight Kernel (LWK), description={アプリケーション実行に必要な最低限の機能のみ備えるOSカーネル。}}
+\newglossaryentry{Full Wieght Kernel (FWK)}{name=Full Wieght Kernel (FWK), description={汎用OSが提供する全てのOSサービスを単体で提供するOSカーネル。}}
+\newglossaryentry{McKernel}{name=McKernel, description={将来のメニーコアアーキテクチャ型スーパーコンピュータシステム向けのOSとして東京大学で開発が開始され理化学研究所が開発を引き継いでいるOSカーネル。}}
+\newglossaryentry{Interface for Heterogeneous Kernels (IHK)}{name=Interface for Heterogeneous Kernels (IHK), description={ノード上の複数のパーティションで異種OSカーネルを同時動作させる仕組みを実現するフレームワーク。Linuxカーネルモジュールとして動作するIHK−Master、LWK用ライブラリとして動作するIHK−Slaveから構成される。また、IHK使用者に対してはLinuxのカーネルモジュール、LWK用ライブラリとして提供される。}}
+\newglossaryentry{IHK-Master}{name=IHK-Master, description={Linuxカーネルモジュールとして動作し、ノードのブート、パーティション作成、LWK起動、LWKとの通信の機能を提供するIHKのモジュール。}}
+\newglossaryentry{IHK-Slave}{name=IHK-Slave, description={LWKのモジュールとして動作し、IHK−Masterとの通信の機能を提供するIHKのモジュール。}}
+\newglossaryentry{Inter-Kernel Communication (IKC)}{name=Inter-Kernel Communication (IKC), description={IHK-MasterとIHK−Slaveにより提供される異種カーネル間の通信。}}
+\newglossaryentry{ジョブ}{name=ジョブ, description={一連のノード操作またはプロセス群の実行。}}
+\newglossaryentry{ジョブスケジューラ}{name=ジョブスケジューラ, description={ユーザからのリクエストを受け、ジョブにスーパーコンピュータシステムのノードを割り当て、また割り当てられたノード群の上でジョブを実行するソフトウェアシステム。}}
+\newglossaryentry{資源}{name=資源, description={アプリケーション実行の際にユーザによって一定時間占有される、物理コア、RAM、HDDなどのスーパーコンピュータの構成要素。}}
+\newglossaryentry{パーティショニング・パーティション}{name=パーティショニング・パーティション, description={ノードの資源を分割すること。または分割されてできた資源サブセットのこと。McKernelの実行の際には物理コアおよびメモリを分割する。}}
+\newglossaryentry{mcctrl}{name=mcctrl, description={Linuxのカーネルモジュールとして動作し、McKernelと通信を行うMcKernelのモジュール。}}
+\newglossaryentry{mcexec}{name=mcexec, description={Linuxのユーザプログラムとして動作し、McKernelのプロセスの管理を行うMcKernelのモジュール。}}
+\newglossaryentry{buitin構成}{name=buitin構成, description={一つのプロセッサを複数のパーティションに分けて、一つのパーティションでLinuxなどのOSサービスを提供するOSカーネルを動作させ、他のパーティションでLWKを動作させる構成。}}
+\newglossaryentry{attached構成}{name=attached構成, description={プロセッサでLinuxなどのOSサービスを提供するOSカーネルを動作させ、PCIバスなどのI/Oバスで接続されたデバイスでLWKを動作させる構成。}}
+\newglossaryentry{McKernelインスタンス}{name=McKernelインスタンス, description={独立したパーティション内で他のOSカーネルと資源を共有せずに動作するMcKernelの実体。}}
+\newglossaryentry{アプリ特化カーネル}{name=アプリ特化カーネル, description={アプリケーションの高速化ができるように最適化されたOSカーネル。例えばタイムシェアリング機能をなくすことでOSノイズを低減することでアプリケーションの高速化を行ったカーネル。}}
+\newglossaryentry{カーネル切り替え}{name=カーネル切り替え, description={複数のアプリ特化カーネルから一つ選択してそれを動作させること。}}
+\newglossaryentry{Non-Uniform Memory Access (NUMA)}{name=Non-Uniform Memory Access (NUMA), description={メモリアクセスについて、ある一つのコアから観測される遅延やバンド幅がメモリ領域によって異なるアーキテクチャ。}}
+\newglossaryentry{NUMA-node}{name=NUMA-node, description={メモリコントローラとDRAMの組み合わせなどのメモリアクセスを行うハードウェアモジュールのこと。}}
+\newglossaryentry{インターコネクト}{name=インターコネクト, description={ノードとノードを結ぶ通信路のこと。}}
+\newglossaryentry{procfs}{name=procfs, description={Linuxの提供する、ファイルシステムをインターフェイスとするカーネルからの情報提示及びカーネルへの指示機構。}}
+\newglossaryentry{Linux API}{name=Linux API, description={アプリケーションがLinuxカーネルの機能を利用する際の規則のこと。例えば、システムコールの名前、その呼び出しの引数の数、型、返り値の型、その作用が挙げられる。}}
+\newglossaryentry{モジュール}{name=モジュール, description={ソフトウェアのある程度独立して動作する部分。}}
+\newglossaryentry{コモディティクラスタ}{name=コモディティクラスタ, description={広く販売されているコンピュータを複数接続して構成したクラスタ型コンピュータ。例としてはIntel社製プロセッサを搭載したPC/ATアーキテクチャのマシンをInfiniBandネットワークで複数接続して構成したコンピュータが挙げられる。}}
+\newglossaryentry{形式手法}{name=形式手法, description={ステートマシンとステートを用いた論理記述を用いて特定の条件が成立する可能性の有無を証明する手法。}}
+\newglossaryentry{アノテーション}{name=アノテーション, description={ソースコードに埋め込む、補助的な動作や条件などを表す記述。}}
+\newglossaryentry{アサーション}{name=アサーション, description={成立すべき条件を表す記述。}}
+\newglossaryentry{Open Source Software (OSS)}{name=Open Source Software (OSS), description={ソースが公開されているソフトウェア。}}
+\newglossaryentry{Linuxオンリーモード}{name=Linuxオンリーモード, description={運用者またはシステムソフトウェア開発者視点でのノードの状態であって、Linuxのみが動作する状態のこと。}}
+\newglossaryentry{McKernelモード}{name=McKernelモード, description={運用者またはシステムソフトウェア開発者視点でのノードの状態であって、LinuxとMcKernelが動作する状態のこと。}}
+\newglossaryentry{Linux動作モード}{name=Linux動作モード, description={ユーザ視点でのアプリの動作形態であって、Linuxのみが動作するノードを用いるという動作形態のこと。}}
+\newglossaryentry{McKernel動作モード}{name=McKernel動作モード, description={ユーザ視点でのアプリの動作形態であって、LinuxとMcKernelが動作するノードを用いるという動作形態のこと。}}
+\newglossaryentry{ジョブ資源管理機能}{name=ジョブ資源管理機能, description={ノードにジョブを起動する、１ジョブに対して一つ選択される代表ノードで動作するプロセス。}}
+\newglossaryentry{Process Launch Environment (PLE)}{name=Process Launch Environment (PLE), description={複数ノードにプロセスを起動する仕組み。}}
+%各ノードでプロセス起動指示を待つデーモンと、このデーモンに指示を与える\texttt{mpiexec}などのツールからなる。
+% \end{description}
