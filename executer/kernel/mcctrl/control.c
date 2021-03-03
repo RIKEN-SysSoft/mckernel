@@ -3588,7 +3588,7 @@ int __mcctrl_os_read_write_cpu_register(ihk_os_t os, int cpu,
 	isp.op = op;
 	isp.pdesc = virt_to_phys(ldesc);
 
-	ret = mcctrl_ikc_send_wait(os, cpu, &isp, 0, NULL, &do_free, 1, ldesc);
+	ret = mcctrl_ikc_send_wait(os, cpu, &isp, -10000, NULL, &do_free, 1, ldesc);
 	if (ret != 0) {
 		printk("%s: ERROR sending IKC msg: %d\n", __FUNCTION__, ret);
 		goto out;
