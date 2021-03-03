@@ -84,7 +84,9 @@ static int hugefileobj_get_page(struct memobj *memobj, off_t off,
 			goto out;
 		}
 
-		memset(obj->pages[pgind], 0, obj->pgsize);
+		if (!zero_at_free) {
+			memset(obj->pages[pgind], 0, obj->pgsize);
+		}
 #ifndef ENABLE_FUGAKU_HACKS
 		dkprintf("%s: obj: 0x%lx, allocated page for off: %lu"
 #else
