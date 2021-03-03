@@ -223,6 +223,7 @@ struct program_load_desc {
 	int straight_map;
 	size_t straight_map_threshold;
 	int enable_tofu;
+	unsigned long mcexec_flags;
 	int nr_processes;
 	int process_rank;
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];

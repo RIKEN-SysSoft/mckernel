@@ -567,6 +567,7 @@ struct process {
 	int straight_map;
 	int enable_tofu;
 	size_t straight_map_threshold;
+	unsigned long mcexec_flags;
 
 	// perf_event
 	int perf_status;
