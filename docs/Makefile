@@ -26,4 +26,6 @@ ja:
 	echo ".. figure:: docs/mckernel-logo.png" > ../README.rst; echo >> ../README.rst
 	cat summary.rst >> ../README.rst; echo >> ../README.rst
 	cat doc.rst >> ../README.rst
+	[[ $@ == clean ]] && specopt=clean; make -C spec/ihk $$specopt
+	[[ $@ == clean ]] && specopt=clean; make -C spec/mckernel $$specopt
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

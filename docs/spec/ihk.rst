@@ -4,4 +4,4 @@
 
 Specifications
 ==============
-The specifications pdf is :download:`here <ihk.pdf>`
+The specifications pdf is :download:`here <ihk/ihk.pdf>`
