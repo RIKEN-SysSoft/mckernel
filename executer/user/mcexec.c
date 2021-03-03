@@ -2646,7 +2646,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Partitioned execution, obtain CPU set */
-	if (nr_processes > 0) {
+	if (!target_core && nr_processes > 0) {
 		struct get_cpu_set_arg cpu_set_arg;
 		int mcexec_linux_numa = 0;
 		int ikc_mapped = 0;
