@@ -207,6 +207,7 @@ static int enable_uti = 0;
 #ifdef ENABLE_TOFU
 static int enable_tofu = 0;
 #endif
+static unsigned long mcexec_flags = 0;
 
 /* Partitioned execution (e.g., for MPI) */
 static int nr_processes = 0;
@@ -1803,6 +1804,12 @@ static struct option mcexec_options[] = {
 		.flag =		&debug,
 		.val =		1,
 	},
+	{
+		.name =		"flags",
+		.has_arg =	required_argument,
+		.flag =		NULL,
+		.val =		'f',
+	},
 	/* end */
 	{ NULL, 0, NULL, 0, },
 };
@@ -2184,10 +2191,10 @@ int main(int argc, char **argv)
 
 	/* Parse options ("+" denotes stop at the first non-option) */
 #ifdef ADD_ENVS_OPTION
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:S:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:e:s:m:u:S:f:",
 				  mcexec_options, NULL)) != -1) {
 #else /* ADD_ENVS_OPTION */
-	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:S:",
+	while ((opt = getopt_long(argc, argv, "+c:n:t:M:h:s:m:u:S:f:",
 				  mcexec_options, NULL)) != -1) {
 #endif /* ADD_ENVS_OPTION */
 		switch (opt) {
@@ -2260,6 +2267,10 @@ int main(int argc, char **argv)
 
 			case 'u':
 				uti_thread_rank = atoi(optarg);
+				break;
+
+			case 'f':
+				mcexec_flags = strtoul(optarg, NULL, 16);
 				break;
 
 			case 0:	/* long opt */
@@ -2414,6 +2425,8 @@ int main(int argc, char **argv)
 			argv[optind], strerror(ret));
 		return 1;
 	}
+
+	desc->mcexec_flags = 0;
 
 #ifdef ADD_ENVS_OPTION
 	/* Collect environment variables */
@@ -2825,6 +2838,14 @@ int main(int argc, char **argv)
 #ifdef ENABLE_TOFU
 	desc->enable_tofu = enable_tofu;
 #endif
+
+	/*
+	 * Override mcexec_flags, if explicitly set.
+	 * This must be right before prepare image.
+	 */
+	if (mcexec_flags) {
+		desc->mcexec_flags = mcexec_flags;
+	}
 
 	/* user_start and user_end are set by this call */
 	if (ioctl(fd, MCEXEC_UP_PREPARE_IMAGE, (unsigned long)desc) != 0) {
