@@ -1,0 +1,17 @@
+\begin{thebibliography}{1}
+
+\bibitem{pbus}
+H.~Fujita, M.~Matsuda, T.~Maeda, S.~Miura, and Y.~Ishikawa.
+\newblock {P-Bus: Programming Interface Layer for Safe OS Kernel Extensions}.
+\newblock In {\em Pacific Rim International Symposium on Dependable Computing
+  (PRDC)}, pages 235--236, 2010.
+
+\bibitem{ihk}
+T.~Shimosawa, B.~Gerofi, M.~Takagi, G.~Nakamura, T.~Shirasawa, Y.~Saeki,
+  M.~Shimizu, A.~Hori, and Y.~Ishikawa.
+\newblock {Interface for Heterogeneous Kernels: A Framework to Enable Hybrid OS
+  Designs targeting High Performance Computing on Manycore Architectures}.
+\newblock {\em In Proc. of IEEE International Conference on High Performance
+  Computing (HiPC)}, 2014.
+
+\end{thebibliography}

@@ -1,0 +1,19 @@
+How to build
+============
+
+Build English html
+------------------
+
+make html
+
+
+Build Japanese html
+--------------------
+
+make ja
+
+
+How to translate into Japanese
+------------------------------
+
+See https://www.sphinx-doc.org/en/master/usage/advanced/intl.html

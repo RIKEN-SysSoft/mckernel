@@ -4,4 +4,4 @@
 
 Specifications
 ==============
-The specifications pdf is :download:`here <mckernel.pdf>`
+The specifications pdf is :download:`here <mckernel/mckernel.pdf>`
