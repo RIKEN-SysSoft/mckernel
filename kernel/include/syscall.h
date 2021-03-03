@@ -243,6 +243,7 @@ struct program_load_desc {
 #ifdef ENABLE_TOFU
 	int enable_tofu;
 #endif
+	unsigned long mcexec_flags;
 	int nr_processes;
 	int process_rank;
 	__cpu_set_unit cpu_set[PLD_CPU_SET_SIZE];
