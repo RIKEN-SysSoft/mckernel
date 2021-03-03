@@ -692,11 +692,14 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 	case SCD_MSG_SCHEDULE_PROCESS:
 		thread = (struct thread *)packet->arg;
 
-		cpuid = obtain_clone_cpuid(&thread->cpu_set, 0);
-		if (cpuid == -1) {
-			kprintf("No CPU available\n");
-			ret = -1;
-			break;
+		cpuid = ihk_mc_get_processor_id();
+		if (!CPU_ISSET(cpuid, &thread->cpu_set)) {
+			cpuid = obtain_clone_cpuid(&thread->cpu_set, 0);
+			if (cpuid == -1) {
+				kprintf("No CPU available\n");
+				ret = -1;
+				break;
+			}
 		}
 
 		dkprintf("SCD_MSG_SCHEDULE_PROCESS: %lx\n", packet->arg);
