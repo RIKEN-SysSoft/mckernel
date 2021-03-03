@@ -1,0 +1,36 @@
+This archive includes the following software:
+ - IHK: Interface for Heterogeneous Kernels
+ - McKernel: Lightweight kernel for HPC on manycore systems
+They are the products of our research and development effort.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(0) User mailing list
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+There are two user mailing lists:
+   mckernel-users@pccluster.org for English
+   mckernel-users-jp@pccluster.org for Japanese
+Please visit the following URL to subscribe it:
+   http://www.pccluster.org/mailman/listinfo/mckernel-users
+If you have any questions, please contact us through it.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(1) Hardware/Software requirements
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+IHK/McKernel has been tested on the following configurations:
+   - CentOS 7.2-7.4, Intel Xeon/Xeon Phi
+   - CentOS 7.2-7.4, VMware, VirtualBox, qemu
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(2) Installation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+See <mckernel>/README.md.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(3) Usage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+For the instructions to use McKernel, please read the HOW_TO_USE.txt
+under the doc directory.  Several example programs are located under
+the doc/tutorial/sample.
+
+Enjoy,
+	IHK/McKernel Development Team

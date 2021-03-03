@@ -1,0 +1,129 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(1) Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This document guides you through trying out IHK/McKernel.  McKernel
+runs Linux and LWK called McKernel side-by-side in socket(s) of
+Xeon/Xeon Phi processors. The cores and memory are divided into two
+partitions and Linux and McKernel run on distinct partitions.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(2) Login to the VM
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+1) Jump to the step (3) if you don't have the USB flash memory with Linux VM
+   image with IHK/McKernel installed.
+2) Boot the Linux in the VM image and login to Linux with user/password of
+   either root/root or hpcuser/hpcuser.
+3) Jump to the Step (4).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(3) Build IHK/McKernel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+1) Follow the instructions in README.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(4) Set environmental variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Assume ${INSTALL} points to the installation directory. It's the path given
+to --prefix configure option ("/opt/ppos" is used if not specified) when
+you built it by yourself or "/home/hpcuser/install/ihk+mckernel/`uname-r`
+if you're using VM image.
+
+Include ${INSTALL}/bin and ${INSTALL}/sbin in your PATH environment variable.
+
+    PATH=$PATH:${INSTALL}/bin:${INSTALL}/sbin
+    MANPATH=$MANPATH:${INSTALL}/share/man
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(3) Boot/Reboot McKernel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Perform the following commands using sudo.
+
+    $ sudo ${INSTALL}/sbin/mcreboot.sh
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(4) Compile and execute sample programs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+You can find sample programs in /home/hpcuser/doc/tutorial/sample.
+Follow the instructions in README.txt in the directory to run the programs.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(5) Compile your program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+You can create executable files for McKernel by using the same
+tool-chain avaiable in Linux distribution (e.g. gcc). You don't need
+to modify compiler options.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(6) Execute your program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The mcexec command, invoked on the Linux shell, is used to execute your
+program on McKernel. Here is an example.
+
+    $ mcexec ./a.out <argument>
+
+  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(7) FAQ
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Q. Can we run "bash" on McKernel ?
+A. Yes.
+
+Q. Can we run "top" or "ps" on Linux to retrieve information of McKernel
+   processes?
+A. Yes. However, some information is incorrect. An McKernel process shares
+   the process id with its corresponding Proxy Process (mcexec). So
+   the command running on Linux can refer to the McKernel process by using
+   the shared process id. However, you can see the information of mcexec 
+   some of which are different from those of the corresponding McKernel process.
+
+Q. Can we run "top" or "ps" on McKernel to retrieve information of Mckernel
+   processes?
+A. Yes. However, some information is incorrect because these functions
+   are based on the information retrieving mechanism (i.e. /proc and
+   /sys file system) which provides the information of the McKernel
+   process, but is not fully implemented.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+(8) Trouble shooting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Q. An error message is shown when booting McKernel.
+A. Reduce the amount of memory reserved for the partition for McKernel by
+   using the option of "mcreboot" script, as shown in the following example.
+
+   mem="256M@0"
+
+Q. A OpenMP program hangs.
+A. Intel OpenMP tries to create a monitor thread in addition to the 
+   compute threads and McKernel hangs when trying to oversubscribe cores.
+   So reduce the number of compute threads.
+
+Q. mcreboot.sh fails.
+A. Make sure that SELINUX is disabled.
+
+Q. The same program (e.g. FWQ from ASC Sequoia benchmark) runs faster/slower 
+   on McKernel than Linux.
+A. Make the clock frequency stay the maximum on both of the machines by performing
+   the following steps.
+   1) On the machine running only Linux
+      i) Disable Intel Turbo Boost by performing the following.
+
+             $ echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo
+
+      ii) Keep the frequencies of all cores to the maximum using the frequency
+          governor mechanism of Linux.
+
+      iii) Use the tickless scheduler by using the "nohz_full=" boot parameter.
+
+   2) On the machine running McKernel
+      i) Disable Intel Turbo Boost by not specifying "-t" option when executing
+	 mcreboot.sh
+
+      ii) The frequencies of all cores are automatically kept to the maximum
+          by the McKernel booting code.

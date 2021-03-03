@@ -1,0 +1,91 @@
+System Calls handled inside McKernel
+* Those not listed are delegated to Linux
+
+Category	Implemented (*1)	Planned
+===============================================================
+Process		arch_prctl		get_thread_area
+Thread		clone (*2)		rt_sigtimedwait
+		execve			set_thread_area
+		exit			signalfd 
+		exit_group		signalfd4
+		fork			
+		futex			
+		get_cpu_id		
+		getegid
+		geteuid
+		getgid
+		getpid
+		getppid
+		getresgid
+		getresuid
+		getrlimit (*2)
+		gettid
+		getuid
+		kill
+		pause
+		ptrace (*2)
+		rt_sigaction
+		rt_sigpending
+		rt_sigprocmask
+		rt_sigqueueinfo
+		rt_sigreturn
+		rt_sigsuspend
+		set_tid_address
+		setfsgid
+		setfsuid
+		setgid
+		setpgid
+		setregid
+		setresgid
+		setresuid
+		setreuid
+		setrlimit (*2)
+		setuid
+		sigaltstack
+		tgkill
+		vfork
+		wait4
+		waittid
+---------------------------------------------------------------
+Memory		brk			get_robust_list
+Management	get_mempolicy		migrate_pages         
+		madvise			mlockall       
+		mbind(*2)		modify_ldt     
+		mincore			move_pages     
+		mlock			munlockall     
+		mmap			set_robust_list
+		mprotect		
+		mremap			  
+		msync			
+		munlock			
+		munmap			
+		process_vm_readv
+		process_vm_writev
+		remap_file_pages
+		set_mempolicy
+		shmat
+		shmctl
+		shmdt
+		shmget
+---------------------------------------------------------------
+Scheduling	getcpu			
+		getitimer (*2*3)
+		gettimeofday		
+		nanosleep
+		sched_getaffinity	
+		sched_setaffinity	
+		sched_yield		
+		setitimer (*2*3)
+		settimeofday
+		times
+---------------------------------------------------------------
+Performance	perf_event_open (PAPI)
+Counter		
+---------------------------------------------------------------
+Other Kernel	/proc and /sys
+Functions	Large page interface
+					cgroups
+---------------------------------------------------------------
+*1: System calls not listed below are delegated to Linux.
+*2: Some functions supported by Linux are not implemented.
+*3: Delegated to Linux when hadware timer is used.
