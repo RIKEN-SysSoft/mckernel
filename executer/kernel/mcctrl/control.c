@@ -2001,9 +2001,13 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		goto out_free;
 	}
 
+	/* fget and list_add should be atomic */
+	down(&mckernel_exec_file_lock);
+
 	file = open_exec(kfilename);
 	retval = PTR_ERR(file);
 	if (IS_ERR(file)) {
+		up(&mckernel_exec_file_lock);
 		goto out_free;
 	}
 
@@ -2012,18 +2016,19 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 
 	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 	if (IS_ERR(fullpath)) {
+		up(&mckernel_exec_file_lock);
 		retval = PTR_ERR(fullpath);
-		goto out_free;
+		goto out_put_file;
 	}
 
 	mcef = kmalloc(sizeof(*mcef), GFP_KERNEL);
 	if (!mcef) {
+		up(&mckernel_exec_file_lock);
 		retval = -ENOMEM;
 		goto out_put_file;
 	}
 	memset(mcef, 0, sizeof(struct mckernel_exec_file)); /* debug */
 
-	down(&mckernel_exec_file_lock);
 	/* Find previous file (if exists) and drop it */
 	list_for_each_entry(mcef_iter, &mckernel_exec_files, list) {
 		if (mcef_iter->os == os && mcef_iter->pid == task_tgid_vnr(current)) {
