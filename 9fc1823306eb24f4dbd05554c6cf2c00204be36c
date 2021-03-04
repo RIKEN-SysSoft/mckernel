@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "363ce99d_9a5a868a",
+        "filename": "kernel/cls.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-04T03:02:46Z",
+      "side": 1,
+      "message": "WARNING: suspect code indent for conditional statements (16, 16)\n+\t\tif (ihk_atomic_read(\u0026cpu_local_var(no_preempt)) \u003c 0) {\n[...]\n+\t\t__kprintf(\"%s: %d\\n\", __func__, ihk_atomic_read(\u0026cpu_local_var(no_preempt)));",
+      "revId": "9fc1823306eb24f4dbd05554c6cf2c00204be36c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c853d480_c0e4f93e",
+        "filename": "kernel/cls.c",
+        "patchSetId": 4
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-04T03:02:46Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t__kprintf(\"%s: %d\\n\", __func__, ihk_atomic_read(\u0026cpu_local_var(no_preempt)));",
+      "revId": "9fc1823306eb24f4dbd05554c6cf2c00204be36c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
