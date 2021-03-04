@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8dd9caa5_e9433eaf",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3639,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-04T02:54:00Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t/* 10 secs (busy-wait) timeout for the case where McKernel can\u0027t respond */",
+      "revId": "eca107f52d484b496afa557c263f06a2fe7bf199",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "512bc693_8cc9fdd1",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 3640,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-04T02:54:00Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\tret \u003d mcctrl_ikc_send_wait(os, cpu, \u0026isp, -10000, NULL, \u0026do_free, 1, ldesc);",
+      "revId": "eca107f52d484b496afa557c263f06a2fe7bf199",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
