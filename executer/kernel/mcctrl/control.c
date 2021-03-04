@@ -2007,6 +2007,9 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 		goto out_free;
 	}
 
+	pr_info("%s: fget, pid: %d, file name: %s\n",
+		__func__, (int)task_tgid_vnr(current), kfilename);
+
 	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 	if (IS_ERR(fullpath)) {
 		retval = PTR_ERR(fullpath);
@@ -2043,9 +2046,6 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
 	up(&mckernel_exec_file_lock);
 
-	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current),
-			kfilename);
-
 	kfree(kfilename);
 	kfree(pathbuf);
 
@@ -2078,7 +2078,8 @@ int mcexec_close_exec(ihk_os_t os, int pid)
 			list_del(&mcef->list);
 			kfree(mcef);
 			found = 1;
-			dprintk("%d close_exec dropped executable \n", (int)task_tgid_vnr(current));
+			pr_info("%s: fput, pid: %d\n",
+				__func__, (int)task_tgid_vnr(current));
 			break;
 		}
 	}
