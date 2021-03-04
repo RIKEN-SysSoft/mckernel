@@ -347,11 +347,19 @@ rusage_page_add(int numa_id, unsigned long pages, int is_user)
 		rusage_kmem_add(size);
 
 	newval = __sync_add_and_fetch(&rusage.total_memory_usage, size);
+	if ((size >> 20) >= 2)
+	kprintf("%s: size: %ld MiB, total_memory_usage: %ld MiB\n",
+		__func__,
+		size >> 20,
+		rusage.total_memory_usage >> 20);
+
 	oldval = rusage.total_memory_max_usage;
 	while (newval > oldval) {
 		retval = __sync_val_compare_and_swap(&rusage.total_memory_max_usage,
 		                                     oldval, newval);
 		if (retval == oldval) {
+			kprintf("%s: old max: %ld MiB, new max: %ld\n",
+				__func__, oldval >> 20, rusage.total_memory_max_usage >> 20);
 #ifdef RUSAGE_DEBUG
 			if (rusage.total_memory_max_usage > rusage.total_memory_max_usage_old + (1 * (1ULL << 30))) {
 				kprintf("%s: max(%ld) > old + 1GB,numa_id=%d\n", __FUNCTION__, rusage.total_memory_max_usage, numa_id);
@@ -378,6 +386,11 @@ rusage_page_sub(int numa_id, unsigned long pages, int is_user)
 	}
 #endif
 	__sync_sub_and_fetch(&rusage.total_memory_usage, size);
+	if ((size >> 20) >= 2)
+	kprintf("%s: size: %ld MiB, total_memory_usage: %ld MiB\n",
+		__func__,
+		size >> 20,
+		rusage.total_memory_usage >> 20);
 
 	if (is_user)
 		rusage_numa_sub(numa_id, size);

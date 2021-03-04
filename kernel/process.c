@@ -2227,6 +2227,8 @@ retry:
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate new page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 				goto out;
 			}
+			kprintf("%s: ihk_mc_alloc_aligned_pages_user, vadddr: %lx, size: %lx\n",
+				__func__, (unsigned long)virt, pgsize);
 			dkprintf("%s: clearing 0x%lx:%lu\n",
 					__FUNCTION__, pgaddr, pgsize);
 #ifdef PROFILE_ENABLE
@@ -2846,8 +2848,8 @@ unsigned long extend_process_region(struct process_vm *vm,
 	}
 	// memory_stat_rss_add() is called in add_process_memory_range()
 
-	dkprintf("%s: new_end_allocated: 0x%lx, align_size: %lu, align_mask: %lx\n",
-		__FUNCTION__, new_end_allocated, align_size, align_mask);
+	kprintf("%s: allocated: %lx-%lx, align_size: %lu, align_mask: %lx\n",
+		__FUNCTION__, end_allocated, new_end_allocated, align_size, align_mask);
 
 	return new_end_allocated;
 }

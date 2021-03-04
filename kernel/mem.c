@@ -813,8 +813,13 @@ distance_based:
 		if (pa) break;
 	}
 
-	if (pa)
+	if (pa) {
 		return phys_to_virt(pa);
+	}
+	else {
+		dkprintf("%s: distance based: couldn't fulfill %d pages\n",
+			__FUNCTION__, npages);
+	}
 
 order_based:
 	node = ihk_mc_get_numa_id();
@@ -849,8 +854,14 @@ order_based:
 		if (pa) break;
 	}
 
-	if (pa)
+	if (pa) {
 		return phys_to_virt(pa);
+	}
+	else {
+		kprintf("%s: NUMA-id order: couldn't fulfill %d pages\n",
+			__FUNCTION__, npages);
+	}
+
 	/*
 	if(flag != IHK_MC_AP_NOWAIT)
 		panic("Not enough space\n");

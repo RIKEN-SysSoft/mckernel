@@ -2408,10 +2408,10 @@ straight_out:
 			(unsigned long)proc->straight_va +
 			(straight_phys - proc->straight_pa);
 #ifndef ENABLE_FUGAKU_HACKS
-		dkprintf("%s: range 0x%lx:%lu is straight starting at 0x%lx\n",
+		kprintf("%s: range 0x%lx:%lu is straight starting at 0x%lx\n",
 			 __FUNCTION__, addr, len, range->straight_start);
 #else
-		dkprintf("%s: range 0x%lx:%lu is straight starting at 0x%lx"
+		kprintf("%s: range 0x%lx:%lu is straight starting at 0x%lx"
 				" (phys: 0x%lx)\n",
 				__FUNCTION__, addr, len, range->straight_start,
 				straight_phys);
@@ -2748,7 +2748,7 @@ SYSCALL_DECLARE(brk)
 	unsigned long vrflag;
 	unsigned long old_brk_end_allocated = 0;
 
-	dkprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n",
+	kprintf("SC(%d)[sys_brk] brk_start=%lx,end=%lx\n",
 			ihk_mc_get_processor_id(), region->brk_start, region->brk_end);
 
 	flush_nfo_tlb();
@@ -2790,7 +2790,7 @@ SYSCALL_DECLARE(brk)
 
 	region->brk_end = address;
 	r = region->brk_end;
-	dkprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
+	kprintf("SC(%d)[sys_brk] brk_end set to %lx\n",
 			ihk_mc_get_processor_id(), region->brk_end);
 
 out:
