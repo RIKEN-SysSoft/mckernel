@@ -55,11 +55,11 @@ You need to insert ``mcexec`` into the command lines invoking the programs that 
 Non-MPI programs
 ~~~~~~~~~~~~~~~~
 
-Insert ``mcexec`` before an executable:
+Insert ``mcexec`` before the command:
 
 ::
 
-   mcexec ./a.out
+   mcexec <command>
 
 MPI programs
 ~~~~~~~~~~~~
@@ -95,6 +95,19 @@ Fujitsu Technical Computing Suite.
 
    #PJM --mpi "proc=32"
    #PJM -L "node=8"
+
+(Advanced) When using Utility Thread offloading Interface (UTI)
+---------------------------------------------------------------
+
+UTI enables a runtime such as MPI runtime to spawn utility threads such
+as MPI asynchronous progress threads to Linux cores.
+
+Add ``--enable-uti`` option to ``mcexec``:
+
+::
+
+   mcexec --enable-uti <command>
+
 
 Limitations
 ===========

@@ -7,12 +7,10 @@ This document will explain how to operate system with McKernel.
 Installation
 ============
 
-See `Quick Guide -- Installation <quick.html#installation>`__.
-
-.. include:: uti.rst
+Follow `Quick Guide -- Installation <quick.html#installation>`__.
 
 Boot and Shut-down
-=========================
+==================
 
 Related files
 -------------

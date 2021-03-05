@@ -29,7 +29,7 @@ Install the following packages to the build machine:
 
 ::
 
-   cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git libdwarf-devel
+   cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git libdwarf-devel capstone-devel
 
 When having access to repositories
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,16 +46,47 @@ On CentOS 8, enable the PowerTools repository:
 
    sudo dnf config-manager --set-enabled PowerTools
 
+Enable EPEL repository:
+
+::
+
+   sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
 Install with yum:
 
 ::
 
-   sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git libdwarf-devel
+   sudo yum install cmake kernel-devel binutils-devel systemd-devel numactl-devel gcc make nasm git libdwarf-devel capstone-devel
 
 When not having access to repositories
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+``libdwarf-devel``
+""""""""""""""""""
+
 Ask the system administrator to install them. Note that ``libdwarf-devel`` is in the CodeReady Linux Builder repository on RHEL 8 or in the PowerTools repository on CentOS 8.
+
+``capstone-devel``
+""""""""""""""""""
+
+A. Ask the system administrator to install ``capstone-devel``. Note that it is in the EPEL repository.
+
+B. Download the rpm with the machine in which you are the administrator:
+
+::
+
+   sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+   sudo yum install yum-utils
+   yumdownloader capstone-devel
+
+And then install it to your home directory:
+
+::
+
+   cd $HOME/$(uname -p)
+   rpm2cpio capstone-devel-4.0.1-9.el8.aarch64.rpm | cpio -idv
+   sed -i 's#/usr/#'"$HOME"'/'"$(uname -p)"'/usr/#' $HOME/$(uname -p)/usr/lib64/pkgconfig/capstone.pc
+
 
 Clone, compile, install
 --------------------------
@@ -93,7 +124,12 @@ When not cross-compiling:
 
 ::
 
-   cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel ../mckernel
+   CMAKE_PREFIX_PATH=${HOME}/$(uname -p)/usr \
+     cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel \
+     -DENABLE_UTI=ON \
+     ../mckernel
+
+Note that ``CMAKE_PREFIX_PATH=${HOME}/$(uname -p)/usr`` is required only when ``capstone-devel`` is installed to your home directory.
 
 When cross-compiling:
 ~~~~~~~~~~~~~~~~~~~~~
@@ -105,10 +141,11 @@ When cross-compiling:
      -DKERNEL_DIR=<kernnel_dir> \
      -DBUILD_TARGET=smp-arm64 \
      -DCMAKE_TOOLCHAIN_FILE=../mckernel/cmake/cross-aarch64.cmake \
+     -DENABLE_UTI=ON \
      ../mckernel
 
 Install with cmake
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Install with make:
 
@@ -191,10 +228,10 @@ Install the following packages to the compute nodes:
 
 ::
 
-   systemd-libs numactl-libs libdwarf
+   systemd-libs numactl-libs libdwarf capstone
 
 When having access to repositories
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On RHEL 8, enable the CodeReady Linux Builder (CLB) repository:
 
@@ -208,13 +245,42 @@ On CentOS 8, enable the PowerTools repository:
 
    sudo dnf config-manager --set-enabled PowerTools
 
+Enable EPEL repository:
+
+::
+
+   sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
 Install with yum:
 
 ::
 
-   sudo yum install systemd-libs numactl-libs libdwarf
+   sudo yum install systemd-libs numactl-libs libdwarf capstone
 
 When not having access to repositories
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+``libdwarf``
+""""""""""""
+
 Ask the system administrator to install them. Note that ``libdwarf`` is in the CodeReady Linux Builder repository on RHEL 8 or in the PowerTools repository on CentOS 8.
+
+``capstone``
+""""""""""""
+
+A. Ask the system administrator to install ``capstone``. Note that it is in the EPEL repository.
+
+B. Download the rpm with the machine in which you are the administrator:
+
+::
+
+   sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+   sudo yum install yum-utils
+   yumdownloader capstone
+
+and then install it to your home directory:
+
+::
+
+   cd $HOME/$(uname -p)
+   rpm2cpio capstone-4.0.1-9.el8.aarch64.rpm | cpio -idv
