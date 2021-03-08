@@ -416,8 +416,8 @@ static void release_handler(ihk_os_t os, void *param)
 	ret = mcctrl_ikc_send_wait(os, info->cpu,
 			&isp, -1000, NULL, NULL, 0);
 	if (ret != 0) {
-		printk("%s: WARNING: failed to send IKC msg: %d\n",
-				__func__, ret);
+		printk("%s: WARNING: failed to send IKC msg, pid: %d, ret: %d\n",
+		       __func__, info->pid, ret);
 	}
 
 	if (os_ind >= 0) {
@@ -557,7 +557,8 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	rc = mcctrl_ikc_send_wait(os, sig.cpu, &isp, -1000, &desc->wakeup,
 				  &do_free, 1, desc);
 	if (rc < 0) {
-		printk("mcexec_send_signal: mcctrl_ikc_send ret=%d\n", rc);
+		printk("mcexec_send_signal: mcctrl_ikc_send failed, pid: %d, sig: %d, ret: %d\n",
+		       sig.pid, sig.sig, rc);
 		if (do_free)
 			kfree(desc);
 		return rc;
