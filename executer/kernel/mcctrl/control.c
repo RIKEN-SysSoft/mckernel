@@ -414,7 +414,7 @@ static void release_handler(ihk_os_t os, void *param)
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
 			__FUNCTION__, info, info->cpu);
 	ret = mcctrl_ikc_send_wait(os, info->cpu,
-			&isp, -20, NULL, NULL, 0);
+			&isp, -1000, NULL, NULL, 0);
 	if (ret != 0) {
 		printk("%s: WARNING: failed to send IKC msg: %d\n",
 				__func__, ret);
