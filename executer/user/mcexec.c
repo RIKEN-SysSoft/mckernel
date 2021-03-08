@@ -2419,6 +2419,7 @@ int main(int argc, char **argv)
 	}
 #endif // MCEXEC_BIND_MOUNT
 
+	/* fget executable as well */
 	if ((ret = load_elf_desc_shebang(argv[optind], &desc,
 					 &shebang_argv, 1 /* execvp */))) {
 		fprintf(stderr, "%s: could not load program: %s\n",
@@ -2860,6 +2861,14 @@ int main(int argc, char **argv)
 		fprintf(stderr, "error: transferring image\n");
 		return -1;
 	}
+
+	/* fput executable */
+	if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
+		fprintf(stderr, "error: MCEXEC_UP_CLOSE_EXEC failed with %d\n",
+			ret);
+		return 1;
+	}
+
 	fflush(stdout);
 	fflush(stderr);
 	
@@ -4111,11 +4120,6 @@ int main_loop(struct thread_data_s *my_thread)
 			   It is done by not calling do_syscall_return(fd, cpu, 0, 0, 0, 0, 0);
 			   here and making McKernel side wait until release_handler() is called. */
 
-			/* Drop executable file */
-			if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
-				fprintf(stderr, "WARNING: close_exec() couldn't find exec file?\n");
-			}
-
 			__dprintf("__NR_exit/__NR_exit_group: %ld (cpu_id: %d)\n",
 					w.sr.args[0], cpu);
 			if(w.sr.number == __NR_exit_group){
@@ -4308,6 +4312,7 @@ gettid_out:
 				__dprintf("pid(%d): signals and syscall threads OK\n", 
 						getpid());
 
+#if 0
 				/* Hold executable also in the child process */
 				if ((ret = ioctl(fd, MCEXEC_UP_OPEN_EXEC, exec_path)) 
 					!= 0) {
@@ -4316,7 +4321,7 @@ gettid_out:
 					fs->status = -errno;
 					goto fork_child_sync_pipe;
 				}
-
+#endif
 				/* Check if we need to limit number of threads in the pool */
 				if ((ret = ioctl(fd, MCEXEC_UP_GET_NUM_POOL_THREADS)) < 0) {
 					fprintf(stderr, "Error: obtaining thread pool count\n");
@@ -4472,6 +4477,7 @@ fork_err:
 					}
 					filename = pathbuf;
 
+					/* fget executable as well */
 					if ((ret = load_elf_desc_shebang(filename, &desc,
 									 &shebang_argv, 0)) != 0) {
 						goto return_execve1;
@@ -4568,6 +4574,13 @@ return_execve1:
 						return -1;
 					}
 					__dprintf("%s", "execve(): image transferred\n");
+
+					/* fput executable */
+					if ((ret = ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) != 0) {
+						fprintf(stderr, "error: MCEXEC_UP_CLOSE_EXEC failed with %d\n",
+							ret);
+						return 1;
+					}
 
 					if (close_cloexec_fds(fd) < 0) {
 						ret = EINVAL;
