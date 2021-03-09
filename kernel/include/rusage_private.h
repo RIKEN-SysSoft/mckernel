@@ -347,7 +347,7 @@ rusage_page_add(int numa_id, unsigned long pages, int is_user)
 		rusage_kmem_add(size);
 
 	newval = __sync_add_and_fetch(&rusage.total_memory_usage, size);
-	if ((size >> 20) >= 2)
+	if (0 && (size >> 20) >= 2)
 	kprintf("%s: size: %ld MiB, total_memory_usage: %ld MiB\n",
 		__func__,
 		size >> 20,
@@ -386,7 +386,7 @@ rusage_page_sub(int numa_id, unsigned long pages, int is_user)
 	}
 #endif
 	__sync_sub_and_fetch(&rusage.total_memory_usage, size);
-	if ((size >> 20) >= 2)
+	if (0 && (size >> 20) >= 2)
 	kprintf("%s: size: %ld MiB, total_memory_usage: %ld MiB\n",
 		__func__,
 		size >> 20,
