@@ -1609,6 +1609,11 @@ void eventfd(int type)
 	struct ihk_ikc_channel_desc *syscall_channel;
 	struct ikc_scd_packet pckt;
 
+#ifdef ENABLE_FUGAKU_HACKS
+	if (cpu_interrupt_disabled()) {
+		return;
+	}
+#endif
 	syscall_channel = get_cpu_local_var(0)->ikc2linux;
 	memset(&pckt, '\0', sizeof pckt);
 	pckt.msg = SCD_MSG_EVENTFD;

@@ -87,7 +87,7 @@ void kputs(char *buf)
 	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
 	kprintf_unlock(flags_outer);
 
-	if (irqflags_can_interrupt(flags_outer) &&
+	if (/*irqflags_can_interrupt(flags_outer) &&*/
 			DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
 		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
@@ -128,7 +128,7 @@ int __kprintf(const char *format, ...)
 	}
 
 	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
-	if (irqflags_can_interrupt(flags_inner) &&
+	if (/*irqflags_can_interrupt(flags_inner) &&*/
 			DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
 		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
@@ -171,7 +171,7 @@ int kprintf(const char *format, ...)
 	debug_spin_unlock_irqrestore(&kmsg_buf->lock, flags_inner);
 	kprintf_unlock(flags_outer);
 
-	if (irqflags_can_interrupt(flags_outer) &&
+	if (/*irqflags_can_interrupt(flags_outer) &&*/
 			DEBUG_KMSG_USED > IHK_KMSG_HIGH_WATER_MARK) {
 		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 		ihk_mc_delay_us(IHK_KMSG_NOTIFY_DELAY);
