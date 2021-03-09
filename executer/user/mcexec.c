@@ -2124,6 +2124,8 @@ int main(int argc, char **argv)
 	struct env_list_entry *extra_env = NULL;
 #endif /* ADD_ENVS_OPTION */
 
+	usleep(5000); /* Morizumi-san reported */
+
 #ifdef USE_SYSCALL_MOD_CALL
 	__glob_argc = argc;
 	__glob_argv = argv;
