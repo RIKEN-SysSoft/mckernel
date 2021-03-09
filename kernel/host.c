@@ -824,6 +824,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 		break;
 
 	case SCD_MSG_SEND_SIGNAL:
+		kprintf("SCD_MSG_SEND_SIGNAL: do_kill, pid=%d, tid=%d, sig=%d\n", info.pid, info.tid, info.sig);
 		pp = ihk_mc_map_memory(NULL, packet->arg, sizeof(struct mcctrl_signal));
 		sp = (struct mcctrl_signal *)ihk_mc_map_virtual(pp, 1, PTATTR_WRITABLE | PTATTR_ACTIVE);
 		memcpy(&info, sp, sizeof(struct mcctrl_signal));
@@ -853,7 +854,7 @@ static int syscall_packet_handler(struct ihk_ikc_channel_desc *c,
 
 	case SCD_MSG_CLEANUP_PROCESS: {
 		extern int process_cleanup_before_terminate(int pid);
-		dkprintf("SCD_MSG_CLEANUP_PROCESS pid=%d, thread=0x%llx\n",
+		kprintf("SCD_MSG_CLEANUP_PROCESS pid=%d, thread=0x%llx\n",
 				packet->pid, packet->arg);
 
 		pckt.msg = SCD_MSG_CLEANUP_PROCESS_RESP;
