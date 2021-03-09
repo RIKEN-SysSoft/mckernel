@@ -246,6 +246,12 @@ long do_syscall(struct syscall_request *req, int cpu)
 			unsigned long flags;
 			DECLARE_WAITQ_ENTRY(scd_wq_entry, cpu_local_var(current));
 
+#ifdef ENABLE_FUGAKU_HACKS
+			if (req->number == __NR_epoll_wait ||
+					req->number == __NR_epoll_pwait)
+				goto schedule;
+#endif
+
 			if (thread->rpf_backlog) {
 				void (*func)(void *) = thread->rpf_backlog;
 				void *arg = thread->rpf_arg;
@@ -286,6 +292,9 @@ long do_syscall(struct syscall_request *req, int cpu)
 				continue;
 			}
 
+#ifdef ENABLE_FUGAKU_HACKS
+schedule:
+#endif
 			flags = cpu_disable_interrupt_save();
 
 			/* Try to sleep until notified */
@@ -11148,7 +11157,16 @@ long syscall(int num, ihk_mc_user_context_t *ctx)
 	}
 #endif // PROFILE_ENABLE
 
-	if (smp_load_acquire(&v->flags) & CPU_FLAG_NEED_RESCHED) {
+#ifdef ENABLE_FUGAKU_HACKS
+	/* Do not deschedule when returning from an event (e.g., MPI) */
+	if (!(num == __NR_epoll_wait ||
+				num == __NR_epoll_pwait ||
+				num == __NR_ppoll) &&
+			smp_load_acquire(&v->flags) & CPU_FLAG_NEED_RESCHED)
+#else
+	if (smp_load_acquire(&v->flags) & CPU_FLAG_NEED_RESCHED)
+#endif
+	{
 		check_need_resched();
 	}
 
