@@ -1296,7 +1296,7 @@ void terminate(int rc, int sig)
 		return;
 	}
 
-	dkprintf("%s: PID: %d, TID: %d setting PS_EXITED\n",
+	kprintf("%s: PID: %d, TID: %d setting PS_EXITED\n",
 			__FUNCTION__, proc->pid, mythread->tid);
 	tsc_to_ts(mythread->user_tsc, &ats);
 	ts_add(&proc->utime, &ats);
@@ -1491,7 +1491,7 @@ void terminate(int rc, int sig)
 		}
 	}
 
-	dkprintf("terminate,pid=%d\n", proc->pid);
+	kprintf("terminate,pid=%d\n", proc->pid);
 
 #ifdef DCFA_KMOD
 	do_mod_exit(rc);
