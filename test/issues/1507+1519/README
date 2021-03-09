@@ -7,7 +7,7 @@ xpmemやshmobjを利用するライブラリの初期化および基本動作を
 
 □実行手順
 1.
-SSMで以下のとおりサンプルプログラムをビルドする。
+ログインノードで以下のとおりサンプルプログラムをビルドする。
 必要に応じて PATHを設定すること。
 
 tradモード:
@@ -18,7 +18,7 @@ $ mpifccpx -DMPI -DOPENMP -Kopenmp mpi+affinity.c -o mpi+llvmopenmp-affinity
 
 2.
 インタラクティブモードでジョブ実行を開始する。
-SSMで以下のように pjsubコマンドを発行する。
+ログインノードで以下のように pjsubコマンドを発行する。
 rscunitやrscgrp、jobenvは環境に応じて指定すること。
 
 $ pjsub --interact -L "rscunit=xxx,rscgrp=xxx,jobenv=xxx,node=1" --mpi "proc=2" --sparam wait-time=1000
