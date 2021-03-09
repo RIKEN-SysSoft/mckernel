@@ -1273,6 +1273,15 @@ unsigned long cpu_enable_interrupt_save(void)
 	return flags;
 }
 
+int cpu_interrupt_disabled(void)
+{
+	unsigned long flags;
+
+	asm volatile("pushf; pop %0" : "=r"(flags) : : "memory", "cc");
+
+	return !(flags & 0x200);
+}
+
 /*@
   @ behavior valid_vector:
   @   assumes 32 <= vector <= 255;

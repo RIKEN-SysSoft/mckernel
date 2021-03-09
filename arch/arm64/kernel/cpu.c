@@ -912,7 +912,6 @@ unsigned long cpu_enable_interrupt_save(void)
 	return flags;
 }
 
-#ifdef ENABLE_FUGAKU_HACKS
 int cpu_interrupt_disabled(void)
 {
 	unsigned long flags;
@@ -925,7 +924,6 @@ int cpu_interrupt_disabled(void)
 		: "memory");
 	return (flags == masked);
 }
-#endif
 
 #else /* defined(CONFIG_HAS_NMI) */
 
@@ -988,6 +986,18 @@ unsigned long cpu_enable_interrupt_save(void)
 		:
 		: "memory");
 	return flags;
+}
+
+int cpu_interrupt_disabled(void)
+{
+	unsigned long flags;
+
+	asm volatile(
+		"mrs    %0, daif	// arch_local_irq_save\n"
+		: "=r" (flags)
+		:
+		: "memory");
+	return !!(flags & 0x2);
 }
 #endif /* defined(CONFIG_HAS_NMI) */
 
