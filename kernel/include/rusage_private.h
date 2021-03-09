@@ -298,7 +298,8 @@ rusage_check_oom(int numa_id, unsigned long pages, int is_user)
 
 	if (rusage.total_memory_usage + size > rusage.total_memory - RUSAGE_OOM_MARGIN) {
 		kprintf("%s: memory used:%ld available:%ld\n", __FUNCTION__, rusage.total_memory_usage, rusage.total_memory);
-		eventfd(IHK_OS_EVENTFD_TYPE_OOM);
+		/*eventfd(IHK_OS_EVENTFD_TYPE_OOM);*/
+		eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 		if (is_user) {
 			return -ENOMEM;
 		}

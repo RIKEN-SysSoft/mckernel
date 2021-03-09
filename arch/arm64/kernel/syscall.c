@@ -1384,6 +1384,7 @@ do_kill(struct thread * thread, int pid, int tid, int sig, siginfo_t *info, int 
 	struct mcs_rwlock_node updatelock;
 	struct sig_pending *pending = NULL;
 
+	eventfd(IHK_OS_EVENTFD_TYPE_KMSG);
 	if(sig > SIGRTMAX || sig < 0)
 		return -EINVAL;
 
