@@ -554,7 +554,7 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	isp.pid = sig.pid;
 	isp.arg = virt_to_phys(msigp);
 
-	rc = mcctrl_ikc_send_wait(os, sig.cpu, &isp, 0, &desc->wakeup,
+	rc = mcctrl_ikc_send_wait(os, sig.cpu, &isp, -1000, &desc->wakeup,
 				  &do_free, 1, desc);
 	if (rc < 0) {
 		printk("mcexec_send_signal: mcctrl_ikc_send ret=%d\n", rc);
