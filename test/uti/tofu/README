@@ -54,7 +54,8 @@ sudo ./ctrl 1 1 1 0 0 0 1 1 1
 
 (2) uti_perf
 
-progress threadを用いたtofu get通信速度を計測する。
+progress threadを用いたtofu get通信速度を測定する。
+測定結果は 10 ns 単位で出力される。
 オプションは以下のとおり。
 
 -a <x>,<y>,<z>,<a>,<b>,<c>
@@ -80,7 +81,7 @@ progress threadを用いたtofu get通信速度を計測する。
 
 -l <length>
   tofu get通信するデータサイズ(byte)を指定する。
-  (64 byte ～ 16*1024*1024 - 256 byte、既定値は 16*1024*1024 - 256 byte)
+  (16 Kbyte ～ 16 Mbyte - 256 byte、既定値は 16 Mbyte - 256 byte)
 
 -v
   デバッグ出力を有効にする。
@@ -110,3 +111,13 @@ progress threadを用いたtofu get通信速度を計測する。
 
 --recvusleep=<us>
   progress threadの受信完了を確認する間隔 (usec) を指定する。 (既定値は0)
+
+例えば、tofu座標が 0,0,0,0,0,0 (受信側) と 0,0,0,1,0,0 (送信側) の間で
+24プロセス生成して 16 Kbyte のデータを送信する測定を 100回繰り返す場合は
+次のように指定する。
+
+(受信側)
+./uti_perf -a 0,0,0,1,0,0 -n 100 -f 24 -l 16384 -r
+(送信側)
+./uti_perf -a 0,0,0,0,0,0 -n 100 -f 24 -l 16384
+
