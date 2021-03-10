@@ -1,0 +1,49 @@
+【Issue#1463 動作確認】
+□ テスト内容
+Issue#1463の修正は、mcexec.c: mcoverlay_path() 内で行われる/sys/ 配下への
+リンク解決処理に関する修正である。
+上記のリンク解決処理を/tmp/ 配下にも行うようにするテストパッチを適用した上で
+/tmp/ 配下へのmcoverlay_path()を実行して動作を確認する。
+
+なお、リンク解決処理の動作確認には、McKernelによって作成される、
+/sys/devices/virtual/mcos/mcos0/sys/test/L.dir を利用する。
+このL.dirは、同ディレクトリのa.dir へのシンボリックリンクとなっている。
+
+C1463T01:
+  以下の流れで、リンク解決処理対象パスの途中に絶対パスのシンボリックリンクが
+ 存在している場合にも、/sys/devices/virtual/mcos/mcos0/sys/ 下に
+ 誘導されることを確認する。
+  a. /tmp/test/L.dir に空のファイルを作成
+  b. /tmp/test への絶対パスのシンボリックリンクとして、/tmp/test_1463_abs_ln を作成
+  c. mcexec readlink /tmp/test_1463_abs_ln/L.dir を実行し、a.dir が出力されることを確認
+
+C1463T02:
+  以下の流れで、リンク解決処理対象パスの途中に相対パスのシンボリックリンクが
+ 存在している場合にも、/sys/devices/virtual/mcos/mcos0/sys/ 下に
+ 誘導されることを確認する。
+  a. /tmp/test/L.dir に空のファイルを作成
+  b. /tmp/test への相対パスのシンボリックリンクとして、/tmp/test_1463_rel_ln を作成
+  c. mcexec readlink /tmp/test_1463_rel_ln/L.dir を実行し、a.dir が出力されることを確認
+
+C1463T03:
+  以下の流れで、/sys/ 配下へのアクセスが/sys/devices/virtual/mcos/mcos0/sys/ 下に
+ 誘導されることを確認する。
+  a. mcexecで確認した場合の /sys/devices/system/cpu/offline が空であることを確認
+   ※通常、mckernelではofflineのCPUが存在しないため
+
+□ 実行手順
+・下記の手順でテストを実行する
+$ cd <mckernel>
+$ patch -p0 < test/issues/1463/tmp_overlay_path.patch
+(build mckernel)
+$ cd test/issues/1463
+$ make test
+
+McKernelのインストール先や、OSTEST, LTPの配置場所は、
+$HOME/.mck_test_config を参照している
+.mck_test_config は、McKernelをビルドした際に生成されるmck_test_config.sample ファイルを
+$HOMEにコピーし、適宜編集する
+
+□ 実行結果
+x86_64_result.log aarch64_result.log 参照。
+すべての項目をPASSしていることを確認。

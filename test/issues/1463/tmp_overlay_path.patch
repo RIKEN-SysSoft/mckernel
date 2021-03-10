@@ -1,0 +1,17 @@
+diff --git executer/user/mcexec.c executer/user/mcexec.c
+index acae1f8..d220dd9 100644
+--- executer/user/mcexec.c
++++ executer/user/mcexec.c
+@@ -3458,6 +3458,12 @@ overlay_path(int dirfd, const char *in, char *buf, int *resolvelinks)
+ 		goto checkexist_resolvelinks;
+ 	}
+ 
++	/* for #1463's test */
++	if (!strncmp(path, "/tmp", 4) &&
++	    (path[4] == '/' || path[4] == '\0')) {
++		goto checkexist_resolvelinks;
++	}
++
+ 	return in;
+ 
+ checkexist_resolvelinks:

@@ -3498,7 +3498,7 @@ checkexist_resolvelinks:
 			if (buf[0] == '/') {
 				/* cannot snprintf from same source and dest */
 				n = snprintf(tmpbuf2, PATH_MAX, "%s/%s", buf,
-					     linkpath);
+					     linkpath + 1);
 				if (n >= PATH_MAX)
 					return in;
 				strcpy(tmpbuf, tmpbuf2);
