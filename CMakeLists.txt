@@ -124,6 +124,14 @@ if(ENABLE_FUGAKU_DEBUG)
 	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_FUGAKU_DEBUG")
 endif()
 
+# redirect kernel messages to Linux's /dev/kmsg
+option(ENABLE_KMSG_REDIRECT "Redirect kernel message to Linux's /dev/kmsg" OFF)
+
+if(ENABLE_KMSG_REDIRECT)
+	add_definitions(-DENABLE_KMSG_REDIRECT)
+	set(KBUILD_C_FLAGS "${KBUILD_C_FLAGS} -DENABLE_KMSG_REDIRECT")
+endif()
+
 option(PROFILE_ENABLE "System call profile" ON)
 if(PROFILE_ENABLE)
 	add_definitions(-DPROFILE_ENABLE)
@@ -340,4 +348,5 @@ message("ENABLE_WERROR: ${ENABLE_WERROR}")
 message("ENABLE_UBSAN: ${ENABLE_UBSAN}")
 message("ENABLE_LINUX_WORK_IRQ_FOR_IKC: ${ENABLE_LINUX_WORK_IRQ_FOR_IKC}")
 message("ENABLE_PER_CPU_ALLOC_CACHE: ${ENABLE_PER_CPU_ALLOC_CACHE}")
+message("ENABLE_KMSG_REDIRECT: ${ENABLE_KMSG_REDIRECT}")
 message("-------------------------------")
