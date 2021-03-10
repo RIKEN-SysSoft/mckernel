@@ -1799,7 +1799,8 @@ out:
 }
 
 LIST_HEAD(mckernel_exec_files);
-static DEFINE_SPINLOCK(mckernel_exec_file_lock);
+DEFINE_SEMAPHORE(mckernel_exec_file_lock);
+ 
 
 struct mckernel_exec_file {
 	ihk_os_t os;
@@ -1976,7 +1977,6 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	char *fullpath = NULL;
 	char *kfilename = NULL;
 	int len;
-	unsigned long flags;
 
 	if (os_ind < 0) {
 		return -EINVAL;
@@ -1991,39 +1991,38 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	kfilename = kmalloc(PATH_MAX, GFP_KERNEL);
 	if (!kfilename) {
 		retval = -ENOMEM;
+		kfree(pathbuf);
 		goto out;
 	}
 
 	len = strncpy_from_user(kfilename, filename, PATH_MAX);
 	if (unlikely(len < 0)) {
 		retval = -EINVAL;
-		goto out;
+		goto out_free;
 	}
 
-	/* fget and list_add should not be interrupted by hardware interrupt */
-	spin_lock_irqsave(&mckernel_exec_file_lock, flags);
+	/* fget and list_add should be atomic */
+	down(&mckernel_exec_file_lock);
 
 	file = open_exec(kfilename);
 	retval = PTR_ERR(file);
 	if (IS_ERR(file)) {
-		spin_unlock_irqrestore(&mckernel_exec_file_lock, flags);
-		goto out;
+		up(&mckernel_exec_file_lock);
+		goto out_free;
 	}
 
 	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 	if (IS_ERR(fullpath)) {
-		fput(file);
-		spin_unlock_irqrestore(&mckernel_exec_file_lock, flags);
+		up(&mckernel_exec_file_lock);
 		retval = PTR_ERR(fullpath);
-		goto out;
+		goto out_put_file;
 	}
 
 	mcef = kmalloc(sizeof(*mcef), GFP_KERNEL);
 	if (!mcef) {
-		fput(file);
-		spin_unlock_irqrestore(&mckernel_exec_file_lock, flags);
+		up(&mckernel_exec_file_lock);
 		retval = -ENOMEM;
-		goto out;
+		goto out_put_file;
 	}
 	memset(mcef, 0, sizeof(struct mckernel_exec_file)); /* debug */
 
@@ -2047,15 +2046,22 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	/* Create /proc/self/exe entry */
 	add_pid_entry(os_ind, task_tgid_vnr(current));
 	proc_exe_link(os_ind, task_tgid_vnr(current), fullpath);
-	spin_unlock_irqrestore(&mckernel_exec_file_lock, flags);
+	up(&mckernel_exec_file_lock);
 
 	dprintk("%d open_exec and holding file: %s\n", (int)task_tgid_vnr(current),
 			kfilename);
 
-	retval = 0;
-out:
+	kfree(kfilename);
+	kfree(pathbuf);
+
+	return 0;
+
+out_put_file:
+	fput(file);
+out_free:
 	kfree(pathbuf);
 	kfree(kfilename);
+out:
 	return retval;
 }
 
@@ -2063,14 +2069,13 @@ int mcexec_close_exec(ihk_os_t os, int pid)
 {
 	struct mckernel_exec_file *mcef = NULL;
 	int found = 0;
-	int os_ind = ihk_host_os_get_index(os);
-	unsigned long flags;
+	int os_ind = ihk_host_os_get_index(os);	
 
 	if (os_ind < 0) {
 		return EINVAL;
 	}
-
-	spin_lock_irqsave(&mckernel_exec_file_lock, flags);
+		
+	down(&mckernel_exec_file_lock);
 	list_for_each_entry(mcef, &mckernel_exec_files, list) {
 		if (mcef->os == os && mcef->pid == pid) {
 			allow_write_access(mcef->fp);
@@ -2083,7 +2088,7 @@ int mcexec_close_exec(ihk_os_t os, int pid)
 		}
 	}
 
-	spin_unlock_irqrestore(&mckernel_exec_file_lock, flags);
+	up(&mckernel_exec_file_lock);
 
 	return (found ? 0 : EINVAL);
 }
