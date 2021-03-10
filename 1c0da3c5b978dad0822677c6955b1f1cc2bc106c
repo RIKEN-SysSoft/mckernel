@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d9a15c4a_c3208f88",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1803,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-10T05:23:50Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+ $",
+      "revId": "1c0da3c5b978dad0822677c6955b1f1cc2bc106c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6431c927_aa908a82",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 1803,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-10T05:23:50Z",
+      "side": 1,
+      "message": "WARNING: please, no spaces at the start of a line\n+ $",
+      "revId": "1c0da3c5b978dad0822677c6955b1f1cc2bc106c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "95a1664b_a31cca63",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2072,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-10T05:23:50Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^Iint os_ind \u003d ihk_host_os_get_index(os);^I$",
+      "revId": "1c0da3c5b978dad0822677c6955b1f1cc2bc106c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ef9a2242_d156f980",
+        "filename": "executer/kernel/mcctrl/control.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 2077,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-10T05:23:50Z",
+      "side": 1,
+      "message": "ERROR: trailing whitespace\n+^I^I$",
+      "revId": "1c0da3c5b978dad0822677c6955b1f1cc2bc106c",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
