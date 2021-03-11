@@ -1,4 +1,174 @@
 =============================================
+Version 1.7.5 (Mar 11, 2021)
+=============================================
+
+----------------------
+IHK major updates
+----------------------
+N/A
+
+------------------------
+IHK major bug fixes
+------------------------
+#. ihklib: fix cgroup cpuset.cpus/mems check when using krm
+#. ihklib: ihk_reserve_mem_conf_str: set default values to those not specified
+
+----------------------
+McKernel major updates
+----------------------
+N/A
+
+------------------------
+McKernel major bug fixes
+------------------------
+N/A
+
+=============================================
+Version 1.7.4 (Mar 7, 2021)
+=============================================
+
+----------------------
+IHK major updates
+----------------------
+N/A
+
+------------------------
+IHK major bug fixes
+------------------------
+N/A
+
+----------------------
+McKernel major updates
+----------------------
+N/A
+
+------------------------
+McKernel major bug fixes
+------------------------
+N/A
+
+=============================================
+Version 1.7.3 (Mar 5, 2021)
+=============================================
+
+----------------------
+IHK major updates
+----------------------
+N/A
+
+------------------------
+IHK major bug fixes
+------------------------
+N/A
+
+----------------------
+McKernel major updates
+----------------------
+N/A
+
+------------------------
+McKernel major bug fixes
+------------------------
+N/A
+
+=============================================
+Version 1.7.2 (Mar 5, 2021)
+=============================================
+
+----------------------
+IHK major updates
+----------------------
+#. ihklib: add *_str() functions for reserve, assign, IKC-map, kargs
+#. smp: make smp_call_func() arch independent
+
+------------------------
+IHK major bug fixes
+------------------------
+#. ihklib: ihk_reserve_mem: fix capped best-effort
+#. TO RESET: fake missing NUMA node pieces, 90% memory limit
+#. ihklib: ihk_reserve_mem_conf: range-check for IHK_RESERVE_MEM_MAX_SIZE_RATIO_ALL
+#. ihklib: ihk_os_kargs: check if "hidos" is included
+#. SMP: omit slab/slub shrink, use 95% limit by default
+#. check cpu / numa cgroup set by krm
+#. SMP: __ihk_smp_reserve_mem: add __GFP_COMP to __GFP_ATOMIC allocation
+#. ihk_register_device: record minor to IHK device object
+
+----------------------
+McKernel major updates
+----------------------
+#. mcexec: memory policy control by environmental variable
+#. mempolicy: Support MPOL_INTERLEAVE
+#. uti: futex call function in mcctrl
+#. uti: integrate libuti and redirect to mck/libuti.so
+#. uti: integrate syscall_intercept
+#. shmobj: support large page
+#. xpmem: support large page
+#. MM: handle zero_at_free in page faults
+
+------------------------
+McKernel major bug fixes
+------------------------
+#. TO RESET: stack changes
+#. Tofu: keep track of stags per memory range
+#. Tofu: match page sizes to MBPT and fault PTEs if not present
+#. Tofu: fix phys addr calculation for contiguous pages in MBPT/BCH update
+#. rus_vm_fault: vmf_insert_pfn: treat VM_FAULT_NOPAGE as success
+#. Tofu: mcctrl side MMU notifier and CQ/BCH cleanup
+#. copy_user_ranges: copy straight_start of struct vm_range
+#. mcctrl: abort on invalid addr in mcexec_transfer_image()
+#. mcctrl: fix access to uninitialized usrdata->cpu_topology_list
+#. mcexec: propagate error in __NR_gettid handler
+#. mcexec_transfer_image(): map exact size of remote memory (instead of forcing PAGE_SIZE)
+#. xpmem: fault stack area of remote process if VM range doesn't yet exist
+#. Tofu: fault stack area if VM range doesn't exist in STAG registration
+#. __mcctrl_os_read_write_cpu_register: fix timeout
+#. mbind: Use range_policy's numamask as priority on MPOL_BIND
+#. migrate: Don't migrate on in-kernel interrupt
+#. Send a signal to mcexec after switching to that process.
+#. uti: fix syscall response is mis-consumed by __do_in_kernel_irq_syscall
+#. uti: fix handling UTI_CPU_SET env
+#. do_execveat: kill instead of panic when init_process_stack fails
+#. remote_page_fault is handled by the offloaded thread.
+#. coredump: fix behavior when gencore fail
+#. xpmem: truncates the size of xpmem_attach at the page boundary (workaround for fjmpi)
+#. __mcctrl_os_read_write_cpu_register: spin timeout in mcctrl_ikc_send_wait()
+
+=============================================
+Version 1.7.1 (Dec 23, 2020)
+=============================================
+
+----------------------
+IHK major updates
+----------------------
+#. d5d5c23 Tofu: support for barrier gate
+#. Tofu: proper cleanup of premapped DMA regions
+#. Tofu: initial version
+#. SMP: try with GFP_ATOMIC as well in mem reserve
+
+------------------------
+IHK major bug fixes
+------------------------
+#. ihklib: ihk(_os)_query_{cpu,mem}: allow to pass empty array
+#. SMP: non compound page free and GFP_ATOMIC
+#. ihk_get_num_os_instances: don't open /dev/mcdN
+#. ihklib: ihk_create_os_str: fix variable prefix
+
+----------------------
+McKernel major updates
+----------------------
+#. stragiht map: creates a straight map covering the whole physical memory, and gives virtual address ranges out of it to maps to which physical pages are allocated on map
+#. free-time, lazy, potentially Linux-side page-zeroing
+#. Tofu built-in driver: supports memory registration and barrier gate setup
+#. kmalloc cache
+
+------------------------
+McKernel major bug fixes
+------------------------
+#. mmap: return -EINVAL for non-anonymous, MAP_HUGETLB map
+#. kernel: increase stack size
+#. Tofu: proper cleanup of device files when mcexec gets killed
+
+=============================================
 Version 1.7.0 (Nov 25, 2020)
 =============================================
 
