@@ -166,22 +166,6 @@ Create the tarball and the spec file:
    make dist
    cp mckernel-<version>.tar.gz <rpmbuild>/SOURCES
 
-(optional) Edit the following line in ``scripts/mckernel.spec`` to change
-cmake options. For example:
-
-::
-
-   %cmake -DCMAKE_BUILD_TYPE=Release \
-	-DUNAME_R=%{kernel_version} \
-	-DKERNEL_DIR=%{kernel_dir} \
-	%{?cmake_libdir:-DCMAKE_INSTALL_LIBDIR=%{cmake_libdir}} \
-	%{?build_target:-DBUILD_TARGET=%{build_target}} \
-	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
-	-DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON \
-	-DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON \
-	-DENABLE_FUGAKU_DEBUG=OFF -DENABLE_UTI=ON \
-	.
-
 Create the rpm package:
 
 When not cross-compiling:
