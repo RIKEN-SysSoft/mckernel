@@ -7,7 +7,7 @@ endif (NOT CMAKE_BUILD_TYPE)
 enable_language(C ASM)
 
 project(mckernel C ASM)
-set(MCKERNEL_VERSION "1.7.5")
+set(MCKERNEL_VERSION "1.7.6")
 
 # See "Fedora Packaging Guidelines -- Versioning"
 set(MCKERNEL_RELEASE "")
