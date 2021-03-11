@@ -15,6 +15,11 @@
 %{!?kernel_dir: %global kernel_dir /usr/src/kernels/%{kernel_version}}
 %define krequires %(echo %{kernel_version} | sed "s/.%{_target_cpu}$//")
 %define ktag %(echo %{krequires} | tr '-' '_' | sed -e 's/\.el[0-9_]*$//' | sed -e 's/\.\([a-zA-Z]\)/_\1/')
+%if "@ENABLE_UTI@" == "ON"
+%define enable_uti 1
+%else
+%define enable_uti 0
+%endif
 
 Name: mckernel
 Version: @MCKERNEL_VERSION@
@@ -77,9 +82,10 @@ pushd build
 	%{?cmake_libdir:-DCMAKE_INSTALL_LIBDIR=%{cmake_libdir}} \
 	%{?build_target:-DBUILD_TARGET=%{build_target}} \
 	%{?toolchain_file:-DCMAKE_TOOLCHAIN_FILE=%{toolchain_file}} \
-	-DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON \
-	-DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON \
-	-DENABLE_FUGAKU_DEBUG=OFF -DENABLE_UTI=ON \
+	-DENABLE_TOFU=@ENABLE_TOFU@ -DENABLE_FUGAKU_HACKS=@ENABLE_FUGAKU_HACKS@ \
+	-DENABLE_KRM_WORKAROUND=@ENABLE_KRM_WORKAROUND@ -DWITH_KRM=@WITH_KRM@ \
+	-DENABLE_FUGAKU_DEBUG=@ENABLE_FUGAKU_DEBUG@ -DENABLE_UTI=@ENABLE_UTI@ \
+	-DENABLE_FJMPI_WORKAROUND=@ENABLE_FJMPI_WORKAROUND@ \
 	..
 %make_build
 popd
@@ -112,6 +118,7 @@ popd
 %{_libdir}/libsched_yield.so.1.0.0
 %{_libdir}/libsched_yield.so
 %{_libdir}/libldump2mcdump.so
+%if 0%{?enable_uti}
 %{_libdir}/libmck_syscall_intercept.so
 %{_libdir}/libsyscall_intercept.so.0.1.0
 %{_libdir}/libsyscall_intercept.so.0
@@ -119,6 +126,7 @@ popd
 %{_libdir}/mck/libuti.so.1.0.0
 %{_libdir}/mck/libuti.so.1
 %{_libdir}/mck/libuti.so
+%endif
 %{_sysconfdir}/irqbalance_mck.in
 %{_mandir}/man1/mcreboot.1.gz
 %{_mandir}/man1/ihkconfig.1.gz
