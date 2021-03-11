@@ -2010,7 +2010,7 @@ int mcexec_open_exec(ihk_os_t os, char * __user filename)
 	fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
 	if (IS_ERR(fullpath)) {
 		retval = PTR_ERR(fullpath);
-		goto out_free;
+		goto out_put_file;
 	}
 
 	mcef = kmalloc(sizeof(*mcef), GFP_KERNEL);
