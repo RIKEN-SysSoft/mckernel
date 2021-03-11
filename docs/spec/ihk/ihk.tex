@@ -649,7 +649,9 @@ IHKはLinuxに以下の機能を提供する。
 \begin{tabular}[t]{@{}l@{}}
 {\quad} \texttt{int ihk\_reserve\_mem\_conf(int index, int key, void *value)}\\
 \end{tabular}
-\subsubsection*{説明}{\quad} \texttt{index}で指定されたIHKデバイスに対する\texttt{ihk\_reserve\_mem()}の動作を\texttt{key}と\texttt{value}のペアで指定したものに変更する。\texttt{value}は値へのポインタで指定する。\texttt{key}と\texttt{value}のペアの意味は以下のように定義される。
+\subsubsection*{説明}{\quad} \texttt{index}で指定されたIHKデバイスに対する\texttt{ihk\_reserve\_mem()}の動作を\texttt{key}と\texttt{value}のペアで指定したものに変更する。なお、設定は次の1回の予約に限り有効で、予約後にはデフォルト設定に戻る。
+
+\texttt{value}は値へのポインタで指定する。\texttt{key}と\texttt{value}のペアの意味は以下のように定義される。
 
 \subsubsection*{\texttt{IHK\_RESERVE\_MEM\_BALANCED\_\{ENABLE,BEST\_EFFORT,VARIANCE\_LIMIT\}}}
 \verb|IHK_RESERVE_MEM_BALANCED_ENABLE|（型は\verb|int|、デフォルトは0）が非ゼロの場合は、NUMAノードごとの予約サイズがNUMAノード間でなるべく均等になるように予約する。目的は、NUMAノードごとのメモリ空き容量にNUMAノード間でばらつきがあり、またそれらの空き容量が事前にわからないようなシステムで、合計予約サイズをより大きくすることである。ステップは以下の通り。
@@ -686,7 +688,7 @@ IHKはLinuxに以下の機能を提供する。
 
 \subsubsection{設定リストによるメモリ予約動作設定}
 \subsubsection*{書式}{\quad} \verb:int ihk_reserve_mem_conf_str(int dev_index, const char *envp, int num_env);:
-\subsubsection*{説明}{\quad} \verb:dev_index:で指定されたIHKデバイスに対し、\verb:envp:と\verb:num_env:で指定された文字列形式の設定リストに従ってメモリ予約の動作設定を行う。本関数は特権ユーザのみが呼び出せる。
+\subsubsection*{説明}{\quad} \verb:dev_index:で指定されたIHKデバイスに対し、\verb:envp:と\verb:num_env:で指定された文字列形式の設定リストに従ってメモリ予約の動作設定を行う。なお、設定は次の1回の予約に限り有効で、予約後にはデフォルト設定に戻る。本関数は特権ユーザのみが呼び出せる。
 
 \verb:envp:は\verb:NULL:文字で結合された\verb:num_env:個の設定文字列からなる。各設定文字列は\verb:"KEY=VAL":の形式を持つ。設定可能な項目は以下の通り。
 \begin{table}[!h]
@@ -702,7 +704,7 @@ IHKはLinuxに以下の機能を提供する。
 \end{tabular}
 \vspace{-0em}
 \end{table}
-\\上記の項目のうち、文字列で指定されなかったものに対してはデフォルト値が設定される。また、これら以外の設定項目は無視される。
+\\また、これら以外の設定項目は無視される。
 \FloatBarrier
 
 \subsubsection*{戻り値}
