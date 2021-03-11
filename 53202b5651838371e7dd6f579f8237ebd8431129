@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "883ee671_cd3e2194",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 4569,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-11T02:02:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\tif ((ret \u003d ioctl(fd, MCEXEC_UP_CLOSE_EXEC)) !\u003d 0) {",
+      "revId": "53202b5651838371e7dd6f579f8237ebd8431129",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "010b6f2c_b171e13f",
+        "filename": "executer/user/mcexec.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 4570,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-11T02:02:08Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+\t\t\t\t\t\tfprintf(stderr, \"error: MCEXEC_UP_CLOSE_EXEC failed with %d\\n\",",
+      "revId": "53202b5651838371e7dd6f579f8237ebd8431129",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
