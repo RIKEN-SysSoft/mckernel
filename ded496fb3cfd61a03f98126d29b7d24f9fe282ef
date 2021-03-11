@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7d52ceec_329df24a",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-11T06:47:51Z",
+      "side": 1,
+      "message": "WARNING: \u0027paramters\u0027 may be misspelled - perhaps \u0027parameters\u0027?\nSubject: [PATCH] spec: cmake-config cmake paramters",
+      "revId": "ded496fb3cfd61a03f98126d29b7d24f9fe282ef",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
