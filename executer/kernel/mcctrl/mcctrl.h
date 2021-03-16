@@ -401,6 +401,8 @@ int mcctrl_ikc_is_valid_thread(ihk_os_t os, int cpu);
 struct mcctrl_wakeup_desc {
 	int status;
 	int err;
+	refcount_t count;
+	int free_at_put;
 	wait_queue_head_t wq;
 	struct list_head chain;
 	int free_addrs_count;

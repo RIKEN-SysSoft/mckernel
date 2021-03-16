@@ -414,7 +414,7 @@ static void release_handler(ihk_os_t os, void *param)
 	dprintk("%s: SCD_MSG_CLEANUP_PROCESS, info: %p, cpu: %d\n",
 			__FUNCTION__, info, info->cpu);
 	ret = mcctrl_ikc_send_wait(os, info->cpu,
-			&isp, -20, NULL, NULL, 0);
+			&isp, -5000, NULL, NULL, 0);
 	if (ret != 0) {
 		printk("%s: WARNING: failed to send IKC msg: %d\n",
 				__func__, ret);
@@ -513,8 +513,6 @@ static DECLARE_WAIT_QUEUE_HEAD(signalq);
 
 struct mcctrl_signal_desc {
 	struct mcctrl_signal msig;
-	struct mcctrl_wakeup_desc wakeup;
-	void *addrs[1];
 };
 
 static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
@@ -554,7 +552,7 @@ static long mcexec_send_signal(ihk_os_t os, struct signal_desc *sigparam)
 	isp.pid = sig.pid;
 	isp.arg = virt_to_phys(msigp);
 
-	rc = mcctrl_ikc_send_wait(os, sig.cpu, &isp, 0, &desc->wakeup,
+	rc = mcctrl_ikc_send_wait(os, sig.cpu, &isp, 0, NULL,
 				  &do_free, 1, desc);
 	if (rc < 0) {
 		printk("mcexec_send_signal: mcctrl_ikc_send ret=%d\n", rc);
@@ -2243,8 +2241,6 @@ long mcctrl_perf_num(ihk_os_t os, unsigned long arg)
 
 struct mcctrl_perf_ctrl_desc {
 	struct perf_ctrl_desc desc;
-	struct mcctrl_wakeup_desc wakeup;
-	void *addrs[1];
 };
 #define wakeup_desc_of_perf_desc(_desc) \
 	(&container_of((_desc), struct mcctrl_perf_ctrl_desc, desc)->wakeup)
@@ -2310,9 +2306,7 @@ long mcctrl_perf_set(ihk_os_t os, struct ihk_perf_event_attr *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
-			ret = mcctrl_ikc_send_wait(os, j, &isp,
-					msecs_to_jiffies(10000),
-					wakeup_desc_of_perf_desc(perf_desc),
+			ret = mcctrl_ikc_send_wait(os, j, &isp, 10000, NULL,
 					&need_free, 1, perf_desc);
 			if (ret < 0) {
 				pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
@@ -2382,9 +2376,7 @@ long mcctrl_perf_get(ihk_os_t os, unsigned long *__user arg)
 		isp.arg = virt_to_phys(perf_desc);
 
 		for (j = 0; j < info->n_cpus; j++) {
-			ret = mcctrl_ikc_send_wait(os, j, &isp,
-					msecs_to_jiffies(10000),
-					wakeup_desc_of_perf_desc(perf_desc),
+			ret = mcctrl_ikc_send_wait(os, j, &isp, 10000, NULL,
 					&need_free, 1, perf_desc);
 			if (ret < 0) {
 				pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
@@ -2454,9 +2446,8 @@ long mcctrl_perf_enable(ihk_os_t os)
 		return -EINVAL;
 	}
 	for (j = 0; j < info->n_cpus; j++) {
-		ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
-					   wakeup_desc_of_perf_desc(perf_desc),
-					   &need_free, 1, perf_desc);
+		ret = mcctrl_ikc_send_wait(os, j, &isp, 0, NULL,
+				&need_free, 1, perf_desc);
 
 		if (ret < 0) {
 			pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",
@@ -2522,8 +2513,7 @@ long mcctrl_perf_disable(ihk_os_t os)
 		return -EINVAL;
 	}
 	for (j = 0; j < info->n_cpus; j++) {
-		ret = mcctrl_ikc_send_wait(os, j, &isp, 0,
-				wakeup_desc_of_perf_desc(perf_desc),
+		ret = mcctrl_ikc_send_wait(os, j, &isp, 0, NULL,
 				&need_free, 1, perf_desc);
 		if (ret < 0) {
 			pr_warn("%s: mcctrl_ikc_send_wait ret=%d\n",

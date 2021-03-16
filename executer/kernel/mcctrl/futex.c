@@ -182,8 +182,6 @@ static int uti_remote_page_fault(struct mcctrl_usrdata *usrdata,
 			struct mcctrl_per_proc_data *ppd, int tid, int cpu)
 {
 	int error;
-	struct mcctrl_wakeup_desc *desc;
-	int do_frees = 1;
 	struct ikc_scd_packet packet;
 
 	/* Request page fault */
@@ -192,20 +190,9 @@ static int uti_remote_page_fault(struct mcctrl_usrdata *usrdata,
 	packet.fault_reason = reason;
 	packet.fault_tid = tid;
 
-	/* we need to alloc desc ourselves because GFP_ATOMIC */
-retry_alloc:
-	desc = kmalloc(sizeof(*desc), GFP_ATOMIC);
-	if (!desc) {
-		pr_warn("WARNING: coudln't alloc remote page fault wait desc, retrying..\n");
-		goto retry_alloc;
-	}
-
 	/* packet->target_cpu was set in rus_vm_fault if a thread was found */
 	error = mcctrl_ikc_send_wait(usrdata->os, cpu, &packet,
-				     0, desc, &do_frees, 0);
-	if (do_frees) {
-		kfree(desc);
-	}
+				0, NULL, NULL, 0);
 	if (error < 0) {
 		pr_warn("%s: WARNING: failed to request uti remote page fault :%d\n",
 			__func__, error);
