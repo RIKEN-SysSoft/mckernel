@@ -916,7 +916,7 @@ int __mcctrl_tof_utofu_release_handler(struct inode *inode, struct file *filp,
 	isp.arg = f2pfd->fd;
 
 	ret = mcctrl_ikc_send_wait(f2pfd->os, ppd->ikc_target_cpu,
-			&isp, -20, NULL, NULL, 0);
+			&isp, -1000, NULL, NULL, 0);
 	if (ret != 0) {
 		pr_err("%s: WARNING: IKC req for PID: %d, fd: %d failed\n",
 				__func__, f2pfd->pid, f2pfd->fd);

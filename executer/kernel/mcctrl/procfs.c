@@ -611,7 +611,7 @@ static ssize_t __mckernel_procfs_read_write(
 
 		ret = mcctrl_ikc_send_wait(osnum_to_os(e->osnum),
 					   (pid > 0) ? ppd->ikc_target_cpu : 0,
-					   &isp, HZ, NULL, &do_free, 1, r);
+					   &isp, 5000, NULL, &do_free, 1, r);
 
 		if (!do_free && ret >= 0) {
 			ret = -EIO;
@@ -879,7 +879,7 @@ static int mckernel_procfs_buff_release(struct inode *inode, struct file *file)
 
 		rc = -EIO;
 		ret = mcctrl_ikc_send_wait(info->os, 0,
-					   &isp, 5 * HZ, NULL, &do_free, 1, r);
+					   &isp, 5000, NULL, &do_free, 1, r);
 
 		if (!do_free && ret >= 0) {
 			ret = -EIO;
@@ -977,7 +977,7 @@ static ssize_t mckernel_procfs_buff_read(struct file *file, char __user *ubuf,
 		done = 1;
 		ret = mcctrl_ikc_send_wait(os,
 					   (pid > 0) ? ppd->ikc_target_cpu : 0,
-					   &isp, 5 * HZ, NULL, &do_free, 1, r);
+					   &isp, 5000, NULL, &do_free, 1, r);
 
 		if (!do_free && ret >= 0) {
 			ret = -EIO;
