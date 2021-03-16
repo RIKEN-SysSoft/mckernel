@@ -495,8 +495,6 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr,
 		      struct ikc_scd_packet *packet)
 {
 	int error;
-	struct mcctrl_wakeup_desc *desc;
-	int do_frees = 1;
 	
 	dprintk("%s: tid: %d, fault_addr: %p, reason: %lu\n",
 			__FUNCTION__, task_pid_vnr(current), fault_addr, (unsigned long)reason);
@@ -506,19 +504,9 @@ int remote_page_fault(struct mcctrl_usrdata *usrdata, void *fault_addr,
 	packet->fault_address = (unsigned long)fault_addr;
 	packet->fault_reason = reason;
 
-	/* we need to alloc desc ourselves because GFP_ATOMIC */
-retry_alloc:
-	desc = kmalloc(sizeof(*desc), GFP_ATOMIC);
-	if (!desc) {
-		pr_warn("WARNING: coudln't alloc remote page fault wait desc, retrying..\n");
-		goto retry_alloc;
-	}
-
 	/* packet->target_cpu was set in rus_vm_fault if a thread was found */
 	error = mcctrl_ikc_send_wait(usrdata->os, packet->target_cpu, packet,
-				     0, desc, &do_frees, 0);
-	if (do_frees)
-		kfree(desc);
+				     0, NULL, NULL, 0);
 	if (error < 0) {
 		pr_warn("%s: WARNING: failed to request remote page fault PID %d: %d\n",
 			__func__, packet->pid, error);
