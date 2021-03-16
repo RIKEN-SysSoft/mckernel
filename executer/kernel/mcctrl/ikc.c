@@ -58,23 +58,41 @@ void mcctrl_os_read_write_cpu_response(ihk_os_t os,
 		struct ikc_scd_packet *pisp);
 void mcctrl_eventfd(ihk_os_t os, struct ikc_scd_packet *pisp);
 
-/* Assumes usrdata->wakeup_descs_lock taken */
-static void mcctrl_wakeup_desc_cleanup(ihk_os_t os,
-		struct mcctrl_wakeup_desc *desc)
+static void mcctrl_wakeup_desc_put(struct mcctrl_wakeup_desc *desc,
+		struct mcctrl_usrdata *usrdata, int free_addrs)
 {
+	unsigned long irqflags;
 	int i;
 
-	list_del(&desc->chain);
-
-	for (i = 0; i < desc->free_addrs_count; i++) {
-		kfree(desc->free_addrs[i]);
+	if (!refcount_dec_and_test(&desc->count)) {
+		return;
 	}
+
+	spin_lock_irqsave(&usrdata->wakeup_descs_lock, irqflags);
+	list_del(&desc->chain);
+	spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, irqflags);
+
+	if (free_addrs) {
+		for (i = 0; i < desc->free_addrs_count; i++) {
+			kfree(desc->free_addrs[i]);
+		}
+	}
+
+	if (desc->free_at_put)
+		kfree(desc);
 }
 
 static void mcctrl_wakeup_cb(ihk_os_t os, struct ikc_scd_packet *packet)
 {
 	struct mcctrl_wakeup_desc *desc = packet->reply;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
 
+	/* destroy_ikc_channels must have cleaned up descs */
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+				__func__);
+		return;
+	}
 
 	WRITE_ONCE(desc->err, packet->err);
 
@@ -85,29 +103,25 @@ static void mcctrl_wakeup_cb(ihk_os_t os, struct ikc_scd_packet *packet)
 	 * wake up opportunistically between this set and the wake_up call.
 	 *
 	 * If the other side is no longer waiting, free the memory that was
-	 * left for us.
+	 * left for us. The caller has been notified not to free.
 	 */
 	if (cmpxchg(&desc->status, 0, 1)) {
-		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-		unsigned long flags;
-
-		/* destroy_ikc_channels must have cleaned up descs */
-		if (!usrdata) {
-			pr_err("%s: error: mcctrl_usrdata not found\n",
-				__func__);
-			return;
-		}
-
-		spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
-		mcctrl_wakeup_desc_cleanup(os, desc);
-		spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
+		mcctrl_wakeup_desc_put(desc, usrdata, 1);
 		return;
 	}
 
+	/*
+	 * Notify waiter before dropping reference to make sure
+	 * wait queue is still valid.
+	 */
 	wake_up_interruptible(&desc->wq);
+	mcctrl_wakeup_desc_put(desc, usrdata, 0);
 }
 
-/* do_frees: 1 when caller should free free_addrs[], 0 otherwise */
+/*
+ * do_frees: 1 when caller should free free_addrs[], 0 otherwise
+ * timeout: timeout in milliseconds
+ */
 int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 		long int timeout, struct mcctrl_wakeup_desc *desc,
 		int *do_frees, int free_addrs_count, ...)
@@ -115,35 +129,60 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 	int ret, i;
 	int alloc_desc = (desc == NULL);
 	va_list ap;
+	unsigned long flags;
+	struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
+
+	if (!usrdata) {
+		pr_err("%s: error: mcctrl_usrdata not found\n",
+				__func__);
+		return -EINVAL;
+	}
 
 	if (free_addrs_count)
 		*do_frees = 1;
+
 	if (alloc_desc)
 		desc = kmalloc(sizeof(struct mcctrl_wakeup_desc) +
 			       (free_addrs_count + 1) * sizeof(void *),
-			       GFP_KERNEL);
+			       GFP_ATOMIC);
 	if (!desc) {
 		pr_warn("%s: Could not allocate wakeup descriptor", __func__);
 		return -ENOMEM;
 	}
+
 	pisp->reply = desc;
 	va_start(ap, free_addrs_count);
 	for (i = 0; i < free_addrs_count; i++) {
 		desc->free_addrs[i] = va_arg(ap, void*);
 	}
 	va_end(ap);
-	if (alloc_desc)
-		desc->free_addrs[free_addrs_count++] = desc;
 	desc->free_addrs_count = free_addrs_count;
+
+	/* Only free at put time if allocated internally */
+	desc->free_at_put = 0;
+	if (alloc_desc)
+		desc->free_at_put = 1;
+
 	init_waitqueue_head(&desc->wq);
+
+	/* One for the caller and one for the call-back */
+	refcount_set(&desc->count, 2);
+
+	/* XXX: make this a hash-table? */
+	spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
+	list_add(&desc->chain, &usrdata->wakeup_descs_list);
+	spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
+
 	WRITE_ONCE(desc->err, 0);
 	WRITE_ONCE(desc->status, 0);
 
 	ret = mcctrl_ikc_send(os, cpu, pisp);
 	if (ret < 0) {
 		pr_warn("%s: mcctrl_ikc_send failed: %d\n", __func__, ret);
-		if (alloc_desc)
-			kfree(desc);
+		/* Failed to send msg, put twice */
+		mcctrl_wakeup_desc_put(desc, usrdata, 0);
+		mcctrl_wakeup_desc_put(desc, usrdata, 0);
+
 		return ret;
 	}
 
@@ -180,28 +219,16 @@ int mcctrl_ikc_send_wait(ihk_os_t os, int cpu, struct ikc_scd_packet *pisp,
 	 * the callback it will need to free things for us
 	 */
 	if (!cmpxchg(&desc->status, 0, 1)) {
-		struct mcctrl_usrdata *usrdata = ihk_host_os_get_usrdata(os);
-		unsigned long flags;
+		mcctrl_wakeup_desc_put(desc, usrdata, 0);
 
-		if (!usrdata) {
-			pr_err("%s: error: mcctrl_usrdata not found\n",
-				__func__);
-			ret = ret < 0 ? ret : -EINVAL;
-			goto out;
-		}
-
-		spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
-		list_add(&desc->chain, &usrdata->wakeup_descs_list);
-		spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
 		if (do_frees)
 			*do_frees = 0;
 		return ret < 0 ? ret : -ETIME;
 	}
 
 	ret = READ_ONCE(desc->err);
-out:
-	if (alloc_desc)
-		kfree(desc);
+
+	mcctrl_wakeup_desc_put(desc, usrdata, 0);
 	return ret;
 }
 
@@ -605,10 +632,15 @@ void destroy_ikc_channels(ihk_os_t os)
 			ihk_ikc_destroy_channel(usrdata->ikc2linux[i]);
 		}
 	}
+
 	spin_lock_irqsave(&usrdata->wakeup_descs_lock, flags);
 	list_for_each_entry_safe(mwd_entry, mwd_next,
-			&usrdata->wakeup_descs_list, chain) {
-		mcctrl_wakeup_desc_cleanup(os, mwd_entry);
+				&usrdata->wakeup_descs_list, chain) {
+		list_del(&mwd_entry->chain);
+
+		for (i = 0; i < mwd_entry->free_addrs_count; i++) {
+			kfree(mwd_entry->free_addrs[i]);
+		}
 	}
 	spin_unlock_irqrestore(&usrdata->wakeup_descs_lock, flags);
 
