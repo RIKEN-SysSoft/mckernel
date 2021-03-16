@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cfcb22e2_cc014895",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11166,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-16T22:09:45Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\t\t\tsmp_load_acquire(\u0026v-\u003eflags) \u0026 CPU_FLAG_NEED_RESCHED)",
+      "revId": "afe4405ff6cc0f8703c403db2c2aedc89134f526",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "916540c7_ffd8c937",
+        "filename": "kernel/syscall.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 11168,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-16T22:09:45Z",
+      "side": 1,
+      "message": "WARNING: memory barrier without comment\n+\tif (smp_load_acquire(\u0026v-\u003eflags) \u0026 CPU_FLAG_NEED_RESCHED)",
+      "revId": "afe4405ff6cc0f8703c403db2c2aedc89134f526",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
