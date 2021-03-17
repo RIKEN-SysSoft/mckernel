@@ -87,14 +87,14 @@ executable:
 ``<processes-per-node>`` is the number of the processes per node and
 calculated by (number of MPI processes) / (number of nodes).
 
-For example, ``<processes-per-node>`` equals to 4 (=32/8) when
+For example, ``<processes-per-node>`` equals to 4 (=8/2) when
 specifying the number of processes and nodes as follows with
-Fujitsu Technical Computing Suite.
+MPICH.
 
 .. code-block:: none
 
-   #PJM --mpi "proc=32"
-   #PJM -L "node=8"
+   mpirun -n 8 -hosts host1,host2 ./cpi
+
 
 (Advanced) When using Utility Thread offloading Interface (UTI)
 ---------------------------------------------------------------
@@ -112,11 +112,11 @@ Add ``--enable-uti`` option to ``mcexec``:
 Limitations
 ===========
 
-1.  Pseudo devices such as /dev/mem and /dev/zero are not mmap()ed
+#.  Pseudo devices such as /dev/mem and /dev/zero are not mmap()ed
     correctly even if the mmap() returns a success. An access of their
     mapping receives the SIGSEGV signal.
 
-2.  clone() supports only the following flags. All the other flags cause
+#.  clone() supports only the following flags. All the other flags cause
     clone() to return error or are simply ignored.
 
     -  CLONE_CHILD_CLEARTID
@@ -126,32 +126,32 @@ Limitations
     -  CLONE_SIGHAND
     -  CLONE_VM
 
-3.  PAPI has the following restriction.
+#.  PAPI has the following restriction.
 
     -  Number of counters a user can use at the same time is up to the
        number of the physical counters in the processor.
 
-4.  msync writes back only the modified pages mapped by the calling
+#.  msync writes back only the modified pages mapped by the calling
     process.
 
-5.  The following syscalls always return the ENOSYS error.
+#.  The following syscalls always return the ENOSYS error.
 
     -  migrate_pages()
     -  move_pages()
     -  set_robust_list()
 
-6.  The following syscalls always return the EOPNOTSUPP error.
+#.  The following syscalls always return the EOPNOTSUPP error.
 
     -  arch_prctl(ARCH_SET_GS)
     -  signalfd()
 
-7.  signalfd4() returns a fd, but signal is not notified through the fd.
+#.  signalfd4() returns a fd, but signal is not notified through the fd.
 
-8.  set_rlimit sets the limit values but they are not enforced.
+#.  set_rlimit sets the limit values but they are not enforced.
 
-9.  Address randomization is not supported.
+#.  Address randomization is not supported.
 
-10. brk() extends the heap more than requestd when -h (–extend-heap-by=)
+#.  brk() extends the heap more than requestd when -h (–extend-heap-by=)
     option of mcexec is used with the value larger than 4 KiB.
     syscall_pwrite02 of LTP would fail for this reason. This is because
     the test expects that the end of the heap is set to the same address
@@ -161,91 +161,84 @@ Limitations
     than the requested. Therefore, the expected segmentation violation
     doesn’t occur.
 
-11. setpriority()/getpriority() won’t work. They might set/get the
-    priority of a random mcexec thread. This is because there’s no fixed
-    correspondence between a McKernel thread which issues the system
-    call and a mcexec thread which handles the offload request.
+#. setpriority()/getpriority() won’t work. They might set/get the
+   priority of a random mcexec thread. This is because there’s no fixed
+   correspondence between a McKernel thread which issues the system
+   call and a mcexec thread which handles the offload request.
 
-12. mbind() can set the policy but it is not used when allocating
-    physical pages.
+#. mbind() can set the policy but it is not used when allocating
+   physical pages.
 
-13. MPOL_F_RELATIVE_NODES and MPOL_INTERLEAVE flags for
-    set_mempolicy()/mbind() are not supported.
+#. MPOL_F_RELATIVE_NODES and MPOL_INTERLEAVE flags for
+   set_mempolicy()/mbind() are not supported.
 
-14. The MPOL_BIND policy for set_mempolicy()/mbind() works as the same
-    as the MPOL_PREFERRED policy. That is, the physical page allocator
-    doesn’t give up the allocation when the specified nodes are running
-    out of pages but continues to search pages in the other nodes.
+#. The MPOL_BIND policy for set_mempolicy()/mbind() works as the same
+   as the MPOL_PREFERRED policy. That is, the physical page allocator
+   doesn’t give up the allocation when the specified nodes are running
+   out of pages but continues to search pages in the other nodes.
 
-15. Kernel dump on Linux panic requires Linux kernel CentOS-7.4 and
-    later. In addition, crash_kexec_post_notifiers kernel argument must
-    be given to Linux kernel.
+#. Kernel dump on Linux panic requires Linux kernel CentOS-7.4 and
+   later. In addition, crash_kexec_post_notifiers kernel argument must
+   be given to Linux kernel.
 
-16. setfsuid()/setfsgid() cannot change the id of the calling thread.
-    Instead, it changes that of the mcexec worker thread which takes the
-    system-call offload request.
+#. setfsuid()/setfsgid() cannot change the id of the calling thread.
+   Instead, it changes that of the mcexec worker thread which takes the
+   system-call offload request.
 
-17. mmap (hugeTLBfs): The physical pages corresponding to a map are
-    released when no McKernel process exist. The next map gets fresh
-    physical pages.
+#. mmap (hugeTLBfs): The physical pages corresponding to a map are
+   released when no McKernel process exist. The next map gets fresh
+   physical pages.
 
-18. Sticky bit on executable file has no effect.
+#. Sticky bit on executable file has no effect.
 
-19. Linux (RHEL-7 for x86_64) could hang when offlining CPUs in the
-    process of booting McKernel due to the Linux bug, found in
-    Linux-3.10 and fixed in the later version. One way to circumvent
-    this is to always assign the same CPU set to McKernel.
+#. Linux (RHEL-7 for x86_64) could hang when offlining CPUs in the
+   process of booting McKernel due to the Linux bug, found in
+   Linux-3.10 and fixed in the later version. One way to circumvent
+   this is to always assign the same CPU set to McKernel.
 
-20. madvise:
+#. madvise:
 
     -  MADV_HWPOISON and MADV_SOFT_OFFLINE always returns -EPERM.
     -  MADV_MERGEABLE and MADV_UNMERGEABLE always returns -EINVAL.
     -  MADV_HUGEPAGE and MADV_NOHUGEPAGE on file map returns -EINVAL
        except on RHEL-8 for aarch64.
 
-21. brk() and mmap() doesn’t report out-of-memory through its return
-    value. Instead, page-fault reports the error.
+#. brk() and mmap() doesn’t report out-of-memory through its return
+   value. Instead, page-fault reports the error.
 
-22. Anonymous mmap pre-maps requested number of pages when contiguous
-    pages are available. Demand paging is used when not available.
+#. Anonymous mmap pre-maps requested number of pages when contiguous
+   pages are available. Demand paging is used when not available.
 
-23. Mixing page sizes in anonymous shared mapping is not allowed. mmap
-    creates vm_range with one page size. And munmap or mremap that needs
-    the reduced page size changes the sizes of all the pages of the
-    vm_range.
+#. ihk_os_getperfevent() could time-out when invoked from Fujitsu TCS
+   (job-scheduler).
 
-24. ihk_os_getperfevent() could time-out when invoked from Fujitsu TCS
-    (job-scheduler).
+#. The behaviors of madvise and mbind are changed to do nothing and
+   report success as a workaround for Fugaku.
 
-25. The behaviors of madvise and mbind are changed to do nothing and
-    report success as a workaround for Fugaku.
+#. mmap() allows unlimited overcommit. Note that it corresponds to
+   setting sysctl ``vm.overcommit_memory`` to 1.
 
-26. mmap() allows unlimited overcommit. Note that it corresponds to
-    setting sysctl ``vm.overcommit_memory`` to 1.
+#. mlockall() is not supported and returns -EPERM.
 
-27. mlockall() is not supported and returns -EPERM.
+#. munlockall() is not supported and returns zero.
 
-28. munlockall() is not supported and returns zero.
+#. (Fujitsu TCS-only) A job following the one in which __mcctrl_os_read_write_cpu_register() returns ``-ETIME`` fails because xos_hwb related CPU state isn't finalized. You can tell if the function returned ``-ETIME`` by checking if the following line appeared in the Linux kernel message:
 
-29. scheduling behavior is not Linux compatible. For example, sometimes one of the two processes on the same CPU continues to run after yielding.
+   ::
 
-30. (Fujitsu TCS-only) A job following the one in which __mcctrl_os_read_write_cpu_register() returns ``-ETIME`` fails because xos_hwb related CPU state isn't finalized. You can tell if the function returned ``-ETIME`` by checking if the following line appeared in the Linux kernel message:
+      __mcctrl_os_read_write_cpu_register: ERROR sending IKC msg: -62
 
-    ::
+   You can re-initialize xos_hwb related CPU state by the following command:
 
-       __mcctrl_os_read_write_cpu_register: ERROR sending IKC msg: -62
+   ::
 
-    You can re-initialize xos_hwb related CPU state by the following command:
+      sudo systemctl restart xos_hwb
 
-    ::
+#. System calls can write the mcexec VMAs with PROT_WRITE flag not
+   set. This is because we never turn off PROT_WRITE of the mcexec
+   VMAs to circumvent the issue "set_host_vma(): do NOT read protect
+   Linux VMA".
 
-       sudo systemctl restart xos_hwb
-
-31. System calls can write the mcexec VMAs with PROT_WRITE flag not
-    set. This is because we never turn off PROT_WRITE of the mcexec
-    VMAs to circumvent the issue "set_host_vma(): do NOT read protect
-    Linux VMA".
-
-32. procfs entry creation done by Linux work queue could starve when
-    Linux CPUs are flooded with system call offloads. LTP-2019
-    sendmsg02 causes this issue.
+#. procfs entry creation done by Linux work queue could starve when
+   Linux CPUs are flooded with system call offloads. LTP-2019
+   sendmsg02 causes this issue.
