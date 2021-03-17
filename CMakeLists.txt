@@ -105,10 +105,17 @@ execute_process(COMMAND bash -c "rpm -qi FJSVpxkrm-plugin-mckernel | awk '$1 == 
   OUTPUT_VARIABLE KRM_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
 message("KRM_VERSION: ${KRM_VERSION}")
 
-if(NOT "${KRM_VERSION}" STREQUAL "" AND "${KRM_VERSION}" VERSION_LESS_EQUAL 4.0.1)
-	option(ENABLE_KRM_WORKAROUND "krm workaround" ON)
-else()
+execute_process(COMMAND bash -c "rpm -qi FJSVpxkrm-plugin-mckernel | awk '$1 == \"Release\" && $2 == \":\" { print $3 }'"
+  OUTPUT_VARIABLE KRM_RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
+message("KRM_RELEASE: ${KRM_RELEASE}")
+
+if("${KRM_VERSION}" STREQUAL "")
 	option(ENABLE_KRM_WORKAROUND "krm workaround" OFF)
+elseif("${KRM_VERSION}" VERSION_GREATER_EQUAL 4.0.2 OR
+    ("${KRM_VERSION}" VERSION_EQUAL 4.0.1 AND "${KRM_RELEASE}" VERSION_GREATER_EQUAL 25.13.1.0))
+	option(ENABLE_KRM_WORKAROUND "krm workaround" OFF)
+else()
+	option(ENABLE_KRM_WORKAROUND "krm workaround" ON)
 endif()
 
 if(ENABLE_KRM_WORKAROUND)
