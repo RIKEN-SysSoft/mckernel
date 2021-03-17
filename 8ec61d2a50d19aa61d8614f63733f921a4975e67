@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9680ad25_a1afc4a9",
+        "filename": "executer/kernel/mcctrl/include/refcount.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-17T03:33:27Z",
+      "side": 1,
+      "message": "WARNING: do not add new typedefs\n+typedef struct refcount_struct {",
+      "revId": "8ec61d2a50d19aa61d8614f63733f921a4975e67",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3de2aba2_10ca5d26",
+        "filename": "executer/kernel/mcctrl/include/refcount.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-17T03:33:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline __must_check bool refcount_add_not_zero(unsigned int i, refcount_t *r)",
+      "revId": "8ec61d2a50d19aa61d8614f63733f921a4975e67",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b2f082f3_00a41988",
+        "filename": "executer/kernel/mcctrl/include/refcount.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-17T03:33:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+static inline __must_check bool refcount_sub_and_test(unsigned int i, refcount_t *r)",
+      "revId": "8ec61d2a50d19aa61d8614f63733f921a4975e67",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2c774fd5_fe03f6c1",
+        "filename": "executer/kernel/mcctrl/include/refcount.h",
+        "patchSetId": 5
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1014954
+      },
+      "writtenOn": "2021-03-17T03:33:27Z",
+      "side": 1,
+      "message": "WARNING: line over 80 characters\n+extern __must_check bool refcount_dec_and_mutex_lock(refcount_t *r, struct mutex *lock);",
+      "revId": "8ec61d2a50d19aa61d8614f63733f921a4975e67",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735"
+    }
+  ]
+}
