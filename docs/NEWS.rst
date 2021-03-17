@@ -1,4 +1,33 @@
 =============================================
+Version 1.7.9 (Mar 17, 2021)
+=============================================
+
+----------------------
+IHK major updates
+----------------------
+N/A
+
+------------------------
+IHK major bug fixes
+------------------------
+#. ihklib: ihk_reserve_mem_conf*: fix default values
+#. smp_ihk_os_shutdown: fix memory leak
+#. smp_ihk_os_shutdown: prevent double free
+#. __ihk_os_shutdown: fix smp_ihk_os_shutdown()-related double free
+#. smp_ihk_os_panic_notifier: exclude memory from Linux dump with default setting
+#. smp_ihk_os_panic_notifier: exclude memory from Linux dump while booting, on timeout
+
+----------------------
+McKernel major updates
+----------------------
+N/A
+
+------------------------
+McKernel major bug fixes
+------------------------
+#. mcctrl_wakeup_desc: refcount and fix timeouts
+
+=============================================
 Version 1.7.8 (Mar 12, 2021)
 =============================================
 
