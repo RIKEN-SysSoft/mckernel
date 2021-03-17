@@ -97,7 +97,7 @@ Clone the source code:
 
    mkdir -p ~/src/ihk+mckernel/
    cd ~/src/ihk+mckernel/
-   git clone --recursive -b development https://github.com/RIKEN-SysSoft/mckernel.git
+   git clone --recursive -b development https://github.com/ihkmckernel/mckernel.git
 
 (Optional) Checkout to the specific branch or version:
 
