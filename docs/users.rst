@@ -242,3 +242,5 @@ Limitations
 #. procfs entry creation done by Linux work queue could starve when
    Linux CPUs are flooded with system call offloads. LTP-2019
    sendmsg02 causes this issue.
+
+#. Linux kernel dump file doesn't include the memory allocated to McKernel. This is because of the issues in the implementation of the panic notifier handler.
