@@ -136,6 +136,27 @@ int devobj_create(int fd, size_t len, off_t off, struct memobj **objp, int *maxp
 	error = 0;
 	*objp = to_memobj(obj);
 	*maxprotp = result.maxprot;
+
+#ifdef ENABLE_FUGAKU_HACKS
+	/* Pre-populate device file PFNs for PMIx shared mem */
+	if (!strncmp(obj->memobj.path,
+				"/var/opt/FJSVtcs/ple/daemonif", 29)) {
+		off_t offset;
+		uintptr_t phys;
+		unsigned long flag;
+
+		for (offset = 0; offset < obj->memobj.size; offset += PAGE_SIZE) {
+			if (devobj_get_page(&obj->memobj, offset, PAGE_P2ALIGN,
+						&phys, &flag, 0) < 0) {
+				kprintf("%s: WARNING: failed to populate offset %lu in %s\n",
+						__func__, offset, obj->memobj.path);
+			}
+		}
+		dkprintf("%s: pre-populated PFNs for %s, len: %lu\n",
+			__func__, obj->memobj.path, obj->memobj.size);
+	}
+#endif
+
 	obj = NULL;
 
 out:
@@ -200,6 +221,10 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 	uintptr_t attr;
 	ihk_mc_user_context_t ctx;
 	int ix;
+	unsigned long irqstate;
+#ifdef ENABLE_FUGAKU_HACKS
+	int page_fault_attempts = 5;
+#endif
 
 	dkprintf("devobj_get_page(%p %lx,%lx,%d)\n", memobj, obj->handle, off, p2align);
 
@@ -214,8 +239,15 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 #ifdef PROFILE_ENABLE
 	profile_event_add(PROFILE_page_fault_dev_file, PAGE_SIZE);
 #endif // PROFILE_ENABLE
+
+	irqstate = ihk_mc_spinlock_lock(&obj->pfn_table_lock);
 	pfn = obj->pfn_table[ix];
+	ihk_mc_spinlock_unlock(&obj->pfn_table_lock, irqstate);
+
 	if (!(pfn & PFN_VALID)) {
+#ifdef ENABLE_FUGAKU_HACKS
+pf_retry:
+#endif
 		ihk_mc_syscall_arg0(&ctx) = PAGER_REQ_PFN;
 		ihk_mc_syscall_arg1(&ctx) = obj->handle;
 		ihk_mc_syscall_arg2(&ctx) = off & ~(PAGE_SIZE - 1);
@@ -241,8 +273,24 @@ static int devobj_get_page(struct memobj *memobj, off_t off, int p2align, uintpt
 			pfn |= attr;
 			dkprintf("devobj_get_page(%p %lx,%lx,%d):PFN_PRESENT after %#lx\n", memobj, obj->handle, off, p2align, pfn);
 		}
+#ifdef ENABLE_FUGAKU_HACKS
+		else if (page_fault_attempts > 0) {
+			kprintf("%s(): va: 0x%lx !PFN_PRESENT for offset %lu in %s, "
+					"page_fault_attempts: %d\n",
+					__func__, virt_addr, off,
+					memobj->path ? memobj->path : "<unknown>",
+					page_fault_attempts);
+			--page_fault_attempts;
+			goto pf_retry;
+		}
+#endif
 
-		obj->pfn_table[ix] = pfn;
+		/* Update atomically if unset */
+		irqstate = ihk_mc_spinlock_lock(&obj->pfn_table_lock);
+		if (obj->pfn_table[ix] == 0) {
+			obj->pfn_table[ix] = pfn;
+		}
+		ihk_mc_spinlock_unlock(&obj->pfn_table_lock, irqstate);
 		// Don't call memory_stat_rss_add() because devobj related pages don't reside in main memory
 	}
 

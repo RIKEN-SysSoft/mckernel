@@ -2219,6 +2219,8 @@ straight_out:
 		}
 #endif // PROFILE_ENABLE
 		if (error == -ESRCH) {
+			int populate_flags = 0;
+
 			dkprintf("do_mmap:hit non VREG\n");
 			/*
 			 * XXX: temporary:
@@ -2230,8 +2232,21 @@ straight_out:
 				vrflags &= ~VR_MEMTYPE_MASK;
 				vrflags |= VR_MEMTYPE_UC;
 			}
+
+#ifdef ENABLE_FUGAKU_HACKS
+#ifdef ENABLE_TOFU
+			if (!strncmp("/var/opt/FJSVtcs/ple/daemonif/",
+						thread->proc->fd_path[fd], 30)) {
+				dkprintf("%s: MAP_POPULATE | MAP_LOCKED for %s\n",
+					__func__, thread->proc->fd_path[fd]);
+				populate_flags = (MAP_POPULATE | MAP_LOCKED);
+			}
+#endif
+#endif
+
 			error = devobj_create(fd, len, off, &memobj, &maxprot, 
-					prot, (flags & (MAP_POPULATE | MAP_LOCKED)));
+					prot,
+					populate_flags | (flags & (MAP_POPULATE | MAP_LOCKED)));
 
 			if (!error) {
 #ifdef PROFILE_ENABLE
