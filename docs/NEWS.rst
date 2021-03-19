@@ -1,4 +1,29 @@
 =============================================
+Version 1.8.0 (Mar 23, 2021)
+=============================================
+
+----------------------
+IHK major updates
+----------------------
+N/A
+
+------------------------
+IHK major bug fixes
+------------------------
+N/A
+
+----------------------
+McKernel major updates
+----------------------
+N/A
+
+------------------------
+McKernel major bug fixes
+------------------------
+#. profile: fix infinite recursion for allocation miss event
+#. Fugaku: MAP_LOCKED and pre-populate PMIx shared memory PFNs
+
+=============================================
 Version 1.7.10 (Mar 18, 2021)
 =============================================
 
