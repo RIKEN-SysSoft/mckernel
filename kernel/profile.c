@@ -100,8 +100,13 @@ void profile_event_add(enum profile_event_type type, uint64_t tsc)
 		return;
 
 	if (!cpu_local_var(current)->profile_events) {
-		if (profile_alloc_events(cpu_local_var(current)) < 0)
+		if (type == PROFILE_mpol_alloc_missed) {
 			return;
+		}
+
+		if (profile_alloc_events(cpu_local_var(current)) < 0) {
+			return;
+		}
 	}
 
 	if (type < PROFILE_EVENT_MAX) {
