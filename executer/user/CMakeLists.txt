@@ -31,9 +31,13 @@ else()
 	target_link_libraries(mcinspect ${LIBDWARF})
 endif()
 target_link_libraries(mcinspect ${LIBBFD})
+set_property(TARGET mcinspect PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET mcinspect PROPERTY LINK_FLAGS "-fPIE -pie")
 
 add_executable(eclair eclair.c arch/${ARCH}/arch-eclair.c)
 target_link_libraries(eclair ${LIBBFD})
+set_property(TARGET eclair PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET eclair PROPERTY LINK_FLAGS "-fPIE -pie")
 
 add_library(sched_yield SHARED libsched_yield.c)
 target_link_libraries(sched_yield dl)

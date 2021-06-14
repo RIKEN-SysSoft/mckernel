@@ -71,6 +71,8 @@ This package contains headers and libraries required for build apps using IHK/Mc
 
 # We need to remove ld flags like relro for the final mckernel.img link, as well as remove cflags for mckernel
 # ideally mckernel should use different environment variables for the user tools and the kernel tools altogether...
+%undefine _hardened_build
+%define build_ldflags ""
 %define __global_ldflags ""
 %define optflags -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic
 
