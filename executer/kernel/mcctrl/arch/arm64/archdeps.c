@@ -27,9 +27,12 @@
 #define D(fmt, ...) printk("%s(%d) " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 0, 0)
-void *vdso_start;
-void *vdso_end;
-static struct vm_special_mapping (*vdso_spec)[2];
+void *mcctrl_vdso_start;
+void *mcctrl_vdso_end;
+static struct vm_special_mapping *mcctrl_vdso_spec;
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 4)
+static struct vdso_data **mcctrl_vdso_data;
+#endif
 #endif
 
 #ifdef ENABLE_TOFU
@@ -68,17 +71,36 @@ void __mcctrl_tof_utofu_mn_invalidate_range_end(
 int arch_symbols_init(void)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 0, 0)
-	vdso_start = (void *) kallsyms_lookup_name("vdso_start");
-	if (WARN_ON(!vdso_start))
+	mcctrl_vdso_start = (void *) kallsyms_lookup_name("vdso_start");
+	if (WARN_ON(!mcctrl_vdso_start))
 		return -EFAULT;
 
-	vdso_end = (void *) kallsyms_lookup_name("vdso_end");
-	if (WARN_ON(!vdso_end))
+	mcctrl_vdso_end = (void *) kallsyms_lookup_name("vdso_end");
+	if (WARN_ON(!mcctrl_vdso_end))
 		return -EFAULT;
 
-	vdso_spec = (void *) kallsyms_lookup_name("vdso_spec");
-	if (WARN_ON(!vdso_spec))
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 4)
+	mcctrl_vdso_spec = (void *) kallsyms_lookup_name("aarch64_vdso_maps");
+#else
+	mcctrl_vdso_spec = (void *) kallsyms_lookup_name("vdso_spec");
+#endif
+	if (WARN_ON(!mcctrl_vdso_spec))
 		return -EFAULT;
+
+	if (WARN_ON(!mcctrl_vdso_spec[0].name ||
+		strcmp(mcctrl_vdso_spec[0].name, "[vvar]")))
+		return -EFAULT;
+
+	if (WARN_ON(!mcctrl_vdso_spec[1].name ||
+		strcmp(mcctrl_vdso_spec[1].name, "[vdso]")))
+		return -EFAULT;
+
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 4)
+	mcctrl_vdso_data = (struct vdso_data **) kallsyms_lookup_name("vdso_data");
+	if (WARN_ON(!mcctrl_vdso_data || !*mcctrl_vdso_data))
+		return -EFAULT;
+#endif
+
 #endif
 
 #ifdef ENABLE_TOFU
@@ -212,7 +234,7 @@ static long elf_search_vdso_sigtramp(void)
 	Elf64_Sym *sym = NULL;
 
 	/* ELF header */
-	eh = (Elf64_Ehdr *)vdso_start;
+	eh = (Elf64_Ehdr *)mcctrl_vdso_start;
 	if (eh == NULL) {
 		D("vdso_start is NULL.\n");
 		goto out;
@@ -233,8 +255,8 @@ static long elf_search_vdso_sigtramp(void)
 	/* Search dynsym-table and dynstr-table offset
 	 * from section header table
 	 */
-	tmp_sh = (Elf64_Shdr *)(vdso_start + eh->e_shoff);
-	shstr = vdso_start + (tmp_sh + eh->e_shstrndx)->sh_offset;
+	tmp_sh = (Elf64_Shdr *)(mcctrl_vdso_start + eh->e_shoff);
+	shstr = mcctrl_vdso_start + (tmp_sh + eh->e_shstrndx)->sh_offset;
 	for (i = 0; i < eh->e_shnum; i++, tmp_sh++) {
 		if (tmp_sh->sh_type == SHT_DYNSYM) {
 			sym_sh = tmp_sh;
@@ -242,7 +264,7 @@ static long elf_search_vdso_sigtramp(void)
 
 		if (tmp_sh->sh_type == SHT_STRTAB &&
 		    !strcmp(&shstr[tmp_sh->sh_name], ".dynstr")) {
-			dynstr = vdso_start + tmp_sh->sh_offset;
+			dynstr = mcctrl_vdso_start + tmp_sh->sh_offset;
 		}
 	}
 
@@ -257,7 +279,7 @@ static long elf_search_vdso_sigtramp(void)
 	}
 
 	/* Search __kernel_rt_sigreturn offset from dynsym-table */
-	sym = (Elf64_Sym *)(vdso_start + sym_sh->sh_offset);
+	sym = (Elf64_Sym *)(mcctrl_vdso_start + sym_sh->sh_offset);
 	for (i = 0; (i * sym_sh->sh_entsize) < sym_sh->sh_size; i++, sym++) {
 		if (!strcmp(dynstr + sym->st_name, "__kernel_rt_sigreturn")) {
 			ans = sym->st_value;
@@ -282,9 +304,9 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 	vdso = ihk_device_map_virtual(dev, vdso_pa, sizeof(*vdso), NULL, 0);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
-	vvar_map = &(*vdso_spec)[0];
-	vdso_map = &(*vdso_spec)[1];
-	nr_vdso_page = ((vdso_end - vdso_start) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+	vvar_map = &mcctrl_vdso_spec[0];
+	vdso_map = &mcctrl_vdso_spec[1];
+	nr_vdso_page = ((mcctrl_vdso_end - mcctrl_vdso_start) + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
 	/* VDSO pages */
 	//D("nr_vdso_page:%d\n", nr_vdso_page);
@@ -298,7 +320,11 @@ void get_vdso_info(ihk_os_t os, long vdso_rpa)
 
 	/* VVAR page */
 	//D("vdso->vvar_phys:0x#lx\n", vdso->vvar_phys);
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 4)
+	vdso->vvar_phys = __pfn_to_phys(sym_to_pfn(*mcctrl_vdso_data));
+#else
 	vdso->vvar_phys = page_to_phys(*vvar_map->pages);
+#endif
 
 	/* offsets */
 	vdso->lbase = VDSO_LBASE;

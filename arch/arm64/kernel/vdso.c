@@ -33,7 +33,6 @@ struct vdso {
 	long offset_sigtramp;
 };
 
-extern char vdso_start, vdso_end;
 static struct vdso vdso;
 
 struct tod_data_s tod_data
