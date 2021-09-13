@@ -1126,6 +1126,27 @@ static int pager_req_create(ihk_os_t os, int fd, uintptr_t result_pa)
 		goto out;
 	}
 
+	/* Intel MPI shared memory hack */
+	{
+		char *pathbuf, *fullpath;
+		pathbuf = kmalloc(PATH_MAX, GFP_ATOMIC);
+		if (pathbuf) {
+			fullpath = d_path(&file->f_path, pathbuf, PATH_MAX);
+			if (!IS_ERR(fullpath)) {
+				if (!strncmp("/dev/shm/Intel_MPI", fullpath, 18)) {
+					printk("%s: treating %s as a device file..\n",
+							__func__, fullpath);
+					kfree(pathbuf);
+
+					error = -ESRCH;
+					goto out;
+				}
+
+				kfree(pathbuf);
+			}
+		}
+	}
+
 	inode = file->f_path.dentry->d_inode;
 	if (!inode) {
 		error = -EBADF;
@@ -1697,8 +1718,8 @@ retry:
 		fault = handle_mm_fault(current->mm, vma, va, flags);
 #endif
 		if (fault != 0) {
-			printk("%s: error: faulting %lx at off: %lu\n", 
-					__FUNCTION__, va, off);
+			//printk("%s: error: faulting %lx at off: %lu\n",
+			//		__FUNCTION__, va, off);
 		}
 
 		page_fault_attempted = 1;
