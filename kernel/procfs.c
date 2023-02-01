@@ -471,7 +471,7 @@ static int _process_procfs_request(struct ikc_scd_packet *rpacket, int *result)
 				 range->start == (unsigned long)vm->vdso_addr ?
 					"[vdso]" :
 				 range->start == (unsigned long)vm->vvar_addr ?
-					"[vsyscall]" :
+					"[vvar]" :
 				 range->flag & VR_STACK ?
 					"[stack]" :
 				 range->start >= vm->region.brk_start &&
