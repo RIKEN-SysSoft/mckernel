@@ -139,6 +139,7 @@ if (NOT LIBDWARF)
 		DEPENDS gennames libdwarf/libdwarf/libdwarf.h.in)
 
 	add_library(dwarf STATIC ${DWARF_SOURCES} ${GENNAMES_OUTPUT} ${DWARF_CONFIGURATION_FILES})
+	target_compile_options(dwarf PRIVATE -fPIC)
 	target_include_directories(dwarf PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libdwarf/libdwarf/")
 	target_include_directories(dwarf BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 endif()

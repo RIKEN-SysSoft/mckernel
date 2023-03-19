@@ -150,7 +150,7 @@ int arch_map_vdso(struct process_vm *vm)
 	}
 
 	start = vdso_base;
-	end = vdso_base + PAGE_SIZE;
+	end = vdso_base + 2*PAGE_SIZE;
 	flag = VR_REMOTE | VR_PROT_READ;
 	flag |= VRFLAG_PROT_TO_MAXPROT(flag);
 	ret = add_process_memory_range(vm, start, end, vdso.vvar_phys, flag,
