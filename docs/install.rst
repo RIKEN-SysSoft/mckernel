@@ -268,3 +268,39 @@ and then install it to your home directory:
 
    cd $HOME/$(uname -p)
    rpm2cpio capstone-4.0.1-9.el8.aarch64.rpm | cpio -idv
+
+
+Notes for Fujitsu TCS/KRM based A64FX systems (e.g., Fugaku/Wisteria)
+---------------------------------------------------------------------
+
+When building McKernel for Fujitsu TCS/KRM one needs to pass the following flags to cmake:
+
+::
+
+   cmake -DCMAKE_INSTALL_PREFIX=${HOME}/ihk+mckernel/ -DENABLE_TOFU=ON -DENABLE_FUGAKU_HACKS=ON -DENABLE_FUGAKU_DEBUG=OFF -DENABLE_KRM_WORKAROUND=OFF -DWITH_KRM=ON -DENABLE_FJMPI_WORKAROUND=ON ~/src/mckernel/
+
+Then build the kernel and create the source package for rpmbuild:
+
+::
+
+   make -j 32 install
+   make dist
+   cp mckernel-1.8.0.tar.gz ~/rpmbuild/SOURCES/
+   rpmbuild -ba scripts/mckernel.spec
+
+This will create a set of mckernel rpms similar to what has been described above.
+
+Compute nodes:
+~~~~~~~~~~~~~~
+
+On the compute nodes one needs to install the mckernel packages along with Fujitsu's TCS/KRM IHK/McKernel extensions, for example:
+
+::
+
+   rpm -i --nodeps FJSVpxkrm-plugin-mckernel-4.0.1-24.13.2.0.el8.aarch64.rpm FJSVpxpwrm_api_mck-3.0.1-02_4.18.0_240.el8.aarch64.rpm FJSVxoshpcpwr-plugin-mckernel-0.0.0.3-0_4.18.0_240.el8.aarch64.rpm FJSVxosmck-0.0.7-1.el8.aarch64.rpm
+
+Specail care must be taken to the config file /etc/opt/FJSVtcs/krm/mck_common.conf which needs to specify the correct NUMA nodes used for the LWK:
+
+::
+
+   JobNUMANodes             = [4,5,6,7];
