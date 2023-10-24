@@ -1,7 +1,7 @@
 alabaster==0.7.12
 attrs==19.3.0
 Babel==2.7.0
-certifi==2019.11.28
+certifi==2022.12.7
 chardet==3.0.4
 commonmark==0.9.1
 docutils==0.15
