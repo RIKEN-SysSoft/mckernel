@@ -81,7 +81,9 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	char **env;
 	int range_npages;
 	int argenv_page_count = 0;
+#ifdef CONFIG_MIC
 	void *up_v;
+#endif
 	unsigned long addr;
 	unsigned long flags;
 	uintptr_t interp_obase = -1;
@@ -93,15 +95,19 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 	long aout_base;
 	int error;
 	struct vm_range *range;
+#ifdef CONFIG_MIC
 	unsigned long ap_flags;
 	enum ihk_mc_pt_attribute ptattr;
+#endif
 	
 	n = p->num_sections;
 
 	vm->region.data_start = ULONG_MAX;
 	aout_base = (pn->reloc)? vm->region.map_end: 0;
 	for (i = 0; i < n; i++) {
+#ifdef CONFIG_MIC
 		ap_flags = 0;
+#endif
 		if (pn->sections[i].interp && (interp_nbase == (uintptr_t)-1)) {
 			interp_obase = pn->sections[i].vaddr;
 			interp_obase -= (interp_obase % pn->interp_align);
@@ -135,9 +141,15 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 				!(pn->mpol_flags & MPOL_NO_BSS)) {
 			dkprintf("%s: section: %d size: %d pages -> IHK_MC_AP_USER\n",
 					__FUNCTION__, i, range_npages);
+#ifdef CONFIG_MIC
 			ap_flags = IHK_MC_AP_USER;
+#endif
 			flags |= VR_AP_USER;
 		}
+
+#ifndef CONFIG_MIC
+		flags |= VR_DEMAND_PAGING;
+#endif
 
 		if ((error = add_process_memory_range(vm, s, e, NOPHYS, flags, NULL, 0,
 					pn->sections[i].len > LARGE_PAGE_SIZE ?
@@ -147,6 +159,7 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			goto err;
 		}
 
+#ifdef CONFIG_MIC
 		if ((up_v = ihk_mc_alloc_pages_user(range_npages,
 						IHK_MC_AP_NOWAIT | ap_flags, s)) == NULL) {
 			kprintf("ERROR: alloc pages for ELF section %i\n", i);
@@ -169,6 +182,17 @@ int prepare_process_ranges_args_envs(struct thread *thread,
 			ihk_mc_free_pages_user(up_v, range_npages);
 			goto err;
 		}
+#else
+		error = populate_process_memory(vm, (void *)range->start,
+				range_npages * PAGE_SIZE);
+		if (error) {
+			kprintf("%s: populate_process_memory() failed. %d\n",
+					__FUNCTION__, error);
+			goto err;
+		}
+
+		up = 0;
+#endif
 
 		// memory_stat_rss_add() is called in ihk_mc_pt_set_range()
 

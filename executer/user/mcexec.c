@@ -894,17 +894,22 @@ int transfer_image(int fd, struct program_load_desc *desc)
 				}
 				flen -= lr;
 			} 
-			s += page_size;
-			rpa += page_size;
-			
 			/* No more left to upload.. */
 			if (lr == 0 && flen == 0) break;
 
+#ifdef CONFIG_MIC
 			if (ioctl(fd, MCEXEC_UP_TRANSFER,
 						(unsigned long)&pt)) {
 				perror("dma");
 				break;
 			}
+#else
+			/* Source is already visible at this point in this process */
+			memcpy((void *)s, dma_buf, pt.size);
+#endif
+
+			s += page_size;
+			rpa += page_size;
 		}
 	}
 
