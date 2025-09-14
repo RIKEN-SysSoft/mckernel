@@ -2206,12 +2206,22 @@ int page_fault_process_memory_range(struct process_vm *vm,
 		if (phys == NOPHYS) {
 			void *virt = NULL;
 			size_t npages;
-
+			int node, bith;
+			int nr_numas = hweight_long(vm->numa_mask[0]);
 retry:
+			bith = 0;
+			node = 0;
+			for_each_set_bit(node, vm->numa_mask, PROCESS_NUMA_MASK_BITS) {
+				if (bith == ((((unsigned long)pgaddr - (unsigned long)range->start) / pgsize) % nr_numas)) {
+					break;
+				}
+				++bith;
+			}
+
 			npages = pgsize / PAGE_SIZE;
-			virt = ihk_mc_alloc_aligned_pages_user(npages, p2align,
+			virt = ihk_mc_alloc_aligned_pages_node_user(npages, p2align,
 					IHK_MC_AP_NOWAIT |
-					((range->flag & VR_AP_USER) ? IHK_MC_AP_USER : 0), fault_addr);
+					((range->flag & VR_AP_USER) ? IHK_MC_AP_USER : 0), node, fault_addr);
 			if (!virt && !range->pgshift && (pgsize != PAGE_SIZE)) {
 				error = arch_get_smaller_page_size(NULL, pgsize, &pgsize, &p2align);
 				if (error) {
@@ -2227,6 +2237,9 @@ retry:
 				kprintf("page_fault_process_memory_range(%p,%lx-%lx %lx,%lx,%lx):cannot allocate new page. %d\n", vm, range->start, range->end, range->flag, fault_addr, reason, error);
 				goto out;
 			}
+			dkprintf("%s: 0x%lX -> NUMA: %d pgsize: %ld (bith: %d, nr_numas: %d, pgaddr: 0x%lx, range->start: 0x%lx\n",
+					__FUNCTION__, fault_addr, node, pgsize, bith, nr_numas, (unsigned long)pgaddr, (unsigned long)range->start);
+
 			dkprintf("%s: clearing 0x%lx:%lu\n",
 					__FUNCTION__, pgaddr, pgsize);
 #ifdef PROFILE_ENABLE

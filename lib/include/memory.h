@@ -37,6 +37,7 @@ int write_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t
 int patch_process_vm(struct process_vm *vm, void *udst, const void *ksrc, size_t siz);
 
 int is_mckernel_memory(unsigned long start, unsigned long end);
+int mckernel_memory_to_numa(unsigned long start, unsigned long end);
 
 #endif
 

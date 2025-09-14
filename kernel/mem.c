@@ -754,6 +754,14 @@ retry_interleave:
 #endif
 		dkprintf("%s: couldn't fulfill user policy for %d pages\n",
 			__FUNCTION__, npages);
+
+#if 0
+		/* If large page is requested, do not try to go to another NUMA node */
+		if (p2align > 0) {
+			kprintf("%s: bailing out after failing to find pg2align %d page in process mask\n", __FUNCTION__, p2align);
+			return NULL;
+		}
+#endif
 	}
 
 distance_based:
@@ -2658,6 +2666,23 @@ void ___kmalloc_print_free_list(struct list_head *list)
 }
 
 #ifdef IHK_RBTREE_ALLOCATOR
+int mckernel_memory_to_numa(unsigned long start, unsigned long end)
+{
+	int i;
+
+	for (i = 0; i < ihk_mc_get_nr_memory_chunks(); ++i) {
+		unsigned long chunk_start, chunk_end;
+		int numa_id;
+
+		ihk_mc_get_memory_chunk(i, &chunk_start, &chunk_end, &numa_id);
+		if ((chunk_start <= start && start < chunk_end) &&
+		    (chunk_start <= end && end <= chunk_end)) {
+			return numa_id;
+		}
+	}
+	return -1;
+}
+
 int is_mckernel_memory(unsigned long start, unsigned long end)
 {
 	int i;
@@ -2675,6 +2700,26 @@ int is_mckernel_memory(unsigned long start, unsigned long end)
 	return 0;
 }
 #else /* IHK_RBTREE_ALLOCATOR */
+int mckernel_memory_to_numa(unsigned long start, unsigned long end)
+{
+	int i;
+
+	for (i = 0; i < ihk_mc_get_nr_numa_nodes(); ++i) {
+		struct ihk_page_allocator_desc *pa_allocator;
+		unsigned long area_start = pa_allocator->start;
+		unsigned long area_end = pa_allocator->end;
+
+		list_for_each_entry(pa_allocator,
+				    &memory_nodes[i].allocators, list) {
+			if ((area_start <= start && start < area_end) &&
+			    (area_start <= end && end <= area_end)) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
 int is_mckernel_memory(unsigned long start, unsigned long end)
 {
 	int i;

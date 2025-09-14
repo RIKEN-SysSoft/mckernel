@@ -2771,8 +2771,10 @@ int main(int argc, char **argv)
 	desc->mpol_threshold = mpol_threshold;
 	desc->heap_extension = heap_extension;
 
-	desc->mpol_bind_mask = 0;
-	desc->mpol_mode = PLD_MPOL_MAX; /* not specified */
+	/* Default is all associated NUMA nodes */
+	desc->mpol_mode = MPOL_BIND;
+	numa_local(desc->cpu_set, desc->mpol_nodemask);
+
 	if (mpol_bind_nodes) {
 		struct bitmask *bind_mask;
 		bind_mask = numa_parse_nodestring_all(mpol_bind_nodes);

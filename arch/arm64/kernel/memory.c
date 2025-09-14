@@ -3358,21 +3358,22 @@ int arch_get_smaller_page_size(void *args, size_t cursize, size_t *newsizep,
 		/* dummy */
 		panic("not reached");
 	}
-	else if (CONFIG_ARM64_PGTABLE_LEVELS > 2 &&
+	// TODO: only ignore these when interleaving due to multi-NUMA affinity
+	else if (0 && CONFIG_ARM64_PGTABLE_LEVELS > 2 &&
 				cursize > PTL3_CONT_SIZE) {
 		newsize = PTL3_CONT_SIZE;
 		p2align = PTL3_CONT_SHIFT - PTL1_SHIFT;
 	}
-	else if (CONFIG_ARM64_PGTABLE_LEVELS > 2 &&
+	else if (0 && CONFIG_ARM64_PGTABLE_LEVELS > 2 &&
 				cursize > PTL3_SIZE) {
 		newsize = PTL3_SIZE;
 		p2align = PTL3_SHIFT - PTL1_SHIFT;
 	}
-	else if (cursize > PTL2_CONT_SIZE) {
+	else if (0 && cursize > PTL2_CONT_SIZE) {
 		newsize = PTL2_CONT_SIZE;
 		p2align = PTL2_CONT_SHIFT - PTL1_SHIFT;
 	}
-	else if (cursize > PTL2_SIZE) {
+	else if (0 && cursize > PTL2_SIZE) {
 		newsize = PTL2_SIZE;
 		p2align = PTL2_SHIFT - PTL1_SHIFT;
 	}

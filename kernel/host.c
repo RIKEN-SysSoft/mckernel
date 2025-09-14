@@ -596,6 +596,8 @@ static int process_msg_prepare_process(unsigned long rphys)
 		dkprintf("%s: numa_mem_policy: %d, numa_mask: %ld\n",
 			 __func__, vm->numa_mem_policy, vm->numa_mask[0]);
 	}
+	kprintf("%s: numa_mem_policy: %d, numa_mask: %ld\n",
+		 __func__, vm->numa_mem_policy, vm->numa_mask[0]);
 
 	proc->enable_uti = pn->enable_uti;
 	proc->uti_thread_rank = pn->uti_thread_rank;

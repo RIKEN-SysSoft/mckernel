@@ -2326,6 +2326,7 @@ straight_out:
 			vrflags |= VR_AP_USER;
 		}
 
+#if 0
 		p = ihk_mc_alloc_aligned_pages_user(npages, p2align,
 				IHK_MC_AP_NOWAIT | ap_flag, addr0);
 		if (p == NULL) {
@@ -2348,6 +2349,13 @@ straight_out:
 				goto out;
 			}
 		}
+#else
+		p = NULL;
+		if (p == NULL) {
+			vrflags |= VR_DEMAND_PAGING;
+			populated_mapping = 1;
+		}
+#endif
 		else {
 #ifdef PROFILE_ENABLE
 			profile_event_add(PROFILE_mmap_anon_contig_phys, len);
@@ -2557,15 +2565,21 @@ out:
 	dkprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 #else
 	if (cpu_local_var(current)->profile) {
-		kprintf("%s: 0x%lx:%8lu, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+		kprintf("%s: 0x%lx:%8lu:0x%lx, (req: 0x%lx:%lu), prot: %x, flags: %x, "
 #endif
 			"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
 			__FUNCTION__,
-			addr, len, addr0, len0, prot, flags,
+			addr, len, addr + len, addr0, len0, prot, flags,
 			fd, off0, error, addr);
 #ifdef ENABLE_FUGAKU_HACKS
 	}
 #endif
+
+	dkprintf("%s: 0x%lx:%8lu:0x%lx, (req: 0x%lx:%lu), prot: %x, flags: %x, "
+		"fd: %d, off: %lu, error: %ld, addr: 0x%lx\n",
+		__FUNCTION__,
+		addr, len, addr + len, addr0, len0, prot, flags,
+		fd, off0, error, addr);
 
 	return !error ?
 		(range->straight_start ? range->straight_start : addr) :
@@ -3113,7 +3127,21 @@ static int do_execveat(ihk_mc_user_context_t *ctx, int dirfd,
 
 	dkprintf("execve(): ELF desc received, num sections: %d\n",
 		desc->num_sections);
-	
+
+#if 0
+	{
+		char *kfilename;
+		int len = strlen_user(filename);
+
+		kfilename = kmalloc(len + 1, IHK_MC_AP_NOWAIT);
+		if (kfilename)
+			strcpy_from_user(kfilename, filename);
+		kprintf("%s: %s\n", kfilename? kfilename: "");
+		if (kfilename)
+			kfree(kfilename);
+	}
+#endif
+
 	/* for shebang script we get extra argvs from mcexec */
 	if (desc->args_len) {
 		desc->args = ((char *)desc) + sizeof(struct program_load_desc) +
