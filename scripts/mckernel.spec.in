@@ -76,10 +76,13 @@ This package contains headers and libraries required for build apps using IHK/Mc
 %define __global_ldflags ""
 %define optflags -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic
 
+# Don't generate debuginfo package and more importantly don't strip binaries
+%define debug_package %{nil}
+
 mkdir build
 pushd build
-%cmake -DCMAKE_BUILD_TYPE=Release \
-	-DUNAME_R=%{kernel_version} \
+%cmake -DUNAME_R=%{kernel_version} \
+	-DCMAKE_BUILD_TYPE=Debug \
 	-DKERNEL_DIR=%{kernel_dir} \
 	%{?cmake_libdir:-DCMAKE_INSTALL_LIBDIR=%{cmake_libdir}} \
 	%{?build_target:-DBUILD_TARGET=%{build_target}} \
