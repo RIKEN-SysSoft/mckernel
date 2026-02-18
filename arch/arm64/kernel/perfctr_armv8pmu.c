@@ -789,7 +789,7 @@ static void armv8pmu_handle_irq(void *priv)
 	uint32_t pmovsr;
 	struct thread *thread = cpu_local_var(current);
 	struct process *proc = thread->proc;
-	const struct per_cpu_arm_pmu *cpu_pmu = get_per_cpu_pmu();
+	const struct per_cpu_arm_pmu *per_cpu_pmu = get_per_cpu_pmu();
 	int idx;
 
 	/*
@@ -803,13 +803,10 @@ static void armv8pmu_handle_irq(void *priv)
 	if (!armv8pmu_has_overflowed(pmovsr))
 		return;
 
-	if (!proc->monitoring_event) {
-		return;
-	}
 	/*
 	 * Handle the counter(s) overflow(s)
 	 */
-	for (idx = 0; idx < cpu_pmu->num_events; idx++) {
+	for (idx = 0; idx < per_cpu_pmu->num_events; idx++) {
 		struct mc_perf_event *event = NULL;
 		struct mc_perf_event *sub;
 
@@ -817,24 +814,31 @@ static void armv8pmu_handle_irq(void *priv)
 			continue;
 		}
 
-		if (proc->monitoring_event->counter_id == idx) {
-			event = proc->monitoring_event;
-		} else {
-			list_for_each_entry(sub,
-					&proc->monitoring_event->sibling_list,
-					group_entry) {
-				if (sub->counter_id == idx) {
-					event = sub;
-					break;
+		if (proc->monitoring_event) {
+			if (proc->monitoring_event->counter_id == idx) {
+				event = proc->monitoring_event;
+			} else {
+				list_for_each_entry(sub,
+						&proc->monitoring_event->sibling_list,
+						group_entry) {
+					if (sub->counter_id == idx) {
+						event = sub;
+						break;
+					}
 				}
 			}
-		}
 
-		if (!event) {
-			continue;
+			if (!event) {
+				continue;
+			}
+			ihk_mc_event_update(event);
+			ihk_mc_event_set_period(event);
 		}
-		ihk_mc_event_update(event);
-		ihk_mc_event_set_period(event);
+		else {
+			/* Clear the counter anyway */
+			armv8pmu_write_counter(idx, 0);
+			dkprintf("%s: cleared overflown counter: %d\n", __FUNCTION__, idx);
+		}
 	}
 	return;
 }
